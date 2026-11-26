@@ -81,80 +81,10 @@ theorem introduce_simulates_policy (program : Program) (state : State) (abstract
     (tailRel : List.Forall₂ (TaskRel program state.store state.history state.next) tail tailAbstract) :
     ∃ abstract', Relation.ReflTransGen (PolicyStep program) abstract abstract' ∧
       Simulates program (introduce (table program) head environment resume state.tasks tail state seeds) abstract' := by
-  have abstractRunning : abstract.status = .running := statusRel_running (running ▸ simulates.status)
-  have tailShallow : ∀ task ∈ tail, task.isSearch = false := by
-    rw [← machineTasks]
-    exact simulates.shallow
-  unfold introduce
-  cases instantiated : instantiateTerms environment head.arguments with
-  | none =>
-    dsimp only
-    have otherNone : head.instantiate other = none := by
-      unfold Head.instantiate
-      rw [← instantiateTerms_eq, ← instantiateTerms_agree agree, instantiated]
-      rfl
-    refine ⟨{ abstract with status := .fault (.uninstantiated (.tuple head.arguments)) },
-      Relation.ReflTransGen.single (PolicyStep.tellFault abstract other head goals tailAbstract abstractTasks
-        abstractRunning otherNone), ?_⟩
-    exact ⟨simulates.store, simulates.coherent, simulates.fresh, simulates.history, simulates.next,
-      .faulted _, (fun impossible => by simp at impossible), simulates.shallow⟩
-  | some values =>
-    dsimp only
-    let key := Head.key head
-    let added : Occurrence := ⟨state.next, ⟨head.name, values⟩⟩
-    have arity : values.length = key.2 := by
-      have length := mapM_length (by rw [← instantiateTerms_eq]; exact instantiated)
-      simpa [key, Head.key] using length
-    have freshId : state.next ∉ (contents state.store).map Occurrence.id := by
-      intro inside
-      obtain ⟨member, inStore, same⟩ := List.mem_map.mp inside
-      have below := simulates.fresh member inStore
-      omega
-    obtain ⟨coherent', perm'⟩ := introduce_store state.store simulates.coherent key ⟨state.next, values⟩ freshId arity
-    have liftAdded : lift key ⟨state.next, values⟩ = added := rfl
-    have grown : ∀ member, member ∈ contents (put key (⟨state.next, values⟩ :: slot key state.store) state.store) ↔
-        member ∈ contents state.store ∨ member = added := by
-      intro member
-      rw [perm'.mem_iff, List.mem_append, List.mem_singleton, liftAdded]
-    have otherSome : head.instantiate other = some ⟨head.name, values⟩ := by
-      unfold Head.instantiate
-      rw [← instantiateTerms_eq, ← instantiateTerms_agree agree, instantiated]
-      rfl
-    refine ⟨{ abstract with
-        tasks := .scan abstract.nextId 0 :: .goals other goals :: tailAbstract
-        store := abstract.store ++ [⟨abstract.nextId, ⟨head.name, values⟩⟩]
-        nextId := abstract.nextId + 1 },
-      Relation.ReflTransGen.single (PolicyStep.introduce abstract other head goals tailAbstract _ abstractTasks
-        abstractRunning otherSome), ?_⟩
-    have nextEq := simulates.next
-    refine ⟨?_, coherent', ?_, simulates.history, by simp [nextEq], simulates.status, ?_, ?_⟩
-    · show (abstract.store ++ [(⟨abstract.nextId, ⟨head.name, values⟩⟩ : Occurrence)]).Perm _
-      rw [nextEq]
-      exact (simulates.store.append_right _).trans perm'.symm
-    · intro member inside
-      rcases (grown member).mp inside with old | rfl
-      · have below := simulates.fresh member old
-        show member.id < state.next + 1
-        omega
-      · show state.next < state.next + 1
-        omega
-    · intro _
-      show List.Forall₂ _ (Task.scan state.next key values (occurrencesOf key (table program)) :: resume :: tail)
-        (CHR.Task.scan abstract.nextId 0 :: .goals other goals :: tailAbstract)
-      rw [table_entry, nextEq]
-      refine .cons (.scan state.next key values 0 (Nat.lt_succ_self state.next) ⟨arity, ?_⟩)
-        (.cons (taskRel_grow resumeRel resumeNotSearch added rfl grown)
-          (forall₂_grow added rfl grown tailRel tailShallow))
-      intro member inside same
-      rcases (grown member).mp inside with old | rfl
-      · have below := simulates.fresh member old
-        omega
-      · rfl
-    · intro task inside
-      simp only [List.drop_succ_cons, List.drop_zero, List.mem_cons] at inside
-      rcases inside with rfl | inTail
-      · exact resumeNotSearch
-      · exact tailShallow task inTail
+  obtain ⟨next, step, related⟩ := introduce_step_simulates
+    program state abstract simulates running head environment other agree
+      resume goals tail tailAbstract seeds abstractTasks machineTasks resumeRel resumeNotSearch tailRel
+  exact ⟨next, .single (PolicyStep.of_goal_task abstractTasks step), related⟩
 
 theorem endGoals_simulates_policy (program : Program) (state : State) (abstract : CHR.State)
     (simulates : Simulates program state abstract) (running : state.status = .running)
@@ -164,12 +94,10 @@ theorem endGoals_simulates_policy (program : Program) (state : State) (abstract 
     (tailRel : List.Forall₂ (TaskRel program state.store state.history state.next) tail tailAbstract) :
     ∃ abstract', Relation.ReflTransGen (PolicyStep program) abstract abstract' ∧
       Simulates program { state with tasks := tail } abstract' := by
-  have abstractRunning : abstract.status = .running := statusRel_running (running ▸ simulates.status)
-  refine ⟨{ abstract with tasks := tailAbstract },
-    .single (PolicyStep.endGoals abstract environment tailAbstract abstractTasks abstractRunning), ?_⟩
-  exact ⟨simulates.store, simulates.coherent, simulates.fresh, simulates.history, simulates.next,
-    simulates.status, fun _ => tailRel,
-    fun other inside => tail_shallow simulates tasks other (List.mem_of_mem_drop inside)⟩
+  obtain ⟨next, step, related⟩ := endGoals_step_simulates
+    program state abstract simulates running task tail tasks
+      environment tailAbstract abstractTasks tailRel
+  exact ⟨next, .single (PolicyStep.of_goal_task abstractTasks step), related⟩
 
 theorem seed_simulates_policy (program : Program) (state : State) (abstract : CHR.State)
     (simulates : Simulates program state abstract) (running : state.status = .running)
@@ -181,10 +109,11 @@ theorem seed_simulates_policy (program : Program) (state : State) (abstract : CH
     ∃ abstract', Relation.ReflTransGen (PolicyStep program) abstract abstract' ∧
       Simulates program
         (introduce (table program) head [] (.seeds heads) state.tasks tail state (state.next :: state.seeds))
-        abstract' :=
-  introduce_simulates_policy program state abstract simulates running head [] [] (agree_refl []) (.seeds heads)
-    (heads.map Goal.tell) tail tailAbstract (state.next :: state.seeds) abstractTasks (by rw [tasks]; rfl)
-    (.seeds heads (fun seed member => ground seed (List.mem_cons_of_mem _ member))) rfl tailRel
+        abstract' := by
+  obtain ⟨next, step, related⟩ := seed_step_simulates
+    program state abstract simulates running head heads tail tailAbstract
+      tasks abstractTasks ground tailRel
+  exact ⟨next, .single (PolicyStep.of_goal_task abstractTasks step), related⟩
 
 theorem tell_simulates_policy (program : Program) (state : State) (abstract : CHR.State)
     (simulates : Simulates program state abstract) (running : state.status = .running)
@@ -195,14 +124,10 @@ theorem tell_simulates_policy (program : Program) (state : State) (abstract : CH
     (tailRel : List.Forall₂ (TaskRel program state.store state.history state.next) tail tailAbstract) :
     ∃ abstract', Relation.ReflTransGen (PolicyStep program) abstract abstract' ∧
       Simulates program (goal (table program) environment (.tell head) goals tail state) abstract' := by
-  have unfolded : goal (table program) environment (.tell head) goals tail state =
-      introduce (table program) head environment (.goals environment goals) state.tasks tail state state.seeds := by
-    rw [tasks]
-    rfl
-  rw [unfolded]
-  exact introduce_simulates_policy program state abstract simulates running head environment other agree
-    (.goals environment goals) goals tail tailAbstract state.seeds abstractTasks (by rw [tasks]; rfl)
-    (.goals environment other goals agree) rfl tailRel
+  obtain ⟨next, step, related⟩ := tell_step_simulates
+    program state abstract simulates running environment other agree head goals tail tailAbstract
+      tasks abstractTasks tailRel
+  exact ⟨next, .single (PolicyStep.of_goal_task abstractTasks step), related⟩
 
 theorem assign_simulates_policy (program : Program) (state : State) (abstract : CHR.State)
     (simulates : Simulates program state abstract) (running : state.status = .running)
@@ -214,57 +139,10 @@ theorem assign_simulates_policy (program : Program) (state : State) (abstract : 
     ∃ abstract', Relation.ReflTransGen (PolicyStep program) abstract abstract' ∧
       Simulates program (goal (table program) environment (.assign index expression) goals tail state)
         abstract' := by
-  have abstractRunning : abstract.status = .running := statusRel_running (running ▸ simulates.status)
-  have shallow := tail_shallow simulates tasks
-  have evaluated := eval_agree agree expression
-  have looked := agree index
-  cases result : expression.eval environment with
-  | error reason =>
-    have stopped : goal (table program) environment (.assign index expression) goals tail state =
-        { state with status := .faulted reason } := by
-      simp only [goal, result]
-    rw [stopped]
-    refine ⟨{ abstract with status := .fault reason },
-      .single (PolicyStep.assignFault abstract other index expression goals tailAbstract reason abstractTasks
-        abstractRunning (by rw [← evaluated, result])), ?_⟩
-    exact ⟨simulates.store, simulates.coherent, simulates.fresh, simulates.history, simulates.next,
-      .faulted reason, (fun impossible => by simp at impossible), simulates.shallow⟩
-  | ok value =>
-    cases bound : lookup environment index with
-    | none =>
-      have extended : goal (table program) environment (.assign index expression) goals tail state =
-          { state with tasks := .goals ((index, .integer value) :: environment) goals :: tail } := by
-        simp only [goal, result, bound]
-      rw [extended]
-      refine ⟨{ abstract with tasks := .goals ((index, .integer value) :: other) goals :: tailAbstract },
-        .single (PolicyStep.assign abstract other index expression goals tailAbstract value abstractTasks
-          abstractRunning (by rw [← evaluated, result]) (.inl (by rw [← looked, bound]))), ?_⟩
-      exact ⟨simulates.store, simulates.coherent, simulates.fresh, simulates.history, simulates.next,
-        simulates.status, fun _ => .cons (.goals _ _ goals (agree_cons agree index _)) tailRel,
-        fun task inside => shallow task (by simpa using inside)⟩
-    | some old =>
-      by_cases same : old = .integer value
-      · have checked : goal (table program) environment (.assign index expression) goals tail state =
-            { state with tasks := .goals environment goals :: tail } := by
-          simp only [goal, result, bound, same, if_true]
-        rw [checked]
-        refine ⟨{ abstract with tasks := .goals ((index, .integer value) :: other) goals :: tailAbstract },
-          .single (PolicyStep.assign abstract other index expression goals tailAbstract value abstractTasks
-            abstractRunning (by rw [← evaluated, result]) (.inr (by rw [← looked, bound, same]))), ?_⟩
-        have shadow : Agree environment ((index, .integer value) :: other) :=
-          agree_shadow agree (by rw [bound, same])
-        exact ⟨simulates.store, simulates.coherent, simulates.fresh, simulates.history, simulates.next,
-          simulates.status, fun _ => .cons (.goals _ _ goals shadow) tailRel,
-          fun task inside => shallow task (by simpa using inside)⟩
-      · have failed : goal (table program) environment (.assign index expression) goals tail state =
-            { state with status := .failed } := by
-          simp only [goal, result, bound, same, if_false]
-        rw [failed]
-        refine ⟨{ abstract with status := .failed },
-          .single (PolicyStep.assignFailed abstract other index expression goals tailAbstract value old abstractTasks
-            abstractRunning (by rw [← evaluated, result]) (by rw [← looked, bound]) same), ?_⟩
-        exact ⟨simulates.store, simulates.coherent, simulates.fresh, simulates.history, simulates.next,
-          .failed, (fun impossible => by simp at impossible), simulates.shallow⟩
+  obtain ⟨next, step, related⟩ := assign_step_simulates
+    program state abstract simulates running environment other agree index expression
+      goals tail tailAbstract tasks abstractTasks tailRel
+  exact ⟨next, .single (PolicyStep.of_goal_task abstractTasks step), related⟩
 
 theorem fail_simulates_policy (program : Program) (state : State) (abstract : CHR.State)
     (simulates : Simulates program state abstract) (running : state.status = .running)
@@ -272,12 +150,9 @@ theorem fail_simulates_policy (program : Program) (state : State) (abstract : CH
     (abstractTasks : abstract.tasks = .goals other (.fail :: goals) :: tailAbstract) :
     ∃ abstract', Relation.ReflTransGen (PolicyStep program) abstract abstract' ∧
       Simulates program (goal (table program) environment .fail goals tail state) abstract' := by
-  have abstractRunning : abstract.status = .running := statusRel_running (running ▸ simulates.status)
-  refine ⟨{ abstract with status := .failed },
-    .single (PolicyStep.fail abstract other goals tailAbstract abstractTasks abstractRunning), ?_⟩
-  show Simulates program { state with status := .failed } _
-  exact ⟨simulates.store, simulates.coherent, simulates.fresh, simulates.history, simulates.next,
-    .failed, (fun impossible => by simp at impossible), simulates.shallow⟩
+  obtain ⟨next, step, related⟩ := fail_step_simulates
+    program state abstract simulates running environment other goals tail tailAbstract abstractTasks
+  exact ⟨next, .single (PolicyStep.of_goal_task abstractTasks step), related⟩
 
 theorem scan_simulates_policy (program : Program) (state : State) (abstract : CHR.State)
     (simulates : Simulates program state abstract) (running : state.status = .running)

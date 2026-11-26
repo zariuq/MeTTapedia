@@ -10,11 +10,11 @@
 ; so wire writes each binder as it is.
 ;
 ;   (wire TERM ENV)        ENV: the bound variables, innermost first
-;   (lean:eq LEFT RIGHT)   the equation of two kernel terms of type set
+;   (egal:eq LEFT RIGHT)   the equation of two kernel terms of type set
 ;
 ; Read after interpret.metta and session.metta.
 
-(= (wire:named $source) (Tm.named (lean:id $source)))
+(= (wire:named $source) (Tm.named (egal:id $source)))
 ; F applied to ARGS, where F still takes ARITY arguments as a function of the
 ; logic.  Megalodon reads the application of a set as the set-theoretic one,
 ; ap; so do the arguments past the arity.
@@ -71,16 +71,16 @@
       ($_ (wire:named (head-text $c))))))
 (= (wire:head-arity $c)
    (case $c
-     (((EgalLibrary proof-field) (lean:arity "Lean_ProofField"))
+     (((EgalLibrary proof-field) (egal:arity "Lean_ProofField"))
       ((EgalLibrary proof-by) 0)
       ((EgalLibrary cite $thm) 0)
-      ((EgalLibrary record-field $owner $i) (wire:minus (lean:arity "Lean_RecordField") 1))
-      ($_ (lean:arity (head-text $c))))))
+      ((EgalLibrary record-field $owner $i) (wire:minus (egal:arity "Lean_RecordField") 1))
+      ($_ (egal:arity (head-text $c))))))
 ; The same for any term: what is left of its head's arity.  A variable and a
 ; binder are sets.
 (= (wire:arity $t)
    (case $t
-     (((txt $s) (lean:arity $s))
+     (((txt $s) (egal:arity $s))
       ((app $c $args)
        (if (is-proof-node $c) 0
        (if (is-cases-on $c) 0
@@ -95,7 +95,7 @@
 (= (wire:head-arg-types $c)
    (case $c
      (((EgalLibrary $kind) ()) ((EgalLibrary $kind $x) ()) ((EgalLibrary $kind $x $y) ())
-      ($_ (case (lean:declaration (head-text $c)) (((LeanDeclared $id $type) (wire:arg-types $type)) ($other ())))))))
+      ($_ (case (egal:declaration (head-text $c)) (((LeanDeclared $id $type) (wire:arg-types $type)) ($other ())))))))
 (= (wire:arg-types $type)
    (case $type (((Tp.arr $A $B) (cons-atom $A (wire:arg-types $B))) ($other ()))))
 (= (wire:args-at $Ts $args $env)
@@ -117,11 +117,11 @@
           ($ps (take-n $args $np)) ($rest (drop-n $args (+ $np 1))))
      (if (has-cases-eliminator $F)
          (let $name (format-args "{}_casesOn" ((egal $F)))
-           (wire:apply (wire:named $name) (lean:arity $name)
+           (wire:apply (wire:named $name) (egal:arity $name)
                        (wire:all (append-lists $ps (append-lists (cdr-atom $rest) ((car-atom $rest)))) $env)))
          (let* (($minors (wrap-minors $F $ps (motive-of (nth $args $np)) (cdr-atom $rest) 0))
                 ($name (format-args "{}_rec" ((egal $F)))))
-           (wire:apply (wire:named $name) (lean:arity $name)
+           (wire:apply (wire:named $name) (egal:arity $name)
                        (wire:all (append-lists $ps (append-lists $minors ((car-atom $rest)))) $env))))))
 
 (= (wire $t $env)
@@ -146,7 +146,7 @@
       ($_ (if (is-sort-term $t) (wire:sort $t $env)
               (Error (LeanTermForm $t) (LeanTerm "a term form with no reading")))))))
 
-(= (lean:eq $left $right)
+(= (egal:eq $left $right)
    (Tm.app (Tm.app (Tm.typeApp (wire:named "eq") (Tp.base 0)) $left) $right))
 
 ; ---- kernel terms as Megalodon text ----
@@ -155,22 +155,22 @@
 ; binder (x0, x1, .. outermost first), an application in full (the
 ; set-theoretic one as ap), and the equation of two sets with =.
 ;
-;   (lean:text TERM)   TERM has no free variables
+;   (egal:text TERM)   TERM has no free variables
 
-(= (lean:source-name $id)
+(= (egal:source-name $id)
    (let $kept (collapse (match &self (LeanSourceName $id $name) $name))
      (if (== $kept ())
-         (let $name (lean:first-source (mg:declaration (lean:theory) $id) $id)
+         (let $name (egal:first-source (mg:declaration (egal:theory) $id) $id)
            (let $_kept (add-atom &self (LeanSourceName $id $name)) $name))
          (car-atom $kept))))
-(= (lean:first-source $declaration $id)
-   (let $found (lean:source-item (cdr-atom $declaration))
+(= (egal:first-source $declaration $id)
+   (let $found (egal:source-item (cdr-atom $declaration))
      (if (== $found None) (Error (LeanName $id) (LeanSession "the declaration has no source name")) $found)))
-(= (lean:source-item $items)
+(= (egal:source-item $items)
    (if (== $items ()) None
        (case (car-atom $items)
          (((source $name) $name)
-          ($_ (lean:source-item (cdr-atom $items)))))))
+          ($_ (egal:source-item (cdr-atom $items)))))))
 
 (= (wire:type-text $A)
    (case $A
@@ -181,9 +181,9 @@
 (= (wire:text $t $depth)
    (case $t
      (((Tm.db $i) (format-args "x{}" ((- (- $depth 1) $i))))
-      ((Tm.named $id) (lean:source-name $id))
+      ((Tm.named $id) (egal:source-name $id))
       ((Tm.app (Tm.app (Tm.typeApp (Tm.named $id) (Tp.base 0)) $a) $b)
-       (if (== $id (lean:id "eq"))
+       (if (== $id (egal:id "eq"))
            (format-args "({} = {})" ((wire:text $a $depth) (wire:text $b $depth)))
            (Error (LeanTermForm $t) (LeanTerm "a polymorphic constant with no text"))))
       ((Tm.app $f $x) (format-args "({} {})" ((wire:text $f $depth) (wire:text $x $depth))))
@@ -191,7 +191,7 @@
       ((Tm.all $A $b) (format-args "(forall x{} : {}, {})" ($depth (wire:type-text $A) (wire:text $b (+ $depth 1)))))
       ((Tm.imp $p $q) (format-args "({} -> {})" ((wire:text $p $depth) (wire:text $q $depth))))
       ($_ (Error (LeanTermForm $t) (LeanTerm "a kernel term with no text"))))))
-(= (lean:text $t) (wire:text $t 0))
+(= (egal:text $t) (wire:text $t 0))
 
 ; An application, a recursor at the arguments the reader gives it (rec-reading).
 (= (wire:application $wa_c $wa_args $wa_env)

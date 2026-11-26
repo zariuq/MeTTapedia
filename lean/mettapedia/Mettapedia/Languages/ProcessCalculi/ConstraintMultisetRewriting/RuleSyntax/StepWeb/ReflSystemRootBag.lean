@@ -295,6 +295,62 @@ structure RootCells (label : O → Pattern) (C : Configuration Pattern O)
     ∀ σ : PSubst, nameAction.Models σ C.equations →
       ∀ y : Pattern, ¬ NameLaws (psubst σ (label o)) (atLoc y rootLoc)
 
+/-- Transport a root roster across a firing. The edit specifies which old root
+identities are taken and which fresh identities become root rows. The caller
+chooses the order of the resulting roster and supplies the readouts of the made
+rows in the resulting knowledge. -/
+theorem RootCells.replace_by_firing {label : O → Pattern} {C : Configuration Pattern O}
+    {before kept removed inserted after : List (O × Pattern)}
+    (inv : RootCells label C before) (g : Firing O QNE located PUnit.unit)
+    (beforeOrder : before.Perm (removed ++ kept))
+    (afterOrder : after.Perm (inserted ++ kept))
+    (takeRoot : ∀ o ∈ before.map Prod.fst, o ∈ g.selection.taken ↔ o ∈ removed.map Prod.fst)
+    (madeRows : g.selection.made = inserted.map Prod.fst)
+    (madeNodup : g.selection.made.Nodup)
+    (madeFresh : ∀ o ∈ g.selection.made, o ∉ C.present)
+    {K : EquationStore Pattern}
+    (refines : ∀ σ : PSubst, nameAction.Models σ K →
+      nameAction.Models σ (res label C g).knowledge)
+    (madeReads : ∀ q ∈ inserted, ∀ σ : PSubst, nameAction.Models σ K →
+      NameLaws (psubst σ ((res label C g).label q.1))
+        (psubst σ (atLoc (predotU q.2) rootLoc))) :
+    RootCells (res label C g).label ⟨K, (res label C g).present⟩ after := by
+  have oldIds : (before.map Prod.fst).Perm (removed.map Prod.fst ++ kept.map Prod.fst) := by
+    simpa only [List.map_append] using beforeOrder.map Prod.fst
+  have newIds : (after.map Prod.fst).Perm (inserted.map Prod.fst ++ kept.map Prod.fst) := by
+    simpa only [List.map_append] using afterOrder.map Prod.fst
+  have separated := List.nodup_append.mp (oldIds.nodup_iff.mp inv.nodup)
+  have kept_old (q : O × Pattern) (member : q ∈ kept) : q ∈ before :=
+    beforeOrder.mem_iff.mpr (List.mem_append_right _ member)
+  have fresh (q : O × Pattern) (member : q ∈ kept) : q.1 ∉ g.selection.made :=
+    fun found => madeFresh q.1 found (inv.rows q (kept_old q member)).1
+  refine ⟨newIds.nodup_iff.mpr (List.nodup_append.mpr ?_), ?_, ?_⟩
+  · refine ⟨madeRows ▸ madeNodup, separated.2.1, ?_⟩
+    intro x made y retained eq
+    obtain ⟨q, member, rfl⟩ := List.mem_map.mp retained
+    exact fresh q member (madeRows.symm ▸ (eq ▸ made))
+  · intro q inAfter
+    rcases List.mem_append.mp (afterOrder.mem_iff.mp inAfter) with inMade | inKept
+    · have occMade := madeRows.symm ▸ List.mem_map.mpr ⟨q, inMade, rfl⟩
+      exact ⟨(result_present g q.1).mpr (.inr occMade), madeReads q inMade⟩
+    · have hOld := kept_old q inKept
+      have present := (inv.rows q hOld).1
+      have taken : q.1 ∉ g.selection.taken := by
+        intro h
+        have inRetired := (takeRoot q.1 (List.mem_map.mpr ⟨q, hOld, rfl⟩)).mp h
+        exact separated.2.2 q.1 inRetired q.1 (List.mem_map.mpr ⟨q, inKept, rfl⟩) rfl
+      refine ⟨(result_present g q.1).mpr (.inl ⟨present, taken⟩), fun σ solved => ?_⟩
+      rw [result_label_old g (fresh q inKept)]
+      exact (inv.rows q hOld).2 σ (info_known g (refines σ solved))
+  · intro o present notIn σ solved value reads
+    rcases result_row present with made | ⟨old, notTaken, _, labelOld⟩
+    · exact notIn (newIds.mem_iff.mpr (List.mem_append_left _ (madeRows ▸ made)))
+    · rw [labelOld] at reads
+      refine inv.others o old (fun oldRoot => ?_) σ (info_known g (refines σ solved)) value reads
+      rcases List.mem_append.mp (oldIds.mem_iff.mp oldRoot) with retired | retained
+      · exact notTaken ((takeRoot o oldRoot).mpr retired)
+      · exact notIn (newIds.mem_iff.mpr (List.mem_append_right _ retained))
+
 /-- Whole-system source process assembled from `rootRows`. -/
 def rootBagProcess (rootRows : List (O × Pattern)) : Pattern := pPar (rootRows.map Prod.snd)
 
@@ -473,76 +529,28 @@ theorem rootCells_heat {label : O → Pattern} {C : Configuration Pattern O}
         (rootBagProcess (pre ++ (o, par a b) :: post)) ∧
       rootPartsBag (pre ++ (m₁, a) :: (m₂, b) :: post) =
         rootPartsBag (pre ++ (o, par a b) :: post) := by
-  obtain ⟨_, shapes, enabled, -⟩ := (RuleSyntax.admits_iff _).mp admitted
+  have shapes := ((RuleSyntax.admits_iff _).mp admitted).2.1
   have madeDistinct : m₁ ≠ m₂ := by
     simpa [rootHeatAt, rootFiring, widen, atFiring, heatN] using shapes.2.1
-  have freshMade : m₁ ∉ C.present ∧ m₂ ∉ C.present := by
-    simpa [rootHeatAt, rootFiring, widen, atFiring, heatN, Selection.commit, embed]
-      using enabled.fresh
-  have permOld : ((pre ++ (o, par a b) :: post).map Prod.fst).Perm
-      (o :: (pre ++ post).map Prod.fst) := by
-    simp only [List.map_append, List.map_cons]; exact List.perm_middle
-  obtain ⟨oOut, restNodup⟩ := List.nodup_cons.mp (permOld.nodup_iff.mp inv.nodup)
-  have permNew : ((pre ++ (m₁, a) :: (m₂, b) :: post).map Prod.fst).Perm
-      (m₁ :: m₂ :: (pre ++ post).map Prod.fst) := by
-    simp only [List.map_append, List.map_cons]
-    exact List.perm_middle.trans (List.Perm.cons _ List.perm_middle)
-  have restInOld : ∀ q ∈ pre ++ post, q ∈ pre ++ (o, par a b) :: post := fun q m =>
-    (List.mem_append.mp m).elim (List.mem_append_left _)
-      (fun r => List.mem_append_right _ (List.mem_cons_of_mem _ r))
-  have nodupNew : ((pre ++ (m₁, a) :: (m₂, b) :: post).map Prod.fst).Nodup := by
-    refine permNew.nodup_iff.mpr (List.nodup_cons.mpr ⟨?_, List.nodup_cons.mpr ⟨?_, restNodup⟩⟩)
-    · simp only [List.mem_cons, not_or]
-      refine ⟨madeDistinct, fun inR => ?_⟩
-      obtain ⟨q, qIn, eqM⟩ := List.mem_map.mp inR
-      exact freshMade.1 (eqM ▸ (inv.rows q (restInOld q qIn)).1)
-    · intro inR; obtain ⟨q, qIn, eqM⟩ := List.mem_map.mp inR
-      exact freshMade.2 (eqM ▸ (inv.rows q (restInOld q qIn)).1)
   have oReads : ∀ σ : PSubst, nameAction.Models σ C.equations →
       NameLaws (psubst σ (label o)) (psubst σ (atLoc (par (predotU a) (predotU b)) rootLoc)) := by
-    intro σ s; have r := (inv.rows (o, par a b) (by simp)).2 σ s; rwa [predotU_par] at r
-  have keepRest : ∀ q ∈ pre ++ post,
-      q.1 ∈ (res label C (rootHeatAt ρ o m₁ m₂)).present ∧
-      ∀ σ : PSubst, nameAction.Models σ (resConf label C (rootHeatAt ρ o m₁ m₂)).equations →
-        NameLaws (psubst σ ((res label C (rootHeatAt ρ o m₁ m₂)).label q.1))
-          (psubst σ (atLoc (predotU q.2) rootLoc)) := by
-    intro q qRest
-    have qOld := restInOld q qRest
-    have qPres := (inv.rows q qOld).1
-    have neO : q.1 ≠ o := fun eqO => oOut (eqO ▸ List.mem_map.mpr ⟨q, qRest, rfl⟩)
-    have ne₁ : q.1 ≠ m₁ := fun e => freshMade.1 (e ▸ qPres)
-    have ne₂ : q.1 ≠ m₂ := fun e => freshMade.2 (e ▸ qPres)
-    refine ⟨(result_present _ q.1).mpr (.inl ⟨qPres, by
-      simp [rootHeatAt, rootFiring, widen, atFiring, heatN, neO]⟩), fun σ solved => ?_⟩
-    rw [result_label_old _ (by simp [rootHeatAt, rootFiring, widen, atFiring, heatN, ne₁, ne₂])]
-    exact (inv.rows q qOld).2 σ (info_known _ solved)
-  refine ⟨⟨nodupNew, fun q qIn => ?_, fun x xPres xNotNew σ solved y same => ?_⟩, ?_, ?_⟩
-  · simp only [List.mem_append, List.mem_cons] at qIn
-    rcases qIn with inPre | rfl | rfl | inPost
-    · exact keepRest q (List.mem_append_left _ inPre)
-    · exact ⟨(result_present _ m₁).mpr (.inr (by
-        simp [rootHeatAt, rootFiring, widen, atFiring, heatN])),
-        fun σ solved => (rootHeat_reads_mixed label C ρ o madeDistinct _ _ oReads solved).1⟩
-    · exact ⟨(result_present _ m₂).mpr (.inr (by
-        simp [rootHeatAt, rootFiring, widen, atFiring, heatN])),
-        fun σ solved => (rootHeat_reads_mixed label C ρ o madeDistinct _ _ oReads solved).2⟩
-    · exact keepRest q (List.mem_append_right _ inPost)
-  · rcases result_row xPres with made | ⟨old, notTaken, -, labelOld⟩
-    · simp only [rootHeatAt, rootFiring, widen, atFiring, heatN, List.mem_cons,
-        List.not_mem_nil, or_false] at made
-      rcases made with rfl | rfl <;> exact xNotNew (by simp)
-    · rw [labelOld] at same
-      have neO : x ≠ o := fun eqO => notTaken (by
-        simp [rootHeatAt, rootFiring, widen, atFiring, heatN, eqO])
-      refine inv.others x old (fun inOld => ?_) σ (info_known _ solved) y same
-      rcases List.mem_cons.mp (permOld.subset inOld) with rfl | inRest
-      · exact neO rfl
-      · obtain ⟨q, qIn, eqX⟩ := List.mem_map.mp inRest
-        apply xNotNew
-        rcases List.mem_append.mp qIn with l | r
-        · exact List.mem_map.mpr ⟨q, List.mem_append_left _ l, eqX⟩
-        · exact List.mem_map.mpr ⟨q, List.mem_append_right _
-            (List.mem_cons_of_mem _ (List.mem_cons_of_mem _ r)), eqX⟩
+    intro σ solved
+    have read := (inv.rows (o, par a b) (by simp)).2 σ solved
+    rwa [predotU_par] at read
+  refine ⟨inv.replace_by_firing (rootHeatAt ρ o m₁ m₂)
+    (removed := [(o, par a b)]) (kept := pre ++ post) (inserted := [(m₁, a), (m₂, b)])
+    (after := pre ++ (m₁, a) :: (m₂, b) :: post)
+    ?_ ?_ ?_ rfl shapes.2.1 (fun _ h => made_not_present admitted h) (fun _ h => h) ?_,
+    ?_, ?_⟩
+  · exact List.perm_middle
+  · exact List.perm_middle.trans (List.Perm.cons _ List.perm_middle)
+  · intro id _
+    simp [rootHeatAt, rootFiring, widen, atFiring, heatN]
+  · intro q member σ solved
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at member
+    rcases member with rfl | rfl
+    · exact (rootHeat_reads_mixed label C ρ o madeDistinct _ _ oReads solved).1
+    · exact (rootHeat_reads_mixed label C ρ o madeDistinct _ _ oReads solved).2
   · unfold rootBagProcess
     simpa [List.map_append] using bagEq_pPar_heat (pre.map Prod.snd) (post.map Prod.snd) a b
   · unfold rootPartsBag
@@ -716,32 +724,18 @@ theorem rootCells_clear {label : O → Pattern} {C : Configuration Pattern O}
       BagEq (rootBagProcess (pre ++ post))
         (rootBagProcess (pre ++ (o, pZero) :: post)) ∧
       rootPartsBag (pre ++ post) = rootPartsBag (pre ++ (o, pZero) :: post) := by
-  have permOld : ((pre ++ (o, pZero) :: post).map Prod.fst).Perm
-      (o :: (pre ++ post).map Prod.fst) := by
-    simp only [List.map_append, List.map_cons]; exact List.perm_middle
-  obtain ⟨oOut, restNodup⟩ := List.nodup_cons.mp (permOld.nodup_iff.mp inv.nodup)
-  have restInOld : ∀ q ∈ pre ++ post, q ∈ pre ++ (o, pZero) :: post := fun q m =>
-    (List.mem_append.mp m).elim (List.mem_append_left _)
-      (fun r => List.mem_append_right _ (List.mem_cons_of_mem _ r))
-  refine ⟨⟨restNodup, fun q qIn => ?_, fun x xPres xNotRest σ solved y same => ?_⟩, ?_, ?_⟩
-  · have qOld := restInOld q qIn
-    have neO : q.1 ≠ o := fun eqO => oOut (eqO ▸ List.mem_map.mpr ⟨q, qIn, rfl⟩)
-    refine ⟨(result_present _ q.1).mpr (.inl ⟨(inv.rows q qOld).1, by
-      simp [rootClearAt, rootFiring, widen, atFiring, clearN, neO]⟩), fun σ solved => ?_⟩
-    rw [result_label_old _ (by simp [rootClearAt, rootFiring, widen, atFiring, clearN])]
-    exact (inv.rows q qOld).2 σ (info_known _ solved)
-  · rcases result_row xPres with made | ⟨old, notTaken, -, labelOld⟩
-    · simp [rootClearAt, rootFiring, widen, atFiring, clearN] at made
-    · rw [labelOld] at same
-      have neO : x ≠ o := fun eqO => notTaken (by
-        simp [rootClearAt, rootFiring, widen, atFiring, clearN, eqO])
-      refine inv.others x old (fun inOld => ?_) σ (info_known _ solved) y same
-      rcases List.mem_cons.mp (permOld.subset inOld) with rfl | inRest
-      · exact neO rfl
-      · exact xNotRest inRest
+  refine ⟨inv.replace_by_firing (rootClearAt ρ o)
+    (removed := [(o, pZero)]) (kept := pre ++ post) (inserted := []) (after := pre ++ post)
+    List.perm_middle (List.Perm.refl _) ?_ rfl (by simp [rootClearAt, rootFiring, widen, atFiring, clearN])
+    ?_ (fun _ h => h) (fun _ member => (List.not_mem_nil member).elim), ?_, ?_⟩
+  · intro id _
+    simp [rootClearAt, rootFiring, widen, atFiring, clearN]
+  · intro id member
+    simp [rootClearAt, rootFiring, widen, atFiring, clearN] at member
   · unfold rootBagProcess
     simpa [List.map_append] using bagEq_pPar_clear (pre.map Prod.snd) (post.map Prod.snd)
-  · unfold rootPartsBag; simp [List.flatMap_append, FiniteProgram.parts_pZero]
+  · unfold rootPartsBag
+    simp [List.flatMap_append, FiniteProgram.parts_pZero]
 
 /-- **Backward reflection of any admitted `rootClearAt` firing** on `RootTerm` `RootCells`. -/
 theorem rootCells_clear_reflects {label : O → Pattern} {C : Configuration Pattern O}
@@ -808,74 +802,19 @@ theorem rootCells_replace_comm_under {label : O → Pattern} {C : Configuration 
     RootCells (res label C (rootCommAt ρ first second m₁ m₂)).label
       ⟨K, (resConf label C (rootCommAt ρ first second m₁ m₂)).present⟩
       ((pre ++ mid ++ post) ++ [(m₁, A'), (m₂, B')]) := by
-  obtain ⟨_, shapes, enabled, -⟩ := (RuleSyntax.admits_iff _).mp admitted
-  have madeDistinct : m₁ ≠ m₂ := by
-    simpa [rootCommAt, rootFiring, widen, atFiring, commAtN, commSelection] using shapes.2.1
-  have freshMade : m₁ ∉ C.present ∧ m₂ ∉ C.present := by
-    simpa [rootCommAt, rootFiring, widen, atFiring, commAtN, commSelection, Selection.commit,
-      embed] using enabled.fresh
-  have permOld : ((pre ++ (first, p₁) :: (mid ++ (second, p₂) :: post)).map Prod.fst).Perm
-      (first :: second :: (pre ++ mid ++ post).map Prod.fst) := by
-    simp only [List.map_append, List.map_cons]
-    exact List.perm_middle.trans
+  refine inv.replace_by_firing (rootCommAt ρ first second m₁ m₂)
+    (removed := [(first, p₁), (second, p₂)]) (kept := pre ++ mid ++ post)
+    (inserted := [(m₁, A'), (m₂, B')]) ?_ List.perm_append_comm ?_ rfl
+    (((RuleSyntax.admits_iff _).mp admitted).2.1.2.1) (fun _ h => made_not_present admitted h) refines ?_
+  · exact List.perm_middle.trans
       (List.Perm.cons _ (by rw [← List.append_assoc]; exact List.perm_middle))
-  obtain ⟨firstOut, ndFront⟩ := List.nodup_cons.mp (permOld.nodup_iff.mp inv.nodup)
-  obtain ⟨secondOut, restNd⟩ := List.nodup_cons.mp ndFront
-  have restInOld : ∀ q ∈ pre ++ mid ++ post,
-      q ∈ pre ++ (first, p₁) :: (mid ++ (second, p₂) :: post) := by
-    intro q m; simp only [List.mem_append, List.mem_cons] at m ⊢
-    rcases m with (h | h) | h
-    · exact .inl h
-    · exact .inr (.inr (.inl h))
-    · exact .inr (.inr (.inr (.inr h)))
-  have nodupNew : (((pre ++ mid ++ post) ++ [(m₁, A'), (m₂, B')]).map Prod.fst).Nodup := by
-    rw [List.map_append, List.nodup_append]
-    refine ⟨restNd, by simp [madeDistinct], fun a inRest b inMade ab => ?_⟩
-    obtain ⟨q, qIn, rfl⟩ := List.mem_map.mp inRest
-    have qPres := (inv.rows q (restInOld q qIn)).1
-    simp only [List.map_cons, List.map_nil, List.mem_cons, List.not_mem_nil, or_false] at inMade
-    rcases inMade with rfl | rfl
-    · exact freshMade.1 (ab ▸ qPres)
-    · exact freshMade.2 (ab ▸ qPres)
-  refine ⟨nodupNew, fun q qIn => ?_, fun x xPres xNotNew σ solved y same => ?_⟩
-  · rcases List.mem_append.mp qIn with inRest | inMade
-    · have qOld := restInOld q inRest
-      have qPres := (inv.rows q qOld).1
-      have neF : q.1 ≠ first := fun e =>
-        firstOut (e ▸ List.mem_cons.mpr (.inr (List.mem_map.mpr ⟨q, inRest, rfl⟩)))
-      have neS : q.1 ≠ second := fun e => secondOut (e ▸ List.mem_map.mpr ⟨q, inRest, rfl⟩)
-      have ne₁ : q.1 ≠ m₁ := fun e => freshMade.1 (e ▸ qPres)
-      have ne₂ : q.1 ≠ m₂ := fun e => freshMade.2 (e ▸ qPres)
-      refine ⟨(result_present _ q.1).mpr (.inl ⟨qPres, by
-        simp [rootCommAt, rootFiring, widen, atFiring, commAtN, commSelection, neF, neS]⟩),
-        fun σ solved => ?_⟩
-      rw [result_label_old _ (by
-        simp [rootCommAt, rootFiring, widen, atFiring, commAtN, commSelection, ne₁, ne₂])]
-      exact (inv.rows q qOld).2 σ (info_known _ (refines σ solved))
-    · simp only [List.mem_cons, List.not_mem_nil, or_false] at inMade
-      rcases inMade with rfl | rfl
-      · exact ⟨(result_present _ m₁).mpr (.inr (by
-          simp [rootCommAt, rootFiring, widen, atFiring, commAtN, commSelection])),
-          fun σ s => (madeReads σ s).1⟩
-      · exact ⟨(result_present _ m₂).mpr (.inr (by
-          simp [rootCommAt, rootFiring, widen, atFiring, commAtN, commSelection])),
-          fun σ s => (madeReads σ s).2⟩
-  · rcases result_row xPres with made | ⟨old, notTaken, -, labelOld⟩
-    · simp only [rootCommAt, rootFiring, widen, atFiring, commAtN, commSelection,
-        List.mem_cons, List.not_mem_nil, or_false] at made
-      rcases made with rfl | rfl <;> exact xNotNew (by simp)
-    · rw [labelOld] at same
-      have neF : x ≠ first := fun e => notTaken (by
-        simp [rootCommAt, rootFiring, widen, atFiring, commAtN, commSelection, e])
-      have neS : x ≠ second := fun e => notTaken (by
-        simp [rootCommAt, rootFiring, widen, atFiring, commAtN, commSelection, e])
-      refine inv.others x old (fun inOld => ?_) σ (info_known _ (refines σ solved)) y same
-      have inPerm := permOld.subset inOld
-      simp only [List.mem_cons] at inPerm
-      rcases inPerm with rfl | rfl | inRest
-      · exact neF rfl
-      · exact neS rfl
-      · exact xNotNew (by rw [List.map_append]; exact List.mem_append_left _ inRest)
+  · intro id _
+    simp [rootCommAt, rootFiring, widen, atFiring, commAtN, commSelection]
+  · intro q member σ solved
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at member
+    rcases member with rfl | rfl
+    · exact (madeReads σ solved).1
+    · exact (madeReads σ solved).2
 
 theorem rootCells_replace_comm {label : O → Pattern} {C : Configuration Pattern O}
     {pre mid post : List (O × Pattern)} {first second m₁ m₂ : O} {p₁ p₂ A' B' : Pattern}
@@ -1181,60 +1120,27 @@ theorem rootCells_closeRoot_of_enabled {label : O → Pattern} {C : Configuratio
     RootCells (res label C (closeRootAt ρ reflOcc d made)).label
         (resConf label C (closeRootAt ρ reflOcc d made))
         (pre ++ (made, listenerTerm) :: post) := by
-  have madeFresh : made ∉ C.present := fun inC =>
-    Finset.disjoint_left.mp enabled.fresh (by simp [closeRootAt, Selection.commit]) inC
-  have permOld : ((pre ++ (reflOcc, pReflect x P_sub) :: post).map Prod.fst).Perm
-      (reflOcc :: (pre ++ post).map Prod.fst) := by
-    simp only [List.map_append, List.map_cons]; exact List.perm_middle
-  obtain ⟨rOut, restNodup⟩ := List.nodup_cons.mp (permOld.nodup_iff.mp inv.nodup)
-  have permNew : ((pre ++ (made, listenerTerm) :: post).map Prod.fst).Perm
-      (made :: (pre ++ post).map Prod.fst) := by
-    simp only [List.map_append, List.map_cons]; exact List.perm_middle
-  have restInOld : ∀ q ∈ pre ++ post, q ∈ pre ++ (reflOcc, pReflect x P_sub) :: post := fun q m =>
-    (List.mem_append.mp m).elim (List.mem_append_left _)
-      (fun r => List.mem_append_right _ (List.mem_cons_of_mem _ r))
   have dNotRoot : d ∉ (pre ++ (reflOcc, pReflect x P_sub) :: post).map Prod.fst := by
-    intro inOld; obtain ⟨q, qIn, eqD⟩ := List.mem_map.mp inOld
+    intro inOld
+    obtain ⟨q, member, eqD⟩ := List.mem_map.mp inOld
     obtain ⟨σ₀, s₀, l', m', c', dTok⟩ := dReads
-    have rAt := (inv.rows q qIn).2 σ₀ s₀; rw [eqD, psubst_atLoc_any] at rAt
-    exact absurd (nameLaws_heads (rAt.symm.trans dTok)) (by decide)
-  have nodupNew : ((pre ++ (made, listenerTerm) :: post).map Prod.fst).Nodup := by
-    refine permNew.nodup_iff.mpr (List.nodup_cons.mpr ⟨fun inR => ?_, restNodup⟩)
-    obtain ⟨q, qIn, eqM⟩ := List.mem_map.mp inR
-    exact madeFresh (eqM ▸ (inv.rows q (restInOld q qIn)).1)
-  have keepRest : ∀ q ∈ pre ++ post,
-      q.1 ∈ (res label C (closeRootAt ρ reflOcc d made)).present ∧
-      ∀ σ : PSubst, nameAction.Models σ (resConf label C (closeRootAt ρ reflOcc d made)).equations →
-        NameLaws (psubst σ ((res label C (closeRootAt ρ reflOcc d made)).label q.1))
-          (psubst σ (atLoc (predotU q.2) rootLoc)) := by
-    intro q qRest
-    have qOld := restInOld q qRest
-    have qPres := (inv.rows q qOld).1
-    have neR : q.1 ≠ reflOcc := fun e => rOut (e ▸ List.mem_map.mpr ⟨q, qRest, rfl⟩)
-    have neD : q.1 ≠ d := fun e => dNotRoot (e ▸ List.mem_map.mpr ⟨q, qOld, rfl⟩)
-    have neM : q.1 ≠ made := fun e => madeFresh (e ▸ qPres)
-    refine ⟨(result_present _ q.1).mpr (.inl ⟨qPres, by simp [closeRootAt, neR, neD]⟩),
-      fun σ solved => ?_⟩
-    rw [result_label_old _ (by simp [closeRootAt, neM])]
-    exact (inv.rows q qOld).2 σ (info_known _ solved)
-  refine ⟨nodupNew, fun q qIn => ?_, fun o oPres notNew σ solved y same => ?_⟩
-  · simp only [List.mem_append, List.mem_cons] at qIn
-    rcases qIn with inPre | rfl | inPost
-    · exact keepRest q (List.mem_append_left _ inPre)
-    · exact ⟨(result_present _ made).mpr (.inr (by simp [closeRootAt])), madeReads⟩
-    · exact keepRest q (List.mem_append_right _ inPost)
-  · rcases result_row oPres with isMade | ⟨old, notTaken, -, labelOld⟩
-    · simp only [closeRootAt, List.mem_singleton] at isMade; subst isMade; exact notNew (by simp)
-    · rw [labelOld] at same
-      have neR : o ≠ reflOcc := fun e => notTaken (by simp [closeRootAt, e])
-      refine inv.others o old (fun inOld => ?_) σ (info_known _ solved) y same
-      rcases List.mem_cons.mp (permOld.subset inOld) with rfl | inRest
-      · exact neR rfl
-      · obtain ⟨q, qIn, eqO⟩ := List.mem_map.mp inRest
-        apply notNew
-        rcases List.mem_append.mp qIn with l | r
-        · exact List.mem_map.mpr ⟨q, List.mem_append_left _ l, eqO⟩
-        · exact List.mem_map.mpr ⟨q, List.mem_append_right _ (List.mem_cons_of_mem _ r), eqO⟩
+    have rootRead := (inv.rows q member).2 σ₀ s₀
+    rw [eqD, psubst_atLoc_any] at rootRead
+    exact absurd (nameLaws_heads (rootRead.symm.trans dTok)) (by decide)
+  refine inv.replace_by_firing (closeRootAt ρ reflOcc d made)
+    (removed := [(reflOcc, pReflect x P_sub)]) (kept := pre ++ post)
+    (inserted := [(made, listenerTerm)]) (after := pre ++ (made, listenerTerm) :: post)
+    List.perm_middle List.perm_middle ?_ rfl
+    (by simp [closeRootAt]) ?_ (fun _ h => h) ?_
+  · intro id inRoot
+    have neD : id ≠ d := fun eq => dNotRoot (eq ▸ inRoot)
+    simp [closeRootAt, neD]
+  · intro id inMade
+    exact Finset.disjoint_left.mp enabled.fresh (by simpa [Selection.commit] using inMade)
+  · intro q member σ solved
+    rw [List.mem_singleton] at member
+    subst q
+    exact madeReads σ solved
 
 /-- A whole-store close is one instance of the same root-row replacement. -/
 theorem rootCells_closeRoot {label : O → Pattern} {C : Configuration Pattern O}

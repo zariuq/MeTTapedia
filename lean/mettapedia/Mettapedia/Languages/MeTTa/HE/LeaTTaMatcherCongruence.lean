@@ -11197,6 +11197,134 @@ private theorem exists_matchListAccRel_snoc_traceSound
   exact MatchListTraceSound.cons (hmerge := hmerge)
     hmatchSound hmergeSound MatchListTraceSound.nil
 
+private theorem singletonAssignmentTrace
+    {trace : List (String × Metta.Atom)} {seed after : Bindings}
+    {key : String} {value : Atom} {assignment : AddVarBindingRel seed key value after}
+    (provenance : AddVarBindingTraceSound trace assignment)
+    (replayed : MergeRel seed (Bindings.empty.assign key value) after) :
+    MergeTraceSound trace replayed :=
+  show MergeTraceSound trace (MergeRel.mk (.cons assignment .nil) .nil) from
+    .mk (.cons provenance .nil) .nil
+
+private theorem singletonAssignmentClosure
+    {allowed : List (String × String)} {seed after : Bindings}
+    {key : String} {value : Atom} {assignment : AddVarBindingRel seed key value after}
+    (closure : AddVarBindingEqualityClosureBoundSound allowed assignment)
+    (replayed : MergeRel seed (Bindings.empty.assign key value) after) :
+    MergeEqualityClosureBoundSound allowed replayed :=
+  show MergeEqualityClosureBoundSound allowed (MergeRel.mk (.cons assignment .nil) .nil) from
+    .mk (.cons closure .nil) .nil
+
+private theorem singletonEqualityTrace
+    {trace : List (String × Metta.Atom)} {seed after : Bindings}
+    {left right : String} {equation : AddVarEqualityRel seed left right after}
+    (provenance : AddVarEqualityTraceSound trace equation)
+    (replayed : MergeRel seed (Bindings.empty.addEquality left right) after) :
+    MergeTraceSound trace replayed :=
+  show MergeTraceSound trace (MergeRel.mk .nil (.cons equation .nil)) from
+    .mk .nil (.cons provenance .nil)
+
+private theorem singletonEqualityClosure
+    {allowed : List (String × String)} {seed after : Bindings}
+    {left right : String} {equation : AddVarEqualityRel seed left right after}
+    (closure : AddVarEqualityEqualityClosureBoundSound allowed equation)
+    (replayed : MergeRel seed (Bindings.empty.addEquality left right) after) :
+    MergeEqualityClosureBoundSound allowed replayed :=
+  show MergeEqualityClosureBoundSound allowed (MergeRel.mk .nil (.cons equation .nil)) from
+    .mk .nil (.cons closure .nil)
+
+/-- Replay a certified merge and preserve its exact result. Both side
+conditions refer to the merge derivation that establishes that result. -/
+private theorem certifyLiveMerge
+    {trace : List (String × Metta.Atom)} {allowed : List (String × String)}
+    {seed right after : Bindings} (merge : MergeRel seed right after)
+    (provenance : MergeTraceSound trace merge)
+    (closure : MergeEqualityClosureBoundSound allowed merge) :
+    ∃ run : HELiveMergeCertified trace allowed seed right, run.after = after := by
+  obtain ⟨fuel, found⟩ := mergeBindings_complete merge
+  exact ⟨⟨after, fuel, found, provenance, closure⟩, rfl⟩
+
+/-- A singleton assignment runs one assignment step and an empty equality
+phase. The assignment supplies its trace and closure certificates. -/
+private theorem certifyLiveAssignment
+    {trace : List (String × Metta.Atom)} {allowed : List (String × String)}
+    {seed after : Bindings} {key : String} {value : Atom}
+    (assignment : AddVarBindingRel seed key value after)
+    (provenance : AddVarBindingTraceSound trace assignment)
+    (closure : AddVarBindingEqualityClosureBoundSound allowed assignment) :
+    ∃ run : HELiveMergeCertified trace allowed seed (Bindings.empty.assign key value),
+      run.after = after := by
+  let merge : MergeRel seed (Bindings.empty.assign key value) after :=
+    .mk (.cons assignment .nil) .nil
+  exact certifyLiveMerge merge (singletonAssignmentTrace provenance merge)
+    (singletonAssignmentClosure closure merge)
+
+/-- A singleton equation runs one equality step after the empty assignment
+phase. Its closure certificate accounts for the requested edge. -/
+private theorem certifyLiveEquality
+    {trace : List (String × Metta.Atom)} {allowed : List (String × String)}
+    {seed after : Bindings} {left right : String}
+    (equation : AddVarEqualityRel seed left right after)
+    (provenance : AddVarEqualityTraceSound trace equation)
+    (closure : AddVarEqualityEqualityClosureBoundSound allowed equation) :
+    ∃ run : HELiveMergeCertified trace allowed seed (Bindings.empty.addEquality left right),
+      run.after = after := by
+  let merge : MergeRel seed (Bindings.empty.addEquality left right) after :=
+    .mk .nil (.cons equation .nil)
+  exact certifyLiveMerge merge (singletonEqualityTrace provenance merge)
+    (singletonEqualityClosure closure merge)
+
+/-- Attach agreement with the Robinson state to the same evaluated merge. -/
+private def addLiveMergeCongruence
+    {trace : List (String × Metta.Atom)} {allowed : List (String × String)}
+    {seed right : Bindings} {subst : Metta.Subst}
+    (run : HELiveMergeCertified trace allowed seed right)
+    (agreement : LeaBindingCongruence run.after (Metta.Bindings.ofSubst subst)) :
+    HELiveMergeCongruentCertified trace allowed seed right subst :=
+  ⟨run.after, run.mergeFuel, run.merge_mem, run.traceSound, run.equalitySound, agreement⟩
+
+example :
+    ∃ run : HELiveMergeCertified [] [("x", "y")] Bindings.empty
+        (Bindings.empty.addEquality "x" "y"),
+      run.after = Bindings.empty.addEquality "x" "y" := by
+  have consistent : Bindings.valuesConsistent
+      ((Bindings.empty.addEquality "x" "y").classValues "x") = true := by decide
+  have edge : (EqualityClosure.edgeGraph [("x", "y")]).Adj "x" "y" := by
+    simp [EqualityClosure.edgeGraph_adj_iff]
+  exact certifyLiveEquality (.consistent consistent)
+    (.consistent (hconsistent := consistent))
+    (.consistent (hconsistent := consistent) edge.reachable)
+
+example :
+    ¬ ∃ run : HELiveMergeCertified [] [] Bindings.empty
+        (Bindings.empty.addEquality "x" "y"),
+      run.after = Bindings.empty.addEquality "x" "y" := by
+  rintro ⟨run, reached⟩
+  have bound := run.equalitySound.preserves (HEEqualityClosureBound.empty [])
+  rw [reached] at bound
+  have edge := bound.edge (left := "x") (right := "y") (by decide)
+  have eqOfWalk : ∀ {start finish : String},
+      (EqualityClosure.edgeGraph []).Walk start finish → start = finish := by
+    intro start finish walk
+    cases walk with
+    | nil => rfl
+    | cons adj _ => simp [EqualityClosure.edgeGraph_adj_iff] at adj
+  obtain ⟨walk⟩ := edge
+  exact (by decide : "x" ≠ "y") (eqOfWalk walk)
+
+
+private theorem certifySameLiveAssignment
+    {trace : List (String × Metta.Atom)} {allowed : List (String × String)}
+    {seed : Bindings} {key : String} {value first : Atom} {rest : List Atom}
+    (hclass : seed.classValues key = first :: rest)
+    (hconsistent : Bindings.valuesConsistent (first :: rest) = true)
+    (hsame : first = value) :
+    ∃ run : HELiveMergeCertified trace allowed seed (Bindings.empty.assign key value),
+      run.after = seed :=
+  certifyLiveAssignment (.same hclass hconsistent hsame)
+    (.same (hclass := hclass) (hconsistent := hconsistent) (hsame := hsame))
+    (.same (hclass := hclass) (hconsistent := hconsistent) (hsame := hsame))
+
 /-- A singleton fresh-assignment merge has a local certificate relative to
 any ambient reconciliation trace. -/
 private theorem mergeBindings_freshSingleton_traceSound
@@ -11206,37 +11334,7 @@ private theorem mergeBindings_freshSingleton_traceSound
     (hmerge : b.assign key value ∈
       mergeBindings b (Bindings.empty.assign key value) fuel) :
     MergeTraceSound certificateTrace (mergeBindings_sound hmerge) := by
-  have hrightRecord : Bindings.empty.assign key value =
-      (⟨[(key, value)], []⟩ : Bindings) := by
-    simp [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup]
-  let hadd : AddVarBindingRel b key value (b.assign key value) :=
-    AddVarBindingRel.fresh hclass
-  let hassignments : MergeAssignsRel b [(key, value)]
-      (b.assign key value) :=
-    MergeAssignsRel.cons hadd
-      (MergeAssignsRel.nil (acc := b.assign key value))
-  let hequalities : MergeEqsRel (b.assign key value) []
-      (b.assign key value) :=
-    MergeEqsRel.nil (acc := b.assign key value)
-  let hrel : MergeRel b ⟨[(key, value)], []⟩
-      (b.assign key value) := MergeRel.mk hassignments hequalities
-  have hsound : MergeTraceSound certificateTrace hrel := by
-    apply MergeTraceSound.mk
-    · exact MergeAssignsTraceSound.cons
-        (AddVarBindingTraceSound.fresh (hclass := hclass))
-        MergeAssignsTraceSound.nil
-    · exact MergeEqsTraceSound.nil
-  obtain ⟨hrelActual, hsoundActual⟩ :
-      ∃ hrelActual : MergeRel b (Bindings.empty.assign key value)
-          (b.assign key value),
-        MergeTraceSound certificateTrace hrelActual := by
-    simpa only [hrightRecord] using
-      (show ∃ hrelRaw : MergeRel b ⟨[(key, value)], []⟩
-          (b.assign key value),
-        MergeTraceSound certificateTrace hrelRaw from ⟨hrel, hsound⟩)
-  simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrelActual]
-    using hsoundActual
+  exact singletonAssignmentTrace (.fresh (hclass := hclass)) (mergeBindings_sound hmerge)
 
 /-- A singleton consistent-equality merge likewise has a local certificate
 relative to any ambient reconciliation trace. -/
@@ -11248,37 +11346,7 @@ private theorem mergeBindings_consistentSingleton_traceSound
     (hmerge : b.addEquality left right ∈
       mergeBindings b (Bindings.empty.addEquality left right) fuel) :
     MergeTraceSound certificateTrace (mergeBindings_sound hmerge) := by
-  have hrightRecord : Bindings.empty.addEquality left right =
-      (⟨[], [(left, right)]⟩ : Bindings) := by
-    simp [Bindings.empty, Bindings.addEquality]
-  let hadd : AddVarEqualityRel b left right
-      (b.addEquality left right) :=
-    AddVarEqualityRel.consistent hconsistent
-  let hassignments : MergeAssignsRel b [] b :=
-    MergeAssignsRel.nil (acc := b)
-  let hequalities : MergeEqsRel b [(left, right)]
-      (b.addEquality left right) :=
-    MergeEqsRel.cons hadd
-      (MergeEqsRel.nil (acc := b.addEquality left right))
-  let hrel : MergeRel b ⟨[], [(left, right)]⟩
-      (b.addEquality left right) := MergeRel.mk hassignments hequalities
-  have hsound : MergeTraceSound certificateTrace hrel := by
-    apply MergeTraceSound.mk
-    · exact MergeAssignsTraceSound.nil
-    · exact MergeEqsTraceSound.cons
-        (AddVarEqualityTraceSound.consistent
-          (hconsistent := hconsistent))
-        MergeEqsTraceSound.nil
-  obtain ⟨hrelActual, hsoundActual⟩ :
-      ∃ hrelActual : MergeRel b (Bindings.empty.addEquality left right)
-          (b.addEquality left right),
-        MergeTraceSound certificateTrace hrelActual := by
-    simpa only [hrightRecord] using
-      (show ∃ hrelRaw : MergeRel b ⟨[], [(left, right)]⟩
-          (b.addEquality left right),
-        MergeTraceSound certificateTrace hrelRaw from ⟨hrel, hsound⟩)
-  simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrelActual]
-    using hsoundActual
+  exact singletonEqualityTrace (.consistent (hconsistent := hconsistent)) (mergeBindings_sound hmerge)
 
 /-- The fresh singleton merge also has the equality-closure certificate for
 every allowed graph: assigning a non-variable introduces no alias edge. -/
@@ -11290,39 +11358,7 @@ private theorem mergeBindings_freshSingleton_equalityClosureBoundSound
       mergeBindings b (Bindings.empty.assign key value) fuel) :
     MergeEqualityClosureBoundSound allowed
       (mergeBindings_sound hmerge) := by
-  have hrightRecord : Bindings.empty.assign key value =
-      (⟨[(key, value)], []⟩ : Bindings) := by
-    simp [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup]
-  let hadd : AddVarBindingRel b key value (b.assign key value) :=
-    AddVarBindingRel.fresh hclass
-  let hassignments : MergeAssignsRel b [(key, value)]
-      (b.assign key value) :=
-    MergeAssignsRel.cons hadd
-      (MergeAssignsRel.nil (acc := b.assign key value))
-  let hequalities : MergeEqsRel (b.assign key value) []
-      (b.assign key value) :=
-    MergeEqsRel.nil (acc := b.assign key value)
-  let hrel : MergeRel b ⟨[(key, value)], []⟩
-      (b.assign key value) := MergeRel.mk hassignments hequalities
-  have hsound : MergeEqualityClosureBoundSound allowed hrel := by
-    apply MergeEqualityClosureBoundSound.mk
-    · exact MergeAssignsEqualityClosureBoundSound.cons
-        (AddVarBindingEqualityClosureBoundSound.fresh
-          (hclass := hclass))
-        MergeAssignsEqualityClosureBoundSound.nil
-    · exact MergeEqsEqualityClosureBoundSound.nil
-  obtain ⟨hrelActual, hsoundActual⟩ :
-      ∃ hrelActual : MergeRel b (Bindings.empty.assign key value)
-          (b.assign key value),
-        MergeEqualityClosureBoundSound allowed hrelActual := by
-    simpa only [hrightRecord] using
-      (show ∃ hrelRaw : MergeRel b ⟨[(key, value)], []⟩
-          (b.assign key value),
-        MergeEqualityClosureBoundSound allowed hrelRaw from
-          ⟨hrel, hsound⟩)
-  simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrelActual]
-    using hsoundActual
+  exact singletonAssignmentClosure (.fresh (hclass := hclass)) (mergeBindings_sound hmerge)
 
 /-- A consistent singleton alias merge has the corresponding local equality
 certificate whenever the requested connection is already reachable in the
@@ -11338,39 +11374,7 @@ private theorem mergeBindings_consistentSingleton_equalityClosureBoundSound
       mergeBindings b (Bindings.empty.addEquality left right) fuel) :
     MergeEqualityClosureBoundSound allowed
       (mergeBindings_sound hmerge) := by
-  have hrightRecord : Bindings.empty.addEquality left right =
-      (⟨[], [(left, right)]⟩ : Bindings) := by
-    simp [Bindings.empty, Bindings.addEquality]
-  let hadd : AddVarEqualityRel b left right
-      (b.addEquality left right) :=
-    AddVarEqualityRel.consistent hconsistent
-  let hassignments : MergeAssignsRel b [] b :=
-    MergeAssignsRel.nil (acc := b)
-  let hequalities : MergeEqsRel b [(left, right)]
-      (b.addEquality left right) :=
-    MergeEqsRel.cons hadd
-      (MergeEqsRel.nil (acc := b.addEquality left right))
-  let hrel : MergeRel b ⟨[], [(left, right)]⟩
-      (b.addEquality left right) := MergeRel.mk hassignments hequalities
-  have hsound : MergeEqualityClosureBoundSound allowed hrel := by
-    apply MergeEqualityClosureBoundSound.mk
-    · exact MergeAssignsEqualityClosureBoundSound.nil
-    · exact MergeEqsEqualityClosureBoundSound.cons
-        (AddVarEqualityEqualityClosureBoundSound.consistent
-          (hconsistent := hconsistent) hallowed)
-        MergeEqsEqualityClosureBoundSound.nil
-  obtain ⟨hrelActual, hsoundActual⟩ :
-      ∃ hrelActual : MergeRel b
-          (Bindings.empty.addEquality left right)
-          (b.addEquality left right),
-        MergeEqualityClosureBoundSound allowed hrelActual := by
-    simpa only [hrightRecord] using
-      (show ∃ hrelRaw : MergeRel b ⟨[], [(left, right)]⟩
-          (b.addEquality left right),
-        MergeEqualityClosureBoundSound allowed hrelRaw from
-          ⟨hrel, hsound⟩)
-  simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrelActual]
-    using hsoundActual
+  exact singletonEqualityClosure (.consistent (hconsistent := hconsistent) hallowed) (mergeBindings_sound hmerge)
 
 /-- Operational fresh-assignment singleton merge, retaining exactly the two
 derivation-local certificates and no cross-engine presentation claim. -/
@@ -11406,50 +11410,9 @@ theorem HELiveMergeCertified.exists_sameAssignment
     (hsame : first = value) :
     Nonempty (HELiveMergeCertified trace allowed seed
       (Bindings.empty.assign key value)) := by
-  let hadd : AddVarBindingRel seed key value seed :=
-    AddVarBindingRel.same hclass hconsistent hsame
-  let hassignments : MergeAssignsRel seed [(key, value)] seed :=
-    MergeAssignsRel.cons hadd (MergeAssignsRel.nil (acc := seed))
-  let hraw : MergeRel seed (⟨[(key, value)], []⟩ : Bindings) seed :=
-    MergeRel.mk hassignments (MergeEqsRel.nil (acc := seed))
-  have hright : Bindings.empty.assign key value =
-      (⟨[(key, value)], []⟩ : Bindings) := by
-    simp [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup]
-  have hrel : MergeRel seed (Bindings.empty.assign key value) seed := by
-    simpa only [hright] using hraw
-  let hrawTrace : MergeTraceSound trace hraw :=
-    MergeTraceSound.mk
-      (MergeAssignsTraceSound.cons
-        (AddVarBindingTraceSound.same
-          (hclass := hclass) (hconsistent := hconsistent) (hsame := hsame))
-        MergeAssignsTraceSound.nil)
-      MergeEqsTraceSound.nil
-  let hrawBound : MergeEqualityClosureBoundSound allowed hraw :=
-    MergeEqualityClosureBoundSound.mk
-      (MergeAssignsEqualityClosureBoundSound.cons
-        (AddVarBindingEqualityClosureBoundSound.same
-          (hclass := hclass) (hconsistent := hconsistent) (hsame := hsame))
-        MergeAssignsEqualityClosureBoundSound.nil)
-      MergeEqsEqualityClosureBoundSound.nil
-  have htrace : MergeTraceSound trace hrel := by
-    simpa [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup, Subsingleton.elim hraw hrel] using hrawTrace
-  have hbound : MergeEqualityClosureBoundSound allowed hrel := by
-    simpa [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup, Subsingleton.elim hraw hrel] using hrawBound
-  obtain ⟨mergeFuel, hmerge⟩ := mergeBindings_complete hrel
-  exact ⟨{
-    after := seed
-    mergeFuel := mergeFuel
-    merge_mem := hmerge
-    traceSound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel] using
-        htrace
-    equalitySound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel] using
-        hbound
-  }⟩
+  obtain ⟨run, _⟩ := certifySameLiveAssignment
+    (trace := trace) (allowed := allowed) hclass hconsistent hsame
+  exact ⟨run⟩
 
 /-- Operational consistent singleton equality merge. -/
 theorem HELiveMergeCertified.exists_consistentEquality
@@ -11536,53 +11499,12 @@ theorem HELiveMergeCongruentCertified.exists_sameAssignment
       Metta.Bindings.ofSubst beforeSubst) :
     Nonempty (HELiveMergeCongruentCertified trace allowed seed
       (Bindings.empty.assign key value) resultSubst) := by
-  let hadd : AddVarBindingRel seed key value seed :=
-    AddVarBindingRel.same hclass hconsistent hsame
-  let hassignments : MergeAssignsRel seed [(key, value)] seed :=
-    MergeAssignsRel.cons hadd (MergeAssignsRel.nil (acc := seed))
-  let hequalities : MergeEqsRel seed [] seed :=
-    MergeEqsRel.nil (acc := seed)
-  let hraw : MergeRel seed (⟨[(key, value)], []⟩ : Bindings) seed :=
-    MergeRel.mk hassignments hequalities
-  have hrel : MergeRel seed (Bindings.empty.assign key value) seed := by
-    simpa [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup] using hraw
-  let haddTrace : AddVarBindingTraceSound trace hadd :=
-    AddVarBindingTraceSound.same
-      (hclass := hclass) (hconsistent := hconsistent) (hsame := hsame)
-  let hrawTrace : MergeTraceSound trace hraw :=
-    MergeTraceSound.mk
-      (MergeAssignsTraceSound.cons haddTrace MergeAssignsTraceSound.nil)
-      MergeEqsTraceSound.nil
-  have htrace : MergeTraceSound trace hrel := by
-    simpa [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup, Subsingleton.elim hraw hrel] using hrawTrace
-  let haddBound : AddVarBindingEqualityClosureBoundSound allowed hadd :=
-    AddVarBindingEqualityClosureBoundSound.same
-      (hclass := hclass) (hconsistent := hconsistent) (hsame := hsame)
-  let hrawBound : MergeEqualityClosureBoundSound allowed hraw :=
-    MergeEqualityClosureBoundSound.mk
-      (MergeAssignsEqualityClosureBoundSound.cons haddBound
-        MergeAssignsEqualityClosureBoundSound.nil)
-      MergeEqsEqualityClosureBoundSound.nil
-  have hbound : MergeEqualityClosureBoundSound allowed hrel := by
-    simpa [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup, Subsingleton.elim hraw hrel] using hrawBound
-  obtain ⟨mergeFuel, hmerge⟩ := mergeBindings_complete hrel
-  exact ⟨{
-    after := seed
-    mergeFuel := mergeFuel
-    merge_mem := hmerge
-    traceSound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel] using
-        htrace
-    equalitySound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel] using
-        hbound
-    congruence := by
-      rw [hresult]
-      exact hseed
-  }⟩
+  obtain ⟨run, reached⟩ := certifySameLiveAssignment
+    (trace := trace) (allowed := allowed) hclass hconsistent hsame
+  have congruence : LeaBindingCongruence run.after (Metta.Bindings.ofSubst resultSubst) := by
+    rw [reached, hresult]
+    exact hseed
+  exact ⟨addLiveMergeCongruence run congruence⟩
 
 /-- Consistent insertion of one variable equality into a live accumulator.
 The HE and repaired-LeaTTa records retain opposite raw edge orientations, so
@@ -11686,82 +11608,6 @@ theorem HELiveMergeCongruentCertified.exists_reflexiveEquality
   · rw [EqualityClosure.mem_eqClass_iff_reachable]
   · exact .rfl
 
-/-- Close one recursive `addVarBinding` value-conflict branch.  The inner
-atom matcher and its live merge are retained verbatim; this theorem only
-wraps them in the enclosing singleton-assignment fold selected by HE. -/
-theorem HELiveMatchMergeCongruentCertified.toAssignmentConflictMerge
-    {trace : List (String × Metta.Atom)}
-    {allowed : List (String × String)} {seed : Bindings}
-    {subst : Metta.Subst} {key : String} {value first : Atom}
-    {rest : List Atom}
-    (h : HELiveMatchMergeCongruentCertified
-      trace allowed first value seed subst)
-    (hclass : seed.classValues key = first :: rest)
-    (hconsistent : Bindings.valuesConsistent (first :: rest) = true)
-    (hdifferent : first ≠ value) :
-    Nonempty (HELiveMergeCongruentCertified trace allowed seed
-      (Bindings.empty.assign key value) subst) := by
-  let hmatch : DeclMatchSpec.MatchRel first value h.matched :=
-    DeclMatchSpec.matchAtoms_sound h.match_mem
-  let hrecursive : MergeRel seed h.matched h.after :=
-    mergeBindings_sound h.merge_mem
-  let hadd : AddVarBindingRel seed key value h.after :=
-    AddVarBindingRel.conflict hclass hconsistent hdifferent
-      hmatch hrecursive
-  let hassignments : MergeAssignsRel seed [(key, value)] h.after :=
-    MergeAssignsRel.cons hadd (MergeAssignsRel.nil (acc := h.after))
-  let hequalities : MergeEqsRel h.after [] h.after :=
-    MergeEqsRel.nil (acc := h.after)
-  let hraw : MergeRel seed (⟨[(key, value)], []⟩ : Bindings) h.after :=
-    MergeRel.mk hassignments hequalities
-  have hright : Bindings.empty.assign key value =
-      (⟨[(key, value)], []⟩ : Bindings) := by
-    simp [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup]
-  have hrel : MergeRel seed (Bindings.empty.assign key value) h.after := by
-    simpa only [hright] using hraw
-  have htrace : MergeTraceSound trace hrel := by
-    let haddSound : AddVarBindingTraceSound trace hadd :=
-      AddVarBindingTraceSound.conflict
-        (hclass := hclass) (hconsistent := hconsistent)
-        (hdifferent := hdifferent) (hmatch := hmatch)
-        (hmerge := hrecursive) h.matchedAssignmentsSound h.mergeTraceSound
-    let hrawSound : MergeTraceSound trace hraw :=
-      MergeTraceSound.mk
-        (MergeAssignsTraceSound.cons haddSound
-          MergeAssignsTraceSound.nil)
-        MergeEqsTraceSound.nil
-    simpa [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup, Subsingleton.elim hraw hrel] using hrawSound
-  have hbound : MergeEqualityClosureBoundSound allowed hrel := by
-    let haddBound : AddVarBindingEqualityClosureBoundSound allowed hadd :=
-      AddVarBindingEqualityClosureBoundSound.conflict
-        (hclass := hclass) (hconsistent := hconsistent)
-        (hdifferent := hdifferent) (hmatch := hmatch)
-        (hmerge := hrecursive)
-        h.matchEqualityClosureBoundSound.bound
-        h.mergeEqualityClosureBoundSound
-    let hrawBound : MergeEqualityClosureBoundSound allowed hraw :=
-      MergeEqualityClosureBoundSound.mk
-        (MergeAssignsEqualityClosureBoundSound.cons haddBound
-          MergeAssignsEqualityClosureBoundSound.nil)
-        MergeEqsEqualityClosureBoundSound.nil
-    simpa [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup, Subsingleton.elim hraw hrel] using hrawBound
-  obtain ⟨mergeFuel, hmerge⟩ := mergeBindings_complete hrel
-  exact ⟨{
-    after := h.after
-    mergeFuel := mergeFuel
-    merge_mem := hmerge
-    traceSound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel] using
-        htrace
-    equalitySound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel] using
-        hbound
-    congruence := h.congruence
-  }⟩
-
 /-- Operational core of the assignment-conflict wrapper.  It retains the
 original recursive matcher and live merge certificates but makes no semantic
 claim about the resulting accumulator. -/
@@ -11784,58 +11630,38 @@ theorem HELiveMatchMergeCertified.toAssignmentConflictMerge
   let hadd : AddVarBindingRel seed key value h.after :=
     AddVarBindingRel.conflict hclass hconsistent hdifferent
       hmatch hrecursive
-  let hassignments : MergeAssignsRel seed [(key, value)] h.after :=
-    MergeAssignsRel.cons hadd (MergeAssignsRel.nil (acc := h.after))
-  let hequalities : MergeEqsRel h.after [] h.after :=
-    MergeEqsRel.nil (acc := h.after)
-  let hraw : MergeRel seed (⟨[(key, value)], []⟩ : Bindings) h.after :=
-    MergeRel.mk hassignments hequalities
-  have hright : Bindings.empty.assign key value =
-      (⟨[(key, value)], []⟩ : Bindings) := by
-    simp [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup]
-  have hrel : MergeRel seed (Bindings.empty.assign key value) h.after := by
-    simpa only [hright] using hraw
-  have htrace : MergeTraceSound trace hrel := by
-    let haddSound : AddVarBindingTraceSound trace hadd :=
-      AddVarBindingTraceSound.conflict
-        (hclass := hclass) (hconsistent := hconsistent)
-        (hdifferent := hdifferent) (hmatch := hmatch)
-        (hmerge := hrecursive) h.matchedAssignmentsSound h.mergeTraceSound
-    let hrawSound : MergeTraceSound trace hraw :=
-      MergeTraceSound.mk
-        (MergeAssignsTraceSound.cons haddSound
-          MergeAssignsTraceSound.nil)
-        MergeEqsTraceSound.nil
-    simpa [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup, Subsingleton.elim hraw hrel] using hrawSound
-  have hbound : MergeEqualityClosureBoundSound allowed hrel := by
-    let haddBound : AddVarBindingEqualityClosureBoundSound allowed hadd :=
-      AddVarBindingEqualityClosureBoundSound.conflict
-        (hclass := hclass) (hconsistent := hconsistent)
-        (hdifferent := hdifferent) (hmatch := hmatch)
-        (hmerge := hrecursive)
-        h.matchEqualityClosureBoundSound.bound
-        h.mergeEqualityClosureBoundSound
-    let hrawBound : MergeEqualityClosureBoundSound allowed hraw :=
-      MergeEqualityClosureBoundSound.mk
-        (MergeAssignsEqualityClosureBoundSound.cons haddBound
-          MergeAssignsEqualityClosureBoundSound.nil)
-        MergeEqsEqualityClosureBoundSound.nil
-    simpa [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup, Subsingleton.elim hraw hrel] using hrawBound
-  obtain ⟨mergeFuel, hmerge⟩ := mergeBindings_complete hrel
-  exact ⟨{
-    after := h.after
-    mergeFuel := mergeFuel
-    merge_mem := hmerge
-    traceSound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel] using
-        htrace
-    equalitySound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel] using
-        hbound
-  }, rfl⟩
+  let provenance : AddVarBindingTraceSound trace hadd :=
+    AddVarBindingTraceSound.conflict
+      (hclass := hclass) (hconsistent := hconsistent)
+      (hdifferent := hdifferent) (hmatch := hmatch)
+      (hmerge := hrecursive) h.matchedAssignmentsSound h.mergeTraceSound
+  let closure : AddVarBindingEqualityClosureBoundSound allowed hadd :=
+    AddVarBindingEqualityClosureBoundSound.conflict
+      (hclass := hclass) (hconsistent := hconsistent)
+      (hdifferent := hdifferent) (hmatch := hmatch)
+      (hmerge := hrecursive)
+      h.matchEqualityClosureBoundSound.bound
+      h.mergeEqualityClosureBoundSound
+  exact certifyLiveAssignment hadd provenance closure
+
+/-- Close one recursive `addVarBinding` value-conflict branch.  The inner
+atom matcher and its live merge are retained verbatim; this theorem only
+wraps them in the enclosing singleton-assignment fold selected by HE. -/
+theorem HELiveMatchMergeCongruentCertified.toAssignmentConflictMerge
+    {trace : List (String × Metta.Atom)}
+    {allowed : List (String × String)} {seed : Bindings}
+    {subst : Metta.Subst} {key : String} {value first : Atom}
+    {rest : List Atom}
+    (h : HELiveMatchMergeCongruentCertified
+      trace allowed first value seed subst)
+    (hclass : seed.classValues key = first :: rest)
+    (hconsistent : Bindings.valuesConsistent (first :: rest) = true)
+    (hdifferent : first ≠ value) :
+    Nonempty (HELiveMergeCongruentCertified trace allowed seed
+      (Bindings.empty.assign key value) subst) := by
+  obtain ⟨run, reached⟩ := h.toSolutionCertified.toHELiveMatchMergeCertified
+    |>.toAssignmentConflictMerge hclass hconsistent hdifferent
+  exact ⟨addLiveMergeCongruence run (reached.symm ▸ h.congruence)⟩
 
 /-- Attach the independently transported solution theory to the operational
 assignment-conflict wrapper. -/
@@ -11881,135 +11707,23 @@ theorem HELiveMatchMergeCoreResidualCertified.toAssignmentConflictMergeLive
   let hadd : AddVarBindingRel seed key value h.liveMerge.after :=
     AddVarBindingRel.conflict hclass hconsistent hdifferent
       h.matcher.matchRel (mergeBindings_sound h.liveMerge.merge_mem)
-  let hassignments : MergeAssignsRel seed [(key, value)]
-      h.liveMerge.after :=
-    MergeAssignsRel.cons hadd
-      (MergeAssignsRel.nil (acc := h.liveMerge.after))
-  let hraw : MergeRel seed (⟨[(key, value)], []⟩ : Bindings)
-      h.liveMerge.after :=
-    MergeRel.mk hassignments
-      (MergeEqsRel.nil (acc := h.liveMerge.after))
-  have hright : Bindings.empty.assign key value =
-      (⟨[(key, value)], []⟩ : Bindings) := by
-    simp [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup]
-  have hrel : MergeRel seed (Bindings.empty.assign key value)
-      h.liveMerge.after := by
-    simpa only [hright] using hraw
-  have htrace : MergeTraceSound trace hrel := by
-    let haddSound : AddVarBindingTraceSound trace hadd :=
-      AddVarBindingTraceSound.conflictLive
-        (hclass := hclass) (hconsistent := hconsistent)
-        (hdifferent := hdifferent) (hmatch := h.matcher.matchRel)
-        (hmerge := mergeBindings_sound h.liveMerge.merge_mem)
-        h.afterAssignmentsSound h.liveMerge.traceSound
-    let hrawSound : MergeTraceSound trace hraw :=
-      MergeTraceSound.mk
-        (MergeAssignsTraceSound.cons haddSound
-          MergeAssignsTraceSound.nil)
-        MergeEqsTraceSound.nil
-    simpa [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup, Subsingleton.elim hraw hrel] using hrawSound
-  have hbound : MergeEqualityClosureBoundSound allowed hrel := by
-    let haddBound : AddVarBindingEqualityClosureBoundSound allowed hadd :=
-      AddVarBindingEqualityClosureBoundSound.conflict
-        (hclass := hclass) (hconsistent := hconsistent)
-        (hdifferent := hdifferent) (hmatch := h.matcher.matchRel)
-        (hmerge := mergeBindings_sound h.liveMerge.merge_mem)
-        h.matcher.equalitySound.bound h.liveMerge.equalitySound
-    let hrawBound : MergeEqualityClosureBoundSound allowed hraw :=
-      MergeEqualityClosureBoundSound.mk
-        (MergeAssignsEqualityClosureBoundSound.cons haddBound
-          MergeAssignsEqualityClosureBoundSound.nil)
-        MergeEqsEqualityClosureBoundSound.nil
-    simpa [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup, Subsingleton.elim hraw hrel] using hrawBound
-  obtain ⟨mergeFuel, hmerge⟩ := mergeBindings_complete hrel
+  let provenance : AddVarBindingTraceSound trace hadd :=
+    AddVarBindingTraceSound.conflictLive
+      (hclass := hclass) (hconsistent := hconsistent)
+      (hdifferent := hdifferent) (hmatch := h.matcher.matchRel)
+      (hmerge := mergeBindings_sound h.liveMerge.merge_mem)
+      h.afterAssignmentsSound h.liveMerge.traceSound
+  let closure : AddVarBindingEqualityClosureBoundSound allowed hadd :=
+    AddVarBindingEqualityClosureBoundSound.conflict
+      (hclass := hclass) (hconsistent := hconsistent)
+      (hdifferent := hdifferent) (hmatch := h.matcher.matchRel)
+      (hmerge := mergeBindings_sound h.liveMerge.merge_mem)
+      h.matcher.equalitySound.bound h.liveMerge.equalitySound
+  obtain ⟨run, reached⟩ := certifyLiveAssignment hadd provenance closure
   exact ⟨{
-    after := h.liveMerge.after
-    mergeFuel := mergeFuel
-    merge_mem := hmerge
-    traceSound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel]
-        using htrace
-    equalitySound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel]
-        using hbound
-    solutions := h.solutions
-  }, rfl⟩
-
-/-- Close the inconsistent-class `addVarBinding` branch.  As required by the
-HE datatype, the pointwise matcher starts from empty and its complete result
-is merged separately into the live seed; no seeded-list factorization is
-used. -/
-theorem HELiveListMatchMergeCongruentCertified.toAssignmentReconcileMerge
-    {trace : List (String × Metta.Atom)}
-    {allowed : List (String × String)} {seed : Bindings}
-    {subst : Metta.Subst} {key : String} {value first : Atom}
-    {rest : List Atom}
-    (h : HELiveListMatchMergeCongruentCertified trace allowed
-      (List.replicate (rest.length + 1) first) (rest ++ [value])
-      seed subst)
-    (hclass : seed.classValues key = first :: rest)
-    (hinconsistent : Bindings.valuesConsistent (first :: rest) = false) :
-    Nonempty (HELiveMergeCongruentCertified trace allowed seed
-      (Bindings.empty.assign key value) subst) := by
-  let hrecursive : MergeRel seed h.matched h.after :=
-    mergeBindings_sound h.merge_mem
-  let hadd : AddVarBindingRel seed key value h.after :=
-    AddVarBindingRel.reconcile hclass hinconsistent
-      h.matchRel hrecursive
-  let hassignments : MergeAssignsRel seed [(key, value)] h.after :=
-    MergeAssignsRel.cons hadd (MergeAssignsRel.nil (acc := h.after))
-  let hequalities : MergeEqsRel h.after [] h.after :=
-    MergeEqsRel.nil (acc := h.after)
-  let hraw : MergeRel seed (⟨[(key, value)], []⟩ : Bindings) h.after :=
-    MergeRel.mk hassignments hequalities
-  have hrel : MergeRel seed (Bindings.empty.assign key value) h.after := by
-    simpa [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup] using hraw
-  have htrace : MergeTraceSound trace hrel := by
-    let haddSound : AddVarBindingTraceSound trace hadd :=
-      AddVarBindingTraceSound.reconcile
-        (hclass := hclass) (hinconsistent := hinconsistent)
-        (hmatch := h.matchRel) (hmerge := hrecursive)
-        h.matchedAssignmentsSound h.mergeTraceSound
-    let hrawSound : MergeTraceSound trace hraw :=
-      MergeTraceSound.mk
-        (MergeAssignsTraceSound.cons haddSound
-          MergeAssignsTraceSound.nil)
-        MergeEqsTraceSound.nil
-    simpa [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup, Subsingleton.elim hraw hrel] using hrawSound
-  have hbound : MergeEqualityClosureBoundSound allowed hrel := by
-    have hmatchedBound : HEEqualityClosureBound h.matched allowed :=
-      h.matchEqualityClosureBoundSound.preserves
-        (HEEqualityClosureBound.empty allowed)
-    let haddBound : AddVarBindingEqualityClosureBoundSound allowed hadd :=
-      AddVarBindingEqualityClosureBoundSound.reconcile
-        (hclass := hclass) (hinconsistent := hinconsistent)
-        (hmatch := h.matchRel) (hmerge := hrecursive)
-        hmatchedBound h.mergeEqualityClosureBoundSound
-    let hrawBound : MergeEqualityClosureBoundSound allowed hraw :=
-      MergeEqualityClosureBoundSound.mk
-        (MergeAssignsEqualityClosureBoundSound.cons haddBound
-          MergeAssignsEqualityClosureBoundSound.nil)
-        MergeEqsEqualityClosureBoundSound.nil
-    simpa [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup, Subsingleton.elim hraw hrel] using hrawBound
-  obtain ⟨mergeFuel, hmerge⟩ := mergeBindings_complete hrel
-  exact ⟨{
-    after := h.after
-    mergeFuel := mergeFuel
-    merge_mem := hmerge
-    traceSound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel] using
-        htrace
-    equalitySound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel] using
-        hbound
-    congruence := h.congruence
-  }⟩
+    toHELiveMergeCertified := run
+    solutions := reached.symm ▸ h.solutions
+  }, reached⟩
 
 /-- Operational core of the inconsistent-class assignment wrapper. -/
 theorem HELiveListMatchMergeCertified.toAssignmentReconcileMerge
@@ -12028,56 +11742,40 @@ theorem HELiveListMatchMergeCertified.toAssignmentReconcileMerge
   let hadd : AddVarBindingRel seed key value h.after :=
     AddVarBindingRel.reconcile hclass hinconsistent
       h.matchRel hrecursive
-  let hassignments : MergeAssignsRel seed [(key, value)] h.after :=
-    MergeAssignsRel.cons hadd (MergeAssignsRel.nil (acc := h.after))
-  let hequalities : MergeEqsRel h.after [] h.after :=
-    MergeEqsRel.nil (acc := h.after)
-  let hraw : MergeRel seed (⟨[(key, value)], []⟩ : Bindings) h.after :=
-    MergeRel.mk hassignments hequalities
-  have hrel : MergeRel seed (Bindings.empty.assign key value) h.after := by
-    simpa [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup] using hraw
-  have htrace : MergeTraceSound trace hrel := by
-    let haddSound : AddVarBindingTraceSound trace hadd :=
-      AddVarBindingTraceSound.reconcile
-        (hclass := hclass) (hinconsistent := hinconsistent)
-        (hmatch := h.matchRel) (hmerge := hrecursive)
-        h.matchedAssignmentsSound h.mergeTraceSound
-    let hrawSound : MergeTraceSound trace hraw :=
-      MergeTraceSound.mk
-        (MergeAssignsTraceSound.cons haddSound
-          MergeAssignsTraceSound.nil)
-        MergeEqsTraceSound.nil
-    simpa [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup, Subsingleton.elim hraw hrel] using hrawSound
-  have hbound : MergeEqualityClosureBoundSound allowed hrel := by
-    have hmatchedBound : HEEqualityClosureBound h.matched allowed :=
-      h.matchEqualityClosureBoundSound.preserves
-        (HEEqualityClosureBound.empty allowed)
-    let haddBound : AddVarBindingEqualityClosureBoundSound allowed hadd :=
-      AddVarBindingEqualityClosureBoundSound.reconcile
-        (hclass := hclass) (hinconsistent := hinconsistent)
-        (hmatch := h.matchRel) (hmerge := hrecursive)
-        hmatchedBound h.mergeEqualityClosureBoundSound
-    let hrawBound : MergeEqualityClosureBoundSound allowed hraw :=
-      MergeEqualityClosureBoundSound.mk
-        (MergeAssignsEqualityClosureBoundSound.cons haddBound
-          MergeAssignsEqualityClosureBoundSound.nil)
-        MergeEqsEqualityClosureBoundSound.nil
-    simpa [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup, Subsingleton.elim hraw hrel] using hrawBound
-  obtain ⟨mergeFuel, hmerge⟩ := mergeBindings_complete hrel
-  exact ⟨{
-    after := h.after
-    mergeFuel := mergeFuel
-    merge_mem := hmerge
-    traceSound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel] using
-        htrace
-    equalitySound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel] using
-        hbound
-  }, rfl⟩
+  have hmatchedBound : HEEqualityClosureBound h.matched allowed :=
+    h.matchEqualityClosureBoundSound.preserves
+      (HEEqualityClosureBound.empty allowed)
+  let provenance : AddVarBindingTraceSound trace hadd :=
+    AddVarBindingTraceSound.reconcile
+      (hclass := hclass) (hinconsistent := hinconsistent)
+      (hmatch := h.matchRel) (hmerge := hrecursive)
+      h.matchedAssignmentsSound h.mergeTraceSound
+  let closure : AddVarBindingEqualityClosureBoundSound allowed hadd :=
+    AddVarBindingEqualityClosureBoundSound.reconcile
+      (hclass := hclass) (hinconsistent := hinconsistent)
+      (hmatch := h.matchRel) (hmerge := hrecursive)
+      hmatchedBound h.mergeEqualityClosureBoundSound
+  exact certifyLiveAssignment hadd provenance closure
+
+/-- Close the inconsistent-class `addVarBinding` branch.  As required by the
+HE datatype, the pointwise matcher starts from empty and its complete result
+is merged separately into the live seed; no seeded-list factorization is
+used. -/
+theorem HELiveListMatchMergeCongruentCertified.toAssignmentReconcileMerge
+    {trace : List (String × Metta.Atom)}
+    {allowed : List (String × String)} {seed : Bindings}
+    {subst : Metta.Subst} {key : String} {value first : Atom}
+    {rest : List Atom}
+    (h : HELiveListMatchMergeCongruentCertified trace allowed
+      (List.replicate (rest.length + 1) first) (rest ++ [value])
+      seed subst)
+    (hclass : seed.classValues key = first :: rest)
+    (hinconsistent : Bindings.valuesConsistent (first :: rest) = false) :
+    Nonempty (HELiveMergeCongruentCertified trace allowed seed
+      (Bindings.empty.assign key value) subst) := by
+  obtain ⟨run, reached⟩ := h.toSolutionCertified.toHELiveListMatchMergeCertified
+    |>.toAssignmentReconcileMerge hclass hinconsistent
+  exact ⟨addLiveMergeCongruence run (reached.symm ▸ h.congruence)⟩
 
 /-- Attach solution theory to the inconsistent-class assignment wrapper. -/
 theorem HELiveListMatchMergeSolutionCertified.toAssignmentReconcileMerge
@@ -12121,131 +11819,25 @@ theorem HELiveListMatchMergeCoreResidualCertified.toAssignmentReconcileMergeLive
   let hadd : AddVarBindingRel seed key value h.liveMerge.after :=
     AddVarBindingRel.reconcile hclass hinconsistent
       h.matcher.matchRel (mergeBindings_sound h.liveMerge.merge_mem)
-  let hassignments : MergeAssignsRel seed [(key, value)]
-      h.liveMerge.after :=
-    MergeAssignsRel.cons hadd
-      (MergeAssignsRel.nil (acc := h.liveMerge.after))
-  let hraw : MergeRel seed (⟨[(key, value)], []⟩ : Bindings)
-      h.liveMerge.after :=
-    MergeRel.mk hassignments
-      (MergeEqsRel.nil (acc := h.liveMerge.after))
-  have hrel : MergeRel seed (Bindings.empty.assign key value)
-      h.liveMerge.after := by
-    simpa [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup] using hraw
-  have htrace : MergeTraceSound trace hrel := by
-    let haddSound : AddVarBindingTraceSound trace hadd :=
-      AddVarBindingTraceSound.reconcileLive
-        (hclass := hclass) (hinconsistent := hinconsistent)
-        (hmatch := h.matcher.matchRel)
-        (hmerge := mergeBindings_sound h.liveMerge.merge_mem)
-        h.afterAssignmentsSound h.liveMerge.traceSound
-    let hrawSound : MergeTraceSound trace hraw :=
-      MergeTraceSound.mk
-        (MergeAssignsTraceSound.cons haddSound
-          MergeAssignsTraceSound.nil)
-        MergeEqsTraceSound.nil
-    simpa [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup, Subsingleton.elim hraw hrel] using hrawSound
-  have hbound : MergeEqualityClosureBoundSound allowed hrel := by
-    let haddBound : AddVarBindingEqualityClosureBoundSound allowed hadd :=
-      AddVarBindingEqualityClosureBoundSound.reconcile
-        (hclass := hclass) (hinconsistent := hinconsistent)
-        (hmatch := h.matcher.matchRel)
-        (hmerge := mergeBindings_sound h.liveMerge.merge_mem)
-        (h.matcher.equalitySound.preserves
-          (HEEqualityClosureBound.empty allowed))
-        h.liveMerge.equalitySound
-    let hrawBound : MergeEqualityClosureBoundSound allowed hraw :=
-      MergeEqualityClosureBoundSound.mk
-        (MergeAssignsEqualityClosureBoundSound.cons haddBound
-          MergeAssignsEqualityClosureBoundSound.nil)
-        MergeEqsEqualityClosureBoundSound.nil
-    simpa [Bindings.empty, Bindings.assign, Bindings.isBound,
-      Bindings.lookup, Subsingleton.elim hraw hrel] using hrawBound
-  obtain ⟨mergeFuel, hmerge⟩ := mergeBindings_complete hrel
+  let provenance : AddVarBindingTraceSound trace hadd :=
+    AddVarBindingTraceSound.reconcileLive
+      (hclass := hclass) (hinconsistent := hinconsistent)
+      (hmatch := h.matcher.matchRel)
+      (hmerge := mergeBindings_sound h.liveMerge.merge_mem)
+      h.afterAssignmentsSound h.liveMerge.traceSound
+  let closure : AddVarBindingEqualityClosureBoundSound allowed hadd :=
+    AddVarBindingEqualityClosureBoundSound.reconcile
+      (hclass := hclass) (hinconsistent := hinconsistent)
+      (hmatch := h.matcher.matchRel)
+      (hmerge := mergeBindings_sound h.liveMerge.merge_mem)
+      (h.matcher.equalitySound.preserves
+        (HEEqualityClosureBound.empty allowed))
+      h.liveMerge.equalitySound
+  obtain ⟨run, reached⟩ := certifyLiveAssignment hadd provenance closure
   exact ⟨{
-    after := h.liveMerge.after
-    mergeFuel := mergeFuel
-    merge_mem := hmerge
-    traceSound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel]
-        using htrace
-    equalitySound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel]
-        using hbound
-    solutions := h.solutions
-  }, rfl⟩
-
-/-- Close the two-value conflict branch of one live equality insertion.  The
-requested class edge is justified independently by `hallowed`; recursive
-matcher edges and value provenance come from the exact inner package. -/
-theorem HELiveMatchMergeCongruentCertified.toEqualityPairConflictMerge
-    {trace : List (String × Metta.Atom)}
-    {allowed : List (String × String)} {seed : Bindings}
-    {subst : Metta.Subst} {left right : String} {first second : Atom}
-    (h : HELiveMatchMergeCongruentCertified trace allowed first second
-      (seed.addEquality left right) subst)
-    (hvalues : (seed.addEquality left right).classValues left =
-      [first, second])
-    (hinconsistent : Bindings.valuesConsistent [first, second] = false)
-    (hallowed :
-      (EqualityClosure.edgeGraph allowed).Reachable left right) :
-    Nonempty (HELiveMergeCongruentCertified trace allowed seed
-      (Bindings.empty.addEquality left right) subst) := by
-  let hmatch : DeclMatchSpec.MatchRel first second h.matched :=
-    DeclMatchSpec.matchAtoms_sound h.match_mem
-  let hrecursive : MergeRel (seed.addEquality left right)
-      h.matched h.after := mergeBindings_sound h.merge_mem
-  let hadd : AddVarEqualityRel seed left right h.after :=
-    AddVarEqualityRel.pairConflict hvalues hinconsistent hmatch hrecursive
-  let hassignments : MergeAssignsRel seed [] seed :=
-    MergeAssignsRel.nil (acc := seed)
-  let hequalities : MergeEqsRel seed [(left, right)] h.after :=
-    MergeEqsRel.cons hadd (MergeEqsRel.nil (acc := h.after))
-  let hraw : MergeRel seed (⟨[], [(left, right)]⟩ : Bindings) h.after :=
-    MergeRel.mk hassignments hequalities
-  have hrel : MergeRel seed
-      (Bindings.empty.addEquality left right) h.after := by
-    simpa [Bindings.empty, Bindings.addEquality] using hraw
-  have htrace : MergeTraceSound trace hrel := by
-    let haddSound : AddVarEqualityTraceSound trace hadd :=
-      AddVarEqualityTraceSound.pairConflict
-        (hvalues := hvalues) (hinconsistent := hinconsistent)
-        (hmatch := hmatch) (hmerge := hrecursive)
-        h.matchedAssignmentsSound h.mergeTraceSound
-    let hrawSound : MergeTraceSound trace hraw :=
-      MergeTraceSound.mk MergeAssignsTraceSound.nil
-        (MergeEqsTraceSound.cons haddSound MergeEqsTraceSound.nil)
-    simpa [Bindings.empty, Bindings.addEquality,
-      Subsingleton.elim hraw hrel] using hrawSound
-  have hbound : MergeEqualityClosureBoundSound allowed hrel := by
-    let haddBound : AddVarEqualityEqualityClosureBoundSound allowed hadd :=
-      AddVarEqualityEqualityClosureBoundSound.pairConflict
-        (hvalues := hvalues) (hinconsistent := hinconsistent)
-        (hmatch := hmatch) (hmerge := hrecursive)
-        hallowed h.matchEqualityClosureBoundSound.bound
-          h.mergeEqualityClosureBoundSound
-    let hrawBound : MergeEqualityClosureBoundSound allowed hraw :=
-      MergeEqualityClosureBoundSound.mk
-        MergeAssignsEqualityClosureBoundSound.nil
-        (MergeEqsEqualityClosureBoundSound.cons haddBound
-          MergeEqsEqualityClosureBoundSound.nil)
-    simpa [Bindings.empty, Bindings.addEquality,
-      Subsingleton.elim hraw hrel] using hrawBound
-  obtain ⟨mergeFuel, hmerge⟩ := mergeBindings_complete hrel
-  exact ⟨{
-    after := h.after
-    mergeFuel := mergeFuel
-    merge_mem := hmerge
-    traceSound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel] using
-        htrace
-    equalitySound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel] using
-        hbound
-    congruence := h.congruence
-  }⟩
+    toHELiveMergeCertified := run
+    solutions := reached.symm ▸ h.solutions
+  }, reached⟩
 
 /-- Operational core of the two-value equality-conflict wrapper. -/
 theorem HELiveMatchMergeCertified.toEqualityPairConflictMerge
@@ -12268,52 +11860,38 @@ theorem HELiveMatchMergeCertified.toEqualityPairConflictMerge
       h.matched h.after := mergeBindings_sound h.merge_mem
   let hadd : AddVarEqualityRel seed left right h.after :=
     AddVarEqualityRel.pairConflict hvalues hinconsistent hmatch hrecursive
-  let hassignments : MergeAssignsRel seed [] seed :=
-    MergeAssignsRel.nil (acc := seed)
-  let hequalities : MergeEqsRel seed [(left, right)] h.after :=
-    MergeEqsRel.cons hadd (MergeEqsRel.nil (acc := h.after))
-  let hraw : MergeRel seed (⟨[], [(left, right)]⟩ : Bindings) h.after :=
-    MergeRel.mk hassignments hequalities
-  have hrel : MergeRel seed
-      (Bindings.empty.addEquality left right) h.after := by
-    simpa [Bindings.empty, Bindings.addEquality] using hraw
-  have htrace : MergeTraceSound trace hrel := by
-    let haddSound : AddVarEqualityTraceSound trace hadd :=
-      AddVarEqualityTraceSound.pairConflict
-        (hvalues := hvalues) (hinconsistent := hinconsistent)
-        (hmatch := hmatch) (hmerge := hrecursive)
-        h.matchedAssignmentsSound h.mergeTraceSound
-    let hrawSound : MergeTraceSound trace hraw :=
-      MergeTraceSound.mk MergeAssignsTraceSound.nil
-        (MergeEqsTraceSound.cons haddSound MergeEqsTraceSound.nil)
-    simpa [Bindings.empty, Bindings.addEquality,
-      Subsingleton.elim hraw hrel] using hrawSound
-  have hbound : MergeEqualityClosureBoundSound allowed hrel := by
-    let haddBound : AddVarEqualityEqualityClosureBoundSound allowed hadd :=
-      AddVarEqualityEqualityClosureBoundSound.pairConflict
-        (hvalues := hvalues) (hinconsistent := hinconsistent)
-        (hmatch := hmatch) (hmerge := hrecursive)
-        hallowed h.matchEqualityClosureBoundSound.bound
-          h.mergeEqualityClosureBoundSound
-    let hrawBound : MergeEqualityClosureBoundSound allowed hraw :=
-      MergeEqualityClosureBoundSound.mk
-        MergeAssignsEqualityClosureBoundSound.nil
-        (MergeEqsEqualityClosureBoundSound.cons haddBound
-          MergeEqsEqualityClosureBoundSound.nil)
-    simpa [Bindings.empty, Bindings.addEquality,
-      Subsingleton.elim hraw hrel] using hrawBound
-  obtain ⟨mergeFuel, hmerge⟩ := mergeBindings_complete hrel
-  exact ⟨{
-    after := h.after
-    mergeFuel := mergeFuel
-    merge_mem := hmerge
-    traceSound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel] using
-        htrace
-    equalitySound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel] using
-        hbound
-  }, rfl⟩
+  let provenance : AddVarEqualityTraceSound trace hadd :=
+    AddVarEqualityTraceSound.pairConflict
+      (hvalues := hvalues) (hinconsistent := hinconsistent)
+      (hmatch := hmatch) (hmerge := hrecursive)
+      h.matchedAssignmentsSound h.mergeTraceSound
+  let closure : AddVarEqualityEqualityClosureBoundSound allowed hadd :=
+    AddVarEqualityEqualityClosureBoundSound.pairConflict
+      (hvalues := hvalues) (hinconsistent := hinconsistent)
+      (hmatch := hmatch) (hmerge := hrecursive)
+      hallowed h.matchEqualityClosureBoundSound.bound
+        h.mergeEqualityClosureBoundSound
+  exact certifyLiveEquality hadd provenance closure
+
+/-- Close the two-value conflict branch of one live equality insertion.  The
+requested class edge is justified independently by `hallowed`; recursive
+matcher edges and value provenance come from the exact inner package. -/
+theorem HELiveMatchMergeCongruentCertified.toEqualityPairConflictMerge
+    {trace : List (String × Metta.Atom)}
+    {allowed : List (String × String)} {seed : Bindings}
+    {subst : Metta.Subst} {left right : String} {first second : Atom}
+    (h : HELiveMatchMergeCongruentCertified trace allowed first second
+      (seed.addEquality left right) subst)
+    (hvalues : (seed.addEquality left right).classValues left =
+      [first, second])
+    (hinconsistent : Bindings.valuesConsistent [first, second] = false)
+    (hallowed :
+      (EqualityClosure.edgeGraph allowed).Reachable left right) :
+    Nonempty (HELiveMergeCongruentCertified trace allowed seed
+      (Bindings.empty.addEquality left right) subst) := by
+  obtain ⟨run, reached⟩ := h.toSolutionCertified.toHELiveMatchMergeCertified
+    |>.toEqualityPairConflictMerge hvalues hinconsistent hallowed
+  exact ⟨addLiveMergeCongruence run (reached.symm ▸ h.congruence)⟩
 
 /-- Attach solution theory to the two-value equality-conflict wrapper. -/
 theorem HELiveMatchMergeSolutionCertified.toEqualityPairConflictMerge
@@ -12359,131 +11937,24 @@ theorem HELiveMatchMergeCoreResidualCertified.toEqualityPairConflictMergeLive
   let hadd : AddVarEqualityRel seed left right h.liveMerge.after :=
     AddVarEqualityRel.pairConflict hvalues hinconsistent
       h.matcher.matchRel (mergeBindings_sound h.liveMerge.merge_mem)
-  let hequalities : MergeEqsRel seed [(left, right)]
-      h.liveMerge.after :=
-    MergeEqsRel.cons hadd
-      (MergeEqsRel.nil (acc := h.liveMerge.after))
-  let hraw : MergeRel seed (⟨[], [(left, right)]⟩ : Bindings)
-      h.liveMerge.after :=
-    MergeRel.mk (MergeAssignsRel.nil (acc := seed)) hequalities
-  have hrel : MergeRel seed
-      (Bindings.empty.addEquality left right) h.liveMerge.after := by
-    simpa [Bindings.empty, Bindings.addEquality] using hraw
-  have htrace : MergeTraceSound trace hrel := by
-    let haddSound : AddVarEqualityTraceSound trace hadd :=
-      AddVarEqualityTraceSound.pairConflictLive
-        (hvalues := hvalues) (hinconsistent := hinconsistent)
-        (hmatch := h.matcher.matchRel)
-        (hmerge := mergeBindings_sound h.liveMerge.merge_mem)
-        h.afterAssignmentsSound h.liveMerge.traceSound
-    let hrawSound : MergeTraceSound trace hraw :=
-      MergeTraceSound.mk MergeAssignsTraceSound.nil
-        (MergeEqsTraceSound.cons haddSound MergeEqsTraceSound.nil)
-    simpa [Bindings.empty, Bindings.addEquality,
-      Subsingleton.elim hraw hrel] using hrawSound
-  have hbound : MergeEqualityClosureBoundSound allowed hrel := by
-    let haddBound : AddVarEqualityEqualityClosureBoundSound allowed hadd :=
-      AddVarEqualityEqualityClosureBoundSound.pairConflict
-        (hvalues := hvalues) (hinconsistent := hinconsistent)
-        (hmatch := h.matcher.matchRel)
-        (hmerge := mergeBindings_sound h.liveMerge.merge_mem)
-        hallowed h.matcher.equalitySound.bound
-        h.liveMerge.equalitySound
-    let hrawBound : MergeEqualityClosureBoundSound allowed hraw :=
-      MergeEqualityClosureBoundSound.mk
-        MergeAssignsEqualityClosureBoundSound.nil
-        (MergeEqsEqualityClosureBoundSound.cons haddBound
-          MergeEqsEqualityClosureBoundSound.nil)
-    simpa [Bindings.empty, Bindings.addEquality,
-      Subsingleton.elim hraw hrel] using hrawBound
-  obtain ⟨mergeFuel, hmerge⟩ := mergeBindings_complete hrel
+  let provenance : AddVarEqualityTraceSound trace hadd :=
+    AddVarEqualityTraceSound.pairConflictLive
+      (hvalues := hvalues) (hinconsistent := hinconsistent)
+      (hmatch := h.matcher.matchRel)
+      (hmerge := mergeBindings_sound h.liveMerge.merge_mem)
+      h.afterAssignmentsSound h.liveMerge.traceSound
+  let closure : AddVarEqualityEqualityClosureBoundSound allowed hadd :=
+    AddVarEqualityEqualityClosureBoundSound.pairConflict
+      (hvalues := hvalues) (hinconsistent := hinconsistent)
+      (hmatch := h.matcher.matchRel)
+      (hmerge := mergeBindings_sound h.liveMerge.merge_mem)
+      hallowed h.matcher.equalitySound.bound
+      h.liveMerge.equalitySound
+  obtain ⟨run, reached⟩ := certifyLiveEquality hadd provenance closure
   exact ⟨{
-    after := h.liveMerge.after
-    mergeFuel := mergeFuel
-    merge_mem := hmerge
-    traceSound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel]
-        using htrace
-    equalitySound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel]
-        using hbound
-    solutions := h.solutions
-  }, rfl⟩
-
-/-- Close the three-or-more-value conflict branch of one live equality
-insertion.  The returned list matcher is the original empty-seeded HE
-matcher and the following merge is the actual merge into the equality-bearing
-candidate. -/
-theorem HELiveListMatchMergeCongruentCertified.toEqualityClassConflictMerge
-    {trace : List (String × Metta.Atom)}
-    {allowed : List (String × String)} {seed : Bindings}
-    {subst : Metta.Subst} {left right : String}
-    {first second third : Atom} {rest : List Atom}
-    (h : HELiveListMatchMergeCongruentCertified trace allowed
-      (List.replicate (rest.length + 2) first)
-      (second :: third :: rest) (seed.addEquality left right) subst)
-    (hvalues : (seed.addEquality left right).classValues left =
-      first :: second :: third :: rest)
-    (hinconsistent : Bindings.valuesConsistent
-      (first :: second :: third :: rest) = false)
-    (hallowed :
-      (EqualityClosure.edgeGraph allowed).Reachable left right) :
-    Nonempty (HELiveMergeCongruentCertified trace allowed seed
-      (Bindings.empty.addEquality left right) subst) := by
-  let hrecursive : MergeRel (seed.addEquality left right)
-      h.matched h.after := mergeBindings_sound h.merge_mem
-  let hadd : AddVarEqualityRel seed left right h.after :=
-    AddVarEqualityRel.classConflict hvalues hinconsistent
-      h.matchRel hrecursive
-  let hassignments : MergeAssignsRel seed [] seed :=
-    MergeAssignsRel.nil (acc := seed)
-  let hequalities : MergeEqsRel seed [(left, right)] h.after :=
-    MergeEqsRel.cons hadd (MergeEqsRel.nil (acc := h.after))
-  let hraw : MergeRel seed (⟨[], [(left, right)]⟩ : Bindings) h.after :=
-    MergeRel.mk hassignments hequalities
-  have hrel : MergeRel seed
-      (Bindings.empty.addEquality left right) h.after := by
-    simpa [Bindings.empty, Bindings.addEquality] using hraw
-  have htrace : MergeTraceSound trace hrel := by
-    let haddSound : AddVarEqualityTraceSound trace hadd :=
-      AddVarEqualityTraceSound.classConflict
-        (hvalues := hvalues) (hinconsistent := hinconsistent)
-        (hmatch := h.matchRel) (hmerge := hrecursive)
-        h.matchedAssignmentsSound h.mergeTraceSound
-    let hrawSound : MergeTraceSound trace hraw :=
-      MergeTraceSound.mk MergeAssignsTraceSound.nil
-        (MergeEqsTraceSound.cons haddSound MergeEqsTraceSound.nil)
-    simpa [Bindings.empty, Bindings.addEquality,
-      Subsingleton.elim hraw hrel] using hrawSound
-  have hbound : MergeEqualityClosureBoundSound allowed hrel := by
-    have hmatchedBound : HEEqualityClosureBound h.matched allowed :=
-      h.matchEqualityClosureBoundSound.preserves
-        (HEEqualityClosureBound.empty allowed)
-    let haddBound : AddVarEqualityEqualityClosureBoundSound allowed hadd :=
-      AddVarEqualityEqualityClosureBoundSound.classConflict
-        (hvalues := hvalues) (hinconsistent := hinconsistent)
-        (hmatch := h.matchRel) (hmerge := hrecursive)
-        hallowed hmatchedBound h.mergeEqualityClosureBoundSound
-    let hrawBound : MergeEqualityClosureBoundSound allowed hraw :=
-      MergeEqualityClosureBoundSound.mk
-        MergeAssignsEqualityClosureBoundSound.nil
-        (MergeEqsEqualityClosureBoundSound.cons haddBound
-          MergeEqsEqualityClosureBoundSound.nil)
-    simpa [Bindings.empty, Bindings.addEquality,
-      Subsingleton.elim hraw hrel] using hrawBound
-  obtain ⟨mergeFuel, hmerge⟩ := mergeBindings_complete hrel
-  exact ⟨{
-    after := h.after
-    mergeFuel := mergeFuel
-    merge_mem := hmerge
-    traceSound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel] using
-        htrace
-    equalitySound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel] using
-        hbound
-    congruence := h.congruence
-  }⟩
+    toHELiveMergeCertified := run
+    solutions := reached.symm ▸ h.solutions
+  }, reached⟩
 
 /-- Operational core of the three-or-more-value equality-conflict wrapper. -/
 theorem HELiveListMatchMergeCertified.toEqualityClassConflictMerge
@@ -12507,54 +11978,44 @@ theorem HELiveListMatchMergeCertified.toEqualityClassConflictMerge
   let hadd : AddVarEqualityRel seed left right h.after :=
     AddVarEqualityRel.classConflict hvalues hinconsistent
       h.matchRel hrecursive
-  let hassignments : MergeAssignsRel seed [] seed :=
-    MergeAssignsRel.nil (acc := seed)
-  let hequalities : MergeEqsRel seed [(left, right)] h.after :=
-    MergeEqsRel.cons hadd (MergeEqsRel.nil (acc := h.after))
-  let hraw : MergeRel seed (⟨[], [(left, right)]⟩ : Bindings) h.after :=
-    MergeRel.mk hassignments hequalities
-  have hrel : MergeRel seed
-      (Bindings.empty.addEquality left right) h.after := by
-    simpa [Bindings.empty, Bindings.addEquality] using hraw
-  have htrace : MergeTraceSound trace hrel := by
-    let haddSound : AddVarEqualityTraceSound trace hadd :=
-      AddVarEqualityTraceSound.classConflict
-        (hvalues := hvalues) (hinconsistent := hinconsistent)
-        (hmatch := h.matchRel) (hmerge := hrecursive)
-        h.matchedAssignmentsSound h.mergeTraceSound
-    let hrawSound : MergeTraceSound trace hraw :=
-      MergeTraceSound.mk MergeAssignsTraceSound.nil
-        (MergeEqsTraceSound.cons haddSound MergeEqsTraceSound.nil)
-    simpa [Bindings.empty, Bindings.addEquality,
-      Subsingleton.elim hraw hrel] using hrawSound
-  have hbound : MergeEqualityClosureBoundSound allowed hrel := by
-    have hmatchedBound : HEEqualityClosureBound h.matched allowed :=
-      h.matchEqualityClosureBoundSound.preserves
-        (HEEqualityClosureBound.empty allowed)
-    let haddBound : AddVarEqualityEqualityClosureBoundSound allowed hadd :=
-      AddVarEqualityEqualityClosureBoundSound.classConflict
-        (hvalues := hvalues) (hinconsistent := hinconsistent)
-        (hmatch := h.matchRel) (hmerge := hrecursive)
-        hallowed hmatchedBound h.mergeEqualityClosureBoundSound
-    let hrawBound : MergeEqualityClosureBoundSound allowed hraw :=
-      MergeEqualityClosureBoundSound.mk
-        MergeAssignsEqualityClosureBoundSound.nil
-        (MergeEqsEqualityClosureBoundSound.cons haddBound
-          MergeEqsEqualityClosureBoundSound.nil)
-    simpa [Bindings.empty, Bindings.addEquality,
-      Subsingleton.elim hraw hrel] using hrawBound
-  obtain ⟨mergeFuel, hmerge⟩ := mergeBindings_complete hrel
-  exact ⟨{
-    after := h.after
-    mergeFuel := mergeFuel
-    merge_mem := hmerge
-    traceSound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel] using
-        htrace
-    equalitySound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel] using
-        hbound
-  }, rfl⟩
+  have hmatchedBound : HEEqualityClosureBound h.matched allowed :=
+    h.matchEqualityClosureBoundSound.preserves
+      (HEEqualityClosureBound.empty allowed)
+  let provenance : AddVarEqualityTraceSound trace hadd :=
+    AddVarEqualityTraceSound.classConflict
+      (hvalues := hvalues) (hinconsistent := hinconsistent)
+      (hmatch := h.matchRel) (hmerge := hrecursive)
+      h.matchedAssignmentsSound h.mergeTraceSound
+  let closure : AddVarEqualityEqualityClosureBoundSound allowed hadd :=
+    AddVarEqualityEqualityClosureBoundSound.classConflict
+      (hvalues := hvalues) (hinconsistent := hinconsistent)
+      (hmatch := h.matchRel) (hmerge := hrecursive)
+      hallowed hmatchedBound h.mergeEqualityClosureBoundSound
+  exact certifyLiveEquality hadd provenance closure
+
+/-- Close the three-or-more-value conflict branch of one live equality
+insertion.  The returned list matcher is the original empty-seeded HE
+matcher and the following merge is the actual merge into the equality-bearing
+candidate. -/
+theorem HELiveListMatchMergeCongruentCertified.toEqualityClassConflictMerge
+    {trace : List (String × Metta.Atom)}
+    {allowed : List (String × String)} {seed : Bindings}
+    {subst : Metta.Subst} {left right : String}
+    {first second third : Atom} {rest : List Atom}
+    (h : HELiveListMatchMergeCongruentCertified trace allowed
+      (List.replicate (rest.length + 2) first)
+      (second :: third :: rest) (seed.addEquality left right) subst)
+    (hvalues : (seed.addEquality left right).classValues left =
+      first :: second :: third :: rest)
+    (hinconsistent : Bindings.valuesConsistent
+      (first :: second :: third :: rest) = false)
+    (hallowed :
+      (EqualityClosure.edgeGraph allowed).Reachable left right) :
+    Nonempty (HELiveMergeCongruentCertified trace allowed seed
+      (Bindings.empty.addEquality left right) subst) := by
+  obtain ⟨run, reached⟩ := h.toSolutionCertified.toHELiveListMatchMergeCertified
+    |>.toEqualityClassConflictMerge hvalues hinconsistent hallowed
+  exact ⟨addLiveMergeCongruence run (reached.symm ▸ h.congruence)⟩
 
 /-- Attach solution theory to the class-wide equality-conflict wrapper. -/
 theorem HELiveListMatchMergeSolutionCertified.toEqualityClassConflictMerge
@@ -12604,58 +12065,26 @@ theorem HELiveListMatchMergeCoreResidualCertified.toEqualityClassConflictMergeLi
   let hadd : AddVarEqualityRel seed left right h.liveMerge.after :=
     AddVarEqualityRel.classConflict hvalues hinconsistent
       h.matcher.matchRel (mergeBindings_sound h.liveMerge.merge_mem)
-  let hequalities : MergeEqsRel seed [(left, right)]
-      h.liveMerge.after :=
-    MergeEqsRel.cons hadd
-      (MergeEqsRel.nil (acc := h.liveMerge.after))
-  let hraw : MergeRel seed (⟨[], [(left, right)]⟩ : Bindings)
-      h.liveMerge.after :=
-    MergeRel.mk (MergeAssignsRel.nil (acc := seed)) hequalities
-  have hrel : MergeRel seed
-      (Bindings.empty.addEquality left right) h.liveMerge.after := by
-    simpa [Bindings.empty, Bindings.addEquality] using hraw
-  have htrace : MergeTraceSound trace hrel := by
-    let haddSound : AddVarEqualityTraceSound trace hadd :=
-      AddVarEqualityTraceSound.classConflictLive
-        (hvalues := hvalues) (hinconsistent := hinconsistent)
-        (hmatch := h.matcher.matchRel)
-        (hmerge := mergeBindings_sound h.liveMerge.merge_mem)
-        h.afterAssignmentsSound h.liveMerge.traceSound
-    let hrawSound : MergeTraceSound trace hraw :=
-      MergeTraceSound.mk MergeAssignsTraceSound.nil
-        (MergeEqsTraceSound.cons haddSound MergeEqsTraceSound.nil)
-    simpa [Bindings.empty, Bindings.addEquality,
-      Subsingleton.elim hraw hrel] using hrawSound
-  have hbound : MergeEqualityClosureBoundSound allowed hrel := by
-    let haddBound : AddVarEqualityEqualityClosureBoundSound allowed hadd :=
-      AddVarEqualityEqualityClosureBoundSound.classConflict
-        (hvalues := hvalues) (hinconsistent := hinconsistent)
-        (hmatch := h.matcher.matchRel)
-        (hmerge := mergeBindings_sound h.liveMerge.merge_mem)
-        hallowed
-        (h.matcher.equalitySound.preserves
-          (HEEqualityClosureBound.empty allowed))
-        h.liveMerge.equalitySound
-    let hrawBound : MergeEqualityClosureBoundSound allowed hraw :=
-      MergeEqualityClosureBoundSound.mk
-        MergeAssignsEqualityClosureBoundSound.nil
-        (MergeEqsEqualityClosureBoundSound.cons haddBound
-          MergeEqsEqualityClosureBoundSound.nil)
-    simpa [Bindings.empty, Bindings.addEquality,
-      Subsingleton.elim hraw hrel] using hrawBound
-  obtain ⟨mergeFuel, hmerge⟩ := mergeBindings_complete hrel
+  let provenance : AddVarEqualityTraceSound trace hadd :=
+    AddVarEqualityTraceSound.classConflictLive
+      (hvalues := hvalues) (hinconsistent := hinconsistent)
+      (hmatch := h.matcher.matchRel)
+      (hmerge := mergeBindings_sound h.liveMerge.merge_mem)
+      h.afterAssignmentsSound h.liveMerge.traceSound
+  let closure : AddVarEqualityEqualityClosureBoundSound allowed hadd :=
+    AddVarEqualityEqualityClosureBoundSound.classConflict
+      (hvalues := hvalues) (hinconsistent := hinconsistent)
+      (hmatch := h.matcher.matchRel)
+      (hmerge := mergeBindings_sound h.liveMerge.merge_mem)
+      hallowed
+      (h.matcher.equalitySound.preserves
+        (HEEqualityClosureBound.empty allowed))
+      h.liveMerge.equalitySound
+  obtain ⟨run, reached⟩ := certifyLiveEquality hadd provenance closure
   exact ⟨{
-    after := h.liveMerge.after
-    mergeFuel := mergeFuel
-    merge_mem := hmerge
-    traceSound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel]
-        using htrace
-    equalitySound := by
-      simpa only [Subsingleton.elim (mergeBindings_sound hmerge) hrel]
-        using hbound
-    solutions := h.solutions
-  }, rfl⟩
+    toHELiveMergeCertified := run
+    solutions := reached.symm ▸ h.solutions
+  }, reached⟩
 
 /-- POSITIVE: a live assignment whose stored and proposed values are nested
 expressions closes through the original expression matcher and retains the
@@ -21705,6 +21134,52 @@ theorem HEProjectedCertifiedListResidualState.toSolutionState
   front_decomposes := h.front_decomposes
 }
 
+/-- Restore the stronger view when the caller independently knows the seed's
+congruence to the exact Robinson substitution. All residual and trace fields
+come from the solution certificate. -/
+private theorem certifyCongruentResidual
+    {trace : List (String × Metta.Atom)} {allowed : List (String × String)}
+    {fuel : Nat} {work : List (Metta.Atom × Metta.Atom)}
+    {subst result : Metta.Subst} {left right : List Atom} {seed : Bindings}
+    (state : HECertifiedListResidualSolutionState trace allowed fuel work
+      subst result left right seed)
+    (congruent : LeaBindingCongruence seed (Metta.Bindings.ofSubst subst)) :
+    HECertifiedListResidualState trace allowed fuel work subst result left right seed := {
+  run := state.run
+  work_inHEImage := state.work_inHEImage
+  subst_inHEImage := state.subst_inHEImage
+  seed_congruence := congruent
+  length_eq := state.length_eq
+  work_nil_of_left_nil := state.work_nil_of_left_nil
+  solutionTheory := state.solutionTheory
+  localTrace_subset := state.localTrace_subset
+  localAllowed_mono := state.localAllowed_mono
+  result_subset_trace := state.result_subset_trace
+  seed_assignmentsSound := state.seed_assignmentsSound
+  seed_equalityBound := state.seed_equalityBound
+}
+
+/-- The congruence evidence changes the seed view while retaining the
+original prefix split and its presentation. -/
+private theorem certifyCongruentProjectedResidual
+    {trace : List (String × Metta.Atom)} {allowed : List (String × String)}
+    {outerFuel : Nat} {front : List (Metta.Atom × Metta.Atom)} {outerSubst : Metta.Subst}
+    {fuel : Nat} {work : List (Metta.Atom × Metta.Atom)}
+    {subst result : Metta.Subst} {left right : List Atom} {seed : Bindings}
+    (state : HEProjectedCertifiedListResidualSolutionState trace allowed outerFuel
+      front outerSubst fuel work subst result left right seed)
+    (congruent : LeaBindingCongruence seed (Metta.Bindings.ofSubst subst)) :
+    HEProjectedCertifiedListResidualState trace allowed outerFuel
+      front outerSubst fuel work subst result left right seed := {
+  toHECertifiedListResidualState :=
+    certifyCongruentResidual state.toHECertifiedListResidualSolutionState congruent
+  projection := state.projection
+  front_inHEImage := state.front_inHEImage
+  outerSubst_inHEImage := state.outerSubst_inHEImage
+  outerStateFresh := state.outerStateFresh
+  front_decomposes := state.front_decomposes
+}
+
 /-- Initialize the exact projected residual kernel for merging one literal HE
 binding record into a live seed.  The original runtime assignment/equality
 order is supplied by `HEEquationLeftAtoms`/`HEEquationRightAtoms`; the
@@ -22870,131 +22345,6 @@ structure HEProjectedTailHeadResidualPackage
         MettaEquationSatisfied valuation
           (encodeModelAtom nextLeft, encodeModelAtom nextRight))
 
-/-- Expose one original atom pair from a projected residual state and retain
-both its transformed head work and the untouched original tail.  The proof
-uses only the stored projection and the successful residual run. -/
-theorem HEProjectedCertifiedListResidualState.exists_tailHeadResidualPackage
-    {trace : List (String × Metta.Atom)}
-    {allowed : List (String × String)}
-    {outerFuel : Nat} {front : List (Metta.Atom × Metta.Atom)}
-    {outerSubst : Metta.Subst}
-    {fuel : Nat} {work : List (Metta.Atom × Metta.Atom)}
-    {subst result : Metta.Subst} {left right : List Atom}
-    {seed : Bindings}
-    (s : HEProjectedCertifiedListResidualState trace allowed outerFuel
-      front outerSubst fuel work subst result left right seed)
-    {nextLeft : Atom} {leftRest : List Atom}
-    (hleft : left = nextLeft :: leftRest) :
-    Nonempty (HEProjectedTailHeadResidualPackage s nextLeft leftRest) := by
-  have hrightNe : right ≠ [] := by
-    intro hrightNil
-    have hlength := s.length_eq
-    rw [hleft, hrightNil] at hlength
-    simp at hlength
-  obtain ⟨nextRight, rightRest, hright⟩ :=
-    List.exists_cons_of_ne_nil hrightNe
-  have hrestLength : leftRest.length = rightRest.length := by
-    have hlength := s.length_eq
-    rw [hleft, hright] at hlength
-    simpa using hlength
-  obtain ⟨headWork, untouchedTailWork, hwork,
-      hheadProjection, htailProjection⟩ :=
-    s.projection.splitSuffixAppend
-      [(encodeModelAtom nextLeft, encodeModelAtom nextRight)]
-      (List.zip (encodeModelAtoms leftRest)
-        (encodeModelAtoms rightRest)) (by
-          rw [hleft, hright]
-          rfl)
-  have hcontinue : Metta.Unify.unifyRounds fuel
-      (headWork ++ untouchedTailWork) subst = some result := by
-    rw [← hwork]
-    exact s.run
-  obtain ⟨nextRemainingFuel, nextTailWork, nextSubst,
-      hnextSplit, hnextRun⟩ :=
-    unifyRounds_prefix_split_of_success hcontinue
-  have hheadImage : LeaEquationsInHEImage
-      [(encodeModelAtom nextLeft, encodeModelAtom nextRight)] := by
-    intro equation hmem
-    simp only [List.mem_singleton] at hmem
-    subst equation
-    exact ⟨LeaAtomInHEImage.translation nextLeft,
-      LeaAtomInHEImage.translation nextRight⟩
-  have hheadFresh : UnifyStateFresh
-      (front ++
-        [(encodeModelAtom nextLeft, encodeModelAtom nextRight)])
-      outerSubst := by
-    intro key hkey hmem
-    apply s.outerStateFresh key hkey
-    simp only [mettaEquationVars, List.flatMap_append,
-      List.mem_append] at hmem ⊢
-    rcases hmem with hfrontMem | hheadMem
-    · exact Or.inl hfrontMem
-    · right
-      apply List.mem_flatMap.mpr
-      refine ⟨(encodeModelAtom nextLeft, encodeModelAtom nextRight), ?_, ?_⟩
-      · rw [hleft, hright]
-        simp [encodeModelAtoms]
-      · simpa [mettaEquationVars] using hheadMem
-  have hheadTheory : ∀ valuation : String → Metta.Atom,
-      (MettaEquationsSatisfied valuation headWork ∧
-          HEBindingSatisfied valuation seed) ↔
-        (HEBindingSatisfied valuation seed ∧
-          MettaEquationSatisfied valuation
-            (encodeModelAtom nextLeft,
-              encodeModelAtom nextRight)) := by
-    intro valuation
-    have htheory := hheadProjection.heSuffix_solution_iff_exact
-      s.front_inHEImage hheadImage s.outerSubst_inHEImage
-        hheadFresh s.seed_congruence valuation
-    simpa [MettaEquationsSatisfied] using htheory
-  exact ⟨{
-    nextRight := nextRight
-    rightRest := rightRest
-    headWork := headWork
-    untouchedTailWork := untouchedTailWork
-    nextRemainingFuel := nextRemainingFuel
-    nextTailWork := nextTailWork
-    nextSubst := nextSubst
-    left_eq := hleft
-    right_eq := hright
-    rest_length := hrestLength
-    work_eq := hwork
-    headProjection := hheadProjection
-    untouchedProjection := htailProjection
-    nextSplit := hnextSplit
-    next_run := hnextRun
-    fuel_le := hnextSplit.remainingFuel_le
-    headTheory := hheadTheory
-  }⟩
-
-/-- Exact termination dichotomy for one exposed original head.  If its
-transformed worklist has no constraint, the head run returns the incoming
-substitution unchanged.  Otherwise the already-stored prefix split consumes
-at least one Robinson round, so the untouched-tail state is indexed by a
-strictly smaller fuel.  This is the sole numeric descent used by the inner
-matcher/merge kernel. -/
-theorem HEProjectedTailHeadResidualPackage.headSolved_or_strictResidual
-    {trace : List (String × Metta.Atom)}
-    {allowed : List (String × String)}
-    {outerFuel : Nat} {front : List (Metta.Atom × Metta.Atom)}
-    {outerSubst : Metta.Subst}
-    {fuel : Nat} {work : List (Metta.Atom × Metta.Atom)}
-    {subst result : Metta.Subst} {left right : List Atom}
-    {seed : Bindings}
-    {s : HEProjectedCertifiedListResidualState trace allowed outerFuel
-      front outerSubst fuel work subst result left right seed}
-    {nextLeft : Atom} {leftRest : List Atom}
-    (p : HEProjectedTailHeadResidualPackage s nextLeft leftRest) :
-    (Metta.Unify.decomposeAll p.headWork = some [] ∧
-        p.nextSubst = subst) ∨
-      p.nextRemainingFuel < fuel := by
-  cases unifyRounds_success_view p.nextSplit.front_run with
-  | solved hdecompose hresult =>
-      exact Or.inl ⟨hdecompose, hresult⟩
-  | eliminate hdecompose _hoccurs _hrun =>
-      exact Or.inr
-        (p.nextSplit.remainingFuel_lt_of_decompose_cons hdecompose)
-
 /-- Exact next-head factorization at the solution-only residual boundary. -/
 structure HEProjectedTailHeadResidualSolutionPackage
     {trace : List (String × Metta.Atom)}
@@ -23195,6 +22545,66 @@ theorem HEProjectedTailHeadResidualSolutionPackage.headSolved_or_strictResidual
   | eliminate hdecompose _hoccurs _hrun =>
       exact Or.inr
         (p.nextSplit.remainingFuel_lt_of_decompose_cons hdecompose)
+
+/-- Expose one original atom pair from a projected residual state and retain
+both its transformed head work and the untouched original tail.  The proof
+uses only the stored projection and the successful residual run. -/
+theorem HEProjectedCertifiedListResidualState.exists_tailHeadResidualPackage
+    {trace : List (String × Metta.Atom)}
+    {allowed : List (String × String)}
+    {outerFuel : Nat} {front : List (Metta.Atom × Metta.Atom)}
+    {outerSubst : Metta.Subst}
+    {fuel : Nat} {work : List (Metta.Atom × Metta.Atom)}
+    {subst result : Metta.Subst} {left right : List Atom}
+    {seed : Bindings}
+    (s : HEProjectedCertifiedListResidualState trace allowed outerFuel
+      front outerSubst fuel work subst result left right seed)
+    {nextLeft : Atom} {leftRest : List Atom}
+    (hleft : left = nextLeft :: leftRest) :
+    Nonempty (HEProjectedTailHeadResidualPackage s nextLeft leftRest) := by
+  obtain ⟨head⟩ := s.toSolutionState.exists_tailHeadResidualPackage hleft
+  exact ⟨{
+    nextRight := head.nextRight
+    rightRest := head.rightRest
+    headWork := head.headWork
+    untouchedTailWork := head.untouchedTailWork
+    nextRemainingFuel := head.nextRemainingFuel
+    nextTailWork := head.nextTailWork
+    nextSubst := head.nextSubst
+    left_eq := head.left_eq
+    right_eq := head.right_eq
+    rest_length := head.rest_length
+    work_eq := head.work_eq
+    headProjection := head.headProjection
+    untouchedProjection := head.untouchedProjection
+    nextSplit := head.nextSplit
+    next_run := head.next_run
+    fuel_le := head.fuel_le
+    headTheory := head.headTheory
+  }⟩
+
+/-- Exact termination dichotomy for one exposed original head.  If its
+transformed worklist has no constraint, the head run returns the incoming
+substitution unchanged.  Otherwise the already-stored prefix split consumes
+at least one Robinson round, so the untouched-tail state is indexed by a
+strictly smaller fuel.  This is the sole numeric descent used by the inner
+matcher/merge kernel. -/
+theorem HEProjectedTailHeadResidualPackage.headSolved_or_strictResidual
+    {trace : List (String × Metta.Atom)}
+    {allowed : List (String × String)}
+    {outerFuel : Nat} {front : List (Metta.Atom × Metta.Atom)}
+    {outerSubst : Metta.Subst}
+    {fuel : Nat} {work : List (Metta.Atom × Metta.Atom)}
+    {subst result : Metta.Subst} {left right : List Atom}
+    {seed : Bindings}
+    {s : HEProjectedCertifiedListResidualState trace allowed outerFuel
+      front outerSubst fuel work subst result left right seed}
+    {nextLeft : Atom} {leftRest : List Atom}
+    (p : HEProjectedTailHeadResidualPackage s nextLeft leftRest) :
+    (Metta.Unify.decomposeAll p.headWork = some [] ∧
+        p.nextSubst = subst) ∨
+      p.nextRemainingFuel < fuel :=
+  p.toSolutionPackage.headSolved_or_strictResidual
 
 /-- Any valuation satisfying the ambient certificate trace satisfies the
 exposed original head equation and its live seed.  The proof follows the
@@ -27174,216 +26584,6 @@ theorem HEProjectedEqualityHeadSolutionComplete.of_conflicts
                   rw [hvalues] at hconsistent
                   exact hclass p hright hallowed hvalues hconsistent
 
-/-- Consume the exposed original head through an actual certified HE
-match/merge and retain the complete certified state for the untouched
-original tail.  This is the generic projected-state form of the first-frontier
-tail handoff: every trace, provenance, solution, and equality-bound field is
-transported through the literal `nextSplit` state. -/
-theorem HEProjectedTailHeadResidualPackage.toCertifiedTailResidualStateCore
-    {trace : List (String × Metta.Atom)}
-    {allowed : List (String × String)}
-    {outerFuel : Nat} {front : List (Metta.Atom × Metta.Atom)}
-    {outerSubst : Metta.Subst}
-    {fuel : Nat} {work : List (Metta.Atom × Metta.Atom)}
-    {subst result : Metta.Subst} {left right : List Atom}
-    {seed : Bindings}
-    {s : HEProjectedCertifiedListResidualState trace allowed outerFuel
-      front outerSubst fuel work subst result left right seed}
-    {nextLeft : Atom} {leftRest : List Atom}
-    (p : HEProjectedTailHeadResidualPackage s nextLeft leftRest)
-    (hhead : HELiveMatchMergeCoreCongruentCertified trace allowed
-      nextLeft p.nextRight seed p.nextSubst) :
-    HECertifiedListResidualState trace allowed
-      p.nextRemainingFuel p.nextTailWork p.nextSubst result
-      leftRest p.rightRest hhead.liveMerge.after := by
-  have hcurrentFresh : UnifyStateFresh
-      (p.headWork ++ p.untouchedTailWork) subst := by
-    have hfresh := s.projection.stateFresh s.outerStateFresh
-    rw [p.work_eq] at hfresh
-    exact hfresh
-  have hheadWorkImage : LeaEquationsInHEImage p.headWork := by
-    intro equation hmem
-    apply s.work_inHEImage equation
-    rw [p.work_eq]
-    exact List.mem_append_left _ hmem
-  have huntouchedImage : LeaEquationsInHEImage p.untouchedTailWork := by
-    intro equation hmem
-    apply s.work_inHEImage equation
-    rw [p.work_eq]
-    exact List.mem_append_right _ hmem
-  have hnextImage := p.nextSplit.state_inHEImage
-    hheadWorkImage huntouchedImage s.subst_inHEImage
-  have hheadFresh : UnifyStateFresh p.headWork subst := by
-    intro key hkey hmem
-    exact hcurrentFresh key hkey (by
-      simp only [mettaEquationVars, List.flatMap_append,
-        List.mem_append]
-      exact Or.inl hmem)
-  have horiginalTailFresh : UnifyStateFresh
-      (front ++ List.zip (encodeModelAtoms leftRest)
-        (encodeModelAtoms p.rightRest)) outerSubst := by
-    intro key hkey hmem
-    apply s.outerStateFresh key hkey
-    simp only [mettaEquationVars, List.flatMap_append,
-      List.mem_append] at hmem ⊢
-    rcases hmem with hfrontMem | htailMem
-    · exact Or.inl hfrontMem
-    · right
-      rw [p.left_eq, p.right_eq]
-      simp only [encodeModelAtoms, List.zip_cons_cons,
-        List.flatMap_cons, List.mem_append]
-      exact Or.inr htailMem
-  have hworkNil : leftRest = [] → p.nextTailWork = [] := by
-    intro hleftNil
-    have hrightLength : p.rightRest.length = 0 := by
-      simpa [hleftNil] using p.rest_length.symm
-    have hrightNil : p.rightRest = [] :=
-      List.eq_nil_of_length_eq_zero hrightLength
-    have huntouchedNil : p.untouchedTailWork = [] :=
-      p.untouchedProjection.suffixWork_eq_nil_of_suffix_eq_nil (by
-        simp [hleftNil, hrightNil])
-    exact p.nextSplit.suffixWork_eq_nil_of_suffix_eq_nil huntouchedNil
-  have hcurrentTraceEq :
-      unificationEliminationTrace fuel work =
-        unificationEliminationTrace fuel p.headWork ++
-          unificationEliminationTrace p.nextRemainingFuel
-            p.nextTailWork := by
-    calc
-      unificationEliminationTrace fuel work =
-          unificationEliminationTrace fuel
-            (p.headWork ++ p.untouchedTailWork) :=
-        congrArg (unificationEliminationTrace fuel) p.work_eq
-      _ = unificationEliminationTrace fuel p.headWork ++
-          unificationEliminationTrace p.nextRemainingFuel
-            p.nextTailWork := p.nextSplit.trace_append
-  have hheadTraceSubset : ∀ entry ∈
-      unificationEliminationTrace fuel p.headWork,
-      entry ∈ trace := by
-    intro entry hentry
-    apply s.localTrace_subset entry
-    rw [hcurrentTraceEq]
-    exact List.mem_append_left _ hentry
-  have hnextTraceSubset : ∀ entry ∈
-      unificationEliminationTrace p.nextRemainingFuel p.nextTailWork,
-      entry ∈ trace := by
-    intro entry hentry
-    apply s.localTrace_subset entry
-    rw [hcurrentTraceEq]
-    exact List.mem_append_right _ hentry
-  have hnextLocalAllowed : ∀ {start finish : String},
-      (EqualityClosure.edgeGraph
-        (eliminationTraceAliases
-          (unificationEliminationTrace p.nextRemainingFuel
-            p.nextTailWork))).Reachable start finish →
-        (EqualityClosure.edgeGraph allowed).Reachable start finish := by
-    intro start finish hreach
-    apply s.localAllowed_mono
-    apply hreach.mono
-    intro first second hadj
-    rw [EqualityClosure.edgeGraph_adj_iff] at hadj ⊢
-    rcases hadj with ⟨hne, hforward | hreverse⟩
-    · exact ⟨hne, Or.inl (by
-        rw [mem_eliminationTraceAliases_iff] at hforward ⊢
-        rw [hcurrentTraceEq]
-        exact List.mem_append_right _ hforward)⟩
-    · exact ⟨hne, Or.inr (by
-        rw [mem_eliminationTraceAliases_iff] at hreverse ⊢
-        rw [hcurrentTraceEq]
-        exact List.mem_append_right _ hreverse)⟩
-  have hsubstSubset : ∀ entry ∈ subst, entry ∈ trace := by
-    have hcurrentRun : Metta.Unify.unifyRounds fuel
-        (p.headWork ++ p.untouchedTailWork) subst = some result := by
-      rw [← p.work_eq]
-      exact s.run
-    have hresultEq :=
-      unifyRounds_result_eq_eliminationTrace_reverse_append
-        hcurrentFresh hcurrentRun
-    intro entry hentry
-    apply s.result_subset_trace entry
-    rw [hresultEq]
-    exact List.mem_append_right _ hentry
-  have hnextSubstSubset : ∀ entry ∈ p.nextSubst,
-      entry ∈ trace := by
-    have hnextEq :=
-      unifyRounds_result_eq_eliminationTrace_reverse_append
-        hheadFresh p.nextSplit.front_run
-    intro entry hentry
-    rw [hnextEq] at hentry
-    rcases List.mem_append.mp hentry with htrace | hsubst
-    · apply hheadTraceSubset entry
-      simpa only [List.mem_reverse] using htrace
-    · exact hsubstSubset entry hsubst
-  refine {
-    run := p.next_run
-    work_inHEImage := hnextImage.1
-    subst_inHEImage := hnextImage.2
-    seed_congruence := hhead.congruence
-    length_eq := p.rest_length
-    work_nil_of_left_nil := hworkNil
-    solutionTheory := ?_
-    localTrace_subset := hnextTraceSubset
-    localAllowed_mono := hnextLocalAllowed
-    result_subset_trace := s.result_subset_trace
-    seed_assignmentsSound :=
-      hhead.congruence.assignmentsSound_of_ofSubst_subset
-        hnextSubstSubset
-    seed_equalityBound :=
-      hhead.liveMerge.equalitySound.preserves
-        s.seed_equalityBound
-  }
-  intro valuation
-  have hafterHead : HEBindingSatisfied valuation hhead.liveMerge.after ↔
-      (MettaEquationsSatisfied valuation p.headWork ∧
-        HEBindingSatisfied valuation seed) := by
-    calc
-      HEBindingSatisfied valuation hhead.liveMerge.after ↔
-          LeaBindingSatisfied valuation
-            (Metta.Bindings.ofSubst p.nextSubst) :=
-        hhead.congruence.semantic.solutions valuation
-      _ ↔ MettaConstraintsSatisfied valuation p.nextSubst :=
-        leaOfSubst_solution_iff valuation p.nextSubst
-      _ ↔ (MettaEquationsSatisfied valuation p.headWork ∧
-          MettaConstraintsSatisfied valuation subst) :=
-        unifyRounds_solution_iff valuation hheadWorkImage.noFloat
-          hheadFresh p.nextSplit.front_run
-      _ ↔ (MettaEquationsSatisfied valuation p.headWork ∧
-          LeaBindingSatisfied valuation
-            (Metta.Bindings.ofSubst subst)) :=
-        and_congr Iff.rfl
-          (leaOfSubst_solution_iff valuation subst).symm
-      _ ↔ (MettaEquationsSatisfied valuation p.headWork ∧
-          HEBindingSatisfied valuation seed) :=
-        and_congr Iff.rfl
-          (s.seed_congruence.semantic.solutions valuation).symm
-  have hnextTheory := p.nextSplit.heSuffix_solution_iff_exact
-    hheadWorkImage huntouchedImage s.subst_inHEImage
-      hcurrentFresh hhead.congruence valuation
-  have horiginalTailImage : LeaEquationsInHEImage
-      (List.zip (encodeModelAtoms leftRest)
-        (encodeModelAtoms p.rightRest)) :=
-    leaEquationsInHEImage_zip_translations leftRest p.rightRest
-  have huntouchedTheory :=
-    p.untouchedProjection.heSuffix_solution_iff_exact
-      s.front_inHEImage horiginalTailImage
-      s.outerSubst_inHEImage horiginalTailFresh
-      s.seed_congruence valuation
-  have htranslatedLength : (encodeModelAtoms leftRest).length =
-      (encodeModelAtoms p.rightRest).length := by
-    simpa [length_encodeModelAtoms] using p.rest_length
-  have hzip := mettaEquationsSatisfied_zip_iff valuation
-    htranslatedLength
-  constructor
-  · intro hstate
-    have hnext := hnextTheory.mp hstate
-    have hseedSat := (hafterHead.mp hnext.1).2
-    have horiginal := huntouchedTheory.mp ⟨hnext.2, hseedSat⟩
-    exact ⟨hnext.1, hzip.mp horiginal.2⟩
-  · rintro ⟨hafterSat, horiginalTail⟩
-    have hseedSat := (hafterHead.mp hafterSat).2
-    have huntouched := huntouchedTheory.mpr
-      ⟨hseedSat, hzip.mpr horiginalTail⟩
-    exact hnextTheory.mpr ⟨hafterSat, huntouched.1⟩
-
 /-- A post-merge congruent head discharges the weaker residual boundary
 without reviving standalone child provenance.  The exact prefix split proves
 that the reached substitution lies in the ambient trace, so congruence yields
@@ -27409,31 +26609,17 @@ def HEProjectedTailHeadResidualPackage.coreResidualOfCoreCongruent
       hhead.toHELiveMatchMergeCoreCertified
     solutions := hhead.congruence.semantic.solutions
   }
-  afterAssignmentsSound :=
-    (p.toCertifiedTailResidualStateCore hhead).seed_assignmentsSound
+  afterAssignmentsSound := by
+    apply hhead.congruence.assignmentsSound_of_ofSubst_subset
+    have fresh := s.projection.stateFresh s.outerStateFresh
+    rw [p.work_eq] at fresh
+    have resultEq := unifyRounds_result_eq_eliminationTrace_reverse_append
+      (p.nextSplit.stateFresh fresh) p.next_run
+    intro entry member
+    apply s.result_subset_trace entry
+    rw [resultEq]
+    exact List.mem_append_right _ member
 }
-
-/-- Compatibility wrapper for the former stronger head package. -/
-theorem HEProjectedTailHeadResidualPackage.toCertifiedTailResidualState
-    {trace : List (String × Metta.Atom)}
-    {allowed : List (String × String)}
-    {outerFuel : Nat} {front : List (Metta.Atom × Metta.Atom)}
-    {outerSubst : Metta.Subst}
-    {fuel : Nat} {work : List (Metta.Atom × Metta.Atom)}
-    {subst result : Metta.Subst} {left right : List Atom}
-    {seed : Bindings}
-    {s : HEProjectedCertifiedListResidualState trace allowed outerFuel
-      front outerSubst fuel work subst result left right seed}
-    {nextLeft : Atom} {leftRest : List Atom}
-    (p : HEProjectedTailHeadResidualPackage s nextLeft leftRest)
-    (hhead : HELiveMatchMergeCongruentCertified trace allowed
-      nextLeft p.nextRight seed p.nextSubst) :
-    HECertifiedListResidualState trace allowed
-      p.nextRemainingFuel p.nextTailWork p.nextSubst result
-      leftRest p.rightRest hhead.after :=
-  by
-    simpa [HELiveMatchMergeCongruentCertified.toCoreCongruent] using
-      p.toCertifiedTailResidualStateCore hhead.toCoreCongruent
 
 /-- Solution-only tail handoff.  The exact Robinson suffix needs only the
 solution set of the live accumulator.  Assignment provenance and equality
@@ -27664,11 +26850,12 @@ theorem HEProjectedTailHeadResidualSolutionPackage.toCertifiedTailResidualState
   p.toCertifiedTailResidualStateCore
     (hhead.toCoreResidual s.seed_assignmentsSound)
 
-/-- Promote the consumed original head into the exact outer prefix and retain
-a projected state for the untouched original tail.  This is the closure law
-that permits repeated sibling processing without losing source append
-boundaries. -/
-theorem HEProjectedTailHeadResidualPackage.toProjectedTailStateCore
+/-- Consume the exposed original head through an actual certified HE
+match/merge and retain the complete certified state for the untouched
+original tail.  This is the generic projected-state form of the first-frontier
+tail handoff: every trace, provenance, solution, and equality-bound field is
+transported through the literal `nextSplit` state. -/
+theorem HEProjectedTailHeadResidualPackage.toCertifiedTailResidualStateCore
     {trace : List (String × Metta.Atom)}
     {allowed : List (String × String)}
     {outerFuel : Nat} {front : List (Metta.Atom × Metta.Atom)}
@@ -27682,84 +26869,15 @@ theorem HEProjectedTailHeadResidualPackage.toProjectedTailStateCore
     (p : HEProjectedTailHeadResidualPackage s nextLeft leftRest)
     (hhead : HELiveMatchMergeCoreCongruentCertified trace allowed
       nextLeft p.nextRight seed p.nextSubst) :
-    HEProjectedCertifiedListResidualState trace allowed outerFuel
-      (front ++ [(encodeModelAtom nextLeft,
-        encodeModelAtom p.nextRight)]) outerSubst
+    HECertifiedListResidualState trace allowed
       p.nextRemainingFuel p.nextTailWork p.nextSubst result
-      leftRest p.rightRest hhead.liveMerge.after := by
-  have hprojection := p.headProjection.promoteSuffixPrefix
-    p.untouchedProjection p.nextSplit
-  obtain ⟨frontConstraint, frontRest, hfront⟩ :=
-    s.front_decomposes
-  obtain ⟨headConstraints, hheadDecompose⟩ :=
-    p.headProjection.exists_decomposeAll_suffix_of_front_cons hfront
-  have hnewFront : Metta.Unify.decomposeAll
-      (front ++ [(encodeModelAtom nextLeft,
-        encodeModelAtom p.nextRight)]) =
-        some (frontConstraint :: (frontRest ++ headConstraints)) := by
-    rw [decomposeAll_append, hfront, hheadDecompose]
-    rfl
-  have hleftTranslation := congrArg encodeModelAtoms p.left_eq
-  have hrightTranslation := congrArg encodeModelAtoms p.right_eq
-  have hzipPresentation :
-      List.zip (encodeModelAtoms left) (encodeModelAtoms right) =
-        [(encodeModelAtom nextLeft, encodeModelAtom p.nextRight)] ++
-          List.zip (encodeModelAtoms leftRest)
-            (encodeModelAtoms p.rightRest) := by
-    calc
-      List.zip (encodeModelAtoms left) (encodeModelAtoms right) =
-          List.zip (encodeModelAtoms (nextLeft :: leftRest))
-            (encodeModelAtoms (p.nextRight :: p.rightRest)) :=
-        congrArg₂ List.zip hleftTranslation hrightTranslation
-      _ = [(encodeModelAtom nextLeft, encodeModelAtom p.nextRight)] ++
-          List.zip (encodeModelAtoms leftRest)
-            (encodeModelAtoms p.rightRest) := by
-        rfl
-  have hpresentation :
-      (front ++ [(encodeModelAtom nextLeft,
-        encodeModelAtom p.nextRight)]) ++
-          List.zip (encodeModelAtoms leftRest)
-            (encodeModelAtoms p.rightRest) =
-        front ++ List.zip (encodeModelAtoms left)
-          (encodeModelAtoms right) := by
-    calc
-      (front ++ [(encodeModelAtom nextLeft,
-          encodeModelAtom p.nextRight)]) ++
-            List.zip (encodeModelAtoms leftRest)
-              (encodeModelAtoms p.rightRest) =
-          front ++
-            ([(encodeModelAtom nextLeft,
-              encodeModelAtom p.nextRight)] ++
-                List.zip (encodeModelAtoms leftRest)
-                  (encodeModelAtoms p.rightRest)) := by
-        rw [List.append_assoc]
-      _ = front ++ List.zip (encodeModelAtoms left)
-          (encodeModelAtoms right) :=
-        congrArg (fun equations => front ++ equations)
-          hzipPresentation.symm
-  exact {
-    toHECertifiedListResidualState :=
-      p.toCertifiedTailResidualStateCore hhead
-    projection := hprojection
-    front_inHEImage := by
-      intro equation hmem
-      rw [List.mem_append] at hmem
-      rcases hmem with hmem | hmem
-      · exact s.front_inHEImage equation hmem
-      · simp only [List.mem_singleton] at hmem
-        subst equation
-        exact ⟨LeaAtomInHEImage.translation nextLeft,
-          LeaAtomInHEImage.translation p.nextRight⟩
-    outerSubst_inHEImage := s.outerSubst_inHEImage
-    outerStateFresh := by
-      rw [hpresentation]
-      exact s.outerStateFresh
-    front_decomposes :=
-      ⟨frontConstraint, frontRest ++ headConstraints, hnewFront⟩
-  }
+      leftRest p.rightRest hhead.liveMerge.after :=
+  certifyCongruentResidual
+    (p.toSolutionPackage.toCertifiedTailResidualStateCore
+      (p.coreResidualOfCoreCongruent hhead)) hhead.congruence
 
-/-- Compatibility wrapper for the former stronger projected-head package. -/
-theorem HEProjectedTailHeadResidualPackage.toProjectedTailState
+/-- Compatibility wrapper for the former stronger head package. -/
+theorem HEProjectedTailHeadResidualPackage.toCertifiedTailResidualState
     {trace : List (String × Metta.Atom)}
     {allowed : List (String × String)}
     {outerFuel : Nat} {front : List (Metta.Atom × Metta.Atom)}
@@ -27773,14 +26891,12 @@ theorem HEProjectedTailHeadResidualPackage.toProjectedTailState
     (p : HEProjectedTailHeadResidualPackage s nextLeft leftRest)
     (hhead : HELiveMatchMergeCongruentCertified trace allowed
       nextLeft p.nextRight seed p.nextSubst) :
-    HEProjectedCertifiedListResidualState trace allowed outerFuel
-      (front ++ [(encodeModelAtom nextLeft,
-        encodeModelAtom p.nextRight)]) outerSubst
+    HECertifiedListResidualState trace allowed
       p.nextRemainingFuel p.nextTailWork p.nextSubst result
       leftRest p.rightRest hhead.after :=
   by
     simpa [HELiveMatchMergeCongruentCertified.toCoreCongruent] using
-      p.toProjectedTailStateCore hhead.toCoreCongruent
+      p.toCertifiedTailResidualStateCore hhead.toCoreCongruent
 
 /-- Promote one solution-certified head into the outer prefix.  This is the
 weak projected closure law used by repeated sibling processing. -/
@@ -27897,6 +27013,57 @@ theorem HEProjectedTailHeadResidualSolutionPackage.toProjectedTailState
   p.toProjectedTailStateCore
     (hhead.toCoreResidual s.seed_assignmentsSound)
 
+/-- Promote the consumed original head into the exact outer prefix and retain
+a projected state for the untouched original tail.  This is the closure law
+that permits repeated sibling processing without losing source append
+boundaries. -/
+theorem HEProjectedTailHeadResidualPackage.toProjectedTailStateCore
+    {trace : List (String × Metta.Atom)}
+    {allowed : List (String × String)}
+    {outerFuel : Nat} {front : List (Metta.Atom × Metta.Atom)}
+    {outerSubst : Metta.Subst}
+    {fuel : Nat} {work : List (Metta.Atom × Metta.Atom)}
+    {subst result : Metta.Subst} {left right : List Atom}
+    {seed : Bindings}
+    {s : HEProjectedCertifiedListResidualState trace allowed outerFuel
+      front outerSubst fuel work subst result left right seed}
+    {nextLeft : Atom} {leftRest : List Atom}
+    (p : HEProjectedTailHeadResidualPackage s nextLeft leftRest)
+    (hhead : HELiveMatchMergeCoreCongruentCertified trace allowed
+      nextLeft p.nextRight seed p.nextSubst) :
+    HEProjectedCertifiedListResidualState trace allowed outerFuel
+      (front ++ [(encodeModelAtom nextLeft,
+        encodeModelAtom p.nextRight)]) outerSubst
+      p.nextRemainingFuel p.nextTailWork p.nextSubst result
+      leftRest p.rightRest hhead.liveMerge.after :=
+  certifyCongruentProjectedResidual
+    (p.toSolutionPackage.toProjectedTailStateCore
+      (p.coreResidualOfCoreCongruent hhead)) hhead.congruence
+
+/-- Compatibility wrapper for the former stronger projected-head package. -/
+theorem HEProjectedTailHeadResidualPackage.toProjectedTailState
+    {trace : List (String × Metta.Atom)}
+    {allowed : List (String × String)}
+    {outerFuel : Nat} {front : List (Metta.Atom × Metta.Atom)}
+    {outerSubst : Metta.Subst}
+    {fuel : Nat} {work : List (Metta.Atom × Metta.Atom)}
+    {subst result : Metta.Subst} {left right : List Atom}
+    {seed : Bindings}
+    {s : HEProjectedCertifiedListResidualState trace allowed outerFuel
+      front outerSubst fuel work subst result left right seed}
+    {nextLeft : Atom} {leftRest : List Atom}
+    (p : HEProjectedTailHeadResidualPackage s nextLeft leftRest)
+    (hhead : HELiveMatchMergeCongruentCertified trace allowed
+      nextLeft p.nextRight seed p.nextSubst) :
+    HEProjectedCertifiedListResidualState trace allowed outerFuel
+      (front ++ [(encodeModelAtom nextLeft,
+        encodeModelAtom p.nextRight)]) outerSubst
+      p.nextRemainingFuel p.nextTailWork p.nextSubst result
+      leftRest p.rightRest hhead.after :=
+  by
+    simpa [HELiveMatchMergeCongruentCertified.toCoreCongruent] using
+      p.toProjectedTailStateCore hhead.toCoreCongruent
+
 /-- Every variable occurring in a pointwise child equation occurs in the
 corresponding enclosing expression equation.  The conclusion is stated as
 raw expression-variable membership so it can discharge the outer freshness
@@ -27927,250 +27094,6 @@ theorem mem_expressionPair_vars_of_mem_mettaEquationVars_zip
             rcases hrecursive with hleftTail | hrightTail
             · exact Or.inl (Or.inr hleftTail)
             · exact Or.inr (Or.inr hrightTail)
-
-/-- When the exposed original head is an expression pair, its literal
-transformed head work is already the certified recursive state for the
-original child lists.  The preceding projected prefix remains the operational
-source of that work; only the equal decomposition of the expression equation
-and its zipped children is used. -/
-theorem HEProjectedTailHeadResidualPackage.toCertifiedNestedListResidualState
-    {trace : List (String × Metta.Atom)}
-    {allowed : List (String × String)}
-    {outerFuel : Nat} {front : List (Metta.Atom × Metta.Atom)}
-    {outerSubst : Metta.Subst}
-    {fuel : Nat} {work : List (Metta.Atom × Metta.Atom)}
-    {subst result : Metta.Subst} {left right : List Atom}
-    {seed : Bindings}
-    {s : HEProjectedCertifiedListResidualState trace allowed outerFuel
-      front outerSubst fuel work subst result left right seed}
-    {nextLeft : Atom} {leftRest : List Atom}
-    (p : HEProjectedTailHeadResidualPackage s nextLeft leftRest)
-    {leftAtoms rightAtoms : List Atom}
-    (hleft : nextLeft = .expression leftAtoms)
-    (hright : p.nextRight = .expression rightAtoms) :
-    HECertifiedListResidualState trace allowed fuel p.headWork
-      subst p.nextSubst leftAtoms rightAtoms seed := by
-  obtain ⟨frontConstraint, frontRest, hfront⟩ :=
-    s.front_decomposes
-  obtain ⟨suffixConstraints, hsuffix⟩ :=
-    p.headProjection.exists_decomposeAll_suffix_of_front_cons hfront
-  have hdecomposeList : Metta.Unify.decomposeList
-      (encodeModelAtoms leftAtoms) (encodeModelAtoms rightAtoms) =
-      some suffixConstraints := by
-    cases hdecompose : Metta.Unify.decomposeList
-        (encodeModelAtoms leftAtoms) (encodeModelAtoms rightAtoms) with
-    | none =>
-        simp [hleft, hright, encodeModelAtom,
-          Metta.Unify.decomposeAll, Metta.Unify.decomposeEq,
-          hdecompose] at hsuffix
-    | some constraints =>
-        have hconstraints : constraints = suffixConstraints := by
-          simpa [hleft, hright, encodeModelAtom,
-            Metta.Unify.decomposeAll, Metta.Unify.decomposeEq,
-            hdecompose] using hsuffix
-        subst suffixConstraints
-        rfl
-  have hlength : leftAtoms.length = rightAtoms.length := by
-    have htranslated := length_eq_of_decomposeList_success hdecomposeList
-    simpa [length_encodeModelAtoms] using htranslated
-  have hworkNil : leftAtoms = [] → p.headWork = [] := by
-    intro hleftNil
-    have hrightLength : rightAtoms.length = 0 := by
-      simpa [hleftNil] using hlength.symm
-    have hrightNil : rightAtoms = [] :=
-      List.eq_nil_of_length_eq_zero hrightLength
-    have hsuffixNil : Metta.Unify.decomposeAll
-        [(encodeModelAtom nextLeft,
-          encodeModelAtom p.nextRight)] = some [] := by
-      simp [hleft, hright, hleftNil, hrightNil, encodeModelAtom,
-        Metta.Unify.decomposeAll, Metta.Unify.decomposeEq,
-        Metta.Unify.decomposeList]
-    exact p.headProjection.suffixWork_eq_nil_of_front_cons_of_suffix_nil
-      hfront hsuffixNil
-  have hheadWorkImage : LeaEquationsInHEImage p.headWork := by
-    intro equation hmem
-    apply s.work_inHEImage equation
-    rw [p.work_eq]
-    exact List.mem_append_left _ hmem
-  have hcurrentFresh : UnifyStateFresh
-      (p.headWork ++ p.untouchedTailWork) subst := by
-    have hfresh := s.projection.stateFresh s.outerStateFresh
-    rw [p.work_eq] at hfresh
-    exact hfresh
-  have hheadFresh : UnifyStateFresh p.headWork subst := by
-    intro key hkey hmem
-    exact hcurrentFresh key hkey (by
-      simp only [mettaEquationVars, List.flatMap_append,
-        List.mem_append]
-      exact Or.inl hmem)
-  have hcurrentTraceEq :
-      unificationEliminationTrace fuel work =
-        unificationEliminationTrace fuel p.headWork ++
-          unificationEliminationTrace p.nextRemainingFuel
-            p.nextTailWork := by
-    calc
-      unificationEliminationTrace fuel work =
-          unificationEliminationTrace fuel
-            (p.headWork ++ p.untouchedTailWork) :=
-        congrArg (unificationEliminationTrace fuel) p.work_eq
-      _ = unificationEliminationTrace fuel p.headWork ++
-          unificationEliminationTrace p.nextRemainingFuel
-            p.nextTailWork := p.nextSplit.trace_append
-  have hheadTraceSubset : ∀ entry ∈
-      unificationEliminationTrace fuel p.headWork,
-      entry ∈ trace := by
-    intro entry hentry
-    apply s.localTrace_subset entry
-    rw [hcurrentTraceEq]
-    exact List.mem_append_left _ hentry
-  have hheadAllowed : ∀ {start finish : String},
-      (EqualityClosure.edgeGraph
-        (eliminationTraceAliases
-          (unificationEliminationTrace fuel
-            p.headWork))).Reachable start finish →
-        (EqualityClosure.edgeGraph allowed).Reachable start finish := by
-    intro start finish hreach
-    apply s.localAllowed_mono
-    apply hreach.mono
-    intro first second hadj
-    rw [EqualityClosure.edgeGraph_adj_iff] at hadj ⊢
-    rcases hadj with ⟨hne, hforward | hreverse⟩
-    · exact ⟨hne, Or.inl (by
-        rw [mem_eliminationTraceAliases_iff] at hforward ⊢
-        rw [hcurrentTraceEq]
-        exact List.mem_append_left _ hforward)⟩
-    · exact ⟨hne, Or.inr (by
-        rw [mem_eliminationTraceAliases_iff] at hreverse ⊢
-        rw [hcurrentTraceEq]
-        exact List.mem_append_left _ hreverse)⟩
-  have hsubstSubset : ∀ entry ∈ subst, entry ∈ trace := by
-    have hcurrentRun : Metta.Unify.unifyRounds fuel
-        (p.headWork ++ p.untouchedTailWork) subst = some result := by
-      rw [← p.work_eq]
-      exact s.run
-    have hresultEq :=
-      unifyRounds_result_eq_eliminationTrace_reverse_append
-        hcurrentFresh hcurrentRun
-    intro entry hentry
-    apply s.result_subset_trace entry
-    rw [hresultEq]
-    exact List.mem_append_right _ hentry
-  have hnextSubstSubset : ∀ entry ∈ p.nextSubst,
-      entry ∈ trace := by
-    have hnextEq :=
-      unifyRounds_result_eq_eliminationTrace_reverse_append
-        hheadFresh p.nextSplit.front_run
-    intro entry hentry
-    rw [hnextEq] at hentry
-    rcases List.mem_append.mp hentry with htrace | hsubst
-    · apply hheadTraceSubset entry
-      simpa only [List.mem_reverse] using htrace
-    · exact hsubstSubset entry hsubst
-  exact {
-    run := p.nextSplit.front_run
-    work_inHEImage := hheadWorkImage
-    subst_inHEImage := s.subst_inHEImage
-    seed_congruence := s.seed_congruence
-    length_eq := hlength
-    work_nil_of_left_nil := hworkNil
-    solutionTheory := by
-      intro valuation
-      simpa [hleft, hright, MettaEquationSatisfied, encodeModelAtom,
-        applyClassSolution, MettaAtomListsSatisfied] using
-          (p.headTheory valuation)
-    localTrace_subset := hheadTraceSubset
-    localAllowed_mono := hheadAllowed
-    result_subset_trace := hnextSubstSubset
-    seed_assignmentsSound := s.seed_assignmentsSound
-    seed_equalityBound := s.seed_equalityBound
-  }
-
-/-- Retarget the exposed expression equation to its original zipped child
-presentation while preserving the same outer prefix, residual fuel, work,
-and substitution.  This supplies the reusable projected input for arbitrary
-nested-expression recursion. -/
-theorem HEProjectedTailHeadResidualPackage.toProjectedNestedState
-    {trace : List (String × Metta.Atom)}
-    {allowed : List (String × String)}
-    {outerFuel : Nat} {front : List (Metta.Atom × Metta.Atom)}
-    {outerSubst : Metta.Subst}
-    {fuel : Nat} {work : List (Metta.Atom × Metta.Atom)}
-    {subst result : Metta.Subst} {left right : List Atom}
-    {seed : Bindings}
-    {s : HEProjectedCertifiedListResidualState trace allowed outerFuel
-      front outerSubst fuel work subst result left right seed}
-    {nextLeft : Atom} {leftRest : List Atom}
-    (p : HEProjectedTailHeadResidualPackage s nextLeft leftRest)
-    {leftAtoms rightAtoms : List Atom}
-    (hleft : nextLeft = .expression leftAtoms)
-    (hright : p.nextRight = .expression rightAtoms) :
-    HEProjectedCertifiedListResidualState trace allowed outerFuel
-      front outerSubst fuel p.headWork subst p.nextSubst
-      leftAtoms rightAtoms seed := by
-  obtain ⟨frontConstraint, frontRest, hfront⟩ :=
-    s.front_decomposes
-  let nestedState := p.toCertifiedNestedListResidualState hleft hright
-  have htranslatedLength :
-      (encodeModelAtoms leftAtoms).length =
-        (encodeModelAtoms rightAtoms).length := by
-    simpa [nestedState, length_encodeModelAtoms] using
-      nestedState.length_eq
-  have hdecompose := decomposeAll_expression_eq_zip
-    (encodeModelAtoms leftAtoms) (encodeModelAtoms rightAtoms)
-      htranslatedLength
-  have hprojection : UnifyRoundsPrefixSplit outerFuel front
-      (List.zip (encodeModelAtoms leftAtoms)
-        (encodeModelAtoms rightAtoms)) outerSubst
-      fuel p.headWork subst := by
-    apply p.headProjection.suffix_congr_of_front_cons hfront
-    simpa [hleft, hright, encodeModelAtom] using hdecompose.symm
-  have hleftTranslation := congrArg encodeModelAtoms p.left_eq
-  have hrightTranslation := congrArg encodeModelAtoms p.right_eq
-  have hzipPresentation :
-      List.zip (encodeModelAtoms left) (encodeModelAtoms right) =
-        [(encodeModelAtom nextLeft, encodeModelAtom p.nextRight)] ++
-          List.zip (encodeModelAtoms leftRest)
-            (encodeModelAtoms p.rightRest) := by
-    calc
-      List.zip (encodeModelAtoms left) (encodeModelAtoms right) =
-          List.zip (encodeModelAtoms (nextLeft :: leftRest))
-            (encodeModelAtoms (p.nextRight :: p.rightRest)) :=
-        congrArg₂ List.zip hleftTranslation hrightTranslation
-      _ = [(encodeModelAtom nextLeft, encodeModelAtom p.nextRight)] ++
-          List.zip (encodeModelAtoms leftRest)
-            (encodeModelAtoms p.rightRest) := by
-        rfl
-  have hheadInOriginal :
-      (encodeModelAtom nextLeft, encodeModelAtom p.nextRight) ∈
-        List.zip (encodeModelAtoms left) (encodeModelAtoms right) := by
-    rw [hzipPresentation]
-    simp
-  exact {
-    toHECertifiedListResidualState := nestedState
-    projection := hprojection
-    front_inHEImage := s.front_inHEImage
-    outerSubst_inHEImage := s.outerSubst_inHEImage
-    outerStateFresh := by
-      -- `hprojection.stateFresh` above proves the residual freshness; the
-      -- exact outer presentation is obtained directly from decomposition
-      -- equivalence and the original state's freshness.
-      intro key hkey hmem
-      apply s.outerStateFresh key hkey
-      simp only [mettaEquationVars, List.flatMap_append,
-        List.mem_append] at hmem ⊢
-      rcases hmem with hfrontMem | hchildrenMem
-      · exact Or.inl hfrontMem
-      · right
-        apply List.mem_flatMap.mpr
-        refine ⟨(encodeModelAtom nextLeft,
-          encodeModelAtom p.nextRight), hheadInOriginal, ?_⟩
-        have hexpressionVars :=
-          mem_expressionPair_vars_of_mem_mettaEquationVars_zip
-            hchildrenMem
-        simpa [hleft, hright, encodeModelAtom] using hexpressionVars
-    front_decomposes :=
-      ⟨frontConstraint, frontRest, hfront⟩
-  }
 
 /-- Solution-only nested-expression retargeting.  The transformed head work
 is the certified child-list state, with the same independent trace and
@@ -28407,6 +27330,56 @@ theorem HEProjectedTailHeadResidualSolutionPackage.toProjectedNestedState
     front_decomposes :=
       ⟨frontConstraint, frontRest, hfront⟩
   }
+
+/-- When the exposed original head is an expression pair, its literal
+transformed head work is already the certified recursive state for the
+original child lists.  The preceding projected prefix remains the operational
+source of that work; only the equal decomposition of the expression equation
+and its zipped children is used. -/
+theorem HEProjectedTailHeadResidualPackage.toCertifiedNestedListResidualState
+    {trace : List (String × Metta.Atom)}
+    {allowed : List (String × String)}
+    {outerFuel : Nat} {front : List (Metta.Atom × Metta.Atom)}
+    {outerSubst : Metta.Subst}
+    {fuel : Nat} {work : List (Metta.Atom × Metta.Atom)}
+    {subst result : Metta.Subst} {left right : List Atom}
+    {seed : Bindings}
+    {s : HEProjectedCertifiedListResidualState trace allowed outerFuel
+      front outerSubst fuel work subst result left right seed}
+    {nextLeft : Atom} {leftRest : List Atom}
+    (p : HEProjectedTailHeadResidualPackage s nextLeft leftRest)
+    {leftAtoms rightAtoms : List Atom}
+    (hleft : nextLeft = .expression leftAtoms)
+    (hright : p.nextRight = .expression rightAtoms) :
+    HECertifiedListResidualState trace allowed fuel p.headWork
+      subst p.nextSubst leftAtoms rightAtoms seed :=
+  certifyCongruentResidual (p.toSolutionPackage.toCertifiedNestedListResidualState hleft hright)
+    s.seed_congruence
+
+/-- Retarget the exposed expression equation to its original zipped child
+presentation while preserving the same outer prefix, residual fuel, work,
+and substitution.  This supplies the reusable projected input for arbitrary
+nested-expression recursion. -/
+theorem HEProjectedTailHeadResidualPackage.toProjectedNestedState
+    {trace : List (String × Metta.Atom)}
+    {allowed : List (String × String)}
+    {outerFuel : Nat} {front : List (Metta.Atom × Metta.Atom)}
+    {outerSubst : Metta.Subst}
+    {fuel : Nat} {work : List (Metta.Atom × Metta.Atom)}
+    {subst result : Metta.Subst} {left right : List Atom}
+    {seed : Bindings}
+    {s : HEProjectedCertifiedListResidualState trace allowed outerFuel
+      front outerSubst fuel work subst result left right seed}
+    {nextLeft : Atom} {leftRest : List Atom}
+    (p : HEProjectedTailHeadResidualPackage s nextLeft leftRest)
+    {leftAtoms rightAtoms : List Atom}
+    (hleft : nextLeft = .expression leftAtoms)
+    (hright : p.nextRight = .expression rightAtoms) :
+    HEProjectedCertifiedListResidualState trace allowed outerFuel
+      front outerSubst fuel p.headWork subst p.nextSubst
+      leftAtoms rightAtoms seed :=
+  certifyCongruentProjectedResidual
+    (p.toSolutionPackage.toProjectedNestedState hleft hright) s.seed_congruence
 
 /-- Consuming one original head transports raw structural-constraint
 coverage to the untouched sibling tail, in parallel with the exact projected

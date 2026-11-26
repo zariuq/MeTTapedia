@@ -8,6 +8,7 @@ logs, and receipt are retained on both success and failure.
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass
 import hashlib
 import json
 from pathlib import Path
@@ -17,11 +18,11 @@ import subprocess
 import sys
 import tempfile
 import time
-import tomllib
 
 
 PROJECT = Path(__file__).resolve().parents[1]
 QUOTE = "Mettapedia.Languages.MeTTa.PrimeCandidates.Native.CandidateMotivationProgramPackages"
+LESSON = "../../MettaKernel/Curriculum/PrimeMotivation/01_dfa_petta.metta"
 IMPORTER = "Mettapedia.CurriculumConsumer"
 UNRELATED = "Mettapedia.Languages.Metamath.CacheProbe"
 CORE = "Mettapedia.Languages.Metamath.MM2AssembledNormalExecutionCore"
@@ -59,22 +60,16 @@ def lean_stanza(source: str, kind: str, name: str) -> str:
     return "".join(lines[start:end]).rstrip() + "\n"
 
 
-def toml_stanza(source: str, kind: str, name: str) -> str:
-    matches = list(re.finditer(r"(?m)^\[\[[^\]\n]+\]\]\s*$", source))
-    selected = []
-    for index, match in enumerate(matches):
-        end = matches[index + 1].start() if index + 1 < len(matches) else len(source)
-        stanza = source[match.start():end]
-        if match.group(0).strip() == f"[[{kind}]]":
-            if tomllib.loads(stanza)[kind][0].get("name") == name:
-                selected.append(stanza.rstrip() + "\n")
-    require(len(selected) == 1, f"Expected exactly one TOML {kind} {name} declaration")
-    return selected[0]
+@dataclass(frozen=True)
+class QuotationCase:
+    config: str
+    module: str = QUOTE
+    input_path: str = LESSON
 
 
-def actual_configurations(project: Path) -> tuple[dict[str, str], dict[str, str]]:
-    lean_file, toml_file = project / "lakefile.lean", project / "lakefile.toml"
-    lean, toml = lean_file.read_text(), toml_file.read_text()
+def actual_configurations(project: Path) -> tuple[dict[str, QuotationCase], dict[str, str]]:
+    lean_file = project / "lakefile.lean"
+    lean = lean_file.read_text()
     lean_package = lean_stanza(lean, "package", "Mettapedia")
     lean_input = lean_stanza(lean, "input_dir", "primeMotivationSources")
     lean_main = lean_stanza(lean, "lean_lib", "Mettapedia")
@@ -96,46 +91,38 @@ def actual_configurations(project: Path) -> tuple[dict[str, str], dict[str, str]
     require(lean.index(lean_quote.rstrip()) < lean.index(lean_audit.rstrip()),
             "The audit library must be declared after the quotation library")
 
-    data = tomllib.loads(toml)
-    main = next(item for item in data["lean_lib"] if item["name"] == "Mettapedia")
-    quote = next(item for item in data["lean_lib"] if item["name"] == "PrimeMotivationQuotation")
-    audit = next(item for item in data["lean_lib"] if item["name"] == AUDIT_TARGET)
-    source_input = next(item for item in data["input_dir"] if item["name"] == "primeMotivationSources")
-    require(data["defaultTargets"] == ["Mettapedia"], "Unexpected TOML default targets")
-    require(not main.get("needs") and not main.get("extraDepTargets"), "TOML still has global dependencies")
-    require(quote.get("roots") == [QUOTE] and quote.get("needs") == ["@/primeMotivationSources"],
-            "Lean and TOML quotation configurations disagree")
-    require(data["lean_lib"].index(main) < data["lean_lib"].index(quote), "TOML library order differs")
-    require(audit.get("roots") == [AUDIT] and not audit.get("defaultTarget"),
-            "Lean and TOML nondefault audit configurations disagree")
-    require(data["lean_lib"].index(quote) < data["lean_lib"].index(audit),
-            "TOML audit library order differs")
-    require(source_input == {"name": "primeMotivationSources",
-                            "path": "../../MettaKernel/Curriculum/PrimeMotivation",
-                            "text": True, "filter": {"extension": ["metta"]}},
-            "The actual text input contract changed; update this regression explicitly")
     require('path := "../../MettaKernel/Curriculum/PrimeMotivation"' in lean_input
             and "text := true" in lean_input and 'filter := .extension "metta"' in lean_input,
-            "Lean and TOML source-input contracts disagree")
-    first_table = re.search(r"(?m)^\[", toml)
-    require(first_table is not None, "TOML configuration has no tables")
-    header = toml[:first_table.start()].rstrip() + "\n"
+            "The curriculum input requires the authored MeTTa files")
     lean_header = "import Lake\nopen System Lake DSL\n" + lean_package + "\n"
     configurations = {
-        "lean": lean_header + lean_input + "\n" + lean_main + "\n" + lean_quote + "\n" + lean_audit,
-        "toml": header + "\n" + toml_stanza(toml, "lean_lib", "Mettapedia")
-                + "\n" + toml_stanza(toml, "lean_lib", "PrimeMotivationQuotation")
-                + "\n" + toml_stanza(toml, "lean_lib", AUDIT_TARGET)
-                + "\n" + toml_stanza(toml, "input_dir", "primeMotivationSources"),
+        "lean": QuotationCase(lean_header + lean_input + "\n" + lean_main + "\n" + lean_quote + "\n" + lean_audit),
     }
     missing = re.sub(r"(?m)^\s+needs\s*:=\s*#\[`@/primeMotivationSources\]\s*\n", "", lean_quote)
     require(missing != lean_quote, "Failed to construct the missing-dependency negative control")
     prefix = lean_header + lean_input + "\n"
-    configurations["missing-needs"] = prefix + lean_main + "\n" + missing + "\n" + lean_audit
+    configurations["missing-needs"] = QuotationCase(prefix + lean_main + "\n" + missing + "\n" + lean_audit)
     global_main = lean_main.rstrip() + " where\n  needs := #[`@/primeMotivationSources]\n"
     require(not lean_main.rstrip().endswith("where"), "Unexpected default library body")
-    configurations["global-needs"] = prefix + global_main + "\n" + lean_quote + "\n" + lean_audit
-    return configurations, {"lakefile.lean": digest(lean_file), "lakefile.toml": digest(toml_file)}
+    configurations["global-needs"] = QuotationCase(prefix + global_main + "\n" + lean_quote + "\n" + lean_audit)
+    for tree in ("Vector", "Search"):
+        input_name = f"gsltIndexed{tree}TreeModule"
+        module = f"Mettapedia.GSLT.LanguageDef.PositiveInductive{tree}TreeElaboration"
+        input_stanza = lean_stanza(lean, "input_file", input_name)
+        library = lean_stanza(lean, "lean_lib", f"GSLTIndexed{tree}TreeQuotation")
+        roots = f"roots := #[`{module}]"
+        needs = f"needs := #[`@/{input_name}]"
+        require(roots in library and needs in library, f"Expected a local file dependency for {module}")
+        input_path = re.search(r'(?m)^  path := "([^"]+)"$', input_stanza)
+        require(input_path is not None, f"Missing {input_name} path")
+        relative = input_path.group(1)
+        source = project / Path(*module.split(".")).with_suffix(".lean")
+        files = re.findall(r'(?m)^\s*#module_file "([^"]+)"$', source.read_text())
+        require([(source.parent / path).resolve() for path in files] == [(project / relative).resolve()],
+                f"The Lake input differs from the path quoted by {module}")
+        config = "\n".join((lean_header, input_stanza, lean_main, library, lean_audit))
+        configurations[f"{tree.lower()}-tree"] = QuotationCase(config, module, relative)
+    return configurations, {"lakefile.lean": digest(lean_file)}
 
 
 def lean_code(source: str) -> str:
@@ -256,25 +243,24 @@ def write(path: Path, source: str) -> None:
 
 
 class Fixture:
-    def __init__(self, root: Path, lake: str, format_name: str, config: str, toolchain: str):
+    def __init__(self, root: Path, lake: str, case: QuotationCase, toolchain: str):
         self.root, self.lake = root, lake
         self.project = root / "lean" / "mettapedia"
-        self.config_name = "lakefile.toml" if format_name == "toml" else "lakefile.lean"
-        self.curriculum = root / "MettaKernel" / "Curriculum" / "PrimeMotivation"
-        self.lesson = self.curriculum / "01_dfa_petta.metta"
+        self.quote = case.module
+        self.lesson = (self.project / case.input_path).resolve()
         self.logs = root / "logs"
         self.index = 0
-        write(self.project / self.config_name, config)
+        write(self.project / "lakefile.lean", case.config)
         write(self.project / "lean-toolchain", toolchain)
         write(self.lesson, INITIAL)
-        self.module(QUOTE, '''import Lean
+        self.module(self.quote, f'''import Lean
 open Lean Elab Term
 elab "fixture_file_snapshot%" : term => do
-  let text ← IO.FS.readFile "../../MettaKernel/Curriculum/PrimeMotivation/01_dfa_petta.metta"
+  let text ← IO.FS.readFile {json.dumps(case.input_path)}
   return mkStrLit text
 def fixtureQuotedText : String := fixture_file_snapshot%
 ''')
-        self.module(IMPORTER, f'''import {QUOTE}
+        self.module(IMPORTER, f'''import {self.quote}
 open Lean Elab Term
 elab "fixture_import_snapshot%" : term => do
   let declaration ← getConstInfoDefn ``fixtureQuotedText
@@ -302,7 +288,7 @@ theorem fixtureExplicitAudit : fixtureCoreValue = 23 := fixtureCoreReflexive
 
     def run(self, *arguments: str, success: bool = True) -> subprocess.CompletedProcess:
         self.index += 1
-        command = [self.lake, "--no-cache", "--no-ansi", "-f", self.config_name, *arguments]
+        command = [self.lake, "--no-cache", "--no-ansi", *arguments]
         reply = subprocess.run(command, cwd=self.project, capture_output=True, text=True, timeout=120)
         write(self.logs / f"{self.index:02d}.stdout", reply.stdout)
         write(self.logs / f"{self.index:02d}.stderr", reply.stderr)
@@ -311,9 +297,9 @@ theorem fixtureExplicitAudit : fixtureCoreValue = 23 := fixtureCoreReflexive
             require(reply.returncode == 0, f"Lake failed in {self.root.name}: {' '.join(arguments)}\n{reply.stdout}{reply.stderr}")
         return reply
 
-    def cache(self, modules: tuple[str, ...] = (QUOTE, IMPORTER, UNRELATED)) -> dict:
+    def cache(self, modules: tuple[str, ...] | None = None) -> dict:
         result = {}
-        for module in modules:
+        for module in (self.quote, IMPORTER, UNRELATED) if modules is None else modules:
             paths = {}
             stem = self.project / ".lake/build/lib/lean" / Path(*module.split("."))
             for suffix in (".olean", ".trace"):
@@ -343,7 +329,7 @@ def positive(fixture: Fixture) -> dict:
     fixture.audit_absent()
     fixture.run("build")
     require(fixture.cache() == initial, "A no-op build changed the cache")
-    write(fixture.curriculum / "ignored.txt", "Not an authored MeTTa input\n")
+    write(fixture.lesson.parent / "ignored.txt", "Unrelated input\n")
     fixture.run("build")
     require(fixture.cache() == initial, "A non-MeTTa file invalidated the cache")
     write(fixture.lesson, CHANGED)
@@ -352,7 +338,7 @@ def positive(fixture: Fixture) -> dict:
     fixture.run("build")
     changed = fixture.cache()
     require(changed[UNRELATED] == initial[UNRELATED], "Curriculum edit rebuilt unrelated Metamath")
-    for module in (QUOTE, IMPORTER):
+    for module in (fixture.quote, IMPORTER):
         for suffix in (".olean", ".trace"):
             require(changed[module][suffix]["sha256"] != initial[module][suffix]["sha256"],
                     f"Changed curriculum did not change {module}{suffix}")
@@ -437,9 +423,9 @@ def main(argv: list[str] | None = None) -> int:
         run_directory = Path(tempfile.mkdtemp(prefix="scope-", dir=args.work_dir))
         toolchain = (args.project / "lean-toolchain").read_text()
         results = {}
-        for name, config in configs.items():
-            fixture = Fixture(run_directory / name, lake, name, config, toolchain)
-            results[name] = positive(fixture) if name in ("lean", "toml") else negative(fixture, name)
+        for name, case in configs.items():
+            fixture = Fixture(run_directory / name, lake, case, toolchain)
+            results[name] = negative(fixture, name) if name in ("missing-needs", "global-needs") else positive(fixture)
             print(f"PASS: {name}: {results[name]['outcome']}", flush=True)
         receipt = {"schema": "mettapedia-lake-scoping-regression-v1", "source_configs": hashes,
                    "toolchain": toolchain.strip(), "controls": results,
@@ -452,7 +438,7 @@ def main(argv: list[str] | None = None) -> int:
         require(all(digest(path) == sha for path, sha in source_hashes.items()),
                 "Real import graph changed while the isolated regression ran")
         write(run_directory / "receipt.json", json.dumps(receipt, indent=2) + "\n")
-        print(f"PASS: actual Lean/TOML scoping and both negative controls "
+        print(f"PASS: actual Lake scoping and both negative controls "
               f"({receipt['elapsed_seconds']:.3f}s); artifacts retained: {run_directory}")
         return 0
     except (AssertionError, OSError, ValueError, KeyError, StopIteration, subprocess.TimeoutExpired) as error:

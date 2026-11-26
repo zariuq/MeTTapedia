@@ -3201,6 +3201,47 @@ theorem compileAppDefaultWith_compiler_generatedNames (fuel : Nat)
   · exact CompilerNamesAllowed.flatten originStart defaultCounter
       defaultNames.2
 
+private theorem bindCheckedCompileResult {Value Answer : Type}
+    {observed : Value → List Goal → Nat → Prop} {C : Prop}
+    {operation : CompileM (Value × List Goal × Nat)}
+    {resume : Value × List Goal × Nat → CompileM Answer} {answer : Answer}
+    (compiled : (operation >>= resume) = .ok answer)
+    (checked : ∀ value goals next, operation = .ok (value, goals, next) →
+      observed value goals next)
+    (finish : ∀ value goals next, observed value goals next →
+      resume (value, goals, next) = .ok answer → C) : C := by
+  cases result : operation with
+  | error message => simp [result, Bind.bind, Except.bind] at compiled
+  | ok output =>
+      rcases output with ⟨value, goals, next⟩
+      exact finish value goals next (checked value goals next result)
+        (by simpa only [result, Bind.bind, Except.bind] using compiled)
+
+private theorem CompilerGeneratedNamesAt.bindExpr {fuel : Nat}
+    (ih : CompilerGeneratedNamesAt fuel)
+    {external : String → Prop} {origin start : Nat} {env : CEnv} {source : Atom}
+    {Answer : Type} {C : Prop}
+    {resume : Atom × List Goal × Nat → CompileM Answer} {answer : Answer}
+    (originStart : origin ≤ start)
+    (envAllowed : CompilerEnvNamesAllowed external origin start env)
+    (sourceAllowed : CompilerAtomNamesAllowed external origin start source)
+    (compiled : (compileExprFuel fuel env start source >>= resume) = .ok answer)
+    (finish : ∀ term goals next, start ≤ next →
+      CompilerAtomNamesAllowed external origin next term →
+      CompilerGoalsNamesAllowed external origin next goals →
+      resume (term, goals, next) = .ok answer → C) : C :=
+  bindCheckedCompileResult
+    (observed := fun term goals next => start ≤ next ∧
+      CompilerAtomNamesAllowed external origin next term ∧
+      CompilerGoalsNamesAllowed external origin next goals)
+    compiled
+    (fun term goals next result =>
+      ⟨compileExprFuel_counter_mono fuel env start source term goals next result,
+       ih.expr external origin env start source term goals next originStart
+         envAllowed sourceAllowed result⟩)
+    (fun term goals next checked => finish term goals next checked.1 checked.2.1 checked.2.2)
+
+
 theorem compileExprThenFresh_generatedNames (fuel : Nat)
     (ih : CompilerGeneratedNamesAt fuel)
     (external : String → Prop) (origin : Nat) (env : CEnv) (start : Nat)
@@ -3225,33 +3266,16 @@ theorem compileExprThenFresh_generatedNames (fuel : Nat)
           finalCounter)) = .ok (term, goals, next)) :
     CompilerAtomNamesAllowed external origin next term ∧
     CompilerGoalsNamesAllowed external origin next goals := by
-  simp only [Bind.bind, Except.bind] at compiled
-  cases expressionEq : compileExprFuel fuel env start source with
-  | error message =>
-      simp only [expressionEq] at compiled
-      contradiction
-  | ok expressionResult =>
-      simp only [expressionEq, fresh] at compiled
-      rcases Except.ok.inj compiled with ⟨rfl, rfl, rfl⟩
-      have expressionCounter := compileExprFuel_counter_mono fuel env start
-        source expressionResult.1 expressionResult.2.1 expressionResult.2.2
-        expressionEq
-      have expressionNames := ih.expr external origin env start source
-        expressionResult.1 expressionResult.2.1 expressionResult.2.2
-        originStart envAllowed sourceAllowed expressionEq
-      have resultAllowed : CompilerAtomNamesAllowed external origin
-          (expressionResult.2.2 + 1)
-          (Atom.var (compilerGeneratedName expressionResult.2.2)) := by
-        simp only [compilerAtomNamesAllowed_var_iff]
-        exact .generated (Nat.le_trans originStart expressionCounter) (by omega)
-      exact ⟨resultAllowed,
-        buildAllowed _ _ _ _
-          (Nat.le_trans expressionCounter
-            (Nat.le_succ expressionResult.2.2))
-          (expressionNames.1.mono
-            (Nat.le_succ expressionResult.2.2))
-          (expressionNames.2.mono
-            (Nat.le_succ expressionResult.2.2)) resultAllowed⟩
+  refine ih.bindExpr originStart envAllowed sourceAllowed compiled ?_
+  intro value1 goals1 counter1 advance1 valueNames1 goalsNames1 remaining1
+  have allocatedNames2 := compilerFreshAtom_namesAllowed external origin
+    counter1 (originStart.trans advance1)
+  simp only [fresh] at remaining1
+  have reached2 := advance1.trans (Nat.le_succ counter1)
+  rcases Except.ok.inj remaining1 with ⟨rfl, rfl, rfl⟩
+  exact ⟨allocatedNames2, buildAllowed _ _ _ _ reached2
+    (valueNames1.mono (Nat.le_succ counter1)) (goalsNames1.mono (Nat.le_succ counter1))
+    allocatedNames2⟩
 
 theorem compileTwoExprThenFresh_generatedNames (fuel : Nat)
     (ih : CompilerGeneratedNamesAt fuel)
@@ -3284,51 +3308,22 @@ theorem compileTwoExprThenFresh_generatedNames (fuel : Nat)
           finalCounter)) = .ok (term, goals, next)) :
     CompilerAtomNamesAllowed external origin next term ∧
     CompilerGoalsNamesAllowed external origin next goals := by
-  simp only [Bind.bind, Except.bind] at compiled
-  cases firstEq : compileExprFuel fuel env start first with
-  | error message =>
-      simp only [firstEq] at compiled
-      contradiction
-  | ok firstResult =>
-      simp only [firstEq] at compiled
-      have firstCounter := compileExprFuel_counter_mono fuel env start first
-        firstResult.1 firstResult.2.1 firstResult.2.2 firstEq
-      have firstNames := ih.expr external origin env start first firstResult.1
-        firstResult.2.1 firstResult.2.2 originStart envAllowed firstAllowed
-        firstEq
-      cases secondEq : compileExprFuel fuel env firstResult.2.2 second with
-      | error message =>
-          simp only [secondEq] at compiled
-          contradiction
-      | ok secondResult =>
-          simp only [secondEq] at compiled
-          rcases Except.ok.inj compiled with ⟨rfl, rfl, rfl⟩
-          have secondCounter := compileExprFuel_counter_mono fuel env
-            firstResult.2.2 second secondResult.1 secondResult.2.1
-            secondResult.2.2 secondEq
-          have secondNames := ih.expr external origin env firstResult.2.2
-            second secondResult.1 secondResult.2.1 secondResult.2.2
-            (Nat.le_trans originStart firstCounter)
-            (envAllowed.mono firstCounter) (secondAllowed.mono firstCounter)
-            secondEq
-          have resultAllowed : CompilerAtomNamesAllowed external origin
-              (secondResult.2.2 + 1)
-              (Atom.var (compilerGeneratedName secondResult.2.2)) := by
-            simp only [compilerAtomNamesAllowed_var_iff]
-            exact .generated
-              (Nat.le_trans (Nat.le_trans originStart firstCounter)
-                secondCounter) (by omega)
-          exact ⟨resultAllowed,
-            buildAllowed _ _ _ _ _ _
-              (Nat.le_trans (Nat.le_trans firstCounter secondCounter)
-                (Nat.le_succ secondResult.2.2))
-              ((firstNames.1.mono secondCounter).mono
-                (Nat.le_succ secondResult.2.2))
-              ((firstNames.2.mono secondCounter).mono
-                (Nat.le_succ secondResult.2.2))
-              (secondNames.1.mono (Nat.le_succ secondResult.2.2))
-              (secondNames.2.mono (Nat.le_succ secondResult.2.2))
-              resultAllowed⟩
+  refine ih.bindExpr originStart envAllowed firstAllowed compiled ?_
+  intro value1 goals1 counter1 advance1 valueNames1 goalsNames1 remaining1
+  refine ih.bindExpr (start := counter1) (originStart.trans advance1)
+    (envAllowed.mono advance1) (secondAllowed.mono advance1) remaining1 ?_
+  intro value2 goals2 counter2 advance2 valueNames2 goalsNames2 remaining2
+  have reached2 := advance1.trans advance2
+  have allocatedNames3 := compilerFreshAtom_namesAllowed external origin
+    counter2 (originStart.trans reached2)
+  simp only [fresh] at remaining2
+  have reached3 := reached2.trans (Nat.le_succ counter2)
+  rcases Except.ok.inj remaining2 with ⟨rfl, rfl, rfl⟩
+  have later1 := advance2.trans (Nat.le_succ counter2)
+  exact ⟨allocatedNames3, buildAllowed _ _ _ _ _ _ reached3
+    (valueNames1.mono later1) (goalsNames1.mono later1)
+    (valueNames2.mono (Nat.le_succ counter2)) (goalsNames2.mono (Nat.le_succ counter2))
+    allocatedNames3⟩
 
 theorem compileTwoExpr_generatedNames (fuel : Nat)
     (ih : CompilerGeneratedNamesAt fuel)
@@ -3361,37 +3356,16 @@ theorem compileTwoExpr_generatedNames (fuel : Nat)
           finalCounter)) = .ok (term, goals, next)) :
     CompilerAtomNamesAllowed external origin next term ∧
     CompilerGoalsNamesAllowed external origin next goals := by
-  simp only [Bind.bind, Except.bind] at compiled
-  cases firstEq : compileExprFuel fuel env start first with
-  | error message =>
-      simp only [firstEq] at compiled
-      contradiction
-  | ok firstResult =>
-      simp only [firstEq] at compiled
-      have firstCounter := compileExprFuel_counter_mono fuel env start first
-        firstResult.1 firstResult.2.1 firstResult.2.2 firstEq
-      have firstNames := ih.expr external origin env start first firstResult.1
-        firstResult.2.1 firstResult.2.2 originStart envAllowed firstAllowed
-        firstEq
-      cases secondEq : compileExprFuel fuel env firstResult.2.2 second with
-      | error message =>
-          simp only [secondEq] at compiled
-          contradiction
-      | ok secondResult =>
-          simp only [secondEq] at compiled
-          rcases Except.ok.inj compiled with ⟨rfl, rfl, rfl⟩
-          have secondCounter := compileExprFuel_counter_mono fuel env
-            firstResult.2.2 second secondResult.1 secondResult.2.1
-            secondResult.2.2 secondEq
-          have secondNames := ih.expr external origin env firstResult.2.2
-            second secondResult.1 secondResult.2.1 secondResult.2.2
-            (Nat.le_trans originStart firstCounter)
-            (envAllowed.mono firstCounter) (secondAllowed.mono firstCounter)
-            secondEq
-          exact buildAllowed _ _ _ _ _
-            (Nat.le_trans firstCounter secondCounter)
-            (firstNames.1.mono secondCounter)
-            (firstNames.2.mono secondCounter) secondNames.1 secondNames.2
+  refine ih.bindExpr originStart envAllowed firstAllowed compiled ?_
+  intro value1 goals1 counter1 advance1 valueNames1 goalsNames1 remaining1
+  refine ih.bindExpr (start := counter1) (originStart.trans advance1)
+    (envAllowed.mono advance1) (secondAllowed.mono advance1) remaining1 ?_
+  intro value2 goals2 counter2 advance2 valueNames2 goalsNames2 remaining2
+  have reached2 := advance1.trans advance2
+  rcases Except.ok.inj remaining2 with ⟨rfl, rfl, rfl⟩
+  exact buildAllowed _ _ _ _ _ reached2
+    (valueNames1.mono advance2) (goalsNames1.mono advance2)
+    valueNames2 goalsNames2
 
 theorem compileThreeExprThenFresh_generatedNames (fuel : Nat)
     (ih : CompilerGeneratedNamesAt fuel)
@@ -3433,72 +3407,28 @@ theorem compileThreeExprThenFresh_generatedNames (fuel : Nat)
           finalCounter)) = .ok (term, goals, next)) :
     CompilerAtomNamesAllowed external origin next term ∧
     CompilerGoalsNamesAllowed external origin next goals := by
-  simp only [Bind.bind, Except.bind] at compiled
-  cases firstEq : compileExprFuel fuel env start first with
-  | error message =>
-      simp only [firstEq] at compiled
-      contradiction
-  | ok firstResult =>
-      simp only [firstEq] at compiled
-      have firstCounter := compileExprFuel_counter_mono fuel env start first
-        firstResult.1 firstResult.2.1 firstResult.2.2 firstEq
-      have firstNames := ih.expr external origin env start first firstResult.1
-        firstResult.2.1 firstResult.2.2 originStart envAllowed firstAllowed
-        firstEq
-      cases secondEq : compileExprFuel fuel env firstResult.2.2 second with
-      | error message =>
-          simp only [secondEq] at compiled
-          contradiction
-      | ok secondResult =>
-          simp only [secondEq] at compiled
-          have secondCounter := compileExprFuel_counter_mono fuel env
-            firstResult.2.2 second secondResult.1 secondResult.2.1
-            secondResult.2.2 secondEq
-          have secondNames := ih.expr external origin env firstResult.2.2
-            second secondResult.1 secondResult.2.1 secondResult.2.2
-            (Nat.le_trans originStart firstCounter)
-            (envAllowed.mono firstCounter) (secondAllowed.mono firstCounter)
-            secondEq
-          cases thirdEq : compileExprFuel fuel env secondResult.2.2 third with
-          | error message =>
-              simp only [thirdEq] at compiled
-              contradiction
-          | ok thirdResult =>
-              simp only [thirdEq, fresh] at compiled
-              rcases Except.ok.inj compiled with ⟨rfl, rfl, rfl⟩
-              have thirdCounter := compileExprFuel_counter_mono fuel env
-                secondResult.2.2 third thirdResult.1 thirdResult.2.1
-                thirdResult.2.2 thirdEq
-              have thirdNames := ih.expr external origin env secondResult.2.2
-                third thirdResult.1 thirdResult.2.1 thirdResult.2.2
-                (Nat.le_trans (Nat.le_trans originStart firstCounter)
-                  secondCounter)
-                ((envAllowed.mono firstCounter).mono secondCounter)
-                ((thirdAllowed.mono firstCounter).mono secondCounter) thirdEq
-              have resultAllowed : CompilerAtomNamesAllowed external origin
-                  (thirdResult.2.2 + 1)
-                  (Atom.var (compilerGeneratedName thirdResult.2.2)) := by
-                simp only [compilerAtomNamesAllowed_var_iff]
-                exact .generated
-                  (Nat.le_trans
-                    (Nat.le_trans (Nat.le_trans originStart firstCounter)
-                      secondCounter) thirdCounter) (by omega)
-              exact ⟨resultAllowed,
-                buildAllowed _ _ _ _ _ _ _ _
-                  (Nat.le_trans
-                    (Nat.le_trans (Nat.le_trans firstCounter secondCounter)
-                      thirdCounter) (Nat.le_succ thirdResult.2.2))
-                  (((firstNames.1.mono secondCounter).mono thirdCounter).mono
-                    (Nat.le_succ thirdResult.2.2))
-                  (((firstNames.2.mono secondCounter).mono thirdCounter).mono
-                    (Nat.le_succ thirdResult.2.2))
-                  ((secondNames.1.mono thirdCounter).mono
-                    (Nat.le_succ thirdResult.2.2))
-                  ((secondNames.2.mono thirdCounter).mono
-                    (Nat.le_succ thirdResult.2.2))
-                  (thirdNames.1.mono (Nat.le_succ thirdResult.2.2))
-                  (thirdNames.2.mono (Nat.le_succ thirdResult.2.2))
-                  resultAllowed⟩
+  refine ih.bindExpr originStart envAllowed firstAllowed compiled ?_
+  intro value1 goals1 counter1 advance1 valueNames1 goalsNames1 remaining1
+  refine ih.bindExpr (start := counter1) (originStart.trans advance1)
+    (envAllowed.mono advance1) (secondAllowed.mono advance1) remaining1 ?_
+  intro value2 goals2 counter2 advance2 valueNames2 goalsNames2 remaining2
+  have reached2 := advance1.trans advance2
+  refine ih.bindExpr (start := counter2) (originStart.trans reached2)
+    (envAllowed.mono reached2) (thirdAllowed.mono reached2) remaining2 ?_
+  intro value3 goals3 counter3 advance3 valueNames3 goalsNames3 remaining3
+  have reached3 := reached2.trans advance3
+  have allocatedNames4 := compilerFreshAtom_namesAllowed external origin
+    counter3 (originStart.trans reached3)
+  simp only [fresh] at remaining3
+  have reached4 := reached3.trans (Nat.le_succ counter3)
+  rcases Except.ok.inj remaining3 with ⟨rfl, rfl, rfl⟩
+  have later2 := advance3.trans (Nat.le_succ counter3)
+  have later1 := advance2.trans later2
+  exact ⟨allocatedNames4, buildAllowed _ _ _ _ _ _ _ _ reached4
+    (valueNames1.mono later1) (goalsNames1.mono later1)
+    (valueNames2.mono later2) (goalsNames2.mono later2)
+    (valueNames3.mono (Nat.le_succ counter3)) (goalsNames3.mono (Nat.le_succ counter3))
+    allocatedNames4⟩
 
 private theorem compileFourExprThenFresh_generatedNames (fuel : Nat)
     (ih : CompilerGeneratedNamesAt fuel)
@@ -3545,105 +3475,34 @@ private theorem compileFourExprThenFresh_generatedNames (fuel : Nat)
           finalCounter)) = .ok (term, goals, next)) :
     CompilerAtomNamesAllowed external origin next term ∧
     CompilerGoalsNamesAllowed external origin next goals := by
-  simp only [Bind.bind, Except.bind] at compiled
-  cases firstEq : compileExprFuel fuel env start first with
-  | error message =>
-      simp only [firstEq] at compiled
-      contradiction
-  | ok firstResult =>
-      simp only [firstEq] at compiled
-      have firstCounter := compileExprFuel_counter_mono fuel env start first
-        firstResult.1 firstResult.2.1 firstResult.2.2 firstEq
-      have firstNames := ih.expr external origin env start first firstResult.1
-        firstResult.2.1 firstResult.2.2 originStart envAllowed firstAllowed
-        firstEq
-      cases secondEq : compileExprFuel fuel env firstResult.2.2 second with
-      | error message =>
-          simp only [secondEq] at compiled
-          contradiction
-      | ok secondResult =>
-          simp only [secondEq] at compiled
-          have secondCounter := compileExprFuel_counter_mono fuel env
-            firstResult.2.2 second secondResult.1 secondResult.2.1
-            secondResult.2.2 secondEq
-          have secondNames := ih.expr external origin env firstResult.2.2
-            second secondResult.1 secondResult.2.1 secondResult.2.2
-            (Nat.le_trans originStart firstCounter)
-            (envAllowed.mono firstCounter) (secondAllowed.mono firstCounter)
-            secondEq
-          cases thirdEq : compileExprFuel fuel env secondResult.2.2 third with
-          | error message =>
-              simp only [thirdEq] at compiled
-              contradiction
-          | ok thirdResult =>
-              simp only [thirdEq] at compiled
-              have thirdCounter := compileExprFuel_counter_mono fuel env
-                secondResult.2.2 third thirdResult.1 thirdResult.2.1
-                thirdResult.2.2 thirdEq
-              have thirdNames := ih.expr external origin env secondResult.2.2
-                third thirdResult.1 thirdResult.2.1 thirdResult.2.2
-                (Nat.le_trans (Nat.le_trans originStart firstCounter)
-                  secondCounter)
-                ((envAllowed.mono firstCounter).mono secondCounter)
-                ((thirdAllowed.mono firstCounter).mono secondCounter) thirdEq
-              cases fourthEq : compileExprFuel fuel env thirdResult.2.2 fourth with
-              | error message =>
-                  simp only [fourthEq] at compiled
-                  contradiction
-              | ok fourthResult =>
-                  simp only [fourthEq, fresh] at compiled
-                  rcases Except.ok.inj compiled with ⟨rfl, rfl, rfl⟩
-                  have fourthCounter := compileExprFuel_counter_mono fuel env
-                    thirdResult.2.2 fourth fourthResult.1 fourthResult.2.1
-                    fourthResult.2.2 fourthEq
-                  have fourthNames := ih.expr external origin env
-                    thirdResult.2.2 fourth fourthResult.1 fourthResult.2.1
-                    fourthResult.2.2
-                    (Nat.le_trans
-                      (Nat.le_trans (Nat.le_trans originStart firstCounter)
-                        secondCounter) thirdCounter)
-                    (((envAllowed.mono firstCounter).mono secondCounter).mono
-                      thirdCounter)
-                    (((fourthAllowed.mono firstCounter).mono secondCounter).mono
-                      thirdCounter)
-                    fourthEq
-                  have resultAllowed : CompilerAtomNamesAllowed external origin
-                      (fourthResult.2.2 + 1)
-                      (Atom.var (compilerGeneratedName fourthResult.2.2)) := by
-                    simp only [compilerAtomNamesAllowed_var_iff]
-                    exact .generated
-                      (Nat.le_trans
-                        (Nat.le_trans
-                          (Nat.le_trans
-                            (Nat.le_trans originStart firstCounter)
-                            secondCounter)
-                          thirdCounter)
-                        fourthCounter)
-                      (by omega)
-                  have finalStep : fourthResult.2.2 ≤ fourthResult.2.2 + 1 :=
-                    by omega
-                  exact ⟨resultAllowed,
-                    buildAllowed _ _ _ _ _ _ _ _ _ _
-                      (Nat.le_trans
-                        (Nat.le_trans
-                          (Nat.le_trans
-                            (Nat.le_trans firstCounter secondCounter)
-                            thirdCounter)
-                          fourthCounter)
-                        finalStep)
-                      ((((firstNames.1.mono secondCounter).mono thirdCounter).mono
-                        fourthCounter).mono finalStep)
-                      ((((firstNames.2.mono secondCounter).mono thirdCounter).mono
-                        fourthCounter).mono finalStep)
-                      (((secondNames.1.mono thirdCounter).mono fourthCounter).mono
-                        finalStep)
-                      (((secondNames.2.mono thirdCounter).mono fourthCounter).mono
-                        finalStep)
-                      ((thirdNames.1.mono fourthCounter).mono finalStep)
-                      ((thirdNames.2.mono fourthCounter).mono finalStep)
-                      (fourthNames.1.mono finalStep)
-                      (fourthNames.2.mono finalStep)
-                      resultAllowed⟩
+  refine ih.bindExpr originStart envAllowed firstAllowed compiled ?_
+  intro value1 goals1 counter1 advance1 valueNames1 goalsNames1 remaining1
+  refine ih.bindExpr (start := counter1) (originStart.trans advance1)
+    (envAllowed.mono advance1) (secondAllowed.mono advance1) remaining1 ?_
+  intro value2 goals2 counter2 advance2 valueNames2 goalsNames2 remaining2
+  have reached2 := advance1.trans advance2
+  refine ih.bindExpr (start := counter2) (originStart.trans reached2)
+    (envAllowed.mono reached2) (thirdAllowed.mono reached2) remaining2 ?_
+  intro value3 goals3 counter3 advance3 valueNames3 goalsNames3 remaining3
+  have reached3 := reached2.trans advance3
+  refine ih.bindExpr (start := counter3) (originStart.trans reached3)
+    (envAllowed.mono reached3) (fourthAllowed.mono reached3) remaining3 ?_
+  intro value4 goals4 counter4 advance4 valueNames4 goalsNames4 remaining4
+  have reached4 := reached3.trans advance4
+  have allocatedNames5 := compilerFreshAtom_namesAllowed external origin
+    counter4 (originStart.trans reached4)
+  simp only [fresh] at remaining4
+  have reached5 := reached4.trans (Nat.le_succ counter4)
+  rcases Except.ok.inj remaining4 with ⟨rfl, rfl, rfl⟩
+  have later3 := advance4.trans (Nat.le_succ counter4)
+  have later2 := advance3.trans later3
+  have later1 := advance2.trans later2
+  exact ⟨allocatedNames5, buildAllowed _ _ _ _ _ _ _ _ _ _ reached5
+    (valueNames1.mono later1) (goalsNames1.mono later1)
+    (valueNames2.mono later2) (goalsNames2.mono later2)
+    (valueNames3.mono later3) (goalsNames3.mono later3)
+    (valueNames4.mono (Nat.le_succ counter4)) (goalsNames4.mono (Nat.le_succ counter4))
+    allocatedNames5⟩
 
 theorem compileThreeExpr_generatedNames (fuel : Nat)
     (ih : CompilerGeneratedNamesAt fuel)
@@ -3685,53 +3544,21 @@ theorem compileThreeExpr_generatedNames (fuel : Nat)
           finalCounter)) = .ok (term, goals, next)) :
     CompilerAtomNamesAllowed external origin next term ∧
     CompilerGoalsNamesAllowed external origin next goals := by
-  simp only [Bind.bind, Except.bind] at compiled
-  cases firstEq : compileExprFuel fuel env start first with
-  | error message =>
-      simp only [firstEq] at compiled
-      contradiction
-  | ok firstResult =>
-      simp only [firstEq] at compiled
-      have firstCounter := compileExprFuel_counter_mono fuel env start first
-        firstResult.1 firstResult.2.1 firstResult.2.2 firstEq
-      have firstNames := ih.expr external origin env start first firstResult.1
-        firstResult.2.1 firstResult.2.2 originStart envAllowed firstAllowed
-        firstEq
-      cases secondEq : compileExprFuel fuel env firstResult.2.2 second with
-      | error message =>
-          simp only [secondEq] at compiled
-          contradiction
-      | ok secondResult =>
-          simp only [secondEq] at compiled
-          have secondCounter := compileExprFuel_counter_mono fuel env
-            firstResult.2.2 second secondResult.1 secondResult.2.1
-            secondResult.2.2 secondEq
-          have secondNames := ih.expr external origin env firstResult.2.2
-            second secondResult.1 secondResult.2.1 secondResult.2.2
-            (Nat.le_trans originStart firstCounter)
-            (envAllowed.mono firstCounter) (secondAllowed.mono firstCounter)
-            secondEq
-          cases thirdEq : compileExprFuel fuel env secondResult.2.2 third with
-          | error message =>
-              simp only [thirdEq] at compiled
-              contradiction
-          | ok thirdResult =>
-              simp only [thirdEq] at compiled
-              rcases Except.ok.inj compiled with ⟨rfl, rfl, rfl⟩
-              have thirdCounter := compileExprFuel_counter_mono fuel env
-                secondResult.2.2 third thirdResult.1 thirdResult.2.1
-                thirdResult.2.2 thirdEq
-              have thirdNames := ih.expr external origin env secondResult.2.2
-                third thirdResult.1 thirdResult.2.1 thirdResult.2.2
-                (Nat.le_trans (Nat.le_trans originStart firstCounter)
-                  secondCounter)
-                ((envAllowed.mono firstCounter).mono secondCounter)
-                ((thirdAllowed.mono firstCounter).mono secondCounter) thirdEq
-              exact buildAllowed _ _ _ _ _ _ _
-                ((firstNames.1.mono secondCounter).mono thirdCounter)
-                ((firstNames.2.mono secondCounter).mono thirdCounter)
-                (secondNames.1.mono thirdCounter)
-                (secondNames.2.mono thirdCounter) thirdNames.1 thirdNames.2
+  refine ih.bindExpr originStart envAllowed firstAllowed compiled ?_
+  intro value1 goals1 counter1 advance1 valueNames1 goalsNames1 remaining1
+  refine ih.bindExpr (start := counter1) (originStart.trans advance1)
+    (envAllowed.mono advance1) (secondAllowed.mono advance1) remaining1 ?_
+  intro value2 goals2 counter2 advance2 valueNames2 goalsNames2 remaining2
+  have reached2 := advance1.trans advance2
+  refine ih.bindExpr (start := counter2) (originStart.trans reached2)
+    (envAllowed.mono reached2) (thirdAllowed.mono reached2) remaining2 ?_
+  intro value3 goals3 counter3 advance3 valueNames3 goalsNames3 remaining3
+  rcases Except.ok.inj remaining3 with ⟨rfl, rfl, rfl⟩
+  have later1 := advance2.trans advance3
+  exact buildAllowed _ _ _ _ _ _ _
+    (valueNames1.mono later1) (goalsNames1.mono later1)
+    (valueNames2.mono advance3) (goalsNames2.mono advance3)
+    valueNames3 goalsNames3
 
 theorem compileExprThenThreeFresh_generatedNames (fuel : Nat)
     (ih : CompilerGeneratedNamesAt fuel)
@@ -3762,49 +3589,25 @@ theorem compileExprThenThreeFresh_generatedNames (fuel : Nat)
           finalCounter)) = .ok (term, goals, next)) :
     CompilerAtomNamesAllowed external origin next term ∧
     CompilerGoalsNamesAllowed external origin next goals := by
-  simp only [Bind.bind, Except.bind] at compiled
-  cases expressionEq : compileExprFuel fuel env start source with
-  | error message =>
-      simp only [expressionEq] at compiled
-      contradiction
-  | ok expressionResult =>
-      simp only [expressionEq, fresh] at compiled
-      rcases Except.ok.inj compiled with ⟨rfl, rfl, rfl⟩
-      have expressionCounter := compileExprFuel_counter_mono fuel env start
-        source expressionResult.1 expressionResult.2.1 expressionResult.2.2
-        expressionEq
-      have expressionNames := ih.expr external origin env start source
-        expressionResult.1 expressionResult.2.1 expressionResult.2.2
-        originStart envAllowed sourceAllowed expressionEq
-      have firstAllowed : CompilerAtomNamesAllowed external origin
-          (expressionResult.2.2 + 3)
-          (Atom.var (compilerGeneratedName expressionResult.2.2)) := by
-        simp only [compilerAtomNamesAllowed_var_iff]
-        exact .generated (Nat.le_trans originStart expressionCounter) (by omega)
-      have secondAllowed : CompilerAtomNamesAllowed external origin
-          (expressionResult.2.2 + 3)
-          (Atom.var (compilerGeneratedName (expressionResult.2.2 + 1))) := by
-        simp only [compilerAtomNamesAllowed_var_iff]
-        exact .generated
-          (Nat.le_trans (Nat.le_trans originStart expressionCounter) (by omega))
-          (by omega)
-      have resultAllowed : CompilerAtomNamesAllowed external origin
-          (expressionResult.2.2 + 3)
-          (Atom.var (compilerGeneratedName (expressionResult.2.2 + 2))) := by
-        simp only [compilerAtomNamesAllowed_var_iff]
-        exact .generated
-          (Nat.le_trans (Nat.le_trans originStart expressionCounter) (by omega))
-          (by omega)
-      exact ⟨resultAllowed,
-        buildAllowed (expressionResult.2.2 + 3) expressionResult.1
-          expressionResult.2.1
-          (Atom.var (compilerGeneratedName expressionResult.2.2))
-          (Atom.var (compilerGeneratedName (expressionResult.2.2 + 1)))
-          (Atom.var (compilerGeneratedName (expressionResult.2.2 + 2)))
-          (Nat.le_trans expressionCounter (by omega))
-          (expressionNames.1.mono (by omega))
-          (expressionNames.2.mono (by omega)) firstAllowed secondAllowed
-          resultAllowed⟩
+  refine ih.bindExpr originStart envAllowed sourceAllowed compiled ?_
+  intro value1 goals1 counter1 advance1 valueNames1 goalsNames1 remaining1
+  have allocatedNames2 := compilerFreshAtom_namesAllowed external origin
+    counter1 (originStart.trans advance1)
+  simp only [fresh] at remaining1
+  have reached2 := advance1.trans (Nat.le_succ counter1)
+  have allocatedNames3 := compilerFreshAtom_namesAllowed external origin
+    (counter1 + 1) (originStart.trans reached2)
+  have reached3 := reached2.trans (Nat.le_succ (counter1 + 1))
+  have allocatedNames4 := compilerFreshAtom_namesAllowed external origin
+    ((counter1 + 1) + 1) (originStart.trans reached3)
+  have reached4 := reached3.trans (Nat.le_succ ((counter1 + 1) + 1))
+  rcases Except.ok.inj remaining1 with ⟨rfl, rfl, rfl⟩
+  have later2 := (Nat.le_succ (counter1 + 1)).trans (Nat.le_succ ((counter1 + 1) + 1))
+  have later1 := (Nat.le_succ counter1).trans later2
+  exact ⟨allocatedNames4, buildAllowed _ _ _ _ _ _ reached4
+    (valueNames1.mono later1) (goalsNames1.mono later1)
+    (allocatedNames2.mono later2) (allocatedNames3.mono (Nat.le_succ ((counter1 + 1) + 1)))
+    allocatedNames4⟩
 
 theorem compileTwoExprThenFourFresh_generatedNames (fuel : Nat)
     (ih : CompilerGeneratedNamesAt fuel)
@@ -3849,69 +3652,35 @@ theorem compileTwoExprThenFourFresh_generatedNames (fuel : Nat)
           finalCounter)) = .ok (term, goals, next)) :
     CompilerAtomNamesAllowed external origin next term ∧
     CompilerGoalsNamesAllowed external origin next goals := by
-  simp only [Bind.bind, Except.bind] at compiled
-  cases firstEq : compileExprFuel fuel env start firstSource with
-  | error message =>
-      simp only [firstEq] at compiled
-      contradiction
-  | ok firstResult =>
-      simp only [firstEq] at compiled
-      have firstCounter := compileExprFuel_counter_mono fuel env start
-        firstSource firstResult.1 firstResult.2.1 firstResult.2.2 firstEq
-      have firstNames := ih.expr external origin env start firstSource
-        firstResult.1 firstResult.2.1 firstResult.2.2 originStart envAllowed
-        firstSourceAllowed firstEq
-      cases secondEq : compileExprFuel fuel env firstResult.2.2 secondSource with
-      | error message =>
-          simp only [secondEq] at compiled
-          contradiction
-      | ok secondResult =>
-          simp only [secondEq] at compiled
-          rcases Except.ok.inj compiled with ⟨rfl, rfl, rfl⟩
-          have secondCounter := compileExprFuel_counter_mono fuel env
-            firstResult.2.2 secondSource secondResult.1 secondResult.2.1
-            secondResult.2.2 secondEq
-          have secondNames := ih.expr external origin env firstResult.2.2
-            secondSource secondResult.1 secondResult.2.1 secondResult.2.2
-            (Nat.le_trans originStart firstCounter)
-            (envAllowed.mono firstCounter)
-            (secondSourceAllowed.mono firstCounter) secondEq
-          have originSecond : origin ≤ secondResult.2.2 :=
-            Nat.le_trans (Nat.le_trans originStart firstCounter) secondCounter
-          have firstFreshAllowed : CompilerAtomNamesAllowed external origin
-              (secondResult.2.2 + 4)
-              (Atom.var (compilerGeneratedName secondResult.2.2)) := by
-            simp only [compilerAtomNamesAllowed_var_iff]
-            exact .generated originSecond (by omega)
-          have secondFreshAllowed : CompilerAtomNamesAllowed external origin
-              (secondResult.2.2 + 4)
-              (Atom.var (compilerGeneratedName (secondResult.2.2 + 1))) := by
-            simp only [compilerAtomNamesAllowed_var_iff]
-            exact .generated (Nat.le_trans originSecond (by omega)) (by omega)
-          have thirdFreshAllowed : CompilerAtomNamesAllowed external origin
-              (secondResult.2.2 + 4)
-              (Atom.var (compilerGeneratedName (secondResult.2.2 + 2))) := by
-            simp only [compilerAtomNamesAllowed_var_iff]
-            exact .generated (Nat.le_trans originSecond (by omega)) (by omega)
-          have resultAllowed : CompilerAtomNamesAllowed external origin
-              (secondResult.2.2 + 4)
-              (Atom.var (compilerGeneratedName (secondResult.2.2 + 3))) := by
-            simp only [compilerAtomNamesAllowed_var_iff]
-            exact .generated (Nat.le_trans originSecond (by omega)) (by omega)
-          exact ⟨resultAllowed,
-            buildAllowed (secondResult.2.2 + 4) firstResult.1
-              firstResult.2.1 secondResult.1 secondResult.2.1
-              (Atom.var (compilerGeneratedName secondResult.2.2))
-              (Atom.var (compilerGeneratedName (secondResult.2.2 + 1)))
-              (Atom.var (compilerGeneratedName (secondResult.2.2 + 2)))
-              (Atom.var (compilerGeneratedName (secondResult.2.2 + 3)))
-              (Nat.le_trans (Nat.le_trans firstCounter secondCounter)
-                (by omega))
-              ((firstNames.1.mono secondCounter).mono (by omega))
-              ((firstNames.2.mono secondCounter).mono (by omega))
-              (secondNames.1.mono (by omega))
-              (secondNames.2.mono (by omega)) firstFreshAllowed
-              secondFreshAllowed thirdFreshAllowed resultAllowed⟩
+  refine ih.bindExpr originStart envAllowed firstSourceAllowed compiled ?_
+  intro value1 goals1 counter1 advance1 valueNames1 goalsNames1 remaining1
+  refine ih.bindExpr (start := counter1) (originStart.trans advance1)
+    (envAllowed.mono advance1) (secondSourceAllowed.mono advance1) remaining1 ?_
+  intro value2 goals2 counter2 advance2 valueNames2 goalsNames2 remaining2
+  have reached2 := advance1.trans advance2
+  have allocatedNames3 := compilerFreshAtom_namesAllowed external origin
+    counter2 (originStart.trans reached2)
+  simp only [fresh] at remaining2
+  have reached3 := reached2.trans (Nat.le_succ counter2)
+  have allocatedNames4 := compilerFreshAtom_namesAllowed external origin
+    (counter2 + 1) (originStart.trans reached3)
+  have reached4 := reached3.trans (Nat.le_succ (counter2 + 1))
+  have allocatedNames5 := compilerFreshAtom_namesAllowed external origin
+    ((counter2 + 1) + 1) (originStart.trans reached4)
+  have reached5 := reached4.trans (Nat.le_succ ((counter2 + 1) + 1))
+  have allocatedNames6 := compilerFreshAtom_namesAllowed external origin
+    (((counter2 + 1) + 1) + 1) (originStart.trans reached5)
+  have reached6 := reached5.trans (Nat.le_succ (((counter2 + 1) + 1) + 1))
+  rcases Except.ok.inj remaining2 with ⟨rfl, rfl, rfl⟩
+  have later4 := (Nat.le_succ ((counter2 + 1) + 1)).trans (Nat.le_succ (((counter2 + 1) + 1) + 1))
+  have later3 := (Nat.le_succ (counter2 + 1)).trans later4
+  have later2 := (Nat.le_succ counter2).trans later3
+  have later1 := advance2.trans later2
+  exact ⟨allocatedNames6, buildAllowed _ _ _ _ _ _ _ _ _ reached6
+    (valueNames1.mono later1) (goalsNames1.mono later1)
+    (valueNames2.mono later2) (goalsNames2.mono later2)
+    (allocatedNames3.mono later3) (allocatedNames4.mono later4)
+    (allocatedNames5.mono (Nat.le_succ (((counter2 + 1) + 1) + 1))) allocatedNames6⟩
 
 theorem compileSpaceBoolean_generatedNames (fuel : Nat)
     (ih : CompilerGeneratedNamesAt fuel)
@@ -4220,41 +3989,20 @@ theorem compileExprThenTwoFresh_generatedNames (fuel : Nat)
           finalCounter)) = .ok (term, goals, next)) :
     CompilerAtomNamesAllowed external origin next term ∧
     CompilerGoalsNamesAllowed external origin next goals := by
-  simp only [Bind.bind, Except.bind] at compiled
-  cases expressionEq : compileExprFuel fuel env start source with
-  | error message =>
-      simp only [expressionEq] at compiled
-      contradiction
-  | ok expressionResult =>
-      simp only [expressionEq, fresh] at compiled
-      rcases Except.ok.inj compiled with ⟨rfl, rfl, rfl⟩
-      have expressionCounter := compileExprFuel_counter_mono fuel env start
-        source expressionResult.1 expressionResult.2.1 expressionResult.2.2
-        expressionEq
-      have expressionNames := ih.expr external origin env start source
-        expressionResult.1 expressionResult.2.1 expressionResult.2.2
-        originStart envAllowed sourceAllowed expressionEq
-      have intermediateAllowed : CompilerAtomNamesAllowed external origin
-          (expressionResult.2.2 + 2)
-          (Atom.var (compilerGeneratedName expressionResult.2.2)) := by
-        simp only [compilerAtomNamesAllowed_var_iff]
-        exact .generated (Nat.le_trans originStart expressionCounter) (by omega)
-      have resultAllowed : CompilerAtomNamesAllowed external origin
-          (expressionResult.2.2 + 2)
-          (Atom.var (compilerGeneratedName (expressionResult.2.2 + 1))) := by
-        simp only [compilerAtomNamesAllowed_var_iff]
-        exact .generated
-          (Nat.le_trans (Nat.le_trans originStart expressionCounter) (by omega))
-          (by omega)
-      exact ⟨resultAllowed,
-        buildAllowed (expressionResult.2.2 + 2) expressionResult.1
-          expressionResult.2.1
-          (Atom.var (compilerGeneratedName expressionResult.2.2))
-          (Atom.var (compilerGeneratedName (expressionResult.2.2 + 1)))
-          (Nat.le_trans expressionCounter (by omega))
-          (expressionNames.1.mono (by omega))
-          (expressionNames.2.mono (by omega)) intermediateAllowed
-          resultAllowed⟩
+  refine ih.bindExpr originStart envAllowed sourceAllowed compiled ?_
+  intro value1 goals1 counter1 advance1 valueNames1 goalsNames1 remaining1
+  have allocatedNames2 := compilerFreshAtom_namesAllowed external origin
+    counter1 (originStart.trans advance1)
+  simp only [fresh] at remaining1
+  have reached2 := advance1.trans (Nat.le_succ counter1)
+  have allocatedNames3 := compilerFreshAtom_namesAllowed external origin
+    (counter1 + 1) (originStart.trans reached2)
+  have reached3 := reached2.trans (Nat.le_succ (counter1 + 1))
+  rcases Except.ok.inj remaining1 with ⟨rfl, rfl, rfl⟩
+  have later1 := (Nat.le_succ counter1).trans (Nat.le_succ (counter1 + 1))
+  exact ⟨allocatedNames3, buildAllowed _ _ _ _ _ reached3
+    (valueNames1.mono later1) (goalsNames1.mono later1)
+    (allocatedNames2.mono (Nat.le_succ (counter1 + 1))) allocatedNames3⟩
 
 /-- Syntactic-`superpose` branch normalization introduces only the enclosing
 generated output and equalities between already-allowed atoms. -/
@@ -4580,66 +4328,26 @@ theorem compileExprFreshExprFresh_generatedNames (fuel : Nat)
           finalCounter)) = .ok (term, goals, next)) :
     CompilerAtomNamesAllowed external origin next term ∧
     CompilerGoalsNamesAllowed external origin next goals := by
-  simp only [Bind.bind, Except.bind] at compiled
-  cases firstEq : compileExprFuel fuel env start firstSource with
-  | error message =>
-      simp only [firstEq] at compiled
-      contradiction
-  | ok firstResult =>
-      simp only [firstEq, fresh] at compiled
-      have firstCounter := compileExprFuel_counter_mono fuel env start
-        firstSource firstResult.1 firstResult.2.1 firstResult.2.2 firstEq
-      have firstNames := ih.expr external origin env start firstSource
-        firstResult.1 firstResult.2.1 firstResult.2.2 originStart envAllowed
-        firstSourceAllowed firstEq
-      cases secondEq : compileExprFuel fuel env (firstResult.2.2 + 1)
-          secondSource with
-      | error message =>
-          simp only [secondEq] at compiled
-          contradiction
-      | ok secondResult =>
-          simp only [secondEq] at compiled
-          rcases Except.ok.inj compiled with ⟨rfl, rfl, rfl⟩
-          have startSecond : start ≤ firstResult.2.2 + 1 :=
-            Nat.le_trans firstCounter (by omega)
-          have secondCounter := compileExprFuel_counter_mono fuel env
-            (firstResult.2.2 + 1) secondSource secondResult.1
-            secondResult.2.1 secondResult.2.2 secondEq
-          have secondNames := ih.expr external origin env
-            (firstResult.2.2 + 1) secondSource secondResult.1
-            secondResult.2.1 secondResult.2.2
-            (Nat.le_trans originStart startSecond)
-            (envAllowed.mono startSecond)
-            (secondSourceAllowed.mono startSecond) secondEq
-          have originFirst : origin ≤ firstResult.2.2 :=
-            Nat.le_trans originStart firstCounter
-          have intermediateAllowed : CompilerAtomNamesAllowed external origin
-              (secondResult.2.2 + 1)
-              (Atom.var (compilerGeneratedName firstResult.2.2)) := by
-            simp only [compilerAtomNamesAllowed_var_iff]
-            exact .generated originFirst (by omega)
-          have resultAllowed : CompilerAtomNamesAllowed external origin
-              (secondResult.2.2 + 1)
-              (Atom.var (compilerGeneratedName secondResult.2.2)) := by
-            simp only [compilerAtomNamesAllowed_var_iff]
-            exact .generated
-              (Nat.le_trans (Nat.le_trans originStart startSecond)
-                secondCounter) (by omega)
-          exact ⟨resultAllowed,
-            buildAllowed (secondResult.2.2 + 1) firstResult.1
-              firstResult.2.1
-              (Atom.var (compilerGeneratedName firstResult.2.2))
-              secondResult.1 secondResult.2.1
-              (Atom.var (compilerGeneratedName secondResult.2.2))
-              (Nat.le_trans startSecond
-                (Nat.le_trans secondCounter (by omega)))
-              ((firstNames.1.mono (by omega)).mono secondCounter |>.mono
-                (by omega))
-              ((firstNames.2.mono (by omega)).mono secondCounter |>.mono
-                (by omega))
-              intermediateAllowed
-              (secondNames.1.mono (by omega))
-              (secondNames.2.mono (by omega)) resultAllowed⟩
+  refine ih.bindExpr originStart envAllowed firstSourceAllowed compiled ?_
+  intro value1 goals1 counter1 advance1 valueNames1 goalsNames1 remaining1
+  have allocatedNames2 := compilerFreshAtom_namesAllowed external origin
+    counter1 (originStart.trans advance1)
+  simp only [fresh] at remaining1
+  have reached2 := advance1.trans (Nat.le_succ counter1)
+  refine ih.bindExpr (start := (counter1 + 1)) (originStart.trans reached2)
+    (envAllowed.mono reached2) (secondSourceAllowed.mono reached2) remaining1 ?_
+  intro value3 goals3 counter3 advance3 valueNames3 goalsNames3 remaining3
+  have reached3 := reached2.trans advance3
+  have allocatedNames4 := compilerFreshAtom_namesAllowed external origin
+    counter3 (originStart.trans reached3)
+  have reached4 := reached3.trans (Nat.le_succ counter3)
+  rcases Except.ok.inj remaining3 with ⟨rfl, rfl, rfl⟩
+  have later2 := advance3.trans (Nat.le_succ counter3)
+  have later1 := (Nat.le_succ counter1).trans later2
+  exact ⟨allocatedNames4, buildAllowed _ _ _ _ _ _ _ reached4
+    (valueNames1.mono later1) (goalsNames1.mono later1)
+    (allocatedNames2.mono later2) (valueNames3.mono (Nat.le_succ counter3))
+    (goalsNames3.mono (Nat.le_succ counter3)) allocatedNames4⟩
 
 private def compilerMatchPatternSources : Atom → List Atom
   | Atom.expr (Atom.sym "," :: patterns) => patterns

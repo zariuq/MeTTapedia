@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.UnificationWithLevels.TreeFibre.UnionSolver
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.UnificationWithLevels.TreeFibre.MillerRunInitial
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.UnificationWithLevels.TreeFibre.GlbGroupsInitial
@@ -37,9 +38,7 @@ variable (choices : ExecutableChecking.HeadChoices S.R)
 variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R) (heads : HeadPreserving S.R)
   (algebra : CumulativeAlgebra S.R) (rigid : ∀ name, S.roles name = .rigid)
   (complete : AlgorithmicComplete S.R S.roles)
-  (normalizes : ∀ {Θ : Context S.R} {type : TypeOver Θ} (term : Term Θ type),
-    ∃ code : Tm Head Θ.arity, ContextualDependentNormalChecking.Normal (S := S) code ∧
-      Equal S.R Θ.raw term.code code type.code)
+  (normalizes : SolverPremises.HasNormalForms S)
   (inh : Miller.Inhabitants S.R)
   (headsTyped : ∀ {h u u' : Head}, S.R.headTyping h u → S.R.headTyping h u' → u = u')
   (declared : DeclaredTypesFormed S.R)

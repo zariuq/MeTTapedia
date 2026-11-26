@@ -1,3 +1,5 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentRoundProofPlan
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentEliminationsRound
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentMetaArityRank
 
@@ -51,14 +53,10 @@ variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R) (heads : H
   (complete : AlgorithmicComplete S.R S.roles) (declared : DeclaredTypesFormed S.R)
   (choices : ExecutableChecking.HeadChoices S.R) (reducer : ExecutableReduction.Reducer S.R)
   (root : ExecutableReduction.RootEvaluator S.R)
-  (normalizes : ∀ {Θ : Context S.R} {type : TypeOver Θ} (term : Term Θ type),
-    ∃ code : Tm Head Θ.arity, ContextualDependentNormalChecking.Normal (S := S) code ∧
-      Equal S.R Θ.raw term.code code type.code)
-  (certifyNormal : ∀ {n : Nat} (term : Tm Head n),
-    Option (PLift (ContextualDependentNormalChecking.Normal (S := S) term)))
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
-  (rootComplete : ∀ {n : Nat} (term : Tm Head n), root term = none → ∀ target, ¬ S.R.computation.step term target)
+  (normalizes : SolverPremises.HasNormalForms S)
+  (certifyNormal : SolverPremises.NormalityCertifier S)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
+  (rootComplete : SolverPremises.CompleteRootEvaluation (rules := S.R) root)
 
 /-! ## Exchanging, then solving below the moved declaration -/
 
@@ -160,11 +158,7 @@ theorem reorderRound_eq_of_elims (fuel : Nat) {Θ : Context S.R} {problem : Equa
       elimsRound facts roots heads algebra rigid complete declared choices reducer root normalizes certifyNormal
         headTypingUnique rootComplete fuel problem := by
   unfold reorderRound
-  cases computed : elimsRound facts roots heads algebra rigid complete declared choices reducer root normalizes
-      certifyNormal headTypingUnique rootComplete fuel problem with
-  | stuck => exact absurd computed moving
-  | progress update smaller => rfl
-  | refuted absent => rfl
+  keep_round_result moving
 
 /-- **Every run that the eliminations family decides, the reorder family decides with the same outcome.** -/
 theorem reorder_run_of_elims (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -271,8 +265,7 @@ theorem exchangeThen_isSome (fuel : Nat)
 
 /-! ## Eventual constancy -/
 
-variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
-  Keeps (reducer fuel term) (reducer (fuel + 1) term))
+variable (stable : SolverPremises.StableReducer (rules := S.R) reducer)
 
 include stable in
 /-- **The exchange step is eventually constant** when the solver below it is, on every store. -/

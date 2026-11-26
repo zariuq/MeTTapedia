@@ -60,6 +60,30 @@ elab_rules : command
                 (by decide +kernel)))
         | _ => throwUnsupportedSyntax
 
+private def elaborateLexJoin (name left right : Ident) : CommandElabM Unit := do
+  let field := fieldIdent name name.getId
+  let leftField := fieldIdent left left.getId
+  let rightField := fieldIdent right right.getId
+  let chars := field "chars"
+  let tokens := field "tokens"
+  let start := field "before"
+  let finish := field "after"
+  let proof := field "checked"
+  let leftChars := leftField "chars"
+  let rightChars := rightField "chars"
+  let leftTokens := leftField "tokens"
+  let rightTokens := rightField "tokens"
+  let leftStart := leftField "before"
+  let rightFinish := rightField "after"
+  let leftProof := leftField "checked"
+  let rightProof := rightField "checked"
+  elabCommand (← `(def $chars : List Char := $leftChars ++ $rightChars))
+  elabCommand (← `(def $tokens : List Token := $leftTokens ++ $rightTokens))
+  elabCommand (← `(def $start : LexPoint := $leftStart))
+  elabCommand (← `(def $finish : LexPoint := $rightFinish))
+  elabCommand (← `(theorem $proof : LexSegmentAgreement $start $finish $chars $tokens :=
+    lex_segment_compose $leftProof $rightProof))
+
 declare_syntax_cat nativeCLexJoin
 syntax ident ident ident : nativeCLexJoin
 
@@ -72,29 +96,60 @@ elab_rules : command
       for row in rows.getElems do
         match row with
         | `(nativeCLexJoin| $name:ident $left:ident $right:ident) =>
-          withRef row do
-            let field := fieldIdent name name.getId
-            let leftField := fieldIdent left left.getId
-            let rightField := fieldIdent right right.getId
-            let chars := field "chars"
-            let tokens := field "tokens"
-            let start := field "before"
-            let finish := field "after"
-            let proof := field "checked"
-            let leftChars := leftField "chars"
-            let rightChars := rightField "chars"
-            let leftTokens := leftField "tokens"
-            let rightTokens := rightField "tokens"
-            let leftStart := leftField "before"
-            let rightFinish := rightField "after"
-            let leftProof := leftField "checked"
-            let rightProof := rightField "checked"
-            elabCommand (← `(def $chars : List Char := $leftChars ++ $rightChars))
-            elabCommand (← `(def $tokens : List Token := $leftTokens ++ $rightTokens))
-            elabCommand (← `(def $start : LexPoint := $leftStart))
-            elabCommand (← `(def $finish : LexPoint := $rightFinish))
-            elabCommand (← `(theorem $proof : LexSegmentAgreement $start $finish $chars $tokens :=
-              lex_segment_compose $leftProof $rightProof))
+          withRef row (elaborateLexJoin name left right)
         | _ => throwUnsupportedSyntax
+
+private def indexedLexRow (stem : Ident) (index : Nat) : Ident :=
+  let decimal := toString index
+  mkIdentFrom stem (stem.getId.appendAfter ("_" ++ String.replicate (3 - decimal.length) '0' ++ decimal))
+
+declare_syntax_cat nativeCLocalTokenRange
+syntax num " to " num : nativeCLocalTokenRange
+
+/-- Declare canonical generated temporary tokens over half-open intervals.
+The literal is elaborated once per index for reuse in the checked slices. -/
+syntax (name := nativeCLocalTokens) "native_c_local_tokens " ident " ["
+  nativeCLocalTokenRange,* "]" : command
+
+elab_rules : command
+  | `(command| native_c_local_tokens $stem:ident [$ranges:nativeCLocalTokenRange,*]) => do
+      for range in ranges.getElems do
+        match range with
+        | `(nativeCLocalTokenRange| $first:num to $last:num) =>
+          withRef range do
+            unless first.getNat < last.getNat do
+              throwErrorAt range "a native C local token interval must be nonempty"
+            for index in List.range' first.getNat (last.getNat - first.getNat) do
+              let name := indexedLexRow stem index
+              let literal : Term := ⟨(Syntax.mkStrLit s!"gslt_v{index}").raw⟩
+              elabCommand (← `(private def $name : Token :=
+                .identifier (native_c_characters% $literal)))
+        | _ => throwUnsupportedSyntax
+
+private def elaborateLexTree (pieceStem joinStem : Ident) (pieceOffset joinOffset width : Nat) :
+    CommandElabM Ident := do
+  if width ≤ 1 then
+    return indexedLexRow pieceStem pieceOffset
+  else
+    let half := width / 2
+    let left ← elaborateLexTree pieceStem joinStem pieceOffset joinOffset half
+    let right ← elaborateLexTree pieceStem joinStem (pieceOffset + half)
+      (joinOffset + (half - 1)) (width - half)
+    let joined := indexedLexRow joinStem (joinOffset + (width - 2))
+    elaborateLexJoin joined left right
+    return joined
+termination_by width
+decreasing_by all_goals omega
+
+/-- Compose a nonempty interval of checked slices in a balanced tree. Slice
+numbers give their source order and join numbers follow postorder. Each join
+uses the same boundary judgment as an explicit join row. -/
+syntax (name := nativeCLexTree) "native_c_lex_tree " ident ident num : command
+
+elab_rules : command
+  | `(command| native_c_lex_tree $pieces:ident $joins:ident $count:num) => do
+      if count.getNat == 0 then
+        throwErrorAt count "a lexical replay tree requires at least one slice"
+      let _ ← elaborateLexTree pieces joins 0 0 count.getNat
 
 end Mettapedia.GSLT.LanguageDef.NativeOps.NativeC

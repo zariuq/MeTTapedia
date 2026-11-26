@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryPairRecursion
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryStaticStructuralClosure
 
 /-!
@@ -257,103 +258,22 @@ noncomputable def stoppedAtomShellOfCloseSmaller
     (boundarySupport :
       state.certified.typed.boundary.targetSupport = available)
     (boundaryType : state.certified.typed.boundary.targetType = type)
-    (closeSmaller :
-      ∀ {childAvailable childOuter : List TypeExpr}
-        {leftChild rightChild : Pattern} {childType : TypeExpr},
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType leftChild →
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType rightChild →
-        canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
-              rhoReflectivePresentation)
-            leftChild =
-          canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
-              rhoReflectivePresentation)
-            rightChild →
-        sizeOf leftChild + sizeOf rightChild <
-          sizeOf leftPattern + sizeOf rightPattern →
-        rhoCanonicalRecursiveTypeDomain.Admissible childType →
-        Nonempty (CostCanonicalPairElaboration rhoCIGSLT
-          rhoHereditaryNormalizationKernel targetFree childAvailable
-          childOuter leftChild rightChild childType)) :
+    (closeSmaller : RhoPairCloseSmaller declarationColor targetFree
+      (sizeOf leftPattern + sizeOf rightPattern)) :
     RhoCollapsingLeafExposure leftView.node leftView.children right := by
-  have boundaryWellSorted : ReflectiveWellSorted.OpenPatternWellSorted
-      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-      targetFree state.certified.typed.boundary.targetSupport
-      state.certified.typed.boundary.targetType
-      state.certified.typed.boundary.content :=
-    ⟨⟨state.certified.typed.contentTyped,
-        state.certified.typed.contentCanonicalBinderMetadata,
-        state.certified.typed.contentObjectPattern,
-        state.certified.typed.contentTyped.isWellScopedAt⟩,
-      state.certified.typed.contentReflectiveScopeSafe⟩
   have boundaryRightWellSorted : ReflectiveWellSorted.OpenPatternWellSorted
       rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
       targetFree state.certified.typed.boundary.targetSupport
       state.certified.typed.boundary.targetType rightPattern := by
     simpa only [boundarySupport, boundaryType] using rightWellSorted
-  have boundaryMember : state.certified.typed ∈
-      leftView.node.plan.boundaryTable.entries :=
-    entryEmbedding.subset (by simp)
-  have boundarySmaller :
-      sizeOf state.certified.typed.boundary.content + sizeOf rightPattern <
-        sizeOf leftPattern + sizeOf rightPattern := by
-    have contentLt :=
-      leftView.node.plan.boundary_content_size_lt_of_isStaticRoot
-        leftView.node.rootStatic state.certified.typed boundaryMember
-    have nodePatternEq : leftView.node.term.1 = leftPattern :=
-      leftView.patternEq
-    have contentLt' :
-        sizeOf state.certified.typed.boundary.content < sizeOf leftPattern := by
-      calc
-        sizeOf state.certified.typed.boundary.content <
-            sizeOf leftView.node.term.1 := contentLt
-        _ = sizeOf leftPattern := congrArg sizeOf nodePatternEq
-    omega
-  have childAdmissible : rhoCanonicalRecursiveTypeDomain.Admissible
-      state.certified.typed.boundary.targetType := by
-    exact (leftView.typeEq.trans boundaryType.symm) ▸
-      rhoCanonicalRecursiveTypeDomain.base _
-  let childPair := Classical.choice
-    (closeSmaller (childOuter := []) boundaryWellSorted
-      boundaryRightWellSorted boundaryCanonical boundarySmaller
-        childAdmissible)
-  let ambientRight : CostRegionTree rhoCIGSLT targetFree available outer
-      rightPattern type :=
-    ((childPair.rightTree.extendOuter outer).reindexAvailable boundarySupport
-      ).reindexType boundaryType
-  have childToAmbient :
-      (childPair.rightTree.normalize
-        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern =
-      (ambientRight.normalize
-        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern := by
-    have typeReindex := CostRegionTree.reindexType_normalize
-      (normalizeStatic := rhoHereditaryStaticNormalizer) boundaryType
-      ((childPair.rightTree.extendOuter outer).reindexAvailable
-        boundarySupport)
-    have supportReindex := CostRegionTree.reindexAvailable_normalize
-      (normalizeStatic := rhoHereditaryStaticNormalizer) boundarySupport
-      (childPair.rightTree.extendOuter outer)
-    have weakened := childPair.rightTree.extendOuter_normalize_pattern outer
-      rhoHereditaryStaticNormalizer
-    exact (typeReindex.trans (supportReindex.trans weakened)).symm
-  have ambientToRight :
-      (ambientRight.normalize
-        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern =
-      (right.normalize
-        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern :=
-    CostRegionTree.normalize_pattern_eq_of_unambiguous
-      CostCanonicalLaws.rho_unambiguousStaticDecomposition
-      rhoHereditaryNormalizationKernel ambientRight right
-      rightWellSorted.1.2.2.1
+  let childPair := closeStoppedBoundary leftView state entryEmbedding
+    boundaryRightWellSorted boundaryCanonical boundaryType closeSmaller
+  have normal := boundaryPartner_normalize_pattern_eq childPair.rightTree right
+    boundarySupport boundaryType rightWellSorted.1.2.2.1
   exact stoppedAtomShellBoundaryElaborationAlignedSameSupport
     leftView.node leftView.children state entryEmbedding shell
       childPair.leftTree childPair.rightTree right childPair.alignment
-      (childToAmbient.trans ambientToRight)
+      normal
       (congrArg List.length (boundarySupport.trans leftView.availableEq.symm))
 
 /-- Support-independent recursive closure when a deep atom shell exposes a
@@ -392,40 +312,9 @@ noncomputable def stoppedAtomShellSourceVariableOfCloseSmaller
             rhoReflectivePresentation)
           (.fvar name))
     (boundaryType : state.certified.typed.boundary.targetType = type)
-    (closeSmaller :
-      ∀ {childAvailable childOuter : List TypeExpr}
-        {leftChild rightChild : Pattern} {childType : TypeExpr},
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType leftChild →
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType rightChild →
-        canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
-              rhoReflectivePresentation)
-            leftChild =
-          canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
-              rhoReflectivePresentation)
-            rightChild →
-        sizeOf leftChild + sizeOf rightChild <
-          sizeOf leftPattern + sizeOf (Pattern.fvar name) →
-        rhoCanonicalRecursiveTypeDomain.Admissible childType →
-        Nonempty (CostCanonicalPairElaboration rhoCIGSLT
-          rhoHereditaryNormalizationKernel targetFree childAvailable
-          childOuter leftChild rightChild childType)) :
+    (closeSmaller : RhoPairCloseSmaller declarationColor targetFree
+      (sizeOf leftPattern + sizeOf (Pattern.fvar name))) :
     RhoCollapsingLeafExposure leftView.node leftView.children right := by
-  have boundaryWellSorted : ReflectiveWellSorted.OpenPatternWellSorted
-      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-      targetFree state.certified.typed.boundary.targetSupport
-      state.certified.typed.boundary.targetType
-      state.certified.typed.boundary.content :=
-    ⟨⟨state.certified.typed.contentTyped,
-        state.certified.typed.contentCanonicalBinderMetadata,
-        state.certified.typed.contentObjectPattern,
-        state.certified.typed.contentTyped.isWellScopedAt⟩,
-      state.certified.typed.contentReflectiveScopeSafe⟩
   have nameLookup : targetFree name = some type := by
     cases rightWellSorted.1.1 with
     | fvar lookup => exact lookup
@@ -437,33 +326,8 @@ noncomputable def stoppedAtomShellSourceVariableOfCloseSmaller
     · simpa only [boundaryType] using nameLookup
     · intro declaration _declarationMembership
       exact Mettapedia.OSLF.MeTTaIL.ScopedPattern.scopeSafeAt_fvar _ _ _ _
-  have boundaryMember : state.certified.typed ∈
-      leftView.node.plan.boundaryTable.entries :=
-    entryEmbedding.subset (by simp)
-  have boundarySmaller :
-      sizeOf state.certified.typed.boundary.content +
-          sizeOf (Pattern.fvar name) <
-        sizeOf leftPattern + sizeOf (Pattern.fvar name) := by
-    have contentLt :=
-      leftView.node.plan.boundary_content_size_lt_of_isStaticRoot
-        leftView.node.rootStatic state.certified.typed boundaryMember
-    have nodePatternEq : leftView.node.term.1 = leftPattern :=
-      leftView.patternEq
-    have contentLt' :
-        sizeOf state.certified.typed.boundary.content < sizeOf leftPattern := by
-      calc
-        sizeOf state.certified.typed.boundary.content <
-            sizeOf leftView.node.term.1 := contentLt
-        _ = sizeOf leftPattern := congrArg sizeOf nodePatternEq
-    omega
-  have childAdmissible : rhoCanonicalRecursiveTypeDomain.Admissible
-      state.certified.typed.boundary.targetType := by
-    exact (leftView.typeEq.trans boundaryType.symm) ▸
-      rhoCanonicalRecursiveTypeDomain.base _
-  let childPair := Classical.choice
-    (closeSmaller (childOuter := []) boundaryWellSorted
-      boundaryRightWellSorted boundaryCanonical boundarySmaller
-        childAdmissible)
+  let childPair := closeStoppedBoundary leftView state entryEmbedding
+    boundaryRightWellSorted boundaryCanonical boundaryType closeSmaller
   exact stoppedBoundaryElaborationSourceVariable leftView.node
     leftView.children state entryEmbedding name childPair.leftTree
       childPair.rightTree right
@@ -507,29 +371,8 @@ noncomputable def stoppedAtomShellPairElaborationOfCloseSmaller
     (boundarySupport :
       state.certified.typed.boundary.targetSupport = available)
     (boundaryType : state.certified.typed.boundary.targetType = type)
-    (closeSmaller :
-      ∀ {childAvailable childOuter : List TypeExpr}
-        {leftChild rightChild : Pattern} {childType : TypeExpr},
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType leftChild →
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType rightChild →
-        canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
-              rhoReflectivePresentation)
-            leftChild =
-          canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
-              rhoReflectivePresentation)
-            rightChild →
-        sizeOf leftChild + sizeOf rightChild <
-          sizeOf leftPattern + sizeOf rightPattern →
-        rhoCanonicalRecursiveTypeDomain.Admissible childType →
-        Nonempty (CostCanonicalPairElaboration rhoCIGSLT
-          rhoHereditaryNormalizationKernel targetFree childAvailable
-          childOuter leftChild rightChild childType)) :
+    (closeSmaller : RhoPairCloseSmaller declarationColor targetFree
+      (sizeOf leftPattern + sizeOf rightPattern)) :
     CostCanonicalPairElaboration rhoCIGSLT
       rhoHereditaryNormalizationKernel targetFree available outer leftPattern
       rightPattern type := by

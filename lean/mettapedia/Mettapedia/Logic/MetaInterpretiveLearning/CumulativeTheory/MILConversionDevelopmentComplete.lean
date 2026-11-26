@@ -1,3 +1,4 @@
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.ScopedConstructorDevelopment
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Instances.CumulativeConversion
 import Mettapedia.Logic.MetaInterpretiveLearning.CumulativeTheory.MILConversionDevelopmentChain
 import Mettapedia.Logic.MetaInterpretiveLearning.CumulativeTheory.MILConversionParallelCoherence
@@ -116,80 +117,38 @@ theorem cofinal_app {function argument : Tower.Tm n}
     | chain cs cp cx cy => exact cofinal_chain cs cp cx cy functionDevelop argumentDevelop
   · exact cofinal_structural_app root functionDevelop argumentDevelop
 
+private theorem structuralDevelopment : Presentation.ScopedConstructorDevelopment.Structural Par where
+  variableReturns index _ reduced := by cases reduced; exact .var index
+  constantReturns name _ reduced := by cases reduced; exact .const name
+  headReturns value _ reduced := by
+    cases reduced with
+    | head _ => exact .head value
+    | headRel equality => exact .headRel (LevelTower.headEq_symmetric.symm _ _ equality)
+  pi := ⟨Par.pi, fun reduced => by cases reduced with
+    | pi left right => exact ⟨_, _, rfl, left, right⟩⟩
+  sigma := ⟨Par.sigma, fun reduced => by cases reduced with
+    | sigma left right => exact ⟨_, _, rfl, left, right⟩⟩
+  id := ⟨Par.id, fun reduced => by cases reduced with
+    | id type left right => exact ⟨_, _, _, rfl, type, left, right⟩⟩
+  lam _ := ⟨Par.lam, lam_inversion⟩
+  pair := ⟨Par.pair, pair_inversion⟩
+  fst _ noPair := ⟨Par.fst, fun reduced => by
+    cases reduced with
+    | fst inner => exact ⟨_, rfl, inner⟩
+    | betaSigmaFst _ _ => exact (noPair ⟨_, _, rfl⟩).elim⟩
+  snd _ noPair := ⟨Par.snd, fun reduced => by
+    cases reduced with
+    | snd inner => exact ⟨_, rfl, inner⟩
+    | betaSigmaSnd _ _ => exact (noPair ⟨_, _, rfl⟩).elim⟩
+  refl _ := ⟨Par.refl, fun reduced => by
+    cases reduced with | refl inner => exact ⟨_, rfl, inner⟩⟩
+
 /-- Complete development for every open raw term of the actual native
 syntax. The proof preserves the original metadata-conversion guards. -/
-theorem cofinal (source : Tower.Tm n) : Cofinal source := by
-  induction source with
-  | var index =>
-      refine ⟨.var index, ?_⟩
-      intro target parallel
-      cases parallel
-      exact .var index
-  | const name =>
-      refine ⟨.const name, ?_⟩
-      intro target parallel
-      cases parallel
-      exact .const name
-  | head value =>
-      refine ⟨.head value, ?_⟩
-      intro target parallel
-      cases parallel with
-      | head _ => exact .head value
-      | headRel equality => exact .headRel (LevelTower.headEq_symmetric.symm _ _ equality)
-  | pi domain codomain first second =>
-      exact Mettapedia.Logic.Relation.HasCompleteDevelopment.binary
-        (first := Par) (second := Par) (step := Par) Tm.pi first second Par.pi
-        (fun reduced => by cases reduced with
-          | pi left right => exact ⟨_, _, rfl, left, right⟩)
-  | sigma domain codomain first second =>
-      exact Mettapedia.Logic.Relation.HasCompleteDevelopment.binary
-        (first := Par) (second := Par) (step := Par) Tm.sigma first second Par.sigma
-        (fun reduced => by cases reduced with
-          | sigma left right => exact ⟨_, _, rfl, left, right⟩)
-  | id type left right first second third =>
-      obtain ⟨dt, first⟩ := first
-      obtain ⟨dl, second⟩ := second
-      obtain ⟨dr, third⟩ := third
-      refine ⟨.id dt dl dr, ?_⟩
-      intro target parallel
-      cases parallel with
-      | id typeStep leftStep rightStep => exact .id (first _ typeStep) (second _ leftStep) (third _ rightStep)
-  | lam body inner =>
-      obtain ⟨db, inner⟩ := inner
-      refine ⟨.lam db, ?_⟩
-      intro target parallel
-      cases parallel with
-      | lam bodyStep => exact .lam (inner _ bodyStep)
-  | app function argument first second => exact cofinal_app first second
-  | pair first second firstDevelop secondDevelop =>
-      exact Mettapedia.Logic.Relation.HasCompleteDevelopment.binary
-        (first := Par) (second := Par) (step := Par) Tm.pair firstDevelop secondDevelop Par.pair
-        (fun reduced => by cases reduced with
-          | pair left right => exact ⟨_, _, rfl, left, right⟩)
-  | fst pair inner =>
-      cases pair with
-      | pair first second => exact cofinal_pair_fst inner
-      | _ =>
-          obtain ⟨dp, inner⟩ := inner
-          refine ⟨.fst dp, ?_⟩
-          intro target parallel
-          cases parallel with
-          | fst pairStep => exact .fst (inner _ pairStep)
-  | snd pair inner =>
-      cases pair with
-      | pair first second => exact cofinal_pair_snd inner
-      | _ =>
-          obtain ⟨dp, inner⟩ := inner
-          refine ⟨.snd dp, ?_⟩
-          intro target parallel
-          cases parallel with
-          | snd pairStep => exact .snd (inner _ pairStep)
-  | refl term inner =>
-      obtain ⟨dt, inner⟩ := inner
-      refine ⟨.refl dt, ?_⟩
-      intro target parallel
-      cases parallel with
-      | refl termStep => exact .refl (inner _ termStep)
+theorem cofinal (source : Tower.Tm n) : Cofinal source :=
+  Presentation.ScopedConstructorDevelopment.cofinal Par structuralDevelopment
+    (fun f a => cofinal_app f a)
+    (fun pair => cofinal_pair_fst pair) (fun pair => cofinal_pair_snd pair) source
 
 /-- The diamond is a theorem of the specific completed native relation,
 not an assumption about arbitrary nonlinear algebraic rules. -/

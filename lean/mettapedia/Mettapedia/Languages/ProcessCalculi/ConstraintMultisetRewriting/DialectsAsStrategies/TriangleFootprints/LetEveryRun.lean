@@ -86,16 +86,8 @@ theorem let_every_run_he (notLet : ¬ dispatch.executable (.symbol "let"))
         (final (Space.ofList atoms) emitted) →
       emitted.map (fun r => r.1.erase) = L :=
     fun emitted run => LetSource.let_entry_source program call source (complete_source run)
-  refine ⟨PublishesInOrder.bag ⟨?_, every⟩, FinishesInOrder.bag ⟨fine.acc, fun y path => ?_⟩⟩
-  · obtain ⟨space, emitted, path⟩ := IfAtFrames.Fine.exists_final fine
-    have same : space = Space.ofList atoms := space_fixed path
-    subst same
-    exact ⟨emitted, path⟩
-  · rcases (fine.reaches path).progress with moves | ⟨space, emitted, rfl⟩
-    · exact Or.inl moves
-    · have same : space = Space.ofList atoms := space_fixed path
-      subst same
-      exact Or.inr ⟨emitted, rfl, every emitted path⟩
+  have finishes := FinishesInOrder.of_fine fine every
+  exact ⟨finishes.publishes.bag, finishes.bag⟩
 
 /-- **`let` over the settling class**: when the instance `b[x := d]` settles (`SettlesIf`), on a
 program carrying both `let` and `if`, every HE run of `(let $x d b)` publishes the instance's answers

@@ -92,200 +92,224 @@ termination_by patterns => sizeOf patterns
 
 end
 
-mutual
+private def admitsSkeleton (allowHole : Bool) (pattern : Pattern) : Prop :=
+  (if allowHole then patternHoleSkeleton pattern else patternClosedSkeleton pattern) = true
+
+private theorem skeletons_iff (allowHole : Bool) (patterns : List Pattern) :
+    (if allowHole then patternsHoleSkeleton patterns else patternsClosedSkeleton patterns)
+        = true ↔
+      ∀ pattern ∈ patterns, admitsSkeleton allowHole pattern := by
+  cases allowHole <;> induction patterns <;>
+    simp_all [admitsSkeleton, patternsHoleSkeleton, patternsClosedSkeleton]
+
+/-- Both skeleton guards follow this induction. Entering either binder
+requires a closed body, including when the enclosing pattern admits holes. -/
+private theorem skeletonInduction {motive : Bool → Pattern → Prop}
+    (bvar : ∀ allowHole index, motive allowHole (.bvar index))
+    (fvar : ∀ name, motive true (.fvar name))
+    (app : ∀ allowHole constructor args,
+      (∀ p ∈ args, motive allowHole p) → motive allowHole (.apply constructor args))
+    (lam : ∀ allowHole binder body,
+      motive false body → motive allowHole (.lambda binder body))
+    (multi : ∀ allowHole arity binders body,
+      motive false body → motive allowHole (.multiLambda arity binders body))
+    (pattern : Pattern) (allowHole : Bool) (admitted : admitsSkeleton allowHole pattern) :
+    motive allowHole pattern := by
+  induction pattern using Pattern.inductionOn generalizing allowHole with
+  | hbvar index => exact bvar allowHole index
+  | hfvar name => cases allowHole <;> simp_all [admitsSkeleton, patternClosedSkeleton]
+  | happly constructor args ih =>
+      apply app
+      have allArgs := (skeletons_iff allowHole args).mp
+        (show (if allowHole then patternsHoleSkeleton args else patternsClosedSkeleton args)
+            = true by
+          cases allowHole <;>
+            simpa [admitsSkeleton, patternClosedSkeleton, patternHoleSkeleton] using admitted)
+      exact fun p hp => ih p hp allowHole (allArgs p hp)
+  | hlambda binder body ih =>
+      exact lam allowHole binder body (ih false (by
+        cases allowHole <;>
+          simpa [admitsSkeleton, patternClosedSkeleton, patternHoleSkeleton] using admitted))
+  | hmultiLambda arity binders body ih =>
+      exact multi allowHole arity binders body (ih false (by
+        cases allowHole <;>
+          simpa [admitsSkeleton, patternClosedSkeleton, patternHoleSkeleton] using admitted))
+  | hsubst body replacement => cases allowHole <;>
+      simp [admitsSkeleton, patternClosedSkeleton, patternHoleSkeleton] at admitted
+  | hcollection collectionType elems rest => cases allowHole <;>
+      simp [admitsSkeleton, patternClosedSkeleton, patternHoleSkeleton] at admitted
+
+private theorem closedSkeletonInduction {motive : Pattern → Prop}
+    (bvar : ∀ index, motive (.bvar index))
+    (app : ∀ constructor args, (∀ p ∈ args, motive p) → motive (.apply constructor args))
+    (lam : ∀ binder body, motive body → motive (.lambda binder body))
+    (multi : ∀ arity binders body, motive body → motive (.multiLambda arity binders body))
+    {pattern : Pattern} (closed : patternClosedSkeleton pattern = true) :
+    motive pattern :=
+  skeletonInduction (motive := fun allowHole p => allowHole = false → motive p)
+    (fun _ index _ => bvar index)
+    (by simp)
+    (fun _ constructor args ih mode => app constructor args fun p hp => ih p hp mode)
+    (fun _ binder body ih _ => lam binder body (ih rfl))
+    (fun _ arity binders body ih _ => multi arity binders body (ih rfl))
+    pattern false closed rfl
 
 /-- A closed skeleton is in particular a hole skeleton. -/
 theorem patternHoleSkeleton_of_closed {pattern : Pattern}
-    (closed : patternClosedSkeleton pattern = true) :
-    patternHoleSkeleton pattern = true := by
-  cases pattern with
-  | bvar index => simp [patternHoleSkeleton]
-  | fvar name => simp [patternClosedSkeleton] at closed
-  | apply constructor arguments =>
-      have argumentsClosed : patternsClosedSkeleton arguments = true := by
-        simpa [patternClosedSkeleton] using closed
-      simpa [patternHoleSkeleton] using
-        patternsHoleSkeleton_of_closed argumentsClosed
-  | lambda binder body =>
-      simpa [patternHoleSkeleton] using
-        (by simpa [patternClosedSkeleton] using closed :
-          patternClosedSkeleton body = true)
-  | multiLambda arity binders body =>
-      simpa [patternHoleSkeleton] using
-        (by simpa [patternClosedSkeleton] using closed :
-          patternClosedSkeleton body = true)
-  | subst body replacement => simp [patternClosedSkeleton] at closed
-  | collection collectionType elements rest =>
-      simp [patternClosedSkeleton] at closed
-termination_by sizeOf pattern
+    (closed : patternClosedSkeleton pattern = true) : patternHoleSkeleton pattern = true := by
+  apply skeletonInduction
+    (motive := fun allowHole p => admitsSkeleton allowHole p → patternHoleSkeleton p = true)
+    _ _ _ _ _ pattern false closed closed
+  · simp [patternHoleSkeleton]
+  · simp [patternHoleSkeleton]
+  · intro allowHole constructor args ih admitted
+    have allArgs := (skeletons_iff allowHole args).mp (by
+      cases allowHole <;>
+        simpa [admitsSkeleton, patternClosedSkeleton, patternHoleSkeleton] using admitted)
+    simpa [patternHoleSkeleton] using
+      (skeletons_iff true args).mpr (fun p hp => ih p hp (allArgs p hp))
+  · intro allowHole binder body _ admitted
+    cases allowHole <;>
+      simpa [admitsSkeleton, patternClosedSkeleton, patternHoleSkeleton] using admitted
+  · intro allowHole arity binders body _ admitted
+    cases allowHole <;>
+      simpa [admitsSkeleton, patternClosedSkeleton, patternHoleSkeleton] using admitted
 
 theorem patternsHoleSkeleton_of_closed {patterns : List Pattern}
     (closed : patternsClosedSkeleton patterns = true) :
-    patternsHoleSkeleton patterns = true := by
-  cases patterns with
-  | nil => simp [patternsHoleSkeleton]
-  | cons head tail =>
-      simp only [patternsClosedSkeleton, Bool.and_eq_true] at closed
-      simp only [patternsHoleSkeleton, Bool.and_eq_true]
-      exact ⟨patternHoleSkeleton_of_closed closed.1,
-        patternsHoleSkeleton_of_closed closed.2⟩
-termination_by sizeOf patterns
+    patternsHoleSkeleton patterns = true :=
+  (skeletons_iff true patterns).mpr fun p hp =>
+    patternHoleSkeleton_of_closed ((skeletons_iff false patterns).mp closed p hp)
 
-end
+private theorem captureDepthList_atAmbient (name : String) (depth : Nat)
+    (allowHole : Bool) (patterns : List Pattern)
+    (sound : ∀ p ∈ patterns, ∀ captured,
+      captureDepth name depth p = some captured → allowHole = true ∧ captured = depth) :
+    ∀ captured, captureDepthList name depth patterns = some captured →
+      allowHole = true ∧ captured = depth := by
+  induction patterns with
+  | nil => simp [captureDepthList]
+  | cons head tail ih =>
+      intro captured found
+      rw [captureDepthList] at found
+      cases atHead : captureDepth name depth head with
+      | none =>
+          exact ih (fun p hp => sound p (List.mem_cons_of_mem _ hp)) captured (by
+            simpa only [atHead] using found)
+      | some d =>
+          exact sound head (List.mem_cons_self ..) captured (by
+            simpa only [atHead] using found)
 
-mutual
+private theorem captureDepth_atAmbient {pattern : Pattern} {allowHole : Bool}
+    (admitted : admitsSkeleton allowHole pattern) :
+    ∀ name depth captured, captureDepth name depth pattern = some captured →
+      allowHole = true ∧ captured = depth := by
+  apply skeletonInduction
+    (motive := fun allowHole p => ∀ name depth captured,
+      captureDepth name depth p = some captured → allowHole = true ∧ captured = depth)
+    _ _ _ _ _ pattern allowHole admitted
+  · simp [captureDepth]
+  · intro var name depth captured found
+    simp only [captureDepth] at found
+    split at found <;> simp_all
+  · intro allowHole constructor args ih name depth captured found
+    exact captureDepthList_atAmbient name depth allowHole args
+      (fun p hp => ih p hp name depth) captured (by simpa only [captureDepth] using found)
+  · intro allowHole binder body ih name depth captured found
+    have impossible := (ih name (depth + 1) captured (by
+      simpa only [captureDepth] using found)).1
+    cases impossible
+  · intro allowHole arity binders body ih name depth captured found
+    have impossible := (ih name (depth + arity) captured (by
+      simpa only [captureDepth] using found)).1
+    cases impossible
+
+private theorem depthAlignedList_of_members (lhs : Pattern) (depth : Nat)
+    (patterns : List Pattern)
+    (aligned : ∀ p ∈ patterns, depthAligned lhs depth p = true) :
+    depthAlignedList lhs depth patterns = true := by
+  induction patterns with
+  | nil => simp [depthAlignedList]
+  | cons head tail ih =>
+      simp only [depthAlignedList, Bool.and_eq_true]
+      exact ⟨aligned head (List.mem_cons_self ..),
+        ih (fun p hp => aligned p (List.mem_cons_of_mem _ hp))⟩
+
+private theorem depthAligned_of_skeleton {pattern : Pattern} {allowHole : Bool}
+    (admitted : admitsSkeleton allowHole pattern) :
+    ∀ lhs depth, (allowHole = true → ∀ name captured,
+      captureDepth name 0 lhs = some captured → captured = depth) →
+      depthAligned lhs depth pattern = true := by
+  apply skeletonInduction
+    (motive := fun allowHole p => ∀ lhs depth, (allowHole = true → ∀ name captured,
+      captureDepth name 0 lhs = some captured → captured = depth) →
+        depthAligned lhs depth p = true)
+    _ _ _ _ _ pattern allowHole admitted
+  · simp [depthAligned]
+  · intro name lhs depth captures
+    simp only [depthAligned]
+    split
+    · rename_i captured found
+      simpa using captures rfl name captured found
+    · rfl
+  · intro allowHole constructor args ih lhs depth captures
+    simpa only [depthAligned] using depthAlignedList_of_members lhs depth args
+      (fun p hp => ih p hp lhs depth captures)
+  · intro allowHole binder body ih lhs depth _
+    simpa only [depthAligned] using ih lhs (depth + 1) (by simp)
+  · intro allowHole arity binders body ih lhs depth _
+    simpa only [depthAligned] using ih lhs (depth + arity) (by simp)
 
 /-- A closed skeleton has no metavariable, so no name is captured inside one. -/
 theorem captureDepth_of_closedSkeleton {pattern : Pattern}
     (closed : patternClosedSkeleton pattern = true) (name : String) (depth : Nat) :
     captureDepth name depth pattern = none := by
-  cases pattern with
-  | bvar index => simp [captureDepth]
-  | fvar x => simp [patternClosedSkeleton] at closed
-  | apply constructor arguments =>
-      have argumentsClosed : patternsClosedSkeleton arguments = true := by
-        simpa [patternClosedSkeleton] using closed
-      simpa [captureDepth] using
-        captureDepthList_of_closedSkeletons argumentsClosed name depth
-  | lambda binder body =>
-      have bodyClosed : patternClosedSkeleton body = true := by
-        simpa [patternClosedSkeleton] using closed
-      simpa [captureDepth] using
-        captureDepth_of_closedSkeleton bodyClosed name (depth + 1)
-  | multiLambda arity binders body =>
-      have bodyClosed : patternClosedSkeleton body = true := by
-        simpa [patternClosedSkeleton] using closed
-      simpa [captureDepth] using
-        captureDepth_of_closedSkeleton bodyClosed name (depth + arity)
-  | subst body replacement => simp [patternClosedSkeleton] at closed
-  | collection collectionType elements rest =>
-      simp [patternClosedSkeleton] at closed
-termination_by sizeOf pattern
+  cases captured : captureDepth name depth pattern with
+  | none => rfl
+  | some d => cases (captureDepth_atAmbient (allowHole := false) closed name depth d captured).1
 
 /-- Ordered-list companion to `captureDepth_of_closedSkeleton`. -/
 theorem captureDepthList_of_closedSkeletons {patterns : List Pattern}
     (closed : patternsClosedSkeleton patterns = true) (name : String) (depth : Nat) :
     captureDepthList name depth patterns = none := by
-  cases patterns with
-  | nil => simp [captureDepthList]
-  | cons head tail =>
-      simp only [patternsClosedSkeleton, Bool.and_eq_true] at closed
-      simp only [captureDepthList,
-        captureDepth_of_closedSkeleton closed.1 name depth]
-      exact captureDepthList_of_closedSkeletons closed.2 name depth
-termination_by sizeOf patterns
-
-end
-
-mutual
+  cases captured : captureDepthList name depth patterns with
+  | none => rfl
+  | some d =>
+      cases (captureDepthList_atAmbient name depth false patterns
+        (fun p hp => captureDepth_atAmbient ((skeletons_iff false patterns).mp closed p hp)
+          name depth) d captured).1
 
 /-- In a hole skeleton every metavariable stands outside every binder, so a
 capture happens at exactly the ambient depth. -/
 theorem captureDepth_of_holeSkeleton {pattern : Pattern}
     (hole : patternHoleSkeleton pattern = true) (name : String) (depth : Nat) :
     ∀ captured, captureDepth name depth pattern = some captured →
-      captured = depth := by
-  cases pattern with
-  | bvar index => intro captured found; simp [captureDepth] at found
-  | fvar x =>
-      intro captured found
-      simp only [captureDepth] at found
-      split at found
-      · injection found with found'; exact found'.symm
-      · simp at found
-  | apply constructor arguments =>
-      have argumentsHole : patternsHoleSkeleton arguments = true := by
-        simpa [patternHoleSkeleton] using hole
-      intro captured found
-      simp only [captureDepth] at found
-      exact captureDepthList_of_holeSkeletons argumentsHole name depth captured found
-  | lambda binder body =>
-      have bodyClosed : patternClosedSkeleton body = true := by
-        simpa [patternHoleSkeleton] using hole
-      intro captured found
-      rw [captureDepth,
-        captureDepth_of_closedSkeleton bodyClosed name (depth + 1)] at found
-      simp at found
-  | multiLambda arity binders body =>
-      have bodyClosed : patternClosedSkeleton body = true := by
-        simpa [patternHoleSkeleton] using hole
-      intro captured found
-      rw [captureDepth,
-        captureDepth_of_closedSkeleton bodyClosed name (depth + arity)] at found
-      simp at found
-  | subst body replacement => simp [patternHoleSkeleton] at hole
-  | collection collectionType elements rest =>
-      simp [patternHoleSkeleton] at hole
-termination_by sizeOf pattern
+      captured = depth :=
+  fun captured found => (captureDepth_atAmbient (allowHole := true) hole name depth captured found).2
 
 /-- Ordered-list companion to `captureDepth_of_holeSkeleton`. -/
 theorem captureDepthList_of_holeSkeletons {patterns : List Pattern}
     (hole : patternsHoleSkeleton patterns = true) (name : String) (depth : Nat) :
     ∀ captured, captureDepthList name depth patterns = some captured →
-      captured = depth := by
-  cases patterns with
-  | nil => intro captured found; simp [captureDepthList] at found
-  | cons head tail =>
-      simp only [patternsHoleSkeleton, Bool.and_eq_true] at hole
-      intro captured found
-      simp only [captureDepthList] at found
-      split at found
-      · rename_i inHead headFound
-        injection found with found'
-        subst found'
-        exact captureDepth_of_holeSkeleton hole.1 name depth _ headFound
-      · exact captureDepthList_of_holeSkeletons hole.2 name depth captured found
-termination_by sizeOf patterns
-
-end
-
-mutual
+      captured = depth :=
+  fun captured found => (captureDepthList_atAmbient name depth true patterns
+    (fun p hp => captureDepth_atAmbient ((skeletons_iff true patterns).mp hole p hp) name depth)
+    captured found).2
 
 /-- A closed skeleton is depth-aligned against any left-hand side at any
 ambient depth: it has no metavariable to misalign. -/
 theorem depthAligned_of_closedSkeleton (lhs : Pattern) {pattern : Pattern}
     (closed : patternClosedSkeleton pattern = true) (depth : Nat) :
-    depthAligned lhs depth pattern = true := by
-  cases pattern with
-  | bvar index => simp [depthAligned]
-  | fvar x => simp [patternClosedSkeleton] at closed
-  | apply constructor arguments =>
-      have argumentsClosed : patternsClosedSkeleton arguments = true := by
-        simpa [patternClosedSkeleton] using closed
-      simpa [depthAligned] using
-        depthAlignedList_of_closedSkeletons lhs argumentsClosed depth
-  | lambda binder body =>
-      have bodyClosed : patternClosedSkeleton body = true := by
-        simpa [patternClosedSkeleton] using closed
-      simpa [depthAligned] using
-        depthAligned_of_closedSkeleton lhs bodyClosed (depth + 1)
-  | multiLambda arity binders body =>
-      have bodyClosed : patternClosedSkeleton body = true := by
-        simpa [patternClosedSkeleton] using closed
-      simpa [depthAligned] using
-        depthAligned_of_closedSkeleton lhs bodyClosed (depth + arity)
-  | subst body replacement => simp [patternClosedSkeleton] at closed
-  | collection collectionType elements rest =>
-      simp [patternClosedSkeleton] at closed
-termination_by sizeOf pattern
+    depthAligned lhs depth pattern = true :=
+  depthAligned_of_skeleton (allowHole := false) closed lhs depth (by simp)
 
 /-- Ordered-list companion to `depthAligned_of_closedSkeleton`. -/
 theorem depthAlignedList_of_closedSkeletons (lhs : Pattern)
     {patterns : List Pattern}
     (closed : patternsClosedSkeleton patterns = true) (depth : Nat) :
-    depthAlignedList lhs depth patterns = true := by
-  cases patterns with
-  | nil => simp [depthAlignedList]
-  | cons head tail =>
-      simp only [patternsClosedSkeleton, Bool.and_eq_true] at closed
-      simp only [depthAlignedList, Bool.and_eq_true]
-      exact ⟨depthAligned_of_closedSkeleton lhs closed.1 depth,
-        depthAlignedList_of_closedSkeletons lhs closed.2 depth⟩
-termination_by sizeOf patterns
-
-end
-
-mutual
+    depthAlignedList lhs depth patterns = true :=
+  depthAlignedList_of_members lhs depth patterns fun p hp =>
+    depthAligned_of_closedSkeleton lhs ((skeletons_iff false patterns).mp closed p hp) depth
 
 /-- A hole-skeleton right-hand side is depth-aligned against a left-hand side
 that captures only at the ambient depth. -/
@@ -293,34 +317,8 @@ theorem depthAligned_of_holeSkeleton (lhs : Pattern)
     (lhsAmbient : ∀ name captured,
       captureDepth name 0 lhs = some captured → captured = 0)
     {pattern : Pattern} (hole : patternHoleSkeleton pattern = true) :
-    depthAligned lhs 0 pattern = true := by
-  cases pattern with
-  | bvar index => simp [depthAligned]
-  | fvar x =>
-      simp only [depthAligned]
-      split
-      · rename_i captured found
-        simpa using lhsAmbient x captured found
-      · rfl
-  | apply constructor arguments =>
-      have argumentsHole : patternsHoleSkeleton arguments = true := by
-        simpa [patternHoleSkeleton] using hole
-      simpa [depthAligned] using
-        depthAlignedList_of_holeSkeletons lhs lhsAmbient argumentsHole
-  | lambda binder body =>
-      have bodyClosed : patternClosedSkeleton body = true := by
-        simpa [patternHoleSkeleton] using hole
-      simpa [depthAligned] using
-        depthAligned_of_closedSkeleton lhs bodyClosed 1
-  | multiLambda arity binders body =>
-      have bodyClosed : patternClosedSkeleton body = true := by
-        simpa [patternHoleSkeleton] using hole
-      simpa [depthAligned] using
-        depthAligned_of_closedSkeleton lhs bodyClosed (0 + arity)
-  | subst body replacement => simp [patternHoleSkeleton] at hole
-  | collection collectionType elements rest =>
-      simp [patternHoleSkeleton] at hole
-termination_by sizeOf pattern
+    depthAligned lhs 0 pattern = true :=
+  depthAligned_of_skeleton (allowHole := true) hole lhs 0 fun _ => lhsAmbient
 
 /-- Ordered-list companion to `depthAligned_of_holeSkeleton`. -/
 theorem depthAlignedList_of_holeSkeletons (lhs : Pattern)
@@ -328,17 +326,9 @@ theorem depthAlignedList_of_holeSkeletons (lhs : Pattern)
       captureDepth name 0 lhs = some captured → captured = 0)
     {patterns : List Pattern}
     (hole : patternsHoleSkeleton patterns = true) :
-    depthAlignedList lhs 0 patterns = true := by
-  cases patterns with
-  | nil => simp [depthAlignedList]
-  | cons head tail =>
-      simp only [patternsHoleSkeleton, Bool.and_eq_true] at hole
-      simp only [depthAlignedList, Bool.and_eq_true]
-      exact ⟨depthAligned_of_holeSkeleton lhs lhsAmbient hole.1,
-        depthAlignedList_of_holeSkeletons lhs lhsAmbient hole.2⟩
-termination_by sizeOf patterns
-
-end
+    depthAlignedList lhs 0 patterns = true :=
+  depthAlignedList_of_members lhs 0 patterns fun p hp =>
+    depthAligned_of_holeSkeleton lhs lhsAmbient ((skeletons_iff true patterns).mp hole p hp)
 
 /-- **A rule whose binders stand only over closed bodies is depth-aligned.**
 No metavariable of such a rule crosses a binder, so the scope correction
@@ -365,49 +355,36 @@ theorem applyRuleBindings_of_holeSkeletons {rule : RewriteRule}
 def patternOccurrenceNames (pattern : Pattern) : List String :=
   (patternMetavariableOccurrencesAt 0 pattern).map Prod.fst
 
-mutual
+private theorem occurrenceList_of_members (depth : Nat) (patterns : List Pattern)
+    (empty : ∀ p ∈ patterns, patternMetavariableOccurrencesAt depth p = []) :
+    patternsMetavariableOccurrencesAt depth patterns = [] := by
+  induction patterns with
+  | nil => simp [patternsMetavariableOccurrencesAt]
+  | cons head tail ih =>
+      simp [patternsMetavariableOccurrencesAt, empty head (List.mem_cons_self ..),
+        ih (fun p hp => empty p (List.mem_cons_of_mem _ hp))]
 
 /-- Closed skeletons have no metavariable occurrences at any depth. -/
 theorem patternMetavariableOccurrencesAt_closed {pattern : Pattern}
     (closed : patternClosedSkeleton pattern = true) (depth : Nat) :
     patternMetavariableOccurrencesAt depth pattern = [] := by
-  cases pattern with
-  | bvar index => simp [patternMetavariableOccurrencesAt]
-  | fvar name => simp [patternClosedSkeleton] at closed
-  | apply constructor arguments =>
-      have argumentsClosed : patternsClosedSkeleton arguments = true := by
-        simpa [patternClosedSkeleton] using closed
-      simpa [patternMetavariableOccurrencesAt] using
-        patternsMetavariableOccurrencesAt_closed argumentsClosed depth
-  | lambda binder body =>
-      have bodyClosed : patternClosedSkeleton body = true := by
-        simpa [patternClosedSkeleton] using closed
-      simpa [patternMetavariableOccurrencesAt] using
-        patternMetavariableOccurrencesAt_closed bodyClosed (depth + 1)
-  | multiLambda arity binders body =>
-      have bodyClosed : patternClosedSkeleton body = true := by
-        simpa [patternClosedSkeleton] using closed
-      simpa [patternMetavariableOccurrencesAt] using
-        patternMetavariableOccurrencesAt_closed bodyClosed (depth + arity)
-  | subst body replacement => simp [patternClosedSkeleton] at closed
-  | collection collectionType elements rest =>
-      simp [patternClosedSkeleton] at closed
-termination_by sizeOf pattern
+  refine closedSkeletonInduction
+    (motive := fun p => ∀ depth, patternMetavariableOccurrencesAt depth p = [])
+    ?_ ?_ ?_ ?_ closed depth
+  · simp [patternMetavariableOccurrencesAt]
+  · intro constructor args ih depth
+    simpa only [patternMetavariableOccurrencesAt] using
+      occurrenceList_of_members depth args (fun p hp => ih p hp depth)
+  · intro binder body ih depth
+    simpa only [patternMetavariableOccurrencesAt] using ih (depth + 1)
+  · intro arity binders body ih depth
+    simpa only [patternMetavariableOccurrencesAt] using ih (depth + arity)
 
 theorem patternsMetavariableOccurrencesAt_closed {patterns : List Pattern}
     (closed : patternsClosedSkeleton patterns = true) (depth : Nat) :
-    patternsMetavariableOccurrencesAt depth patterns = [] := by
-  cases patterns with
-  | nil => simp [patternsMetavariableOccurrencesAt]
-  | cons head tail =>
-      simp only [patternsClosedSkeleton, Bool.and_eq_true] at closed
-      simp only [patternsMetavariableOccurrencesAt,
-        patternMetavariableOccurrencesAt_closed closed.1 depth,
-        patternsMetavariableOccurrencesAt_closed closed.2 depth,
-        List.nil_append]
-termination_by sizeOf patterns
-
-end
+    patternsMetavariableOccurrencesAt depth patterns = [] :=
+  occurrenceList_of_members depth patterns fun p hp =>
+    patternMetavariableOccurrencesAt_closed ((skeletons_iff false patterns).mp closed p hp) depth
 
 /-! ## The adequate-fragment admission gate -/
 
@@ -852,48 +829,27 @@ theorem applyBindings_fvar (bindings : Bindings) (name : String) :
   | none => rfl
   | some pair => rfl
 
-mutual
-
-/-- Closed skeletons are fixed by every binding application. -/
+/-- Closed syntax remains fixed even when the environment binds other names. -/
 theorem applyBindings_closedSkeleton {pattern : Pattern}
     (closed : patternClosedSkeleton pattern = true) (bindings : Bindings) :
     applyBindings bindings pattern = pattern := by
-  cases pattern with
-  | bvar index => simp [applyBindings]
-  | fvar name => simp [patternClosedSkeleton] at closed
-  | apply constructor arguments =>
-      have argumentsClosed : patternsClosedSkeleton arguments = true := by
-        simpa [patternClosedSkeleton] using closed
-      simp only [applyBindings]
-      rw [applyBindingsList_closedSkeleton argumentsClosed bindings]
-  | lambda binder body =>
-      have bodyClosed : patternClosedSkeleton body = true := by
-        simpa [patternClosedSkeleton] using closed
-      simp only [applyBindings]
-      rw [applyBindings_closedSkeleton bodyClosed bindings]
-  | multiLambda arity binders body =>
-      have bodyClosed : patternClosedSkeleton body = true := by
-        simpa [patternClosedSkeleton] using closed
-      simp only [applyBindings]
-      rw [applyBindings_closedSkeleton bodyClosed bindings]
-  | subst body replacement => simp [patternClosedSkeleton] at closed
-  | collection collectionType elements rest =>
-      simp [patternClosedSkeleton] at closed
-termination_by sizeOf pattern
+  refine closedSkeletonInduction
+    (motive := fun p => applyBindings bindings p = p) ?_ ?_ ?_ ?_ closed
+  · simp [applyBindings]
+  · intro constructor args ih
+    simp only [applyBindings]
+    rw [List.map_congr_left (g := id) ih, List.map_id]
+  · intro binder body ih
+    simp only [applyBindings, ih]
+  · intro arity binders body ih
+    simp only [applyBindings, ih]
 
 theorem applyBindingsList_closedSkeleton {patterns : List Pattern}
     (closed : patternsClosedSkeleton patterns = true) (bindings : Bindings) :
     patterns.map (applyBindings bindings) = patterns := by
-  cases patterns with
-  | nil => rfl
-  | cons head tail =>
-      simp only [patternsClosedSkeleton, Bool.and_eq_true] at closed
-      simp only [List.map_cons,
-        applyBindings_closedSkeleton closed.1 bindings,
-        applyBindingsList_closedSkeleton closed.2 bindings]
-termination_by sizeOf patterns
-
-end
+  rw [List.map_congr_left (g := id) (fun p hp =>
+    applyBindings_closedSkeleton ((skeletons_iff false patterns).mp closed p hp) bindings),
+    List.map_id]
 
 /-- The scope-corrected applier also leaves a closed skeleton alone, at any
 ambient depth: there is no metavariable in it to shift. -/
@@ -1170,53 +1126,40 @@ theorem lookupArgumentAt?_eq_zip_lookup :
               (fun formal member => allZero formal
                 (List.mem_cons_of_mem _ member)) name
 
-mutual
+private theorem instantiateSchemas_of_members (formals : List (String × Nat))
+    (arguments : List Pattern) (depth : Nat) (patterns : List Pattern)
+    (fixed : ∀ p ∈ patterns, instantiateSchemaAt? formals arguments depth p = some p) :
+    instantiateSchemasAt? formals arguments depth patterns = some patterns := by
+  induction patterns with
+  | nil => simp [instantiateSchemasAt?]
+  | cons head tail ih =>
+      simp [instantiateSchemasAt?, fixed head (List.mem_cons_self ..),
+        ih (fun p hp => fixed p (List.mem_cons_of_mem _ hp))]
 
 /-- Closed skeletons instantiate to themselves at every depth. -/
 theorem instantiateSchemaAt?_closedSkeleton {pattern : Pattern}
     (closed : patternClosedSkeleton pattern = true)
     (formals : List (String × Nat)) (arguments : List Pattern) (depth : Nat) :
     instantiateSchemaAt? formals arguments depth pattern = some pattern := by
-  cases pattern with
-  | bvar index => simp [instantiateSchemaAt?]
-  | fvar name => simp [patternClosedSkeleton] at closed
-  | apply constructor schemas =>
-      have schemasClosed : patternsClosedSkeleton schemas = true := by
-        simpa [patternClosedSkeleton] using closed
-      simp [instantiateSchemaAt?,
-        instantiateSchemasAt?_closedSkeleton schemasClosed formals arguments
-          depth]
-  | lambda binder body =>
-      have bodyClosed : patternClosedSkeleton body = true := by
-        simpa [patternClosedSkeleton] using closed
-      simp [instantiateSchemaAt?,
-        instantiateSchemaAt?_closedSkeleton bodyClosed formals arguments
-          (depth + 1)]
-  | multiLambda arity binders body =>
-      have bodyClosed : patternClosedSkeleton body = true := by
-        simpa [patternClosedSkeleton] using closed
-      simp [instantiateSchemaAt?,
-        instantiateSchemaAt?_closedSkeleton bodyClosed formals arguments
-          (depth + arity)]
-  | subst body replacement => simp [patternClosedSkeleton] at closed
-  | collection collectionType elements rest =>
-      simp [patternClosedSkeleton] at closed
-termination_by sizeOf pattern
+  refine closedSkeletonInduction
+    (motive := fun p => ∀ depth, instantiateSchemaAt? formals arguments depth p = some p)
+    ?_ ?_ ?_ ?_ closed depth
+  · simp [instantiateSchemaAt?]
+  · intro constructor args ih depth
+    simp [instantiateSchemaAt?,
+      instantiateSchemas_of_members formals arguments depth args (fun p hp => ih p hp depth)]
+  · intro binder body ih depth
+    simp [instantiateSchemaAt?, ih (depth + 1)]
+  · intro arity binders body ih depth
+    simp [instantiateSchemaAt?, ih (depth + arity)]
 
 theorem instantiateSchemasAt?_closedSkeleton {patterns : List Pattern}
     (closed : patternsClosedSkeleton patterns = true)
     (formals : List (String × Nat)) (arguments : List Pattern) (depth : Nat) :
-    instantiateSchemasAt? formals arguments depth patterns = some patterns := by
-  cases patterns with
-  | nil => simp [instantiateSchemasAt?]
-  | cons head tail =>
-      simp only [patternsClosedSkeleton, Bool.and_eq_true] at closed
-      simp [instantiateSchemasAt?,
-        instantiateSchemaAt?_closedSkeleton closed.1 formals arguments depth,
-        instantiateSchemasAt?_closedSkeleton closed.2 formals arguments depth]
-termination_by sizeOf patterns
-
-end
+    instantiateSchemasAt? formals arguments depth patterns = some patterns :=
+  instantiateSchemas_of_members formals arguments depth patterns fun p hp =>
+    instantiateSchemaAt?_closedSkeleton ((skeletons_iff false patterns).mp closed p hp)
+      formals arguments depth
 
 mutual
 
@@ -1287,47 +1230,35 @@ end
 
 /-! ## Matching on skeleton patterns -/
 
-mutual
+private theorem matchArgs_self_of_members (patterns : List Pattern)
+    (matchesSelf : ∀ p ∈ patterns, [] ∈ matchPattern p p) :
+    [] ∈ matchArgs patterns patterns := by
+  induction patterns with
+  | nil => simp [matchArgs]
+  | cons head tail ih =>
+      simp only [matchArgs, List.mem_flatMap, List.mem_filterMap]
+      exact ⟨[], matchesSelf head (List.mem_cons_self ..), [],
+        ih (fun p hp => matchesSelf p (List.mem_cons_of_mem _ hp)), rfl⟩
 
 /-- Closed skeletons match themselves with no bindings. -/
 theorem matchPattern_closedSkeleton_self {pattern : Pattern}
     (closed : patternClosedSkeleton pattern = true) :
     [] ∈ matchPattern pattern pattern := by
-  cases pattern with
-  | bvar index => simp [matchPattern]
-  | fvar name => simp [patternClosedSkeleton] at closed
-  | apply constructor arguments =>
-      have argumentsClosed : patternsClosedSkeleton arguments = true := by
-        simpa [patternClosedSkeleton] using closed
-      simpa [matchPattern] using
-        matchArgs_closedSkeleton_self argumentsClosed
-  | lambda binder body =>
-      have bodyClosed : patternClosedSkeleton body = true := by
-        simpa [patternClosedSkeleton] using closed
-      simpa [matchPattern] using matchPattern_closedSkeleton_self bodyClosed
-  | multiLambda arity binders body =>
-      have bodyClosed : patternClosedSkeleton body = true := by
-        simpa [patternClosedSkeleton] using closed
-      simpa [matchPattern] using matchPattern_closedSkeleton_self bodyClosed
-  | subst body replacement => simp [patternClosedSkeleton] at closed
-  | collection collectionType elements rest =>
-      simp [patternClosedSkeleton] at closed
-termination_by sizeOf pattern
+  refine closedSkeletonInduction
+    (motive := fun p => [] ∈ matchPattern p p) ?_ ?_ ?_ ?_ closed
+  · simp [matchPattern]
+  · intro constructor args ih
+    simpa [matchPattern] using matchArgs_self_of_members args ih
+  · intro binder body ih
+    simpa [matchPattern] using ih
+  · intro arity binders body ih
+    simpa [matchPattern] using ih
 
 theorem matchArgs_closedSkeleton_self {patterns : List Pattern}
     (closed : patternsClosedSkeleton patterns = true) :
-    [] ∈ matchArgs patterns patterns := by
-  cases patterns with
-  | nil => simp [matchArgs]
-  | cons head tail =>
-      simp only [patternsClosedSkeleton, Bool.and_eq_true] at closed
-      have headSelf := matchPattern_closedSkeleton_self closed.1
-      have tailSelf := matchArgs_closedSkeleton_self closed.2
-      simp only [matchArgs, List.mem_flatMap, List.mem_filterMap]
-      exact ⟨[], headSelf, [], tailSelf, rfl⟩
-termination_by sizeOf patterns
-
-end
+    [] ∈ matchArgs patterns patterns :=
+  matchArgs_self_of_members patterns fun p hp =>
+    matchPattern_closedSkeleton_self ((skeletons_iff false patterns).mp closed p hp)
 
 mutual
 

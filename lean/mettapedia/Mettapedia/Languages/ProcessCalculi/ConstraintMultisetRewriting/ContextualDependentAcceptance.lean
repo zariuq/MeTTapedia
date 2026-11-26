@@ -1,3 +1,5 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentRoundProofPlan
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentIdEndpointsArguments
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentClosure
 
@@ -143,14 +145,10 @@ variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R) (heads : H
   (complete : AlgorithmicComplete S.R S.roles) (declared : DeclaredTypesFormed S.R)
   (choices : ExecutableChecking.HeadChoices S.R) (reducer : ExecutableReduction.Reducer S.R)
   (root : ExecutableReduction.RootEvaluator S.R)
-  (normalizes : ∀ {Θ : Context S.R} {type : TypeOver Θ} (term : Term Θ type),
-    ∃ code : Tm Head Θ.arity, ContextualDependentNormalChecking.Normal (S := S) code ∧
-      Equal S.R Θ.raw term.code code type.code)
-  (certifyNormal : ∀ {n : Nat} (term : Tm Head n),
-    Option (PLift (ContextualDependentNormalChecking.Normal (S := S) term)))
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
-  (rootComplete : ∀ {n : Nat} (term : Tm Head n), root term = none → ∀ target, ¬ S.R.computation.step term target)
+  (normalizes : SolverPremises.HasNormalForms S)
+  (certifyNormal : SolverPremises.NormalityCertifier S)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
+  (rootComplete : SolverPremises.CompleteRootEvaluation (rules := S.R) root)
 
 /-- **The last round makes the move of R97's round wherever that round moves.** -/
 theorem argumentsRound_eq_of_any (fuel : Nat) {Θ : Context S.R} {problem : EquationStore (TotalTerm Θ)}
@@ -165,62 +163,38 @@ theorem argumentsRound_eq_of_any (fuel : Nat) {Θ : Context S.R} {problem : Equa
       anyRound facts roots heads algebra rigid complete declared choices reducer root normalizes certifyNormal
         headTypingUnique rootComplete fuel problem := by
     unfold twinRound
-    cases computed : anyRound facts roots heads algebra rigid complete declared choices reducer root normalizes
-        certifyNormal headTypingUnique rootComplete fuel problem with
-    | stuck => exact absurd computed moving
-    | progress update smaller => rfl
-    | refuted absent => rfl
+    keep_round_result moving
   have headsSame : headsRound facts roots heads algebra rigid complete declared choices reducer root normalizes
       certifyNormal headTypingUnique rootComplete fuel problem =
       anyRound facts roots heads algebra rigid complete declared choices reducer root normalizes certifyNormal
         headTypingUnique rootComplete fuel problem := by
     unfold headsRound
     rw [twin]
-    cases computed : anyRound facts roots heads algebra rigid complete declared choices reducer root normalizes
-        certifyNormal headTypingUnique rootComplete fuel problem with
-    | stuck => exact absurd computed moving
-    | progress update smaller => rfl
-    | refuted absent => rfl
+    keep_round_result moving
   have pairs : pairsRound facts roots heads algebra rigid complete declared choices reducer root normalizes
       certifyNormal headTypingUnique rootComplete fuel problem =
       anyRound facts roots heads algebra rigid complete declared choices reducer root normalizes certifyNormal
         headTypingUnique rootComplete fuel problem := by
     unfold pairsRound
     rw [headsSame]
-    cases computed : anyRound facts roots heads algebra rigid complete declared choices reducer root normalizes
-        certifyNormal headTypingUnique rootComplete fuel problem with
-    | stuck => exact absurd computed moving
-    | progress update smaller => rfl
-    | refuted absent => rfl
+    keep_round_result moving
   have endpoints : endpointsRound facts roots heads algebra rigid complete declared choices reducer root normalizes
       certifyNormal headTypingUnique rootComplete fuel problem =
       anyRound facts roots heads algebra rigid complete declared choices reducer root normalizes certifyNormal
         headTypingUnique rootComplete fuel problem := by
     unfold endpointsRound
     rw [pairs]
-    cases computed : anyRound facts roots heads algebra rigid complete declared choices reducer root normalizes
-        certifyNormal headTypingUnique rootComplete fuel problem with
-    | stuck => exact absurd computed moving
-    | progress update smaller => rfl
-    | refuted absent => rfl
+    keep_round_result moving
   have projections : projectionsRound facts roots heads algebra rigid complete declared choices reducer root
       normalizes certifyNormal headTypingUnique rootComplete fuel problem =
       anyRound facts roots heads algebra rigid complete declared choices reducer root normalizes certifyNormal
         headTypingUnique rootComplete fuel problem := by
     unfold projectionsRound
     rw [endpoints]
-    cases computed : anyRound facts roots heads algebra rigid complete declared choices reducer root normalizes
-        certifyNormal headTypingUnique rootComplete fuel problem with
-    | stuck => exact absurd computed moving
-    | progress update smaller => rfl
-    | refuted absent => rfl
+    keep_round_result moving
   unfold argumentsRound
   rw [projections]
-  cases computed : anyRound facts roots heads algebra rigid complete declared choices reducer root normalizes
-      certifyNormal headTypingUnique rootComplete fuel problem with
-  | stuck => exact absurd computed moving
-  | progress update smaller => rfl
-  | refuted absent => rfl
+  keep_round_result moving
 
 /-- **Every run that R97's family decides, the last family decides with the same outcome.** -/
 theorem arguments_run_of_any (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))

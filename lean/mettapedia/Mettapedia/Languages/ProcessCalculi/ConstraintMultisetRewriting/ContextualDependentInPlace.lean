@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentFragmentFiringPi
 
 /-!
@@ -224,14 +225,10 @@ variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R)
   (choices : ExecutableChecking.HeadChoices S.R) (reducer : ExecutableReduction.Reducer S.R)
   (rigid : ∀ name, S.roles name = .rigid) (complete : AlgorithmicComplete S.R S.roles)
   (root : ExecutableReduction.RootEvaluator S.R)
-  (normalizes : ∀ {Θ : Context S.R} {type : TypeOver Θ} (term : Term Θ type),
-    ∃ code : Tm Head Θ.arity, ContextualDependentNormalChecking.Normal (S := S) code ∧
-      Equal S.R Θ.raw term.code code type.code)
-  (certifyNormal : ∀ {n : Nat} (term : Tm Head n),
-    Option (PLift (ContextualDependentNormalChecking.Normal (S := S) term)))
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
-  (rootComplete : ∀ {n : Nat} (term : Tm Head n), root term = none → ∀ target, ¬ S.R.computation.step term target)
+  (normalizes : SolverPremises.HasNormalForms S)
+  (certifyNormal : SolverPremises.NormalityCertifier S)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
+  (rootComplete : SolverPremises.CompleteRootEvaluation (rules := S.R) root)
 
 /-- **Solving at one depth below the newest declaration.** At depth `0` the first of the pattern,
 prune and exchange rules runs on the store; at depth `d + 1` the store is separated at the newest

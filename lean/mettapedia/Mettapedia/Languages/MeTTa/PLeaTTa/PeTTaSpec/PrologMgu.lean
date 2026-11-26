@@ -184,6 +184,40 @@ inductive TreesMgu : List Tree → List Tree →
 
 end
 
+/-- Prove the tree and ordered-forest laws from the same constructor cases.
+In the forest case the tail is solved after applying the exact head binding,
+and its extension precedes that binding in the result. -/
+theorem TreeMgu.inductBoth
+    {tree : Tree → Tree → TreeSubstitution → Prop}
+    {forest : List Tree → List Tree → TreeSubstitution → Prop}
+    (same : ∀ value, tree value value [])
+    (bindLeft : ∀ source value, value ≠ .variable source →
+      Tree.occurs source value = false → tree (.variable source) value [(source, value)])
+    (bindRight : ∀ value target, (∀ identity, value ≠ .variable identity) →
+      Tree.occurs target value = false → tree value (.variable target) [(target, value)])
+    (node : ∀ {binding} symbol left right, left ≠ right →
+      TreesMgu left right binding → forest left right binding →
+        tree (.node symbol left) (.node symbol right) binding)
+    (empty : forest [] [] [])
+    (cons : ∀ left right lefts rights base extension,
+      TreeMgu left right base →
+      TreesMgu (TreeSubstitution.applyTrees base lefts)
+        (TreeSubstitution.applyTrees base rights) extension →
+      tree left right base →
+      forest (TreeSubstitution.applyTrees base lefts)
+        (TreeSubstitution.applyTrees base rights) extension →
+      forest (left :: lefts) (right :: rights) (extension ++ base)) :
+    (∀ {left right binding}, TreeMgu left right binding → tree left right binding) ∧
+      (∀ {left right binding}, TreesMgu left right binding → forest left right binding) :=
+  ⟨fun derivation => TreeMgu.rec
+    (motive_1 := fun left right binding _ => tree left right binding)
+    (motive_2 := fun left right binding _ => forest left right binding)
+    same bindLeft bindRight node empty cons derivation,
+  fun derivation => TreesMgu.rec
+    (motive_1 := fun left right binding _ => tree left right binding)
+    (motive_2 := fun left right binding _ => forest left right binding)
+    same bindLeft bindRight node empty cons derivation⟩
+
 /-- One replacement preserves child-list length. -/
 @[simp] theorem Trees.instantiateOne_length (source : LogicVar)
     (replacement : Tree) (trees : List Tree) :
@@ -355,14 +389,15 @@ private theorem treesMgu_cons_isMostGeneral
     exact tailMgu
   simpa [treeEquations] using headMgu.compose_append tailOnApplied
 
-/-- Every ordered canonical derivation computes a semantic MGU. -/
-theorem TreeMgu.isMostGeneral {left right : Tree}
-    {binding : TreeSubstitution} (derivation : TreeMgu left right binding) :
-    TreeIsMgu binding [(left, right)] := by
-  exact TreeMgu.rec
-    (motive_1 := fun left right binding _ =>
+private theorem treeAndForest_isMostGeneral :
+    (∀ {left right binding}, TreeMgu left right binding →
+      TreeIsMgu binding [(left, right)]) ∧
+    (∀ {left right binding}, TreesMgu left right binding →
+      TreeIsMgu binding (treeEquations left right)) :=
+  TreeMgu.inductBoth
+    (tree := fun left right binding =>
       TreeIsMgu binding [(left, right)])
-    (motive_2 := fun left right binding _ =>
+    (forest := fun left right binding =>
       TreeIsMgu binding (treeEquations left right))
     tree_reflexive_is_mgu
     (fun source value _ absent =>
@@ -373,28 +408,19 @@ theorem TreeMgu.isMostGeneral {left right : Tree}
       TreeIsMgu.rigidNode symbol children.length_eq childrenMgu)
     tree_empty_is_mgu
     treesMgu_cons_isMostGeneral
-    derivation
+
+/-- Every ordered canonical derivation computes a semantic MGU. -/
+theorem TreeMgu.isMostGeneral {left right : Tree}
+    {binding : TreeSubstitution} (derivation : TreeMgu left right binding) :
+    TreeIsMgu binding [(left, right)] :=
+  treeAndForest_isMostGeneral.1 derivation
 
 /-- Ordered child derivations likewise compute the MGU of their exact
 left-to-right equation sequence. -/
 theorem TreesMgu.isMostGeneral {left right : List Tree}
     {binding : TreeSubstitution} (derivation : TreesMgu left right binding) :
-    TreeIsMgu binding (treeEquations left right) := by
-  exact TreesMgu.rec
-    (motive_1 := fun left right binding _ =>
-      TreeIsMgu binding [(left, right)])
-    (motive_2 := fun left right binding _ =>
-      TreeIsMgu binding (treeEquations left right))
-    tree_reflexive_is_mgu
-    (fun source value _ absent =>
-      tree_singleton_variable_is_mgu source value absent)
-    (fun value target _ absent =>
-      tree_singleton_right_variable_is_mgu value target absent)
-    (fun symbol _ _ _ children childrenMgu =>
-      TreeIsMgu.rigidNode symbol children.length_eq childrenMgu)
-    tree_empty_is_mgu
-    treesMgu_cons_isMostGeneral
-    derivation
+    TreeIsMgu binding (treeEquations left right) :=
+  treeAndForest_isMostGeneral.2 derivation
 
 /-! ## Completeness for every finite-tree unifier -/
 
@@ -644,66 +670,50 @@ theorem TreeEquationsWellFormed.apply
   exact ⟨TreeSubstitution.apply_wellFormed bindingFormed original.1,
     TreeSubstitution.apply_wellFormed bindingFormed original.2⟩
 
+private theorem treeAndForest_binding_wellFormed :
+    (∀ {left right binding}, TreeMgu left right binding →
+      left.WellFormed → right.WellFormed → binding.WellFormed) ∧
+    (∀ {left right binding}, TreesMgu left right binding →
+      Trees.WellFormed left → Trees.WellFormed right →
+        binding.WellFormed) :=
+  TreeMgu.inductBoth
+    (tree := fun left right binding =>
+      left.WellFormed → right.WellFormed → binding.WellFormed)
+    (forest := fun left right binding =>
+      Trees.WellFormed left → Trees.WellFormed right →
+        binding.WellFormed)
+    (fun _ _ _ => TreeSubstitution.wellFormed_nil)
+    (fun source value _ _ _ valueFormed =>
+      TreeSubstitution.WellFormed.singleton source valueFormed)
+    (fun value target _ _ valueFormed _ =>
+      TreeSubstitution.WellFormed.singleton target valueFormed)
+    (fun _ _ _ _ _ childrenInduction leftNode rightNode =>
+      childrenInduction leftNode.children rightNode.children)
+    (fun _ _ => TreeSubstitution.wellFormed_nil)
+    (fun _ _ _ _ base extension _ _ headInduction tailInduction
+        leftChildren rightChildren => by
+      have baseFormed := headInduction leftChildren.head rightChildren.head
+      have extensionFormed := tailInduction
+        (TreeSubstitution.applyTrees_wellFormed baseFormed
+          leftChildren.tail)
+        (TreeSubstitution.applyTrees_wellFormed baseFormed
+          rightChildren.tail)
+      exact extensionFormed.append baseFormed)
+
 /-- A canonical MGU of well-formed inputs carries only well-formed
 replacements, hence can be reified back to source `Term`s. -/
 theorem TreeMgu.binding_wellFormed {left right : Tree}
     {binding : TreeSubstitution} (derivation : TreeMgu left right binding)
     (leftFormed : left.WellFormed) (rightFormed : right.WellFormed) :
-    binding.WellFormed := by
-  exact TreeMgu.rec
-    (motive_1 := fun left right binding _ =>
-      left.WellFormed → right.WellFormed → binding.WellFormed)
-    (motive_2 := fun left right binding _ =>
-      Trees.WellFormed left → Trees.WellFormed right →
-        binding.WellFormed)
-    (fun _ _ _ => TreeSubstitution.wellFormed_nil)
-    (fun source value _ _ _ valueFormed =>
-      TreeSubstitution.WellFormed.singleton source valueFormed)
-    (fun value target _ _ valueFormed _ =>
-      TreeSubstitution.WellFormed.singleton target valueFormed)
-    (fun _ _ _ _ _ childrenInduction leftNode rightNode =>
-      childrenInduction leftNode.children rightNode.children)
-    (fun _ _ => TreeSubstitution.wellFormed_nil)
-    (fun _ _ _ _ base extension _ _ headInduction tailInduction
-        leftChildren rightChildren => by
-      have baseFormed := headInduction leftChildren.head rightChildren.head
-      have extensionFormed := tailInduction
-        (TreeSubstitution.applyTrees_wellFormed baseFormed
-          leftChildren.tail)
-        (TreeSubstitution.applyTrees_wellFormed baseFormed
-          rightChildren.tail)
-      exact extensionFormed.append baseFormed)
-    derivation leftFormed rightFormed
+    binding.WellFormed :=
+  treeAndForest_binding_wellFormed.1 derivation leftFormed rightFormed
 
 /-- Ordered child MGU bindings are likewise well formed. -/
 theorem TreesMgu.binding_wellFormed {left right : List Tree}
     {binding : TreeSubstitution} (derivation : TreesMgu left right binding)
     (leftFormed : Trees.WellFormed left)
-    (rightFormed : Trees.WellFormed right) : binding.WellFormed := by
-  exact TreesMgu.rec
-    (motive_1 := fun left right binding _ =>
-      left.WellFormed → right.WellFormed → binding.WellFormed)
-    (motive_2 := fun left right binding _ =>
-      Trees.WellFormed left → Trees.WellFormed right →
-        binding.WellFormed)
-    (fun _ _ _ => TreeSubstitution.wellFormed_nil)
-    (fun source value _ _ _ valueFormed =>
-      TreeSubstitution.WellFormed.singleton source valueFormed)
-    (fun value target _ _ valueFormed _ =>
-      TreeSubstitution.WellFormed.singleton target valueFormed)
-    (fun _ _ _ _ _ childrenInduction leftNode rightNode =>
-      childrenInduction leftNode.children rightNode.children)
-    (fun _ _ => TreeSubstitution.wellFormed_nil)
-    (fun _ _ _ _ base extension _ _ headInduction tailInduction
-        leftChildren rightChildren => by
-      have baseFormed := headInduction leftChildren.head rightChildren.head
-      have extensionFormed := tailInduction
-        (TreeSubstitution.applyTrees_wellFormed baseFormed
-          leftChildren.tail)
-        (TreeSubstitution.applyTrees_wellFormed baseFormed
-          rightChildren.tail)
-      exact extensionFormed.append baseFormed)
-    derivation leftFormed rightFormed
+    (rightFormed : Trees.WellFormed right) : binding.WellFormed :=
+  treeAndForest_binding_wellFormed.2 derivation leftFormed rightFormed
 
 /-! ## Determinism and anti-vacuity -/
 
@@ -741,48 +751,40 @@ private theorem treesMgu_cons_unique
       subst secondExtension
       rfl
 
+private theorem treeAndForest_deterministic :
+    (∀ {left right first}, TreeMgu left right first →
+      ∀ {second}, TreeMgu left right second → first = second) ∧
+    (∀ {left right first}, TreesMgu left right first →
+      ∀ {second}, TreesMgu left right second → first = second) :=
+  TreeMgu.inductBoth
+    (tree := fun left right first =>
+      ∀ {second}, TreeMgu left right second → first = second)
+    (forest := fun left right first =>
+      ∀ {second}, TreesMgu left right second → first = second)
+    (fun _ {second} secondDerivation => by
+      cases secondDerivation <;> simp_all)
+    (fun _ _ _ _ {second} secondDerivation => by
+      cases secondDerivation <;> simp_all)
+    (fun _ _ _ _ {second} secondDerivation => by
+      cases secondDerivation <;> simp_all)
+    treeMgu_node_unique
+    (fun {second} secondDerivation => by cases secondDerivation; rfl)
+    treesMgu_cons_unique
+
 /-- Ordered root priority and left-to-right child composition choose one
 canonical substitution spelling. -/
 theorem TreeMgu.deterministic {left right : Tree}
     {first second : TreeSubstitution}
     (one : TreeMgu left right first) (two : TreeMgu left right second) :
-    first = second := by
-  exact TreeMgu.rec
-    (motive_1 := fun left right first one =>
-      ∀ {second}, TreeMgu left right second → first = second)
-    (motive_2 := fun left right first one =>
-      ∀ {second}, TreesMgu left right second → first = second)
-    (fun _ {second} secondDerivation => by
-      cases secondDerivation <;> simp_all)
-    (fun _ _ _ _ {second} secondDerivation => by
-      cases secondDerivation <;> simp_all)
-    (fun _ _ _ _ {second} secondDerivation => by
-      cases secondDerivation <;> simp_all)
-    treeMgu_node_unique
-    (fun {second} secondDerivation => by cases secondDerivation; rfl)
-    treesMgu_cons_unique
-    one two
+    first = second :=
+  treeAndForest_deterministic.1 one two
 
 /-- Ordered child unification is deterministic as well. -/
 theorem TreesMgu.deterministic {left right : List Tree}
     {first second : TreeSubstitution}
     (one : TreesMgu left right first) (two : TreesMgu left right second) :
-    first = second := by
-  exact TreesMgu.rec
-    (motive_1 := fun left right first one =>
-      ∀ {second}, TreeMgu left right second → first = second)
-    (motive_2 := fun left right first one =>
-      ∀ {second}, TreesMgu left right second → first = second)
-    (fun _ {second} secondDerivation => by
-      cases secondDerivation <;> simp_all)
-    (fun _ _ _ _ {second} secondDerivation => by
-      cases secondDerivation <;> simp_all)
-    (fun _ _ _ _ {second} secondDerivation => by
-      cases secondDerivation <;> simp_all)
-    treeMgu_node_unique
-    (fun {second} secondDerivation => by cases secondDerivation; rfl)
-    treesMgu_cons_unique
-    one two
+    first = second :=
+  treeAndForest_deterministic.2 one two
 
 /-! ## Ordered equation worklists and source-term bridge -/
 

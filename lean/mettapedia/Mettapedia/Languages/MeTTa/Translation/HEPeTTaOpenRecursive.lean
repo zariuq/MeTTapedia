@@ -4752,6 +4752,133 @@ theorem ClausePendingAgreement.pattern_supported
     exact List.mem_append_right _ List.mem_cons_self
   · exact List.mem_append_right _ member
 
+/-- Both constructor applications and defined calls first materialize the same
+ordered argument packet. The argument derivation supplies the continuation
+chosen at the source node. -/
+private theorem prepared_application_forward
+    {program : Program} {control opened : Control} {head : String} {sourceArguments : List Atom}
+    {destination : Atom}
+    {older : List Goal} {outcomes : List Control}
+    (ordinary : OrdinaryHead head)
+    (prepared : Mettapedia.Languages.MeTTa.PeTTa.EagerDFS.Destination.Source.Prepared
+      .eagerValue program control destination older (.expression (.symbol head :: sourceArguments)) opened)
+    {machineScope : List String} {live : List Atom} {scope : List String}
+    {frame : Frame} {input : Entry.Value}
+    (sourceInstance : InputInstance program scope (.expression (.symbol head :: sourceArguments)) input)
+    (passive : PassiveEnvironment program scope frame.environment)
+    {heFront sourceFront hePending sourcePending : List Atom}
+    (frontLength : heFront.length = sourceFront.length)
+    (related : HE.Spec.Bindings.ScopeObservation.observedTuples frame.bindings
+        (heFront ++ input.erase :: hePending) =
+      solutionTuples control.bindings (sourceFront ++ .expression (.symbol head :: sourceArguments) :: sourcePending))
+    (supported : SupportRel scope live frame.bindings
+      (heFront ++ input.erase :: hePending)
+      (sourceFront ++ .expression (.symbol head :: sourceArguments) :: sourcePending) control)
+    (runArguments : ∀ arguments : List Entry.Value,
+      List.Forall₂ (InputInstance program scope)
+        ((sourceArguments.zip (freshSlots control sourceArguments.length)).map Prod.fst)
+        arguments →
+      (.expression (.symbol head :: freshSlots control sourceArguments.length) : Atom) =
+        .expression (.symbol head :: (sourceArguments.zip
+          (freshSlots control sourceArguments.length)).map Prod.snd) →
+      HE.Spec.Bindings.ScopeObservation.observedTuples frame.bindings
+        (heFront ++ [Entry.Value.symbol head].map Entry.Value.erase ++ arguments.map Entry.Value.erase ++ hePending) =
+        solutionTuples opened.bindings
+          (sourceFront ++ [Atom.symbol head] ++ (sourceArguments.zip
+            (freshSlots control sourceArguments.length)).map Prod.fst ++ sourcePending) →
+      SupportRel scope live frame.bindings
+        (heFront ++ [Entry.Value.symbol head].map Entry.Value.erase ++ arguments.map Entry.Value.erase ++ hePending)
+        (sourceFront ++ [Atom.symbol head] ++ (sourceArguments.zip
+          (freshSlots control sourceArguments.length)).map Prod.fst ++ sourcePending) opened →
+      (∀ name ∈ HE.Spec.Type.Presentation.TypeSubst.typeVarsList
+          (.symbol head :: Atom.undefinedType :: live), name ∈ PersistentSupport opened) →
+      ∃ tupleRows raw,
+        TupleRel (equationSpace program) noForeign rawLookup
+          (.symbol head :: Atom.undefinedType :: live) machineScope arguments frame tupleRows
+          (policy := HE.Spec.Eval.Completed.Policy.unmarked) ∧
+        CallsRel (equationSpace program) noForeign rawLookup live machineScope Atom.undefinedType
+          (tupleRows.map (assemblePrefix [.symbol head])) raw
+          (policy := HE.Spec.Eval.Completed.Policy.unmarked) ∧
+        List.Forall₂ (OutcomeRel program scope heFront sourceFront hePending sourcePending
+          destination older opened) raw outcomes) :
+    ∃ results,
+      AtomRel (equationSpace program) noForeign rawLookup live machineScope input
+        Atom.undefinedType frame results (policy := HE.Spec.Eval.Completed.Policy.unmarked) ∧
+      List.Forall₂ (OutcomeRel program scope heFront sourceFront hePending sourcePending
+        destination older control) results outcomes := by
+  let readInput := frame.read HE.Spec.Eval.Completed.Policy.unmarked input
+  have readInstance : InputInstance program scope
+      (.expression (.symbol head :: sourceArguments)) readInput :=
+    sourceInstance.read frame passive
+  have readCode := readInstance.code_input
+  obtain ⟨arguments,readShape,instances⟩ := readInstance.application
+  have readRelated : HE.Spec.Bindings.ScopeObservation.observedTuples frame.bindings
+      (heFront ++ readInput.erase :: hePending) =
+    solutionTuples control.bindings
+      (sourceFront ++ .expression (.symbol head :: sourceArguments) :: sourcePending) :=
+    (observed_read_coordinate HE.Spec.Eval.Completed.Policy.unmarked frame
+      heFront hePending input).trans related
+  have readSupport := supported.readCoordinate readCode
+  have flatRelated := joint_packet_decompose frontLength (by
+    simpa only [readInput,readShape,Entry.Value.erase,List.map_cons] using readRelated)
+  have readSupportExpr : SupportRel scope live frame.bindings
+      (heFront ++ (.expression (.symbol head :: arguments.map Entry.Value.erase)) :: hePending)
+      (sourceFront ++ .expression (.symbol head :: sourceArguments) :: sourcePending) control := by
+    simpa only [readInput,readShape,Entry.Value.erase,List.map_cons] using readSupport
+  have flatSupport := readSupportExpr.decompose |>.of_prepared prepared
+  have rowInstances : List.Forall₂ (InputInstance program scope)
+      ((sourceArguments.zip (freshSlots control sourceArguments.length)).map Prod.fst)
+      arguments := by
+    rw [List.map_fst_zip (by simp)]
+    exact instances
+  have rowSources :
+      (sourceArguments.zip (freshSlots control sourceArguments.length)).map Prod.fst =
+        sourceArguments := List.map_fst_zip (by simp)
+  have assembledShape :
+      (.expression (.symbol head :: freshSlots control sourceArguments.length) : Atom) =
+        .expression (.symbol head ::
+          (sourceArguments.zip (freshSlots control sourceArguments.length)).map Prod.snd) := by
+    rw [List.map_snd_zip (by simp)]
+  have argumentRelated : HE.Spec.Bindings.ScopeObservation.observedTuples frame.bindings
+      (heFront ++ [Entry.Value.symbol head].map Entry.Value.erase ++
+        arguments.map Entry.Value.erase ++ hePending) =
+    solutionTuples opened.bindings
+      (sourceFront ++ [Atom.symbol head] ++
+        (sourceArguments.zip (freshSlots control sourceArguments.length)).map Prod.fst ++
+          sourcePending) := by
+    rw [prepared.retains_frame.1,rowSources]
+    simpa only [Entry.Value.erase,List.map_cons,List.map_nil,List.nil_append,
+      List.singleton_append,List.cons_append,List.append_assoc] using flatRelated
+  have argumentSupport : SupportRel scope live frame.bindings
+      (heFront ++ [Entry.Value.symbol head].map Entry.Value.erase ++
+        arguments.map Entry.Value.erase ++ hePending)
+      (sourceFront ++ [Atom.symbol head] ++
+        (sourceArguments.zip (freshSlots control sourceArguments.length)).map Prod.fst ++
+          sourcePending) opened := by
+    rw [rowSources]
+    simpa only [Entry.Value.erase,List.map_cons,List.map_nil,List.nil_append,
+      List.singleton_append,List.cons_append,List.append_assoc] using flatSupport
+  obtain ⟨tupleRows, raw, tuple, calls, rawRelated⟩ := runArguments arguments
+    rowInstances assembledShape argumentRelated argumentSupport (by
+      intro name member
+      apply flatSupport.live name
+      simpa only [HE.Spec.Type.Presentation.TypeSubst.typeVarsList,
+        HE.Spec.Type.Presentation.TypeSubst.typeVars, Atom.undefinedType, List.nil_append,
+        List.mem_append] using member)
+  have whole := prepend_symbol_tuple (program := program) ordinary arguments
+    HE.Spec.Eval.Completed.Policy.unmarked (Atom.undefinedType :: live) machineScope frame tuple
+  have preparedMono : PersistentSupport control ⊆ PersistentSupport opened := by
+    have same := Mettapedia.Languages.MeTTa.Translation.OpenRecursive.Prepared.persistentSupport_eq prepared
+    intro name member
+    rw [same]
+    exact member
+  have rebased := outcomes_rebase (program := program) (scope := scope)
+    (middleScope := scope) (fun _ member => member) preparedMono rawRelated
+  obtain ⟨results,completed,resultsRelated⟩ := expression_complete_open program scope machineScope live
+    head ordinary arguments frame input readShape
+    whole calls rebased
+  exact ⟨results,completed,resultsRelated⟩
+
 mutual
 /-- Every admitted open source evaluation constructs the matching contextual
 HE derivation and all correlated source outcomes. -/
@@ -4809,164 +4936,22 @@ theorem Evaluation.forward
         hePending sourcePending related supported privateDestination allocated accepted
   | @Evaluation.constructor _ control opened head sourceArguments destination older outcomes
       constructor privateDestination atGoal prepared argumentsRun =>
-      obtain ⟨packetFresh,argumentsAllocated⟩ := allocated
-      let readInput := frame.read HE.Spec.Eval.Completed.Policy.unmarked input
-      have readInstance : InputInstance program scope
-          (.expression (.symbol head :: sourceArguments)) readInput :=
-        sourceInstance.read frame passive
-      have readCode := readInstance.code_input
-      obtain ⟨arguments,readShape,instances⟩ := readInstance.application
-      have readRelated : HE.Spec.Bindings.ScopeObservation.observedTuples frame.bindings
-          (heFront ++ readInput.erase :: hePending) =
-        solutionTuples control.bindings
-          (sourceFront ++ .expression (.symbol head :: sourceArguments) :: sourcePending) :=
-        (observed_read_coordinate HE.Spec.Eval.Completed.Policy.unmarked frame
-          heFront hePending input).trans related
-      have readSupport := supported.readCoordinate readCode
-      have flatRelated := joint_packet_decompose frontLength (by
-        simpa only [readInput,readShape,Entry.Value.erase,List.map_cons] using readRelated)
-      have readSupportExpr : SupportRel scope live frame.bindings
-          (heFront ++ (.expression (.symbol head :: arguments.map Entry.Value.erase)) :: hePending)
-          (sourceFront ++ .expression (.symbol head :: sourceArguments) :: sourcePending) control := by
-        simpa only [readInput,readShape,Entry.Value.erase,List.map_cons] using readSupport
-      have flatSupport := readSupportExpr.decompose |>.of_prepared prepared
-      have rowInstances : List.Forall₂ (InputInstance program scope)
-          ((sourceArguments.zip (freshSlots control sourceArguments.length)).map Prod.fst)
-          arguments := by
-        rw [List.map_fst_zip (by simp)]
-        exact instances
-      have rowSources :
-          (sourceArguments.zip (freshSlots control sourceArguments.length)).map Prod.fst =
-            sourceArguments := List.map_fst_zip (by simp)
-      have assembledShape :
-          (.expression (.symbol head :: freshSlots control sourceArguments.length) : Atom) =
-            .expression (.symbol head ::
-              ([] ++ (sourceArguments.zip (freshSlots control sourceArguments.length)).map Prod.snd)) := by
-        rw [List.map_snd_zip (by simp)]
-        rfl
-      have argumentRelated : HE.Spec.Bindings.ScopeObservation.observedTuples frame.bindings
-          (heFront ++ ([Entry.Value.symbol head].map Entry.Value.erase) ++
-            arguments.map Entry.Value.erase ++ hePending) =
-        solutionTuples opened.bindings
-          (sourceFront ++ [Atom.symbol head] ++
-            (sourceArguments.zip (freshSlots control sourceArguments.length)).map Prod.fst ++
-              sourcePending) := by
-        rw [prepared.retains_frame.1,rowSources]
-        simpa only [Entry.Value.erase,List.map_cons,List.map_nil,List.nil_append,
-          List.singleton_append,List.cons_append,List.append_assoc] using flatRelated
-      have argumentSupport : SupportRel scope live frame.bindings
-          (heFront ++ ([Entry.Value.symbol head].map Entry.Value.erase) ++
-            arguments.map Entry.Value.erase ++ hePending)
-          (sourceFront ++ [Atom.symbol head] ++
-            (sourceArguments.zip (freshSlots control sourceArguments.length)).map Prod.fst ++
-              sourcePending) opened := by
-        rw [rowSources]
-        simpa only [Entry.Value.erase,List.map_cons,List.map_nil,List.nil_append,
-          List.singleton_append,List.cons_append,List.append_assoc] using flatSupport
-      obtain ⟨tupleRows,raw,tuple,calls,rawRelated⟩ := Arguments.forward argumentsRun patterns programCode
-        machineScope (.symbol head :: Atom.undefinedType :: live) live scope frame head constructor.1
-        arguments [] [] rowInstances (by simp) assembledShape heFront sourceFront hePending sourcePending
-        frontLength rfl argumentRelated passive argumentSupport
-        argumentsAllocated (by
-          intro name member
-          apply flatSupport.live name
-          simpa only [HE.Spec.Type.Presentation.TypeSubst.typeVarsList,
-            HE.Spec.Type.Presentation.TypeSubst.typeVars,Atom.undefinedType,List.nil_append,
-            List.mem_append]
-            using member)
-      have whole := prepend_symbol_tuple (program := program) constructor.1 arguments
-        HE.Spec.Eval.Completed.Policy.unmarked (Atom.undefinedType :: live) machineScope frame tuple
-      have preparedMono : PersistentSupport control ⊆ PersistentSupport opened := by
-        have same := Mettapedia.Languages.MeTTa.Translation.OpenRecursive.Prepared.persistentSupport_eq prepared
-        intro name member
-        rw [same]
-        exact member
-      have rebased := outcomes_rebase (program := program) (scope := scope)
-        (middleScope := scope) (fun _ member => member) preparedMono rawRelated
-      obtain ⟨results,completed,resultsRelated⟩ := expression_complete_open program scope machineScope live
-        head constructor.1 arguments frame input readShape
-        whole calls rebased
-      exact ⟨results,completed,resultsRelated⟩
+      apply prepared_application_forward constructor.1 prepared sourceInstance passive
+        frontLength related supported
+      intro arguments instances shape packet support liveSupported
+      exact Arguments.forward argumentsRun patterns programCode machineScope
+        (.symbol head :: Atom.undefinedType :: live) live scope frame head constructor.1 arguments [] []
+        instances (by simp) shape heFront sourceFront hePending sourcePending frontLength rfl packet
+        passive support allocated.2 liveSupported
   | @Evaluation.call _ control opened head sourceArguments destination older outcomes
       defined privateDestination atGoal prepared argumentsRun =>
-      obtain ⟨packetFresh,argumentsAllocated⟩ := allocated
-      let readInput := frame.read HE.Spec.Eval.Completed.Policy.unmarked input
-      have readInstance : InputInstance program scope
-          (.expression (.symbol head :: sourceArguments)) readInput :=
-        sourceInstance.read frame passive
-      have readCode := readInstance.code_input
-      obtain ⟨arguments,readShape,instances⟩ := readInstance.application
-      have readRelated : HE.Spec.Bindings.ScopeObservation.observedTuples frame.bindings
-          (heFront ++ readInput.erase :: hePending) =
-        solutionTuples control.bindings
-          (sourceFront ++ .expression (.symbol head :: sourceArguments) :: sourcePending) :=
-        (observed_read_coordinate HE.Spec.Eval.Completed.Policy.unmarked frame
-          heFront hePending input).trans related
-      have readSupport := supported.readCoordinate readCode
-      have flatRelated := joint_packet_decompose frontLength (by
-        simpa only [readInput,readShape,Entry.Value.erase,List.map_cons] using readRelated)
-      have readSupportExpr : SupportRel scope live frame.bindings
-          (heFront ++ (.expression (.symbol head :: arguments.map Entry.Value.erase)) :: hePending)
-          (sourceFront ++ .expression (.symbol head :: sourceArguments) :: sourcePending) control := by
-        simpa only [readInput,readShape,Entry.Value.erase,List.map_cons] using readSupport
-      have flatSupport := readSupportExpr.decompose |>.of_prepared prepared
-      have rowInstances : List.Forall₂ (InputInstance program scope)
-          ((sourceArguments.zip (freshSlots control sourceArguments.length)).map Prod.fst)
-          arguments := by
-        rw [List.map_fst_zip (by simp)]
-        exact instances
-      have rowSources :
-          (sourceArguments.zip (freshSlots control sourceArguments.length)).map Prod.fst =
-            sourceArguments := List.map_fst_zip (by simp)
-      have assembledShape :
-          (.expression (.symbol head :: freshSlots control sourceArguments.length) : Atom) =
-            .expression (.symbol head ::
-              ([] ++ (sourceArguments.zip (freshSlots control sourceArguments.length)).map Prod.snd)) := by
-        rw [List.map_snd_zip (by simp)]
-        rfl
-      have argumentRelated : HE.Spec.Bindings.ScopeObservation.observedTuples frame.bindings
-          (heFront ++ ([Entry.Value.symbol head].map Entry.Value.erase) ++
-            arguments.map Entry.Value.erase ++ hePending) =
-        solutionTuples opened.bindings
-          (sourceFront ++ [Atom.symbol head] ++
-            (sourceArguments.zip (freshSlots control sourceArguments.length)).map Prod.fst ++
-              sourcePending) := by
-        rw [prepared.retains_frame.1,rowSources]
-        simpa only [Entry.Value.erase,List.map_cons,List.map_nil,List.nil_append,
-          List.singleton_append,List.cons_append,List.append_assoc] using flatRelated
-      have argumentSupport : SupportRel scope live frame.bindings
-          (heFront ++ ([Entry.Value.symbol head].map Entry.Value.erase) ++
-            arguments.map Entry.Value.erase ++ hePending)
-          (sourceFront ++ [Atom.symbol head] ++
-            (sourceArguments.zip (freshSlots control sourceArguments.length)).map Prod.fst ++
-              sourcePending) opened := by
-        rw [rowSources]
-        simpa only [Entry.Value.erase,List.map_cons,List.map_nil,List.nil_append,
-          List.singleton_append,List.cons_append,List.append_assoc] using flatSupport
-      obtain ⟨tupleRows,raw,tuple,calls,rawRelated⟩ := Arguments.forward argumentsRun patterns programCode
-        machineScope (.symbol head :: Atom.undefinedType :: live) live scope frame head defined.1
-        arguments [] [] rowInstances (by simp) assembledShape heFront sourceFront hePending sourcePending
-        frontLength rfl argumentRelated passive argumentSupport
-        argumentsAllocated (by
-          intro name member
-          apply flatSupport.live name
-          simpa only [HE.Spec.Type.Presentation.TypeSubst.typeVarsList,
-            HE.Spec.Type.Presentation.TypeSubst.typeVars,Atom.undefinedType,List.nil_append,
-            List.mem_append]
-            using member)
-      have whole := prepend_symbol_tuple (program := program) defined.1 arguments
-        HE.Spec.Eval.Completed.Policy.unmarked (Atom.undefinedType :: live) machineScope frame tuple
-      have preparedMono : PersistentSupport control ⊆ PersistentSupport opened := by
-        have same := Mettapedia.Languages.MeTTa.Translation.OpenRecursive.Prepared.persistentSupport_eq prepared
-        intro name member
-        rw [same]
-        exact member
-      have rebased := outcomes_rebase (program := program) (scope := scope)
-        (middleScope := scope) (fun _ member => member) preparedMono rawRelated
-      obtain ⟨results,completed,resultsRelated⟩ := expression_complete_open program scope machineScope live
-        head defined.1 arguments frame input readShape
-        whole calls rebased
-      exact ⟨results,completed,resultsRelated⟩
+      apply prepared_application_forward defined.1 prepared sourceInstance passive
+        frontLength related supported
+      intro arguments instances shape packet support liveSupported
+      exact Arguments.forward argumentsRun patterns programCode machineScope
+        (.symbol head :: Atom.undefinedType :: live) live scope frame head defined.1 arguments [] []
+        instances (by simp) shape heFront sourceFront hePending sourcePending frontLength rfl packet
+        passive support allocated.2 liveSupported
 termination_by structural source
 
 theorem Arguments.forward

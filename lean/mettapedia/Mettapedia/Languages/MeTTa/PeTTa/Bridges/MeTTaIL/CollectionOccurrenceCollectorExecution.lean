@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.PeTTa.EquationEquality
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.GeneralPremiseMatchingExecution
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CollectionOccurrenceRuntime
 import Mettapedia.OSLF.MeTTaIL.CollectionOccurrenceReadout
@@ -169,20 +170,8 @@ open Mettapedia.GSLT.LanguageDef CettaWire
 open Mettapedia.OSLF.MeTTaIL Syntax GeneralPremise
 open SpaceSemantics Eval BridgeKit WireKit
 
-private local instance equationEq : DecidableEq SpaceSemantics.Equation := by
-  intro left right
-  apply decidable_of_iff (left.head = right.head ∧ left.arguments = right.arguments ∧ left.body = right.body)
-  constructor
-  · rintro ⟨head, arguments, body⟩
-    cases left
-    cases right
-    cases head
-    cases arguments
-    cases body
-    rfl
-  · intro same
-    cases same
-    exact ⟨rfl, rfl, rfl⟩
+private local instance equationEq : DecidableEq SpaceSemantics.Equation :=
+  SpaceSemantics.Equation.decideEq
 
 /-- The finite allocation metadata view retains the actual selected source rows and order. -/
 theorem metadata_agreement : ProgramAgreementOn Interpreted.metadataHeads Interpreted.metadataLibrary.runtime
@@ -295,20 +284,8 @@ open Mettapedia.GSLT.LanguageDef CettaWire
 open Mettapedia.OSLF.MeTTaIL Syntax GeneralPremise CanonicalCompare CollectionOccurrenceBatch CollectionOccurrenceMatcher
 open SpaceSemantics Eval BridgeKit WireKit
 
-private local instance allocationEquationEq : DecidableEq SpaceSemantics.Equation := by
-  intro left right
-  apply decidable_of_iff (left.head = right.head ∧ left.arguments = right.arguments ∧ left.body = right.body)
-  constructor
-  · rintro ⟨head, arguments, body⟩
-    cases left
-    cases right
-    cases head
-    cases arguments
-    cases body
-    rfl
-  · intro same
-    cases same
-    exact ⟨rfl, rfl, rfl⟩
+private local instance allocationEquationEq : DecidableEq SpaceSemantics.Equation :=
+  SpaceSemantics.Equation.decideEq
 
 /-- Batch bodies are unchanged when the declared continuation profile is selected. -/
 theorem canonical_batch_body_agreement : ProgramAgreementOn CollectionOccurrenceBatchExecution.batchBodyHeads
@@ -447,20 +424,8 @@ open Mettapedia.OSLF.MeTTaIL Syntax GeneralPremise CanonicalCompare CollectionOc
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open SpaceSemantics Eval BridgeKit WireKit
 
-private local instance collectorEquationEq : DecidableEq SpaceSemantics.Equation := by
-  intro left right
-  apply decidable_of_iff (left.head = right.head ∧ left.arguments = right.arguments ∧ left.body = right.body)
-  constructor
-  · rintro ⟨head, arguments, body⟩
-    cases left
-    cases right
-    cases head
-    cases arguments
-    cases body
-    rfl
-  · intro same
-    cases same
-    exact ⟨rfl, rfl, rfl⟩
+private local instance collectorEquationEq : DecidableEq SpaceSemantics.Equation :=
+  SpaceSemantics.Equation.decideEq
 
 private def loopMetadataBase : Program :=
   (RuleExecutionProgram.callFragment ["gslt:automata:append"] RuleExecutionProgram.scopedProgram).append

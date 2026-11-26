@@ -1,3 +1,5 @@
+import Mettapedia.Languages.MeTTa.PeTTa.BridgeTransport
+import Mettapedia.Languages.MeTTa.PeTTa.EquationEquality
 import Mettapedia.GSLT.LanguageDef.BagEquationDecision
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CompleteExecution.Source
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.RecursiveCollectionExecution
@@ -39,20 +41,8 @@ theorem checked : library.check = true := RetainedMatchingWire.interpreted_check
 
 section ProofMetadata
 
-private local instance presentationEquationEq : DecidableEq SpaceSemantics.Equation := by
-  intro left right
-  apply decidable_of_iff (left.head = right.head ∧ left.arguments = right.arguments ∧ left.body = right.body)
-  constructor
-  · rintro ⟨head, arguments, body⟩
-    cases left
-    cases right
-    cases head
-    cases arguments
-    cases body
-    rfl
-  · intro same
-    cases same
-    exact ⟨rfl, rfl, rfl⟩
+private local instance presentationEquationEq : DecidableEq SpaceSemantics.Equation :=
+  SpaceSemantics.Equation.decideEq
 
 /-- Direct outward calls derived from the actual family bodies. -/
 def presentationProofInheritedHeads : List String := ["gslt:automata:append", "gslt:automata:length", "gslt:recursive-collection:arrange", "gslt:collection:replay",  "gslt:complete:take", "gslt:complete:drop", "gslt:rule:row-at", "gslt:rule:scope-match-erase-at"]
@@ -302,20 +292,8 @@ theorem proof_checked : proofLibrary.check = true := by decide +kernel
 def proofHeads (head : String) : Bool :=
   !head.startsWith "gslt:" || (proofLibrary.runtime.equations.map (·.head)).contains head
 
-private local instance groupingEquationEq : DecidableEq SpaceSemantics.Equation := by
-  intro left right
-  apply decidable_of_iff (left.head = right.head ∧ left.arguments = right.arguments ∧ left.body = right.body)
-  constructor
-  · rintro ⟨head, arguments, body⟩
-    cases left
-    cases right
-    cases head
-    cases arguments
-    cases body
-    rfl
-  · intro same
-    cases same
-    exact ⟨rfl, rfl, rfl⟩
+private local instance groupingEquationEq : DecidableEq SpaceSemantics.Equation :=
+  SpaceSemantics.Equation.decideEq
 
 /-- Ordered primitive source rows agree with the shared interpreted program. -/
 theorem shared_program_agreement :
@@ -330,9 +308,8 @@ theorem shared_program_agreement :
 /-- The same ordered primitive rows occur in the selected physical runtime. -/
 theorem selected_program_agreement :
     ProgramAgreementOn proofHeads proofLibrary.runtime SelectedNativeSource.runtime := by
-  apply programAgreementOn_of_retained_rows
-  · decide +kernel
-  · decide +kernel
+  apply agreement_trans shared_program_agreement
+  apply SelectedNativeSource.agreement_of_replacement_rows <;> decide +kernel
 
 #print axioms selected_program_agreement
 

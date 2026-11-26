@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.PeTTa.EquationEquality
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.RecursiveCollectionContinuationExecution
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CollectionContextExecution
 import Mettapedia.OSLF.MeTTaIL.CollectionOccurrenceBatch
@@ -37,20 +38,8 @@ theorem checked : library.check = true := CollectionOccurrenceSearchExecution.Se
 
 section ProofMetadata
 
-private local instance batchEquationEq : DecidableEq SpaceSemantics.Equation := by
-  intro left right
-  apply decidable_of_iff (left.head = right.head ∧ left.arguments = right.arguments ∧ left.body = right.body)
-  constructor
-  · rintro ⟨head, arguments, body⟩
-    cases left
-    cases right
-    cases head
-    cases arguments
-    cases body
-    rfl
-  · intro same
-    cases same
-    exact ⟨rfl, rfl, rfl⟩
+private local instance batchEquationEq : DecidableEq SpaceSemantics.Equation :=
+  SpaceSemantics.Equation.decideEq
 
 /-- Direct outward calls derived from the actual batch-operation bodies. -/
 def batchProofInheritedHeads : List String := ["gslt:collection-continuation:begin", "gslt:collection-continuation:run", "gslt:collection-continuation:publication",  "gslt:automata:length", "gslt:complete:drop", "gslt:automata:append"]
@@ -740,20 +729,8 @@ open CanonicalCompare.AllNameSupport
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open SpaceSemantics Eval BridgeKit WireKit
 
-private local instance loopEquationEq : DecidableEq SpaceSemantics.Equation := by
-  intro left right
-  apply decidable_of_iff (left.head = right.head ∧ left.arguments = right.arguments ∧ left.body = right.body)
-  constructor
-  · rintro ⟨head, arguments, body⟩
-    cases left
-    cases right
-    cases head
-    cases arguments
-    cases body
-    rfl
-  · intro same
-    cases same
-    exact ⟨rfl, rfl, rfl⟩
+private local instance loopEquationEq : DecidableEq SpaceSemantics.Equation :=
+  SpaceSemantics.Equation.decideEq
 
 def loopHeads (head : String) : Bool := !head.startsWith "gslt:" || head.startsWith "gslt:occurrence-batch:" ||
   ["gslt:collection-continuation:run", "gslt:collection-continuation:publication",

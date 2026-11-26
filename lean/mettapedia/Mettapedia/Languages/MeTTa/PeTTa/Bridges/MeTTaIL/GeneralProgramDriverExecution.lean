@@ -1,3 +1,5 @@
+import Mettapedia.Languages.MeTTa.PeTTa.BridgeTransport
+import Mettapedia.Languages.MeTTa.PeTTa.AppendAgreement
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.GeneralRuleReadoutCache
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.GeneralTypedSiteExecution.Traversal
 import Mettapedia.OSLF.MeTTaIL.GeneralOccurrenceLocalCompletion
@@ -285,13 +287,7 @@ private def oldHead (head : String) : Bool :=
       (source.program.equations.map (·.head))).contains head
 
 private theorem old_closed : ProgramClosed oldHead RuleExecutionProgram.scopedProgram := by
-  constructor
-  · decide +kernel
-  · intro equation member supported
-    have checked : RuleExecutionProgram.scopedProgram.equations.all (fun equation =>
-        !oldHead equation.head || codeWithin oldHead equation.body) = true := by decide +kernel
-    have row := List.all_eq_true.mp checked equation member
-    simpa only [supported, Bool.not_true, Bool.false_or] using row
+  exact BridgeKit.closed_of_all _ _ (by decide +kernel) (by decide +kernel)
 
 private theorem old_agreement :
     ProgramAgreementOn oldHead RuleExecutionProgram.scopedProgram runtime := by
@@ -307,24 +303,7 @@ private theorem old_returns {caller : Subst} {before after : State} {code answer
 
 theorem cache_agreement :
     ProgramAgreementOn GeneralRuleReadoutCache.executionHeads GeneralRuleReadoutCache.runtime runtime := by
-  apply appended_program_agreement
-  · intro equation member
-    have checked : (GeneralTypedSiteExecution.source.program.append source.program).equations.all (fun equation =>
-        !GeneralRuleReadoutCache.executionHeads equation.head) = true := by decide +kernel
-    have row := List.all_eq_true.mp checked equation member
-    cases supported : GeneralRuleReadoutCache.executionHeads equation.head with
-    | false => rfl
-    | true => simp [supported] at row
-  · intro name types member
-    have checked : (GeneralTypedSiteExecution.source.program.append source.program).declarations.all (fun declaration => match declaration with
-        | .expression [.symbol ":", .symbol head, .expression (.symbol "->" :: _)] =>
-            !GeneralRuleReadoutCache.executionHeads head
-        | _ => true) = true := by decide +kernel
-    have row := List.all_eq_true.mp checked
-      (.expression [.symbol ":", .symbol name, .expression (.symbol "->" :: types)]) member
-    cases supported : GeneralRuleReadoutCache.executionHeads name with
-    | false => rfl
-    | true => simp [supported] at row
+  exact appended_program_agreement_of_all _ _ _ (by decide +kernel) (by decide +kernel)
 
 private theorem start_returns (state : State) (request : GeneralRuleJobExecution.Request) :
     PureReturns runtime [] state

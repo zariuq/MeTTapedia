@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.PeTTa.EquationEquality
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CollectionSelectionExecution
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.GeneralRuleJobExecution
 import Mettapedia.OSLF.MeTTaIL.CollectionContextVariants
@@ -39,20 +40,8 @@ theorem checked : library.check = true := RetainedMatchingWire.interpreted_check
 
 section ProofMetadata
 
-private local instance contextEquationEq : DecidableEq SpaceSemantics.Equation := by
-  intro left right
-  apply decidable_of_iff (left.head = right.head ∧ left.arguments = right.arguments ∧ left.body = right.body)
-  constructor
-  · rintro ⟨head, arguments, body⟩
-    cases left
-    cases right
-    cases head
-    cases arguments
-    cases body
-    rfl
-  · intro same
-    cases same
-    exact ⟨rfl, rfl, rfl⟩
+private local instance contextEquationEq : DecidableEq SpaceSemantics.Equation :=
+  SpaceSemantics.Equation.decideEq
 
 /-- Direct outward calls derived from the actual context-operation bodies. -/
 def contextProofInheritedHeads : List String :=

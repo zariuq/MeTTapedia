@@ -1,3 +1,4 @@
+import Mettapedia.GSLT.LanguageDef.RewriteFreeLanguage
 import Mettapedia.GSLT.LanguageDef.TptpFofNnfLanguageDef
 import Mettapedia.GSLT.LanguageDef.TptpFofPrenexSemantics
 import Mettapedia.GSLT.LanguageDef.CanonicalWire
@@ -129,16 +130,9 @@ def theory : Mettapedia.GSLT.GSLT :=
     (ReductionRespectsEquations.of_equation_free rfl)
 
 theorem theory_no_step (source target : Pattern) :
-    ¬ theory.Step source target := by
-  intro reduction
-  unfold theory at reduction
-  rw [languageGSLT_step] at reduction
-  unfold langReducesUsing at reduction
-  rcases reduction with ⟨_, step⟩
-  cases step with
-  | rule ruleMember =>
-      change _ ∈ ([] : List RewriteRule) at ruleMember
-      simp at ruleMember
+    ¬ theory.Step source target :=
+  languageGSLT_no_step_of_no_rewrites (language := language)
+    (laws := ReductionRespectsEquations.of_equation_free rfl) no_rewrites
 
 /-! ## Canonical semantic encoding -/
 

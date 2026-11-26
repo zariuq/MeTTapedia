@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentNormalSelection
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentUpdate
 
@@ -63,7 +64,7 @@ private theorem lastFormed {n : Nat} {Γ : Ctx Head n} {type : Tm Head n}
     (formed : CtxFormed S.R (.snoc Γ type)) : IsType S.R Γ type := by cases formed; assumption
 
 variable (root : ExecutableReduction.RootEvaluator S.R)
-  (rootComplete : ∀ {n : Nat} (term : Tm Head n), root term = none → ∀ target, ¬ S.R.computation.step term target)
+  (rootComplete : SolverPremises.CompleteRootEvaluation (rules := S.R) root)
   (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R) (heads : HeadPreserving S.R)
 
 def normalize (fuel : Nat) : {n : Nat} → (raw : Ctx Head n) → CtxFormed S.R raw →

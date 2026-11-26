@@ -1,0 +1,6 @@
+# The roots of artifacts/lean-declarations/transport/lemma-roots.txt the follower must follow from
+# Lean's proof terms alone (kernel/follow.sh).
+Nat.add_zero
+Finset.nodup
+List.Perm.length_eq
+List.Perm.foldr_eq

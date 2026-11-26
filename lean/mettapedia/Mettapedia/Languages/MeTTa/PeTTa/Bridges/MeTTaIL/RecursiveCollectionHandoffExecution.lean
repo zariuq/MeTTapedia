@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.PeTTa.EquationEquality
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CollectionPresentationSource
 import Mettapedia.OSLF.MeTTaIL.RecursiveCollectionHandoff
 
@@ -32,20 +33,8 @@ theorem checked : library.check = true := RetainedMatchingWire.interpreted_check
 
 section ProofMetadata
 
-private local instance handoffEquationEq : DecidableEq SpaceSemantics.Equation := by
-  intro left right
-  apply decidable_of_iff (left.head = right.head ∧ left.arguments = right.arguments ∧ left.body = right.body)
-  constructor
-  · rintro ⟨head, arguments, body⟩
-    cases left
-    cases right
-    cases head
-    cases arguments
-    cases body
-    rfl
-  · intro same
-    cases same
-    exact ⟨rfl, rfl, rfl⟩
+private local instance handoffEquationEq : DecidableEq SpaceSemantics.Equation :=
+  SpaceSemantics.Equation.decideEq
 
 /-- Direct outward calls derived from the actual family bodies. -/
 def handoffProofInheritedHeads : List String := ["gslt:automata:append", "gslt:collection-presentation:at"]

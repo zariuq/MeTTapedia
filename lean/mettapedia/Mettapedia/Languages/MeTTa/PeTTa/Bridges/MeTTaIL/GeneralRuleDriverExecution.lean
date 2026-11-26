@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.PeTTa.BridgeTransport
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.GeneralRuleDriverExecution.Program
 
 /-!
@@ -43,13 +44,7 @@ private def rowHeads (head : String) : Bool :=
   ["gslt:rule:row-at", "Some", "LNil", "LCons", "None", "==", "-", "if", "let", "case"].contains head
 
 private theorem row_closed : ProgramClosed rowHeads RuleExecutionProgram.program := by
-  constructor
-  · decide +kernel
-  · intro equation member supported
-    have checked : RuleExecutionProgram.program.equations.all (fun equation =>
-        !rowHeads equation.head || codeWithin rowHeads equation.body) = true := by decide +kernel
-    have row := List.all_eq_true.mp checked equation member
-    simpa only [supported, Bool.not_true, Bool.false_or] using row
+  exact BridgeKit.closed_of_all _ _ (by decide +kernel) (by decide +kernel)
 
 private theorem row_agreement : ProgramAgreementOn rowHeads RuleExecutionProgram.program program :=
   programAgreementOn_of_retained_rows _ _ _ (by rfl) (by rfl)

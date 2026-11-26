@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentFragmentWorklistFamily
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentDynamicFragmentStore
 
@@ -100,13 +101,9 @@ variable (rigid : ∀ name, S.roles name = .rigid) (facts : FormFacts S.R S.role
   (heads : HeadPreserving S.R) (algebra : CumulativeAlgebra S.R) (declared : DeclaredTypesFormed S.R)
   (choices : ExecutableChecking.HeadChoices S.R) (reducer : ExecutableReduction.Reducer S.R)
   (root : ExecutableReduction.RootEvaluator S.R)
-  (normalizes : ∀ {Θ : Context S.R} {type : TypeOver Θ} (term : Term Θ type),
-    ∃ code : Tm Head Θ.arity, ContextualDependentNormalChecking.Normal (S := S) code ∧
-      Equal S.R Θ.raw term.code code type.code)
-  (certifyNormal : ∀ {n : Nat} (term : Tm Head n),
-    Option (PLift (ContextualDependentNormalChecking.Normal (S := S) term)))
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
+  (normalizes : SolverPremises.HasNormalForms S)
+  (certifyNormal : SolverPremises.NormalityCertifier S)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
 
 /-- **An equation with silent opened sides**: at every budget, the scoped reading, when it
 exists, has two silent sides. -/
@@ -482,9 +479,10 @@ theorem normalize_results_silent (bound : Nat) {n : Nat} (code : Tm Head n)
       ExecutableReduction.normalize S.R root first code = some value → first ≤ second →
         ExecutableReduction.normalize S.R root second code = some value := by
     intro first second value computed enough
-    induction enough with
-    | refl => exact computed
-    | step _ ih => exact ContextualDependentReductionBudget.success_succ S.R root ih
+    exact SolverPremises.keeps_of_le
+      (run := fun budget => ExecutableReduction.normalize S.R root budget code)
+      (fun _ _ => ContextualDependentReductionBudget.success_succ S.R root)
+      enough value computed
   have same : result = found := by
     have atResult := mono run (le_max_left fuel bound)
     rw [mono foundRun (le_max_right fuel bound)] at atResult
@@ -635,13 +633,9 @@ variable (rigid : ∀ name, S.roles name = .rigid) (facts : FormFacts S.R S.role
   (heads : HeadPreserving S.R) (algebra : CumulativeAlgebra S.R) (declared : DeclaredTypesFormed S.R)
   (choices : ExecutableChecking.HeadChoices S.R) (reducer : ExecutableReduction.Reducer S.R)
   (root : ExecutableReduction.RootEvaluator S.R)
-  (normalizes : ∀ {Θ : Context S.R} {type : TypeOver Θ} (term : Term Θ type),
-    ∃ code : Tm Head Θ.arity, ContextualDependentNormalChecking.Normal (S := S) code ∧
-      Equal S.R Θ.raw term.code code type.code)
-  (certifyNormal : ∀ {n : Nat} (term : Tm Head n),
-    Option (PLift (ContextualDependentNormalChecking.Normal (S := S) term)))
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
+  (normalizes : SolverPremises.HasNormalForms S)
+  (certifyNormal : SolverPremises.NormalityCertifier S)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
 
 /-- **An equation with unreadable opened sides** at every budget. -/
 def UnreadableEquation {Θ : Context S.R} (equation : Equation (TotalTerm Θ)) : Prop :=

@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.UnificationWithLevels.TreeFibre.MillerForcing
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentGeneralPatternRefutation
 
@@ -136,9 +137,7 @@ theorem kept_substMor {n : Nat} (Γ : Ctx Head n) (ps : List Head) (K : List (Fi
   exact renamed
 
 variable (rigid : ∀ name, S.roles name = .rigid) (complete : AlgorithmicComplete S.R S.roles)
-  (normalizes : ∀ {Θ : Context S.R} {type : TypeOver Θ} (term : Term Θ type),
-    ∃ code : Tm Head Θ.arity, ContextualDependentNormalChecking.Normal (S := S) code ∧
-      Equal S.R Θ.raw term.code code type.code)
+  (normalizes : SolverPremises.HasNormalForms S)
 
 include rigid complete normalizes in
 /-- **Intersection is forced.** From `λ ȳ. F y_a ≐ λ ȳ. F y_b`, every solution's value of `F` is pruned to any list

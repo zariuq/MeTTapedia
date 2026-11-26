@@ -1,3 +1,4 @@
+import Mettapedia.TypeTheory.ContextualPiEta
 import Mettapedia.TypeTheory.Calculi.NativeDependent.RefinementNativeAbstractScope
 import Mettapedia.TypeTheory.Calculi.NativeDependent.RefinementJudgmentInterpretation
 import Mettapedia.TypeTheory.Calculi.NativeDependent.RefinementAbstractJudgmentInterpretation
@@ -474,5 +475,167 @@ theorem toAbstract {model : ModelData S C} {D : Signature S}
     rfl
 
 end SignatureRealization
+
+namespace ModelData
+
+private theorem context_readout_reflect (model : ModelData S C)
+    {n : Nat} {context : ContextExpr S n}
+    {abstractScope : NativeAbstractScope.GenericScope (C := C) n}
+    (readout : model.toAbstract.evaluateContext context = some abstractScope) :
+    ∃ scope, model.evaluateContext context = some scope ∧
+      NativeAbstractScope.toGeneric scope = abstractScope := by
+  rw [model.evaluateContext_compare] at readout
+  exact Option.map_eq_some_iff.mp readout
+
+private theorem context_readout_iff (model : ModelData S C)
+    {n : Nat} {context : ContextExpr S n} {scope : Scope C n} :
+    model.toAbstract.evaluateContext context = some (NativeAbstractScope.toGeneric scope) ↔
+      model.evaluateContext context = some scope := by
+  constructor
+  · intro readout
+    obtain ⟨actual, read, same⟩ := model.context_readout_reflect readout
+    exact (NativeAbstractScope.scopeEquiv n).injective same ▸ read
+  · intro readout
+    rw [model.evaluateContext_compare, readout, Option.map_some]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Every native judgment interpretation agrees with the local-model
+interpretation at the complete readout, including scope and proof value. -/
+theorem interprets_toAbstract_iff (model : ModelData S C) (judgment : Judgment S) :
+    Abstract.Interprets model.toAbstract judgment ↔ Interprets model judgment := by
+  cases judgment with
+  | context context =>
+      constructor
+      · rintro ⟨actual, contextRead⟩
+        obtain ⟨scope, read, _⟩ := model.context_readout_reflect contextRead
+        exact ⟨scope, read⟩
+      · rintro ⟨scope, contextRead⟩
+        exact ⟨NativeAbstractScope.toGeneric scope, model.context_readout_iff.mpr contextRead⟩
+  | type context type =>
+      constructor
+      · rintro ⟨actual, A, contextRead, typeRead⟩
+        obtain ⟨scope, read, rfl⟩ := model.context_readout_reflect contextRead
+        exact ⟨scope, A, read, (model.evaluateType_compare type scope).symm.trans typeRead⟩
+      · rintro ⟨scope, A, contextRead, typeRead⟩
+        exact ⟨NativeAbstractScope.toGeneric scope, A, model.context_readout_iff.mpr contextRead,
+          (model.evaluateType_compare type scope).trans typeRead⟩
+  | term context term type =>
+      constructor
+      · rintro ⟨actual, A, value, contextRead, typeRead, termRead⟩
+        obtain ⟨scope, read, rfl⟩ := model.context_readout_reflect contextRead
+        exact ⟨scope, A, value, read, (model.evaluateType_compare type scope).symm.trans typeRead,
+          (model.evaluateTerm_compare term scope).symm.trans termRead⟩
+      · rintro ⟨scope, A, value, contextRead, typeRead, termRead⟩
+        exact ⟨NativeAbstractScope.toGeneric scope, A, value, model.context_readout_iff.mpr contextRead,
+          (model.evaluateType_compare type scope).trans typeRead,
+          (model.evaluateTerm_compare term scope).trans termRead⟩
+  | substitution source target substitution =>
+      constructor
+      · rintro ⟨src, tgt, arrow, sourceRead, targetRead, substitutionRead⟩
+        obtain ⟨Γ, readSource, rfl⟩ := model.context_readout_reflect sourceRead
+        obtain ⟨Δ, readTarget, rfl⟩ := model.context_readout_reflect targetRead
+        exact ⟨Γ, Δ, arrow, readSource, readTarget,
+          (model.evaluateSubstitution_compare Γ Δ substitution).symm.trans substitutionRead⟩
+      · rintro ⟨Γ, Δ, arrow, sourceRead, targetRead, substitutionRead⟩
+        exact ⟨NativeAbstractScope.toGeneric Γ, NativeAbstractScope.toGeneric Δ, arrow,
+          model.context_readout_iff.mpr sourceRead, model.context_readout_iff.mpr targetRead,
+          (model.evaluateSubstitution_compare Γ Δ substitution).trans substitutionRead⟩
+  | contextEq first second =>
+      constructor
+      · rintro ⟨actual, firstRead, secondRead⟩
+        obtain ⟨scope, read, rfl⟩ := model.context_readout_reflect firstRead
+        exact ⟨scope, read, model.context_readout_iff.mp secondRead⟩
+      · rintro ⟨scope, firstRead, secondRead⟩
+        exact ⟨NativeAbstractScope.toGeneric scope, model.context_readout_iff.mpr firstRead,
+          model.context_readout_iff.mpr secondRead⟩
+  | typeEq context first second =>
+      constructor
+      · rintro ⟨actual, A, contextRead, firstRead, secondRead⟩
+        obtain ⟨scope, read, rfl⟩ := model.context_readout_reflect contextRead
+        exact ⟨scope, A, read, (model.evaluateType_compare first scope).symm.trans firstRead,
+          (model.evaluateType_compare second scope).symm.trans secondRead⟩
+      · rintro ⟨scope, A, contextRead, firstRead, secondRead⟩
+        exact ⟨NativeAbstractScope.toGeneric scope, A, model.context_readout_iff.mpr contextRead,
+          (model.evaluateType_compare first scope).trans firstRead,
+          (model.evaluateType_compare second scope).trans secondRead⟩
+  | termEq context first second type =>
+      constructor
+      · rintro ⟨actual, A, value, contextRead, typeRead, firstRead, secondRead⟩
+        obtain ⟨scope, read, rfl⟩ := model.context_readout_reflect contextRead
+        exact ⟨scope, A, value, read, (model.evaluateType_compare type scope).symm.trans typeRead,
+          (model.evaluateTerm_compare first scope).symm.trans firstRead,
+          (model.evaluateTerm_compare second scope).symm.trans secondRead⟩
+      · rintro ⟨scope, A, value, contextRead, typeRead, firstRead, secondRead⟩
+        exact ⟨NativeAbstractScope.toGeneric scope, A, value, model.context_readout_iff.mpr contextRead,
+          (model.evaluateType_compare type scope).trans typeRead,
+          (model.evaluateTerm_compare first scope).trans firstRead,
+          (model.evaluateTerm_compare second scope).trans secondRead⟩
+  | substitutionEq source target first second =>
+      constructor
+      · rintro ⟨src, tgt, arrow, sourceRead, targetRead, firstRead, secondRead⟩
+        obtain ⟨Γ, readSource, rfl⟩ := model.context_readout_reflect sourceRead
+        obtain ⟨Δ, readTarget, rfl⟩ := model.context_readout_reflect targetRead
+        exact ⟨Γ, Δ, arrow, readSource, readTarget,
+          (model.evaluateSubstitution_compare Γ Δ first).symm.trans firstRead,
+          (model.evaluateSubstitution_compare Γ Δ second).symm.trans secondRead⟩
+      · rintro ⟨Γ, Δ, arrow, sourceRead, targetRead, firstRead, secondRead⟩
+        exact ⟨NativeAbstractScope.toGeneric Γ, NativeAbstractScope.toGeneric Δ, arrow,
+          model.context_readout_iff.mpr sourceRead, model.context_readout_iff.mpr targetRead,
+          (model.evaluateSubstitution_compare Γ Δ first).trans firstRead,
+          (model.evaluateSubstitution_compare Γ Δ second).trans secondRead⟩
+  | predicate context predicate =>
+      constructor
+      · rintro ⟨actual, φ, contextRead, predicateRead⟩
+        obtain ⟨scope, read, rfl⟩ := model.context_readout_reflect contextRead
+        exact ⟨scope, φ, read, (model.evaluatePredicate_compare predicate scope).symm.trans predicateRead⟩
+      · rintro ⟨scope, φ, contextRead, predicateRead⟩
+        exact ⟨NativeAbstractScope.toGeneric scope, φ, model.context_readout_iff.mpr contextRead,
+          (model.evaluatePredicate_compare predicate scope).trans predicateRead⟩
+  | entails context predicate =>
+      constructor
+      · rintro ⟨actual, contextRead, predicateRead⟩
+        obtain ⟨scope, read, rfl⟩ := model.context_readout_reflect contextRead
+        exact ⟨scope, read, (model.evaluatePredicate_compare predicate scope).symm.trans predicateRead⟩
+      · rintro ⟨scope, contextRead, predicateRead⟩
+        exact ⟨NativeAbstractScope.toGeneric scope, model.context_readout_iff.mpr contextRead,
+          (model.evaluatePredicate_compare predicate scope).trans predicateRead⟩
+  | predicateEq context first second =>
+      constructor
+      · rintro ⟨actual, φ, contextRead, firstRead, secondRead⟩
+        obtain ⟨scope, read, rfl⟩ := model.context_readout_reflect contextRead
+        exact ⟨scope, φ, read, (model.evaluatePredicate_compare first scope).symm.trans firstRead,
+          (model.evaluatePredicate_compare second scope).symm.trans secondRead⟩
+      · rintro ⟨scope, φ, contextRead, firstRead, secondRead⟩
+        exact ⟨NativeAbstractScope.toGeneric scope, φ, model.context_readout_iff.mpr contextRead,
+          (model.evaluatePredicate_compare first scope).trans firstRead,
+          (model.evaluatePredicate_compare second scope).trans secondRead⟩
+
+
+open Mettapedia.TypeTheory.ContextualTypeOperations (StrictPiSubstitution PiBeta)
+open Mettapedia.TypeTheory.ContextualPiEta (PiEta)
+
+/-- The abstract interpreter uses the native product operations. -/
+theorem stable_toAbstract (model : ModelData S C)
+    (stable : StrictPiSubstitution model.products) :
+    StrictPiSubstitution (PresheafNativePredicateModel.model C).products := stable
+
+theorem beta_toAbstract (model : ModelData S C) (beta : PiBeta model.products) :
+    PiBeta (PresheafNativePredicateModel.model C).products := beta
+
+theorem eta_toAbstract (model : ModelData S C)
+    (stable : StrictPiSubstitution model.products) (eta : PiEta model.products stable.1) :
+    PiEta (PresheafNativePredicateModel.model C).products (model.stable_toAbstract stable).1 := eta
+
+/-- Recover the native judgment from its abstract model interpretation. -/
+theorem interprets_of_abstract (model : ModelData S C) {judgment : Judgment S}
+    (valid : Abstract.Interprets model.toAbstract judgment) : Interprets model judgment :=
+  (model.interprets_toAbstract_iff judgment).mp valid
+
+end ModelData
+
+/-- Interpret a native judgment in the corresponding abstract model. -/
+theorem Interprets.toAbstract {model : ModelData S C} {judgment : Judgment S}
+    (valid : Interprets model judgment) : Abstract.Interprets model.toAbstract judgment :=
+  (model.interprets_toAbstract_iff judgment).mpr valid
 
 end Mettapedia.TypeTheory.Calculi.NativeDependent.Refinement

@@ -1219,98 +1219,64 @@ theorem environmentMeasureWithPolicy_step0_singleton (μ : Environment) (π : Ag
           · intro h_abs
             exact absurd (Finset.mem_univ s) h_abs
 
-/-- **Base case for IT factorization**: The environment measure of the set where step 0
-    equals a specific value equals the initial step probability.
+private theorem trajectoryAtZero_congr
+    (κ η : (n : ℕ) → Kernel (Π i : Iic n, StepFamily i) (StepFamily (n + 1)))
+    (hκ : ∀ n, IsMarkovKernel (κ n)) (hη : ∀ n, IsMarkovKernel (η n))
+    (same : κ = η) :
+    @Kernel.traj StepFamily (fun _ => inferInstance) κ hκ 0 =
+      @Kernel.traj StepFamily (fun _ => inferInstance) η hη 0 := by
+  subst η
+  rfl
 
-    This connects the IT construction back to our explicit probability formula.
-    The proof unfolds the IT construction:
-    1. environmentMeasure = traj κ 0 ∘ₘ initialMeasureIic0 μ
-    2. For the set {traj | traj 0 = s}, the traj kernel gives measure 1 when
-       the input has step 0 = s, and 0 otherwise
-    3. So the integral over initialMeasureIic0 gives exactly the initial step measure of {s}
-    4. Which equals uniformActionProb * μ.prob [act s.action] s.percept -/
+/-- Identical action weights give identical one-step kernels and initial
+measures. Their Ionescu–Tulcea extensions therefore agree. -/
+theorem environmentMeasureWithPolicy_eq_of_uniform (μ : Environment) (π : Agent)
+    (h_stoch : isStochastic μ) (uniform : ∀ h, h.wellFormed → ∀ a, π.policy h a = uniformActionProb) :
+    environmentMeasureWithPolicy μ π h_stoch = environmentMeasure μ h_stoch := by
+  have kernels : transitionKernelWithPolicy μ π = transitionKernel μ := by
+    funext n
+    apply Kernel.ext
+    intro historyPrefix
+    change transitionMeasureWithPolicy μ π n historyPrefix = transitionMeasure μ n historyPrefix
+    simp only [transitionMeasureWithPolicy, transitionMeasure,
+      uniform (iicPrefixToHistory n historyPrefix) (iicPrefixToHistory_wellFormed n historyPrefix)]
+  have initial : initialMeasureIic0WithPolicy μ π = initialMeasureIic0 μ := by
+    simp only [initialMeasureIic0WithPolicy, initialMeasureIic0,
+      initialStepMeasureWithPolicy, initialStepMeasure, uniform [] rfl]
+  have trajEq :
+      @Kernel.traj StepFamily (fun _ => inferInstance) (transitionKernelWithPolicy μ π)
+        (fun n => transitionKernelWithPolicy_isMarkov μ π n h_stoch) 0 =
+      @Kernel.traj StepFamily (fun _ => inferInstance) (transitionKernel μ)
+        (fun n => transitionKernel_isMarkov μ n h_stoch) 0 :=
+    trajectoryAtZero_congr _ _ _ _ kernels
+  unfold environmentMeasureWithPolicy environmentMeasure
+  rw [initial, trajEq]
+
+private theorem uniformAgent_policy (h : History) (a : Action) :
+    uniformAgent.policy h a = uniformActionProb := rfl
+
+/-- The first-step cylinder under uniform actions is the on-policy
+first-step cylinder at the uniform agent. -/
 theorem environmentMeasure_step0_singleton (μ : Environment) (h_stoch : isStochastic μ) (s : Step) :
     environmentMeasure μ h_stoch {traj | traj 0 = s} =
       uniformActionProb * μ.prob [HistElem.act s.action] s.percept := by
-  classical
-  have h_set :
-      ({traj : Trajectory | traj 0 = s} : Set Trajectory) =
-        (frestrictLe (π := StepFamily) 0) ⁻¹' ({stepToIic0 s} : Set (Π i : Iic 0, StepFamily i)) := by
-    ext traj
-    constructor
-    · intro h0
-      -- Show `frestrictLe 0 traj = stepToIic0 s`
-      have h_eq : frestrictLe (π := StepFamily) 0 traj = stepToIic0 s := by
-        funext i
-        rcases i with ⟨i, hi⟩
-        have hi0 : i = 0 := Nat.le_zero.mp (mem_Iic.1 hi)
-        subst hi0
-        simpa [frestrictLe_apply, stepToIic0, h0]
-      simpa [Set.mem_preimage, Set.mem_singleton_iff] using h_eq
-    · intro hmem
-      have h_eq : frestrictLe (π := StepFamily) 0 traj = stepToIic0 s := by
-        simpa [Set.mem_preimage, Set.mem_singleton_iff] using hmem
-      have h_at0 :=
-        congrArg (fun f => f ⟨0, mem_Iic.2 (le_rfl)⟩) h_eq
-      simpa [frestrictLe_apply, stepToIic0] using h_at0
+  simpa only [environmentMeasureWithPolicy_eq_of_uniform μ uniformAgent h_stoch
+      (fun h _ a => uniformAgent_policy h a), uniformAgent_policy] using
+    environmentMeasureWithPolicy_step0_singleton μ uniformAgent h_stoch s
 
-  have h_map :
-      (environmentMeasure μ h_stoch).map (frestrictLe (π := StepFamily) 0) =
-        initialMeasureIic0 μ := by
-    -- Map the IT measure down to the `Iic 0` prefix. This is exactly the initial measure.
-    have : ∀ n, IsMarkovKernel (transitionKernel μ n) :=
-      fun n => transitionKernel_isMarkov μ n h_stoch
-    have hf : Measurable (frestrictLe (π := StepFamily) 0) := measurable_frestrictLe (X := StepFamily) 0
-    simp [environmentMeasure]
-    -- `map_comp` pushes `map` through `∘ₘ`
-    rw [MeasureTheory.Measure.map_comp (μ := initialMeasureIic0 μ)
-      (κ := @Kernel.traj StepFamily (fun _ => inferInstance) (transitionKernel μ)
-        (fun n => transitionKernel_isMarkov μ n h_stoch) 0) hf]
-    -- `traj` restricted to time 0 is the identity kernel
-    rw [Kernel.traj_map_frestrictLe, Kernel.partialTraj_self]
-    simp
-
-  have hs_iic0 : MeasurableSet ({stepToIic0 s} : Set (Π i : Iic 0, StepFamily i)) := by
-    simp
-  have hf0 : Measurable (frestrictLe (π := StepFamily) 0) := measurable_frestrictLe (X := StepFamily) 0
-
-  calc
-    environmentMeasure μ h_stoch {traj | traj 0 = s}
-        = environmentMeasure μ h_stoch ((frestrictLe (π := StepFamily) 0) ⁻¹'
-            ({stepToIic0 s} : Set (Π i : Iic 0, StepFamily i))) := by
-              simp [h_set]
-    _ = (environmentMeasure μ h_stoch).map (frestrictLe (π := StepFamily) 0)
-          ({stepToIic0 s} : Set (Π i : Iic 0, StepFamily i)) := by
-            simpa using (MeasureTheory.Measure.map_apply (μ := environmentMeasure μ h_stoch) hf0 hs_iic0).symm
-    _ = initialMeasureIic0 μ ({stepToIic0 s} : Set (Π i : Iic 0, StepFamily i)) := by
-          simp [h_map]
-    _ = initialStepMeasure μ {s} := by
-          -- Unfold the map defining `initialMeasureIic0` and simplify the singleton preimage
-          have hs_step : MeasurableSet ({stepToIic0 s} : Set (Π i : Iic 0, StepFamily i)) := by simp
-          have h_pre :
-              stepToIic0 ⁻¹' ({stepToIic0 s} : Set (Π i : Iic 0, StepFamily i)) = ({s} : Set Step) := by
-            ext s'
-            simp
-          simp [initialMeasureIic0, MeasureTheory.Measure.map_apply stepToIic0_measurable hs_step, h_pre]
-    _ = uniformActionProb * μ.prob [HistElem.act s.action] s.percept := by
-          -- Evaluate the explicit sum-of-diracs definition at a singleton.
-          have hs : MeasurableSet ({s} : Set Step) := by simp
-          -- Reduce to a finite sum where only the `x = s` term survives.
-          simp only [initialStepMeasure]
-          rw [MeasureTheory.Measure.sum_apply_of_countable]
-          rw [tsum_fintype]
-          conv_lhs =>
-            arg 2
-            ext x
-            rw [MeasureTheory.Measure.smul_apply, smul_eq_mul]
-            rw [MeasureTheory.Measure.dirac_apply' x hs]
-          simp only [Set.mem_singleton_iff, Set.indicator_apply, Pi.one_apply]
-          rw [Finset.sum_eq_single s]
-          · simp
-          · intro x _ hx
-            simp [hx]
-          · intro h_abs
-            exact (h_abs (Finset.mem_univ s)).elim
+example (μ : Environment) (π : Agent) (h_stoch : isStochastic μ) (s : Step)
+    (different : π.policy [] s.action ≠ uniformActionProb)
+    (positive : μ.prob [HistElem.act s.action] s.percept ≠ 0)
+    (finite : μ.prob [HistElem.act s.action] s.percept ≠ ⊤) :
+    environmentMeasureWithPolicy μ π h_stoch ≠ environmentMeasure μ h_stoch := by
+  intro equal
+  have observed := congrArg
+    (fun m : MeasureTheory.Measure Trajectory => m {traj | traj 0 = s}) equal
+  change environmentMeasureWithPolicy μ π h_stoch {traj | traj 0 = s} =
+    environmentMeasure μ h_stoch {traj | traj 0 = s} at observed
+  rw [environmentMeasureWithPolicy_step0_singleton,
+    environmentMeasure_step0_singleton] at observed
+  exact different ((ENNReal.mul_left_inj positive finite).mp observed)
 
 /-! ## Key Properties of Environment Measure
 
@@ -1733,480 +1699,6 @@ theorem cylinderSet_append_eq_inter (pfx : History) (a : Action) (x : Percept)
     -- Combine the prefix and the step
     rw [trajectoryToHistory_succ, h1, h2]
 
-/-! ## Product Measure Factorization
-
-The Ionescu-Tulcea measure satisfies a key product measure property:
-the measure of (cylinder based on first n steps) ∩ (step n constraint)
-factors as (measure of cylinder) × (transition probability of step).
--/
-
-/-- **IT Product Factorization**: For a cylinder set based on first n steps
-    and a singleton constraint at step n, the measure factors.
-
-    This is the fundamental property of IT measures:
-    μ(A ∩ {ω | ω(n) = s}) = μ(A) × κ_n({s})
-
-    where:
-    - A is a cylinder based on first n steps (determined by history pfx)
-    - κ_n is the transition kernel at step n
-    - The kernel mass at {s} is uniformActionProb × μ.prob(pfx ++ [act]) percept
-
-    **Proof Strategy**:
-    By the IT construction, the measure on (Π i : ℕ, Step) is built as a
-    projective limit with the factorization property built in. Specifically:
-    1. The measure restricted to (Π i : Iic n, Step) factors as the
-       product of marginals
-    2. Each marginal at step i is the transition kernel κ_{i-1}
-    3. For A based on first n steps and B = {ω | ω(n) = s}:
-       μ(A ∩ B) = μ_n(proj_n(A) ∩ proj_n(B))
-                = μ_{n-1}(proj_{n-1}(A)) × κ_n({s})
-                = μ(A) × κ_n({s})
-
-    The key insight is that the measure of cylinderSet pfx ∩ {traj | traj n = s}
-    equals:
-      environmentMeasure(cylinderSet pfx) × uniformActionProb × μ.prob(pfx ++ [act s.action]) s.percept
-
-    This is because:
-    - The transition kernel κ_n is constructed exactly to give this probability
-    - The IT measure factors by construction -/
-theorem IT_product_factorization (μ : Environment) (h_stoch : isStochastic μ)
-    (pfx : History) (h_pfx_wf : pfx.wellFormed) (h_pfx_complete : Even pfx.length) (s : Step) :
-    environmentMeasure μ h_stoch (cylinderSet pfx ∩ {traj | traj (historySteps pfx) = s}) =
-      environmentMeasure μ h_stoch (cylinderSet pfx) *
-        uniformActionProb * μ.prob (pfx ++ [HistElem.act s.action]) s.percept := by
-  -- Induction on the number of steps in pfx
-  generalize hn : historySteps pfx = n
-  induction n generalizing pfx with
-  | zero =>
-    -- Base case: pfx = [] (empty history)
-    -- historySteps pfx = 0 implies pfx = []
-    have h_pfx_empty : pfx = [] := by
-      cases pfx with
-      | nil => rfl
-      | cons e rest =>
-        simp only [historySteps, List.length_cons] at hn
-        -- historySteps (e :: rest) = (rest.length + 1) / 2
-        -- For this to equal 0, we need rest.length + 1 < 2, i.e., rest.length = 0
-        -- But then historySteps [e] = 1 / 2 = 0, which is actually possible!
-        -- Wait, we also have h_pfx_wf and h_pfx_complete constraints
-        -- If pfx is well-formed with even length > 0, it must have at least 2 elements
-        -- Actually for [e] (length 1), it's odd, so h_pfx_complete fails
-        cases rest with
-        | nil =>
-          -- pfx = [e], length = 1, which is odd, contradicts h_pfx_complete
-          simp only [List.length_singleton, Nat.not_even_one] at h_pfx_complete
-        | cons e' rest' =>
-          -- pfx has at least 2 elements, so historySteps > 0
-          simp only [List.length_cons] at hn
-          -- historySteps = (rest'.length + 2) / 2 ≥ 1
-          have : 0 < (rest'.length + 2) / 2 := Nat.div_pos (by omega) (by norm_num)
-          omega
-    subst h_pfx_empty
-    -- Now pfx = []
-    -- cylinderSet [] = Set.univ
-    have h_cyl_empty : cylinderSet ([] : History) = Set.univ := by
-      ext traj
-      simp only [cylinderSet, Set.mem_ofPred_eq, Set.mem_univ, iff_true]
-      exact ⟨0, trajectoryToHistory_zero traj⟩
-    simp only [historySteps, List.length_nil, Nat.zero_div] at hn ⊢
-    -- Goal: environmentMeasure μ h_stoch (cylinderSet [] ∩ {traj | traj 0 = s}) =
-    --       environmentMeasure μ h_stoch (cylinderSet []) * uniformActionProb * μ.prob [act s.action] s.percept
-    -- Rewrite all cylinderSet [] to Set.univ
-    simp only [h_cyl_empty, Set.univ_inter]
-    -- Now: environmentMeasure μ h_stoch {traj | traj 0 = s} =
-    --      environmentMeasure μ h_stoch Set.univ * uniformActionProb * μ.prob [act s.action] s.percept
-    rw [environmentMeasure_univ_eq_one, one_mul]
-    -- Simplify [] ++ [act s.action] to [act s.action]
-    simp only [List.nil_append]
-    -- Now need: environmentMeasure μ h_stoch {traj | traj 0 = s} =
-    --           uniformActionProb * μ.prob [act s.action] s.percept
-    -- Apply the base case lemma
-    exact environmentMeasure_step0_singleton μ h_stoch s
-  | succ n ih =>
-    -- Inductive case: pfx has n+1 steps
-    -- We need to use the Markov property: P(A ∩ B) = P(A) × P(B|A)
-    -- where A = cylinderSet pfx and B = {traj | traj (n+1) = s}
-    --
-    -- The key insight is that our environmentMeasure is built from the transition kernel,
-    -- which gives exactly the conditional probability P(B|A).
-    --
-    -- Proof strategy:
-    -- 1. Decompose pfx = pfx' ++ [act a, per x] where historySteps pfx' = n
-    -- 2. Use the chain rule: cylinderSet pfx = cylinderSet pfx' ∩ {traj | traj n = Step.mk a x}
-    classical
-    have hnSteps : historySteps pfx = n.succ := hn
-
-    have hlen : pfx.length = 2 * n.succ := by
-      have hdiv : pfx.length / 2 = n.succ := by
-        simpa [historySteps] using hnSteps
-      have h_even : (pfx.length / 2) * 2 = pfx.length :=
-        Nat.div_two_mul_two_of_even h_pfx_complete
-      calc
-        pfx.length = (pfx.length / 2) * 2 := by
-          symm
-          exact h_even
-        _ = n.succ * 2 := by
-          simp [hdiv]
-        _ = 2 * n.succ := by
-          simp [Nat.mul_comm]
-
-    -- Canonical finite prefix determined by `pfx`.
-    let f0 : Fin n.succ → Step := historyToFinPrefix n.succ pfx
-    have hpfx_prefix : prefixToHistory n.succ f0 = pfx := by
-      simpa [f0] using
-        (prefixToHistory_historyToFinPrefix (t := n.succ) (h := pfx) h_pfx_wf hlen)
-
-    -- Same prefix, but in the Ionescu–Tulcea (`Iic`) indexing.
-    let x0 : Π i : Iic n, StepFamily i := finToIic n f0
-    have hpfx_iic : iicPrefixToHistory n x0 = pfx := by
-      -- `iicPrefixToHistory` is `prefixToHistory` after reindexing, and `iicToFin_finToIic` removes
-      -- the conversion.
-      simpa [iicPrefixToHistory, prefixToHistory, x0] using hpfx_prefix
-
-    have h_iicToFin_frestrictLe (traj : Trajectory) :
-        iicToFin n (frestrictLe (π := StepFamily) n traj) = truncate n.succ traj := by
-      funext i
-      rfl
-
-    have h_cyl :
-        cylinderSet pfx =
-          (frestrictLe (π := StepFamily) n) ⁻¹'
-            ({x0} : Set (Π i : Iic n, StepFamily i)) := by
-      ext traj
-      have hcyl : cylinderSet pfx = cylinderSetAt (historySteps pfx) pfx :=
-        cylinderSet_eq_cylinderSetAt' pfx h_pfx_wf
-      -- Reduce to `trajectoryToHistory` at time `n+1`.
-      simp [hcyl, cylinderSetAt, hnSteps]
-      constructor
-      · intro h_hist
-        -- Turn the history equality into a truncation equality by applying `historyToFinPrefix`.
-        have h_pref : prefixToHistory n.succ (truncate n.succ traj) = pfx := by
-          calc
-            prefixToHistory n.succ (truncate n.succ traj) =
-                trajectoryToHistory traj n.succ := prefixToHistory_eq_trajectoryToHistory n.succ traj
-            _ = pfx := h_hist
-        have h_pref' : prefixToHistory n.succ (truncate n.succ traj) = prefixToHistory n.succ f0 := by
-          simpa [hpfx_prefix] using h_pref
-        have h_trunc : truncate n.succ traj = f0 := by
-          have := congrArg (fun h => historyToFinPrefix n.succ h) h_pref'
-          simpa [historyToFinPrefix_prefixToHistory] using this
-        -- Convert truncation equality to an `Iic`-prefix equality.
-        have hiic : iicToFin n (frestrictLe (π := StepFamily) n traj) = f0 := by
-          simpa [h_trunc] using (h_iicToFin_frestrictLe traj)
-        have := congrArg (fun f => finToIic n f) hiic
-        simpa [x0] using this
-      · intro h_prefEq
-        -- Convert an `Iic`-prefix equality into a truncation equality, then to the history.
-        have hiic : iicToFin n (frestrictLe (π := StepFamily) n traj) = f0 := by
-          simpa [x0] using congrArg (iicToFin n) h_prefEq
-        have h_trunc : truncate n.succ traj = f0 := by
-          calc
-            truncate n.succ traj = iicToFin n (frestrictLe (π := StepFamily) n traj) := by
-              symm
-              exact congrArg id (h_iicToFin_frestrictLe traj)
-            _ = f0 := hiic
-        calc
-          trajectoryToHistory traj n.succ =
-              prefixToHistory n.succ (truncate n.succ traj) := (prefixToHistory_eq_trajectoryToHistory n.succ traj).symm
-          _ = prefixToHistory n.succ f0 := by simp [h_trunc]
-          _ = pfx := hpfx_prefix
-
-    -- The next-step prefix `x1`, extending `x0` with the event `traj (n+1) = s`.
-    let z : Π i : Ioc n n.succ, StepFamily i := (MeasurableEquiv.piSingleton n) s
-    let x1 : Π i : Iic n.succ, StepFamily i := IicProdIoc (X := StepFamily) n n.succ (x0, z)
-
-    have h_inter :
-        cylinderSet pfx ∩ {traj | traj n.succ = s} =
-          (frestrictLe (π := StepFamily) n.succ) ⁻¹'
-            ({x1} : Set (Π i : Iic n.succ, StepFamily i)) := by
-      ext traj
-      constructor
-      · rintro ⟨hpfx_mem, hs_mem⟩
-        have hx0_traj : frestrictLe (π := StepFamily) n traj = x0 := by
-          simpa [h_cyl, Set.mem_preimage, Set.mem_singleton_iff] using hpfx_mem
-        -- Show the extended prefix matches `x1`.
-        have hx1_traj : frestrictLe (π := StepFamily) n.succ traj = x1 := by
-          funext i
-          rcases i with ⟨i, hiIic⟩
-          by_cases hi : i ≤ n
-          · -- prefix part
-            have hi' : i ∈ Iic n := mem_Iic.2 hi
-            have := congrArg (fun f => f ⟨i, hi'⟩) hx0_traj
-            simpa [frestrictLe_apply, x1, IicProdIoc, hi] using this
-          · -- last coordinate is forced to be `n+1`
-            have hi_gt : n < i := lt_of_not_ge hi
-            have hi_le : i ≤ n.succ := mem_Iic.1 hiIic
-            have hi_eq : i = n.succ := Nat.le_antisymm hi_le (Nat.succ_le_of_lt hi_gt)
-            subst hi_eq
-            simpa [frestrictLe_apply, x1, IicProdIoc, hi, z, hs_mem]
-        simpa [Set.mem_preimage, Set.mem_singleton_iff] using hx1_traj
-      · intro hmem
-        have hx1_traj : frestrictLe (π := StepFamily) n.succ traj = x1 := by
-          simpa [Set.mem_preimage, Set.mem_singleton_iff] using hmem
-        have hs_mem : traj n.succ = s := by
-          -- Evaluate at the last index.
-          have := congrArg (fun f => f ⟨n.succ, mem_Iic.2 (le_rfl)⟩) hx1_traj
-          simpa [frestrictLe_apply, x1, IicProdIoc, z, MeasurableEquiv.piSingleton] using this
-        have hx0_traj : frestrictLe (π := StepFamily) n traj = x0 := by
-          funext i
-          have hi_le : (i : ℕ) ≤ n := mem_Iic.1 i.2
-          have := congrArg (fun f => f ⟨i.1, mem_Iic.2 (hi_le.trans n.le_succ)⟩) hx1_traj
-          simpa [frestrictLe_apply, x1, IicProdIoc, hi_le] using this
-        have hpfx_mem : traj ∈ cylinderSet pfx := by
-          simpa [h_cyl, Set.mem_preimage, Set.mem_singleton_iff] using hx0_traj
-        exact ⟨hpfx_mem, hs_mem⟩
-
-    -- Rewrite the goal to a statement about singleton cylinder events in the IT prefix spaces.
-    have : ∀ m, IsMarkovKernel (transitionKernel μ m) :=
-      fun m => transitionKernel_isMarkov μ m h_stoch
-
-    have h_meas_n : Measurable (frestrictLe (π := StepFamily) n) :=
-      measurable_frestrictLe (X := StepFamily) n
-    have h_meas_succ : Measurable (frestrictLe (π := StepFamily) n.succ) :=
-      measurable_frestrictLe (X := StepFamily) n.succ
-
-    have hx0_meas : MeasurableSet ({x0} : Set (Π i : Iic n, StepFamily i)) := by simp
-    have hx1_meas : MeasurableSet ({x1} : Set (Π i : Iic n.succ, StepFamily i)) := by simp
-
-    -- Convert the sets to `map`-probabilities.
-    have hA :
-        environmentMeasure μ h_stoch ((frestrictLe (π := StepFamily) n) ⁻¹' ({x0} : Set (Π i : Iic n, StepFamily i))) =
-          (environmentMeasure μ h_stoch).map (frestrictLe (π := StepFamily) n) ({x0} : Set (Π i : Iic n, StepFamily i)) := by
-      simpa using (MeasureTheory.Measure.map_apply h_meas_n hx0_meas).symm
-
-    have hB :
-        environmentMeasure μ h_stoch ((frestrictLe (π := StepFamily) n.succ) ⁻¹' ({x1} : Set (Π i : Iic n.succ, StepFamily i))) =
-          (environmentMeasure μ h_stoch).map (frestrictLe (π := StepFamily) n.succ) ({x1} : Set (Π i : Iic n.succ, StepFamily i)) := by
-      simpa using (MeasureTheory.Measure.map_apply h_meas_succ hx1_meas).symm
-
-    -- Compute the prefix measures via `partialTraj`.
-    have h_map_prefix (k : ℕ) :
-        (environmentMeasure μ h_stoch).map (frestrictLe (π := StepFamily) k) =
-          Kernel.partialTraj (transitionKernel μ) 0 k ∘ₘ initialMeasureIic0 μ := by
-      have hk_meas : Measurable (frestrictLe (π := StepFamily) k) := measurable_frestrictLe (X := StepFamily) k
-      simp [environmentMeasure]
-      rw [MeasureTheory.Measure.map_comp (μ := initialMeasureIic0 μ)
-        (κ := @Kernel.traj StepFamily (fun _ => inferInstance) (transitionKernel μ)
-          (fun n => transitionKernel_isMarkov μ n h_stoch) 0) hk_meas]
-      rw [Kernel.traj_map_frestrictLe]
-
-    -- Let μₙ be the distribution of prefixes up to time n.
-    let μn : MeasureTheory.Measure (Π i : Iic n, StepFamily i) :=
-      (environmentMeasure μ h_stoch).map (frestrictLe (π := StepFamily) n)
-
-    let μn1 : MeasureTheory.Measure (Π i : Iic n.succ, StepFamily i) :=
-      (environmentMeasure μ h_stoch).map (frestrictLe (π := StepFamily) n.succ)
-
-    have hμn : μn = Kernel.partialTraj (transitionKernel μ) 0 n ∘ₘ initialMeasureIic0 μ := by
-      simpa [μn] using h_map_prefix n
-
-    have hμn1 : μn1 = Kernel.partialTraj (transitionKernel μ) 0 n.succ ∘ₘ initialMeasureIic0 μ := by
-      simpa [μn1] using h_map_prefix n.succ
-
-    have hμn1_fact :
-        μn1 = Kernel.partialTraj (transitionKernel μ) n n.succ ∘ₘ μn := by
-      -- factor `partialTraj 0 (n+1)` through time `n`
-      have hPT :
-          Kernel.partialTraj (transitionKernel μ) 0 n.succ =
-            Kernel.partialTraj (transitionKernel μ) n n.succ ∘ₖ Kernel.partialTraj (transitionKernel μ) 0 n := by
-        simpa [Nat.succ_eq_add_one] using
-          (Kernel.partialTraj_succ_eq_comp (κ := transitionKernel μ) (a := 0) (b := n) (Nat.zero_le n))
-      -- Push this factorization through the composition with the initial measure, then rewrite the
-      -- intermediate prefix distribution as `μn`.
-      calc
-        μn1 = Kernel.partialTraj (transitionKernel μ) 0 n.succ ∘ₘ initialMeasureIic0 μ := by
-          simpa [μn1] using hμn1
-        _ = (Kernel.partialTraj (transitionKernel μ) n n.succ ∘ₖ Kernel.partialTraj (transitionKernel μ) 0 n) ∘ₘ
-              initialMeasureIic0 μ := by
-          simp [hPT]
-        _ = Kernel.partialTraj (transitionKernel μ) n n.succ ∘ₘ
-              (Kernel.partialTraj (transitionKernel μ) 0 n ∘ₘ initialMeasureIic0 μ) := by
-          -- reassociate kernel/measure composition
-          simpa using (MeasureTheory.Measure.comp_assoc (μ := initialMeasureIic0 μ)
-            (κ := Kernel.partialTraj (transitionKernel μ) 0 n) (η := Kernel.partialTraj (transitionKernel μ) n n.succ)).symm
-        _ = Kernel.partialTraj (transitionKernel μ) n n.succ ∘ₘ μn := by
-          simpa [μn] using congrArg (fun m => Kernel.partialTraj (transitionKernel μ) n n.succ ∘ₘ m) hμn.symm
-
-    -- Evaluate the singleton probability at time `n+1`.
-    have h_singleton_step :
-        μn1 ({x1} : Set (Π i : Iic n.succ, StepFamily i)) =
-          μn ({x0} : Set (Π i : Iic n, StepFamily i)) * transitionMeasure μ n x0 {s} := by
-      -- Expand the one-step composition `partialTraj n (n+1) ∘ₘ μn` as a finite sum.
-      have hsum :
-          μn1 ({x1} : Set (Π i : Iic n.succ, StepFamily i)) =
-            ∑ ω : (Π i : Iic n, StepFamily i),
-              μn ({ω} : Set (Π i : Iic n, StepFamily i)) *
-                Kernel.partialTraj (transitionKernel μ) n n.succ ω ({x1} : Set (Π i : Iic n.succ, StepFamily i)) := by
-        -- Use the countable-sum formula for kernel composition, then reduce to a finite sum.
-        have hx1_meas' : MeasurableSet ({x1} : Set (Π i : Iic n.succ, StepFamily i)) := by simp
-        -- Replace `μn1` using the factorization.
-        rw [hμn1_fact]
-        -- Rewrite `∘ₘ` as a sum over singletons (domain is finite, hence countable).
-        rw [MeasureTheory.Measure.comp_eq_sum_of_countable (μ := μn) (κ := Kernel.partialTraj (transitionKernel μ) n n.succ)]
-        -- Evaluate the sum measure at the singleton.
-        rw [MeasureTheory.Measure.sum_apply_of_countable]
-        -- Reduce the infinite sum to a finite sum.
-        rw [tsum_fintype]
-        -- Simplify each term of the finite sum.
-        simp [MeasureTheory.Measure.smul_apply, smul_eq_mul]
-
-      -- Compute the transition kernel contribution at `{x1}`: only `ω = x0` contributes.
-      -- First show the explicit singleton formula for the one-step `partialTraj`.
-      have h_partialTraj_singleton (ω : Π i : Iic n, StepFamily i) :
-          Kernel.partialTraj (transitionKernel μ) n n.succ ω ({x1} : Set (Π i : Iic n.succ, StepFamily i)) =
-            if ω = x0 then transitionMeasure μ n ω {s} else 0 := by
-        -- Unfold the successor case of `partialTraj`.
-        have hPT := Kernel.partialTraj_succ_self (κ := transitionKernel μ) n
-        -- Evaluate at `ω` and the singleton `{x1}`.
-        have hx1_meas' : MeasurableSet ({x1} : Set (Π i : Iic n.succ, StepFamily i)) := by simp
-        have hIic_meas : Measurable (IicProdIoc (X := StepFamily) n n.succ) := by fun_prop
-        -- Start from the `partialTraj_succ_self` formula.
-        -- `simp` will reduce the product kernel using `Kernel.id_prod_apply'`.
-        -- The preimage under `IicProdIoc` of `{x1}` is the singleton `{(x0, z)}`.
-        -- Then `Prod.mk ω` picks `{z}` iff `ω = x0`.
-        -- Finally, mapping by `piSingleton` reduces to the transition measure of `{s}`.
-        have h_preimage :
-            (IicProdIoc (X := StepFamily) n n.succ) ⁻¹' ({x1} : Set (Π i : Iic n.succ, StepFamily i)) =
-              ({(x0, z)} : Set ((Π i : Iic n, StepFamily i) × (Π i : Ioc n n.succ, StepFamily i))) := by
-          classical
-          -- Use the measurable equivalence `MeasurableEquiv.IicProdIoc` (a bijection) to identify
-          -- the unique preimage of a singleton.
-          let e :=
-            MeasurableEquiv.IicProdIoc (X := StepFamily) (a := n) (b := n.succ) (Nat.le_succ n)
-          have hx1 : e (x0, z) = x1 := by
-            simp [e, x1, MeasurableEquiv.coe_IicProdIoc]
-          have hx1_symm : e.symm x1 = (x0, z) := by
-            simpa [hx1] using (e.symm_apply_apply (x0, z))
-          ext y
-          constructor
-          · intro hy
-            have hy' : IicProdIoc (X := StepFamily) n n.succ y = x1 := by
-              simpa [Set.mem_preimage, Set.mem_singleton_iff] using hy
-            have hy'' : e y = x1 := by
-              simpa [e, MeasurableEquiv.coe_IicProdIoc] using hy'
-            have : y = e.symm x1 := (e.eq_symm_apply).2 hy''
-            simpa [Set.mem_singleton_iff, hx1_symm] using this
-          · intro hy
-            have : y = (x0, z) := by simpa [Set.mem_singleton_iff] using hy
-            subst this
-            simp [Set.mem_preimage, Set.mem_singleton_iff, x1]
-
-        -- Now compute `partialTraj` on the singleton.
-        rw [hPT]
-        -- Expand kernel map.
-        rw [Kernel.map_apply' _ (by fun_prop) ω hx1_meas']
-        -- Reduce product kernel with `Kernel.id_prod_apply'`.
-        have h_prod_meas : MeasurableSet ((IicProdIoc (X := StepFamily) n n.succ) ⁻¹' ({x1} : Set (Π i : Iic n.succ, StepFamily i))) := by
-          simpa using hx1_meas'.preimage (by fun_prop : Measurable (IicProdIoc (X := StepFamily) n n.succ))
-        rw [Kernel.id_prod_apply' _ ω h_prod_meas]
-        -- Use the computed preimage.
-        rw [h_preimage]
-        -- Compute the preimage under `Prod.mk ω`.
-        by_cases hω : ω = x0
-        · subst hω
-          -- `Prod.mk x0` hits the singleton `{(x0,z)}` exactly at `z`.
-          have hmk :
-              Prod.mk x0 ⁻¹'
-                  ({(x0, z)} :
-                    Set ((Π i : Iic n, StepFamily i) × (Π i : Ioc n n.succ, StepFamily i))) =
-                ({z} : Set (Π i : Ioc n n.succ, StepFamily i)) := by
-            ext u
-            simp [Set.mem_preimage, Set.mem_singleton_iff]
-          -- Reduce to the transition measure of `{s}`.
-          simp [hmk]
-          rw [Kernel.map_apply' (κ := transitionKernel μ n) (f := (MeasurableEquiv.piSingleton n))
-            (MeasurableEquiv.piSingleton n).measurable x0 (by simp)]
-          have hz :
-              (MeasurableEquiv.piSingleton n) ⁻¹' ({z} : Set (Π i : Ioc n n.succ, StepFamily i)) =
-                ({s} : Set Step) := by
-            ext t
-            simp [z, Set.mem_preimage, Set.mem_singleton_iff]
-          simp [transitionKernel, hz]
-        · -- If `ω ≠ x0`, the preimage is empty, so the probability is 0.
-          have hmk :
-              Prod.mk ω ⁻¹'
-                  ({(x0, z)} :
-                    Set ((Π i : Iic n, StepFamily i) × (Π i : Ioc n n.succ, StepFamily i))) =
-                (∅ : Set (Π i : Ioc n n.succ, StepFamily i)) := by
-            ext u
-            simp [Set.mem_preimage, Set.mem_singleton_iff, hω]
-          simp [hmk, hω]
-
-      -- Use the singleton formula to collapse the finite sum to the `ω = x0` term.
-      rw [hsum]
-      classical
-      -- Rewrite the summand using `h_partialTraj_singleton`, then isolate the `ω = x0` term.
-      have h_other (ω : (Π i : Iic n, StepFamily i)) (hω : ω ≠ x0) :
-          μn ({ω} : Set (Π i : Iic n, StepFamily i)) *
-              Kernel.partialTraj (transitionKernel μ) n n.succ ω
-                ({x1} : Set (Π i : Iic n.succ, StepFamily i)) =
-            0 := by
-        simp [h_partialTraj_singleton ω, hω]
-      have : (∑ ω : (Π i : Iic n, StepFamily i),
-          μn ({ω} : Set (Π i : Iic n, StepFamily i)) *
-            Kernel.partialTraj (transitionKernel μ) n n.succ ω
-              ({x1} : Set (Π i : Iic n.succ, StepFamily i))) =
-          μn ({x0} : Set (Π i : Iic n, StepFamily i)) * transitionMeasure μ n x0 {s} := by
-        calc
-          (∑ ω : (Π i : Iic n, StepFamily i),
-                μn ({ω} : Set (Π i : Iic n, StepFamily i)) *
-                  Kernel.partialTraj (transitionKernel μ) n n.succ ω
-                    ({x1} : Set (Π i : Iic n.succ, StepFamily i))) =
-              μn ({x0} : Set (Π i : Iic n, StepFamily i)) *
-                Kernel.partialTraj (transitionKernel μ) n n.succ x0
-                  ({x1} : Set (Π i : Iic n.succ, StepFamily i)) := by
-            simpa using (Fintype.sum_eq_single x0 (fun ω hω => h_other ω hω))
-          _ = μn ({x0} : Set (Π i : Iic n, StepFamily i)) * transitionMeasure μ n x0 {s} := by
-            simp [h_partialTraj_singleton x0]
-      simpa using this
-
-    -- Replace the transition measure using `transitionMeasure_singleton` and `pfx`-rewrite.
-    have h_trans :
-        transitionMeasure μ n x0 {s} =
-          uniformActionProb * μ.prob (pfx ++ [HistElem.act s.action]) s.percept := by
-      simpa [hpfx_iic] using (transitionMeasure_singleton μ n x0 s)
-
-    -- Assemble the final statement by rewriting events as IT-prefix singletons.
-    have h_setL :
-        cylinderSet pfx ∩ {traj | traj n.succ = s} =
-          (frestrictLe (π := StepFamily) n.succ) ⁻¹' ({x1} : Set (Π i : Iic n.succ, StepFamily i)) :=
-      h_inter
-    have h_setR :
-        cylinderSet pfx =
-          (frestrictLe (π := StepFamily) n) ⁻¹' ({x0} : Set (Π i : Iic n, StepFamily i)) :=
-      h_cyl
-
-    calc
-      environmentMeasure μ h_stoch (cylinderSet pfx ∩ {traj | traj n.succ = s})
-          = environmentMeasure μ h_stoch
-              ((frestrictLe (π := StepFamily) n.succ) ⁻¹' ({x1} : Set (Π i : Iic n.succ, StepFamily i))) := by
-                simp [h_setL]
-      _ = (environmentMeasure μ h_stoch).map (frestrictLe (π := StepFamily) n.succ)
-            ({x1} : Set (Π i : Iic n.succ, StepFamily i)) := by
-                exact hB
-      _ = μn1 ({x1} : Set (Π i : Iic n.succ, StepFamily i)) := rfl
-      _ = μn ({x0} : Set (Π i : Iic n, StepFamily i)) * transitionMeasure μ n x0 {s} := by
-            simpa using h_singleton_step
-      _ = μn ({x0} : Set (Π i : Iic n, StepFamily i)) *
-            (uniformActionProb * μ.prob (pfx ++ [HistElem.act s.action]) s.percept) := by
-            simp [h_trans]
-      _ = environmentMeasure μ h_stoch (cylinderSet pfx) *
-            uniformActionProb * μ.prob (pfx ++ [HistElem.act s.action]) s.percept := by
-            -- rewrite `environmentMeasure μ h_stoch (cylinderSet pfx)` as the corresponding singleton prefix probability
-            have :
-                environmentMeasure μ h_stoch (cylinderSet pfx) =
-                  μn ({x0} : Set (Π i : Iic n, StepFamily i)) := by
-                calc
-                  environmentMeasure μ h_stoch (cylinderSet pfx)
-                      = environmentMeasure μ h_stoch
-                          ((frestrictLe (π := StepFamily) n) ⁻¹' ({x0} : Set (Π i : Iic n, StepFamily i))) := by
-                            simp [h_setR]
-                  _ = (environmentMeasure μ h_stoch).map (frestrictLe (π := StepFamily) n)
-                        ({x0} : Set (Π i : Iic n, StepFamily i)) := hA
-                  _ = μn ({x0} : Set (Π i : Iic n, StepFamily i)) := rfl
-            -- now it's just reassociation/commutation
-            simp [this, mul_assoc, mul_left_comm, mul_comm]
-
 /-! ## IT Product Factorization (Policy Actions)
 
 The same factorization lemma holds for the on-policy Ionescu–Tulcea construction
@@ -2601,6 +2093,17 @@ theorem IT_product_factorizationWithPolicy (μ : Environment) (π : Agent) (h_st
                         ({x0} : Set (Π i : Iic n, StepFamily i)) := hA
                   _ = μn ({x0} : Set (Π i : Iic n, StepFamily i)) := rfl
             simp [this, mul_assoc]
+
+/-- Uniform actions give the same cylinder factorization with constant
+action weights. -/
+theorem IT_product_factorization (μ : Environment) (h_stoch : isStochastic μ)
+    (pfx : History) (h_pfx_wf : pfx.wellFormed) (h_pfx_complete : Even pfx.length) (s : Step) :
+    environmentMeasure μ h_stoch (cylinderSet pfx ∩ {traj | traj (historySteps pfx) = s}) =
+      environmentMeasure μ h_stoch (cylinderSet pfx) *
+        uniformActionProb * μ.prob (pfx ++ [HistElem.act s.action]) s.percept := by
+  simpa only [environmentMeasureWithPolicy_eq_of_uniform μ uniformAgent h_stoch
+      (fun h _ a => uniformAgent_policy h a), uniformAgent_policy] using
+    IT_product_factorizationWithPolicy μ uniformAgent h_stoch pfx h_pfx_wf h_pfx_complete s
 
 /-! ## Single-Step Chain Rule
 

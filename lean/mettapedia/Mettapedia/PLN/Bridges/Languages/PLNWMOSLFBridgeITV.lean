@@ -524,16 +524,9 @@ theorem language_quantale_coherence_wmITV_lower_threshold_atom_of_queryEncoders
         (State := State) (Srt := Srt) (Query := Query) (Ctx := Ctx₂)
         itvSem₂ ctx₂ W₂ tau queryOfAtom₂)
       (.atom a0) (m.mapTerm (pick u))) := by
-  simpa [lowerAtomSemOfWMITVQSigma, thresholdAtomSemOfWMITVQSigma] using
-    (language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders
-      (R := R) (m := m) (f := f)
-      (itvSem₁ := itvSem₁) (ctx₁ := ctx₁)
-      (itvSem₂ := itvSem₂) (ctx₂ := ctx₂)
-      (W₁ := W₁) (W₂ := W₂)
-      (queryOfAtom₁ := queryOfAtom₁) (queryOfAtom₂ := queryOfAtom₂)
-      (a0 := a0) (coord := fun itv => itv.lower) (tau := tau)
-      (hVal := hVal) (hITV := hITV)
-      (pick := pick) (hReach := hReach) (H := H) (hTau := hTau))
+  exact language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders
+    R m f itvSem₁ ctx₁ itvSem₂ ctx₂ W₁ W₂ queryOfAtom₁ queryOfAtom₂ a0
+    (fun itv => itv.lower) tau hVal hITV pick hReach H hTau
 
 /-- Upper-coordinate specialization of the typed WM/query-encoder coherence bundle. -/
 theorem language_quantale_coherence_wmITV_upper_threshold_atom_of_queryEncoders
@@ -579,16 +572,9 @@ theorem language_quantale_coherence_wmITV_upper_threshold_atom_of_queryEncoders
         (State := State) (Srt := Srt) (Query := Query) (Ctx := Ctx₂)
         itvSem₂ ctx₂ W₂ tau queryOfAtom₂)
       (.atom a0) (m.mapTerm (pick u))) := by
-  simpa [upperAtomSemOfWMITVQSigma, thresholdAtomSemOfWMITVQSigma] using
-    (language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders
-      (R := R) (m := m) (f := f)
-      (itvSem₁ := itvSem₁) (ctx₁ := ctx₁)
-      (itvSem₂ := itvSem₂) (ctx₂ := ctx₂)
-      (W₁ := W₁) (W₂ := W₂)
-      (queryOfAtom₁ := queryOfAtom₁) (queryOfAtom₂ := queryOfAtom₂)
-      (a0 := a0) (coord := fun itv => itv.upper) (tau := tau)
-      (hVal := hVal) (hITV := hITV)
-      (pick := pick) (hReach := hReach) (H := H) (hTau := hTau))
+  exact language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders
+    R m f itvSem₁ ctx₁ itvSem₂ ctx₂ W₁ W₂ queryOfAtom₁ queryOfAtom₂ a0
+    (fun itv => itv.upper) tau hVal hITV pick hReach H hTau
 
 /-- Credibility-coordinate specialization of the typed WM/query-encoder coherence bundle. -/
 theorem language_quantale_coherence_wmITV_credibility_threshold_atom_of_queryEncoders
@@ -634,16 +620,9 @@ theorem language_quantale_coherence_wmITV_credibility_threshold_atom_of_queryEnc
         (State := State) (Srt := Srt) (Query := Query) (Ctx := Ctx₂)
         itvSem₂ ctx₂ W₂ tau queryOfAtom₂)
       (.atom a0) (m.mapTerm (pick u))) := by
-  simpa [credibilityAtomSemOfWMITVQSigma, thresholdAtomSemOfWMITVQSigma] using
-    (language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders
-      (R := R) (m := m) (f := f)
-      (itvSem₁ := itvSem₁) (ctx₁ := ctx₁)
-      (itvSem₂ := itvSem₂) (ctx₂ := ctx₂)
-      (W₁ := W₁) (W₂ := W₂)
-      (queryOfAtom₁ := queryOfAtom₁) (queryOfAtom₂ := queryOfAtom₂)
-      (a0 := a0) (coord := fun itv => itv.credibility) (tau := tau)
-      (hVal := hVal) (hITV := hITV)
-      (pick := pick) (hReach := hReach) (H := H) (hTau := hTau))
+  exact language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders
+    R m f itvSem₁ ctx₁ itvSem₂ ctx₂ W₁ W₂ queryOfAtom₁ queryOfAtom₂ a0
+    (fun itv => itv.credibility) tau hVal hITV pick hReach H hTau
 
 /-- Width-coordinate specialization of the typed WM/query-encoder coherence bundle. -/
 theorem language_quantale_coherence_wmITV_width_threshold_atom_of_queryEncoders
@@ -689,16 +668,9 @@ theorem language_quantale_coherence_wmITV_width_threshold_atom_of_queryEncoders
         (State := State) (Srt := Srt) (Query := Query) (Ctx := Ctx₂)
         itvSem₂ ctx₂ W₂ tau queryOfAtom₂)
       (.atom a0) (m.mapTerm (pick u))) := by
-  simpa [widthAtomSemOfWMITVQSigma, thresholdAtomSemOfWMITVQSigma] using
-    (language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders
-      (R := R) (m := m) (f := f)
-      (itvSem₁ := itvSem₁) (ctx₁ := ctx₁)
-      (itvSem₂ := itvSem₂) (ctx₂ := ctx₂)
-      (W₁ := W₁) (W₂ := W₂)
-      (queryOfAtom₁ := queryOfAtom₁) (queryOfAtom₂ := queryOfAtom₂)
-      (a0 := a0) (coord := fun itv => itv.width) (tau := tau)
-      (hVal := hVal) (hITV := hITV)
-      (pick := pick) (hReach := hReach) (H := H) (hTau := hTau))
+  exact language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders
+    R m f itvSem₁ ctx₁ itvSem₂ ctx₂ W₁ W₂ queryOfAtom₁ queryOfAtom₂ a0
+    (fun itv => itv.width) tau hVal hITV pick hReach H hTau
 
 /-- Strength-coordinate specialization of the typed WM/query-encoder coherence bundle. -/
 theorem language_quantale_coherence_wmITV_strength_threshold_atom_of_queryEncoders
@@ -744,16 +716,9 @@ theorem language_quantale_coherence_wmITV_strength_threshold_atom_of_queryEncode
         (State := State) (Srt := Srt) (Query := Query) (Ctx := Ctx₂)
         itvSem₂ ctx₂ W₂ tau queryOfAtom₂)
       (.atom a0) (m.mapTerm (pick u))) := by
-  simpa [strengthAtomSemOfWMITVQSigma, thresholdAtomSemOfWMITVQSigma] using
-    (language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders
-      (R := R) (m := m) (f := f)
-      (itvSem₁ := itvSem₁) (ctx₁ := ctx₁)
-      (itvSem₂ := itvSem₂) (ctx₂ := ctx₂)
-      (W₁ := W₁) (W₂ := W₂)
-      (queryOfAtom₁ := queryOfAtom₁) (queryOfAtom₂ := queryOfAtom₂)
-      (a0 := a0) (coord := fun itv => itv.strength) (tau := tau)
-      (hVal := hVal) (hITV := hITV)
-      (pick := pick) (hReach := hReach) (H := H) (hTau := hTau))
+  exact language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders
+    R m f itvSem₁ ctx₁ itvSem₂ ctx₂ W₁ W₂ queryOfAtom₁ queryOfAtom₂ a0
+    (fun itv => itv.strength) tau hVal hITV pick hReach H hTau
 
 end CoherenceBundle
 
@@ -819,7 +784,7 @@ theorem language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_id
         simp [hVal p])
       (pick := pick) (hReach := hReach) (H := H) (hTau := hTau))
 
-/-- Bayes-exact selector specialization with internalized ITV-compatibility. -/
+/-- Bayesian normal-approximation selector specialization with internalized ITV-compatibility. -/
 theorem language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_bayesNormal_id
     (R : Pattern → Pattern → Prop)
     (m : LanguageMorphism L₁ L₂ Eq)
@@ -957,7 +922,7 @@ theorem language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_walley
     (hVal := hVal)
     (pick := pick) (hReach := hReach) (H := H) (hTau := hTau)
 
-/-- Bayes-exact lower-coordinate selector coherence (internalized ITV-compatibility). -/
+/-- Bayesian normal-approximation lower-coordinate selector coherence (internalized ITV-compatibility). -/
 theorem language_quantale_coherence_wmITV_lower_threshold_atom_of_queryEncoders_bayesNormal_id
     (R : Pattern → Pattern → Prop)
     (m : LanguageMorphism L₁ L₂ Eq)
@@ -992,15 +957,9 @@ theorem language_quantale_coherence_wmITV_lower_threshold_atom_of_queryEncoders_
         (State := State) (Srt := Srt) (Query := Query) (Ctx := BinaryContext)
         ITVSemantics.bayesCredible95 ctx W₂ tau queryOfAtom₂)
       (.atom a0) (m.mapTerm (pick u))) := by
-  simpa [lowerAtomSemOfWMITVQSigma, thresholdAtomSemOfWMITVQSigma] using
-    (language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_bayesNormal_id
-      (State := State) (Srt := Srt) (Query := Query)
-      (R := R) (m := m) (ctx := ctx)
-      (W₁ := W₁) (W₂ := W₂)
-      (queryOfAtom₁ := queryOfAtom₁) (queryOfAtom₂ := queryOfAtom₂)
-      (a0 := a0) (coord := fun itv => itv.lower) (tau := tau)
-      (hVal := hVal)
-      (pick := pick) (hReach := hReach) (H := H) (hTau := hTau))
+  exact language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_bayesNormal_id
+    R m ctx W₁ W₂ queryOfAtom₁ queryOfAtom₂ a0
+    (fun itv => itv.lower) tau hVal pick hReach H hTau
 
 /-- Bayes-exact lower-coordinate selector coherence (internalized ITV-compatibility). -/
 theorem language_quantale_coherence_wmITV_lower_threshold_atom_of_queryEncoders_bayesExact_id
@@ -1037,15 +996,9 @@ theorem language_quantale_coherence_wmITV_lower_threshold_atom_of_queryEncoders_
         (State := State) (Srt := Srt) (Query := Query) (Ctx := BinaryContext)
         ITVSemantics.bayesCredibleExact95 ctx W₂ tau queryOfAtom₂)
       (.atom a0) (m.mapTerm (pick u))) := by
-  simpa [lowerAtomSemOfWMITVQSigma, thresholdAtomSemOfWMITVQSigma] using
-    (language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_bayesExact_id
-      (State := State) (Srt := Srt) (Query := Query)
-      (R := R) (m := m) (ctx := ctx)
-      (W₁ := W₁) (W₂ := W₂)
-      (queryOfAtom₁ := queryOfAtom₁) (queryOfAtom₂ := queryOfAtom₂)
-      (a0 := a0) (coord := fun itv => itv.lower) (tau := tau)
-      (hVal := hVal)
-      (pick := pick) (hReach := hReach) (H := H) (hTau := hTau))
+  exact language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_bayesExact_id
+    R m ctx W₁ W₂ queryOfAtom₁ queryOfAtom₂ a0
+    (fun itv => itv.lower) tau hVal pick hReach H hTau
 
 /-- Walley lower-coordinate selector coherence (internalized ITV-compatibility). -/
 theorem language_quantale_coherence_wmITV_lower_threshold_atom_of_queryEncoders_walley_id
@@ -1082,17 +1035,11 @@ theorem language_quantale_coherence_wmITV_lower_threshold_atom_of_queryEncoders_
         (State := State) (Srt := Srt) (Query := Query) (Ctx := Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.IDMPredictiveContext)
         ITVSemantics.walleyIDMPredictive ctx W₂ tau queryOfAtom₂)
       (.atom a0) (m.mapTerm (pick u))) := by
-  simpa [lowerAtomSemOfWMITVQSigma, thresholdAtomSemOfWMITVQSigma] using
-    (language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_walley_id
-      (State := State) (Srt := Srt) (Query := Query)
-      (R := R) (m := m) (ctx := ctx)
-      (W₁ := W₁) (W₂ := W₂)
-      (queryOfAtom₁ := queryOfAtom₁) (queryOfAtom₂ := queryOfAtom₂)
-      (a0 := a0) (coord := fun itv => itv.lower) (tau := tau)
-      (hVal := hVal)
-      (pick := pick) (hReach := hReach) (H := H) (hTau := hTau))
+  exact language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_walley_id
+    R m ctx W₁ W₂ queryOfAtom₁ queryOfAtom₂ a0
+    (fun itv => itv.lower) tau hVal pick hReach H hTau
 
-/-- Bayes-exact upper-coordinate selector coherence (internalized ITV-compatibility). -/
+/-- Bayesian normal-approximation upper-coordinate selector coherence (internalized ITV-compatibility). -/
 theorem language_quantale_coherence_wmITV_upper_threshold_atom_of_queryEncoders_bayesNormal_id
     (R : Pattern → Pattern → Prop)
     (m : LanguageMorphism L₁ L₂ Eq)
@@ -1127,15 +1074,9 @@ theorem language_quantale_coherence_wmITV_upper_threshold_atom_of_queryEncoders_
         (State := State) (Srt := Srt) (Query := Query) (Ctx := BinaryContext)
         ITVSemantics.bayesCredible95 ctx W₂ tau queryOfAtom₂)
       (.atom a0) (m.mapTerm (pick u))) := by
-  simpa [upperAtomSemOfWMITVQSigma, thresholdAtomSemOfWMITVQSigma] using
-    (language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_bayesNormal_id
-      (State := State) (Srt := Srt) (Query := Query)
-      (R := R) (m := m) (ctx := ctx)
-      (W₁ := W₁) (W₂ := W₂)
-      (queryOfAtom₁ := queryOfAtom₁) (queryOfAtom₂ := queryOfAtom₂)
-      (a0 := a0) (coord := fun itv => itv.upper) (tau := tau)
-      (hVal := hVal)
-      (pick := pick) (hReach := hReach) (H := H) (hTau := hTau))
+  exact language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_bayesNormal_id
+    R m ctx W₁ W₂ queryOfAtom₁ queryOfAtom₂ a0
+    (fun itv => itv.upper) tau hVal pick hReach H hTau
 
 /-- Bayes-exact upper-coordinate selector coherence (internalized ITV-compatibility). -/
 theorem language_quantale_coherence_wmITV_upper_threshold_atom_of_queryEncoders_bayesExact_id
@@ -1172,15 +1113,9 @@ theorem language_quantale_coherence_wmITV_upper_threshold_atom_of_queryEncoders_
         (State := State) (Srt := Srt) (Query := Query) (Ctx := BinaryContext)
         ITVSemantics.bayesCredibleExact95 ctx W₂ tau queryOfAtom₂)
       (.atom a0) (m.mapTerm (pick u))) := by
-  simpa [upperAtomSemOfWMITVQSigma, thresholdAtomSemOfWMITVQSigma] using
-    (language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_bayesExact_id
-      (State := State) (Srt := Srt) (Query := Query)
-      (R := R) (m := m) (ctx := ctx)
-      (W₁ := W₁) (W₂ := W₂)
-      (queryOfAtom₁ := queryOfAtom₁) (queryOfAtom₂ := queryOfAtom₂)
-      (a0 := a0) (coord := fun itv => itv.upper) (tau := tau)
-      (hVal := hVal)
-      (pick := pick) (hReach := hReach) (H := H) (hTau := hTau))
+  exact language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_bayesExact_id
+    R m ctx W₁ W₂ queryOfAtom₁ queryOfAtom₂ a0
+    (fun itv => itv.upper) tau hVal pick hReach H hTau
 
 /-- Walley upper-coordinate selector coherence (internalized ITV-compatibility). -/
 theorem language_quantale_coherence_wmITV_upper_threshold_atom_of_queryEncoders_walley_id
@@ -1217,17 +1152,11 @@ theorem language_quantale_coherence_wmITV_upper_threshold_atom_of_queryEncoders_
         (State := State) (Srt := Srt) (Query := Query) (Ctx := Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.IDMPredictiveContext)
         ITVSemantics.walleyIDMPredictive ctx W₂ tau queryOfAtom₂)
       (.atom a0) (m.mapTerm (pick u))) := by
-  simpa [upperAtomSemOfWMITVQSigma, thresholdAtomSemOfWMITVQSigma] using
-    (language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_walley_id
-      (State := State) (Srt := Srt) (Query := Query)
-      (R := R) (m := m) (ctx := ctx)
-      (W₁ := W₁) (W₂ := W₂)
-      (queryOfAtom₁ := queryOfAtom₁) (queryOfAtom₂ := queryOfAtom₂)
-      (a0 := a0) (coord := fun itv => itv.upper) (tau := tau)
-      (hVal := hVal)
-      (pick := pick) (hReach := hReach) (H := H) (hTau := hTau))
+  exact language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_walley_id
+    R m ctx W₁ W₂ queryOfAtom₁ queryOfAtom₂ a0
+    (fun itv => itv.upper) tau hVal pick hReach H hTau
 
-/-- Bayes-exact credibility-coordinate selector coherence (internalized ITV-compatibility). -/
+/-- Bayesian normal-approximation credibility-coordinate selector coherence (internalized ITV-compatibility). -/
 theorem language_quantale_coherence_wmITV_credibility_threshold_atom_of_queryEncoders_bayesNormal_id
     (R : Pattern → Pattern → Prop)
     (m : LanguageMorphism L₁ L₂ Eq)
@@ -1262,15 +1191,9 @@ theorem language_quantale_coherence_wmITV_credibility_threshold_atom_of_queryEnc
         (State := State) (Srt := Srt) (Query := Query) (Ctx := BinaryContext)
         ITVSemantics.bayesCredible95 ctx W₂ tau queryOfAtom₂)
       (.atom a0) (m.mapTerm (pick u))) := by
-  simpa [credibilityAtomSemOfWMITVQSigma, thresholdAtomSemOfWMITVQSigma] using
-    (language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_bayesNormal_id
-      (State := State) (Srt := Srt) (Query := Query)
-      (R := R) (m := m) (ctx := ctx)
-      (W₁ := W₁) (W₂ := W₂)
-      (queryOfAtom₁ := queryOfAtom₁) (queryOfAtom₂ := queryOfAtom₂)
-      (a0 := a0) (coord := fun itv => itv.credibility) (tau := tau)
-      (hVal := hVal)
-      (pick := pick) (hReach := hReach) (H := H) (hTau := hTau))
+  exact language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_bayesNormal_id
+    R m ctx W₁ W₂ queryOfAtom₁ queryOfAtom₂ a0
+    (fun itv => itv.credibility) tau hVal pick hReach H hTau
 
 /-- Bayes-exact credibility-coordinate selector coherence (internalized ITV-compatibility). -/
 theorem language_quantale_coherence_wmITV_credibility_threshold_atom_of_queryEncoders_bayesExact_id
@@ -1307,15 +1230,9 @@ theorem language_quantale_coherence_wmITV_credibility_threshold_atom_of_queryEnc
         (State := State) (Srt := Srt) (Query := Query) (Ctx := BinaryContext)
         ITVSemantics.bayesCredibleExact95 ctx W₂ tau queryOfAtom₂)
       (.atom a0) (m.mapTerm (pick u))) := by
-  simpa [credibilityAtomSemOfWMITVQSigma, thresholdAtomSemOfWMITVQSigma] using
-    (language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_bayesExact_id
-      (State := State) (Srt := Srt) (Query := Query)
-      (R := R) (m := m) (ctx := ctx)
-      (W₁ := W₁) (W₂ := W₂)
-      (queryOfAtom₁ := queryOfAtom₁) (queryOfAtom₂ := queryOfAtom₂)
-      (a0 := a0) (coord := fun itv => itv.credibility) (tau := tau)
-      (hVal := hVal)
-      (pick := pick) (hReach := hReach) (H := H) (hTau := hTau))
+  exact language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_bayesExact_id
+    R m ctx W₁ W₂ queryOfAtom₁ queryOfAtom₂ a0
+    (fun itv => itv.credibility) tau hVal pick hReach H hTau
 
 /-- Walley credibility-coordinate selector coherence (internalized ITV-compatibility). -/
 theorem language_quantale_coherence_wmITV_credibility_threshold_atom_of_queryEncoders_walley_id
@@ -1352,17 +1269,11 @@ theorem language_quantale_coherence_wmITV_credibility_threshold_atom_of_queryEnc
         (State := State) (Srt := Srt) (Query := Query) (Ctx := Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.IDMPredictiveContext)
         ITVSemantics.walleyIDMPredictive ctx W₂ tau queryOfAtom₂)
       (.atom a0) (m.mapTerm (pick u))) := by
-  simpa [credibilityAtomSemOfWMITVQSigma, thresholdAtomSemOfWMITVQSigma] using
-    (language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_walley_id
-      (State := State) (Srt := Srt) (Query := Query)
-      (R := R) (m := m) (ctx := ctx)
-      (W₁ := W₁) (W₂ := W₂)
-      (queryOfAtom₁ := queryOfAtom₁) (queryOfAtom₂ := queryOfAtom₂)
-      (a0 := a0) (coord := fun itv => itv.credibility) (tau := tau)
-      (hVal := hVal)
-      (pick := pick) (hReach := hReach) (H := H) (hTau := hTau))
+  exact language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_walley_id
+    R m ctx W₁ W₂ queryOfAtom₁ queryOfAtom₂ a0
+    (fun itv => itv.credibility) tau hVal pick hReach H hTau
 
-/-- Bayes-exact width-coordinate selector coherence (internalized ITV-compatibility). -/
+/-- Bayesian normal-approximation width-coordinate selector coherence (internalized ITV-compatibility). -/
 theorem language_quantale_coherence_wmITV_width_threshold_atom_of_queryEncoders_bayesNormal_id
     (R : Pattern → Pattern → Prop)
     (m : LanguageMorphism L₁ L₂ Eq)
@@ -1397,15 +1308,9 @@ theorem language_quantale_coherence_wmITV_width_threshold_atom_of_queryEncoders_
         (State := State) (Srt := Srt) (Query := Query) (Ctx := BinaryContext)
         ITVSemantics.bayesCredible95 ctx W₂ tau queryOfAtom₂)
       (.atom a0) (m.mapTerm (pick u))) := by
-  simpa [widthAtomSemOfWMITVQSigma, thresholdAtomSemOfWMITVQSigma] using
-    (language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_bayesNormal_id
-      (State := State) (Srt := Srt) (Query := Query)
-      (R := R) (m := m) (ctx := ctx)
-      (W₁ := W₁) (W₂ := W₂)
-      (queryOfAtom₁ := queryOfAtom₁) (queryOfAtom₂ := queryOfAtom₂)
-      (a0 := a0) (coord := fun itv => itv.width) (tau := tau)
-      (hVal := hVal)
-      (pick := pick) (hReach := hReach) (H := H) (hTau := hTau))
+  exact language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_bayesNormal_id
+    R m ctx W₁ W₂ queryOfAtom₁ queryOfAtom₂ a0
+    (fun itv => itv.width) tau hVal pick hReach H hTau
 
 /-- Bayes-exact width-coordinate selector coherence (internalized ITV-compatibility). -/
 theorem language_quantale_coherence_wmITV_width_threshold_atom_of_queryEncoders_bayesExact_id
@@ -1442,15 +1347,9 @@ theorem language_quantale_coherence_wmITV_width_threshold_atom_of_queryEncoders_
         (State := State) (Srt := Srt) (Query := Query) (Ctx := BinaryContext)
         ITVSemantics.bayesCredibleExact95 ctx W₂ tau queryOfAtom₂)
       (.atom a0) (m.mapTerm (pick u))) := by
-  simpa [widthAtomSemOfWMITVQSigma, thresholdAtomSemOfWMITVQSigma] using
-    (language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_bayesExact_id
-      (State := State) (Srt := Srt) (Query := Query)
-      (R := R) (m := m) (ctx := ctx)
-      (W₁ := W₁) (W₂ := W₂)
-      (queryOfAtom₁ := queryOfAtom₁) (queryOfAtom₂ := queryOfAtom₂)
-      (a0 := a0) (coord := fun itv => itv.width) (tau := tau)
-      (hVal := hVal)
-      (pick := pick) (hReach := hReach) (H := H) (hTau := hTau))
+  exact language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_bayesExact_id
+    R m ctx W₁ W₂ queryOfAtom₁ queryOfAtom₂ a0
+    (fun itv => itv.width) tau hVal pick hReach H hTau
 
 /-- Walley width-coordinate selector coherence (internalized ITV-compatibility). -/
 theorem language_quantale_coherence_wmITV_width_threshold_atom_of_queryEncoders_walley_id
@@ -1487,17 +1386,11 @@ theorem language_quantale_coherence_wmITV_width_threshold_atom_of_queryEncoders_
         (State := State) (Srt := Srt) (Query := Query) (Ctx := Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.IDMPredictiveContext)
         ITVSemantics.walleyIDMPredictive ctx W₂ tau queryOfAtom₂)
       (.atom a0) (m.mapTerm (pick u))) := by
-  simpa [widthAtomSemOfWMITVQSigma, thresholdAtomSemOfWMITVQSigma] using
-    (language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_walley_id
-      (State := State) (Srt := Srt) (Query := Query)
-      (R := R) (m := m) (ctx := ctx)
-      (W₁ := W₁) (W₂ := W₂)
-      (queryOfAtom₁ := queryOfAtom₁) (queryOfAtom₂ := queryOfAtom₂)
-      (a0 := a0) (coord := fun itv => itv.width) (tau := tau)
-      (hVal := hVal)
-      (pick := pick) (hReach := hReach) (H := H) (hTau := hTau))
+  exact language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_walley_id
+    R m ctx W₁ W₂ queryOfAtom₁ queryOfAtom₂ a0
+    (fun itv => itv.width) tau hVal pick hReach H hTau
 
-/-- Bayes-exact strength-coordinate selector coherence (internalized ITV-compatibility). -/
+/-- Bayesian normal-approximation strength-coordinate selector coherence (internalized ITV-compatibility). -/
 theorem language_quantale_coherence_wmITV_strength_threshold_atom_of_queryEncoders_bayesNormal_id
     (R : Pattern → Pattern → Prop)
     (m : LanguageMorphism L₁ L₂ Eq)
@@ -1532,15 +1425,9 @@ theorem language_quantale_coherence_wmITV_strength_threshold_atom_of_queryEncode
         (State := State) (Srt := Srt) (Query := Query) (Ctx := BinaryContext)
         ITVSemantics.bayesCredible95 ctx W₂ tau queryOfAtom₂)
       (.atom a0) (m.mapTerm (pick u))) := by
-  simpa [strengthAtomSemOfWMITVQSigma, thresholdAtomSemOfWMITVQSigma] using
-    (language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_bayesNormal_id
-      (State := State) (Srt := Srt) (Query := Query)
-      (R := R) (m := m) (ctx := ctx)
-      (W₁ := W₁) (W₂ := W₂)
-      (queryOfAtom₁ := queryOfAtom₁) (queryOfAtom₂ := queryOfAtom₂)
-      (a0 := a0) (coord := fun itv => itv.strength) (tau := tau)
-      (hVal := hVal)
-      (pick := pick) (hReach := hReach) (H := H) (hTau := hTau))
+  exact language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_bayesNormal_id
+    R m ctx W₁ W₂ queryOfAtom₁ queryOfAtom₂ a0
+    (fun itv => itv.strength) tau hVal pick hReach H hTau
 
 /-- Bayes-exact strength-coordinate selector coherence (internalized ITV-compatibility). -/
 theorem language_quantale_coherence_wmITV_strength_threshold_atom_of_queryEncoders_bayesExact_id
@@ -1577,15 +1464,9 @@ theorem language_quantale_coherence_wmITV_strength_threshold_atom_of_queryEncode
         (State := State) (Srt := Srt) (Query := Query) (Ctx := BinaryContext)
         ITVSemantics.bayesCredibleExact95 ctx W₂ tau queryOfAtom₂)
       (.atom a0) (m.mapTerm (pick u))) := by
-  simpa [strengthAtomSemOfWMITVQSigma, thresholdAtomSemOfWMITVQSigma] using
-    (language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_bayesExact_id
-      (State := State) (Srt := Srt) (Query := Query)
-      (R := R) (m := m) (ctx := ctx)
-      (W₁ := W₁) (W₂ := W₂)
-      (queryOfAtom₁ := queryOfAtom₁) (queryOfAtom₂ := queryOfAtom₂)
-      (a0 := a0) (coord := fun itv => itv.strength) (tau := tau)
-      (hVal := hVal)
-      (pick := pick) (hReach := hReach) (H := H) (hTau := hTau))
+  exact language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_bayesExact_id
+    R m ctx W₁ W₂ queryOfAtom₁ queryOfAtom₂ a0
+    (fun itv => itv.strength) tau hVal pick hReach H hTau
 
 /-- Walley strength-coordinate selector coherence (internalized ITV-compatibility). -/
 theorem language_quantale_coherence_wmITV_strength_threshold_atom_of_queryEncoders_walley_id
@@ -1622,15 +1503,9 @@ theorem language_quantale_coherence_wmITV_strength_threshold_atom_of_queryEncode
         (State := State) (Srt := Srt) (Query := Query) (Ctx := Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.IDMPredictiveContext)
         ITVSemantics.walleyIDMPredictive ctx W₂ tau queryOfAtom₂)
       (.atom a0) (m.mapTerm (pick u))) := by
-  simpa [strengthAtomSemOfWMITVQSigma, thresholdAtomSemOfWMITVQSigma] using
-    (language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_walley_id
-      (State := State) (Srt := Srt) (Query := Query)
-      (R := R) (m := m) (ctx := ctx)
-      (W₁ := W₁) (W₂ := W₂)
-      (queryOfAtom₁ := queryOfAtom₁) (queryOfAtom₂ := queryOfAtom₂)
-      (a0 := a0) (coord := fun itv => itv.strength) (tau := tau)
-      (hVal := hVal)
-      (pick := pick) (hReach := hReach) (H := H) (hTau := hTau))
+  exact language_quantale_coherence_wmITV_threshold_atom_of_queryEncoders_walley_id
+    R m ctx W₁ W₂ queryOfAtom₁ queryOfAtom₂ a0
+    (fun itv => itv.strength) tau hVal pick hReach H hTau
 
 end SelectorCoherence
 

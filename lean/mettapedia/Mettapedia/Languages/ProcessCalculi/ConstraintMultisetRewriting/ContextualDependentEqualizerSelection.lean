@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentNormalEqualizer
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentVariableFactorization
 
@@ -72,8 +73,7 @@ theorem factor_unique {source other : Context S.R} {m : Nat} (first second : Ren
 
 variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R)
   (heads : HeadPreserving S.R) (algebra : CumulativeAlgebra S.R)
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
   (complete : AlgorithmicComplete S.R S.roles) (declared : DeclaredTypesFormed S.R)
   (reflects : ContextualDependentReductionReflection.RootReflectsInjections S.R.computation)
 

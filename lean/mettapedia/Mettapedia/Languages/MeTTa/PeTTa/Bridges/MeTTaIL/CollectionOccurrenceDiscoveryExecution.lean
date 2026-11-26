@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.PeTTa.EquationEquality
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CollectionOccurrenceMachineExecution
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CollectionContextExecution
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.GeneralTypedSiteExecution.Traversal
@@ -33,20 +34,8 @@ def library : Library := CollectionOccurrenceSearchExecution.SelectedNativeSourc
 
 theorem checked : library.check = true := CollectionOccurrenceSearchExecution.SelectedNativeSource.checked
 
-private local instance discoveryEquationEq : DecidableEq SpaceSemantics.Equation := by
-  intro left right
-  apply decidable_of_iff (left.head = right.head ∧ left.arguments = right.arguments ∧ left.body = right.body)
-  constructor
-  · rintro ⟨head, arguments, body⟩
-    cases left
-    cases right
-    cases head
-    cases arguments
-    cases body
-    rfl
-  · intro same
-    cases same
-    exact ⟨rfl, rfl, rfl⟩
+private local instance discoveryEquationEq : DecidableEq SpaceSemantics.Equation :=
+  SpaceSemantics.Equation.decideEq
 
 private def discoveryMetadataBase : Program :=
   (((((RuleExecutionProgram.callFragment ["gslt:automata:append", "gslt:automata:length"]

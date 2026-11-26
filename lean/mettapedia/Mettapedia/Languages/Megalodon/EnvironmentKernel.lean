@@ -1,3 +1,4 @@
+import Mettapedia.GSLT.LanguageDef.InferenceRuleReplay
 import Mettapedia.Languages.Megalodon.PolymorphicKernel
 import Mettapedia.Languages.Megalodon.SortedABTRefinement
 
@@ -1249,6 +1250,25 @@ theorem compileTypeShift_result (amount cutoff : Nat)
   | all body inductionHypothesis =>
       simp [compileTypeShift, MathdataKernel.Tp.shift, inductionHypothesis]
 
+local macro "instantiate_environment_rule" schema:ident : tactic =>
+  `(tactic| simp [$schema:ident, rule, m, a, shiftType, substituteType, substituteTypeInTerm,
+    substituteTerm, lessThan, TermQuantifiedKernel.rule, TermQuantifiedKernel.m,
+    TermQuantifiedKernel.shiftTerm, TermQuantifiedKernel.substituteTerm, TermQuantifiedKernel.a,
+    TermQuantifiedKernel.encodeTp, TermQuantifiedKernel.encodeTm, instantiateSchemas?,
+    instantiateSchema?, instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?])
+
+local macro "replay_environment_rule" lookup:ident schema:ident : tactic =>
+  `(tactic| (
+    apply checkRaw_node_true_of_schema (schema := $schema:ident)
+    · exact $lookup:ident
+    · simp [$schema:ident, rule, TermQuantifiedKernel.rule, argumentsValidAt, argumentValidAt, a,
+        Pattern.isGroundAt, Pattern.isGroundListAt, Pattern.hasCanonicalBinderMetadata,
+        Pattern.hasCanonicalBinderMetadataList]
+    · rfl
+    · instantiate_environment_rule $schema:ident <;> rfl
+    · instantiate_environment_rule $schema:ident <;> rfl
+    all_goals simp only [checkRawChildren, Bool.and_true, Bool.and_eq_true]))
+
 set_option maxRecDepth 100000 in
 set_option maxHeartbeats 3000000 in
 theorem compileTypeShift_checked (amount cutoff : Nat)
@@ -1261,46 +1281,18 @@ theorem compileTypeShift_checked (amount cutoff : Nat)
   | var index =>
       exact compileTypeVariableShift_checked amount cutoff index
   | prop =>
-      simp only [compileTypeShift, node, checkRaw, validated, instantiateRule?]
-      rw [lookup_shiftTypePropRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        shiftTypePropRule, rule, ruleId, shiftType, checkRawChildren,
-        TermQuantifiedKernel.encodeTp,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTypeShift]
+      replay_environment_rule lookup_shiftTypePropRule shiftTypePropRule
   | base index =>
-      simp only [compileTypeShift, node, checkRaw, validated, instantiateRule?]
-      rw [lookup_shiftTypeBaseRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        shiftTypeBaseRule, rule, ruleId, shiftType, checkRawChildren,
-        TermQuantifiedKernel.encodeTp,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTypeShift]
+      replay_environment_rule lookup_shiftTypeBaseRule shiftTypeBaseRule
   | arr domain codomain domainHypothesis codomainHypothesis =>
-      simp only [compileTypeShift, node, checkRaw, validated, instantiateRule?]
-      rw [lookup_shiftTypeArrRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        shiftTypeArrRule, rule, ruleId, shiftType, checkRawChildren,
-        TermQuantifiedKernel.encodeTp,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTypeShift]
+      replay_environment_rule lookup_shiftTypeArrRule shiftTypeArrRule
       exact ⟨domainHypothesis cutoff, codomainHypothesis cutoff⟩
   | all body inductionHypothesis =>
-      simp only [compileTypeShift, node, checkRaw, validated, instantiateRule?]
-      rw [lookup_shiftTypeAllRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        shiftTypeAllRule, rule, ruleId, shiftType, checkRawChildren,
-        TermQuantifiedKernel.encodeTp,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTypeShift]
+      replay_environment_rule lookup_shiftTypeAllRule shiftTypeAllRule
       exact inductionHypothesis (cutoff + 1)
 
 def compileTypeSubstituteType (index : Nat)
@@ -1430,50 +1422,18 @@ theorem compileTypeSubstituteType_checked (index : Nat)
               TermQuantifiedKernel.a] using
               lessArticle_checked index (varIndex - 1 + 1) (by omega)
   | prop =>
-      simp only [compileTypeSubstituteType, node, checkRaw, validated,
-        instantiateRule?]
-      rw [lookup_substituteTypePropRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        substituteTypePropRule, rule, ruleId, substituteType,
-        checkRawChildren, TermQuantifiedKernel.encodeTp,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTypeSubstituteType]
+      replay_environment_rule lookup_substituteTypePropRule substituteTypePropRule
   | base base =>
-      simp only [compileTypeSubstituteType, node, checkRaw, validated,
-        instantiateRule?]
-      rw [lookup_substituteTypeBaseRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        substituteTypeBaseRule, rule, ruleId, substituteType,
-        checkRawChildren, TermQuantifiedKernel.encodeTp,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTypeSubstituteType]
+      replay_environment_rule lookup_substituteTypeBaseRule substituteTypeBaseRule
   | arr domain codomain domainHypothesis codomainHypothesis =>
-      simp only [compileTypeSubstituteType, node, checkRaw, validated,
-        instantiateRule?]
-      rw [lookup_substituteTypeArrRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        substituteTypeArrRule, rule, ruleId, substituteType,
-        checkRawChildren, TermQuantifiedKernel.encodeTp,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTypeSubstituteType]
+      replay_environment_rule lookup_substituteTypeArrRule substituteTypeArrRule
       exact ⟨domainHypothesis index, codomainHypothesis index⟩
   | all body inductionHypothesis =>
-      simp only [compileTypeSubstituteType, node, checkRaw, validated,
-        instantiateRule?]
-      rw [lookup_substituteTypeAllRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        substituteTypeAllRule, rule, ruleId, substituteType,
-        checkRawChildren, TermQuantifiedKernel.encodeTp,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTypeSubstituteType]
+      replay_environment_rule lookup_substituteTypeAllRule substituteTypeAllRule
       exact inductionHypothesis (index + 1)
 
 def compileTypeSubstituteTerm (index : Nat)
@@ -1596,127 +1556,44 @@ theorem compileTypeSubstituteTerm_checked (index : Nat)
       (compileTypeSubstituteTerm index replacement body).2 = true := by
   induction body generalizing index with
   | db varIndex =>
-      simp only [compileTypeSubstituteTerm, node, checkRaw, validated,
-        instantiateRule?]
-      rw [lookup_substituteTypeTermVarRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        substituteTypeTermVarRule, rule, ruleId, substituteTypeInTerm,
-        checkRawChildren, TermQuantifiedKernel.encodeTm,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTypeSubstituteTerm]
+      replay_environment_rule lookup_substituteTypeTermVarRule substituteTypeTermVarRule
   | named name =>
-      simp only [compileTypeSubstituteTerm, node, checkRaw, validated,
-        instantiateRule?]
-      rw [lookup_substituteTypeTermNamedRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        substituteTypeTermNamedRule, rule, ruleId, substituteTypeInTerm,
-        checkRawChildren, TermQuantifiedKernel.encodeTm,
-        TermQuantifiedKernel.a, a, m,
-        Pattern.isGroundAt, Pattern.isGroundListAt,
-        Pattern.hasCanonicalBinderMetadata,
-        Pattern.hasCanonicalBinderMetadataList]
+      simp only [compileTypeSubstituteTerm]
+      replay_environment_rule lookup_substituteTypeTermNamedRule substituteTypeTermNamedRule
   | prim primitive =>
-      simp only [compileTypeSubstituteTerm, node, checkRaw, validated,
-        instantiateRule?]
-      rw [lookup_substituteTypeTermPrimRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        substituteTypeTermPrimRule, rule, ruleId, substituteTypeInTerm,
-        checkRawChildren, TermQuantifiedKernel.encodeTm,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTypeSubstituteTerm]
+      replay_environment_rule lookup_substituteTypeTermPrimRule substituteTypeTermPrimRule
   | app function argument functionHypothesis argumentHypothesis =>
-      simp only [compileTypeSubstituteTerm, node, checkRaw, validated,
-        instantiateRule?]
-      rw [lookup_substituteTypeTermAppRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        substituteTypeTermAppRule, rule, ruleId, substituteTypeInTerm,
-        checkRawChildren, TermQuantifiedKernel.encodeTm,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTypeSubstituteTerm]
+      replay_environment_rule lookup_substituteTypeTermAppRule substituteTypeTermAppRule
       exact ⟨functionHypothesis index, argumentHypothesis index⟩
   | lam type body bodyHypothesis =>
-      simp only [compileTypeSubstituteTerm, node, checkRaw, validated,
-        instantiateRule?]
-      rw [lookup_substituteTypeTermLamRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        substituteTypeTermLamRule, rule, ruleId, substituteTypeInTerm,
-        substituteType, checkRawChildren, TermQuantifiedKernel.encodeTm,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTypeSubstituteTerm]
+      replay_environment_rule lookup_substituteTypeTermLamRule substituteTypeTermLamRule
       exact ⟨compileTypeSubstituteType_checked index replacement type,
         bodyHypothesis index⟩
   | imp domain codomain domainHypothesis codomainHypothesis =>
-      simp only [compileTypeSubstituteTerm, node, checkRaw, validated,
-        instantiateRule?]
-      rw [lookup_substituteTypeTermImpRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        substituteTypeTermImpRule, rule, ruleId, substituteTypeInTerm,
-        checkRawChildren, TermQuantifiedKernel.encodeTm,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTypeSubstituteTerm]
+      replay_environment_rule lookup_substituteTypeTermImpRule substituteTypeTermImpRule
       exact ⟨domainHypothesis index, codomainHypothesis index⟩
   | all type body bodyHypothesis =>
-      simp only [compileTypeSubstituteTerm, node, checkRaw, validated,
-        instantiateRule?]
-      rw [lookup_substituteTypeTermAllRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        substituteTypeTermAllRule, rule, ruleId, substituteTypeInTerm,
-        substituteType, checkRawChildren, TermQuantifiedKernel.encodeTm,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTypeSubstituteTerm]
+      replay_environment_rule lookup_substituteTypeTermAllRule substituteTypeTermAllRule
       exact ⟨compileTypeSubstituteType_checked index replacement type,
         bodyHypothesis index⟩
   | typeApp function type functionHypothesis =>
-      simp only [compileTypeSubstituteTerm, node, checkRaw, validated,
-        instantiateRule?]
-      rw [lookup_substituteTypeTermTypeAppRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        substituteTypeTermTypeAppRule, rule, ruleId, substituteTypeInTerm,
-        substituteType, checkRawChildren, TermQuantifiedKernel.encodeTm,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTypeSubstituteTerm]
+      replay_environment_rule lookup_substituteTypeTermTypeAppRule substituteTypeTermTypeAppRule
       exact ⟨functionHypothesis index,
         compileTypeSubstituteType_checked index replacement type⟩
   | typeLam body bodyHypothesis =>
-      simp only [compileTypeSubstituteTerm, node, checkRaw, validated,
-        instantiateRule?]
-      rw [lookup_substituteTypeTermTypeLamRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        substituteTypeTermTypeLamRule, rule, ruleId, substituteTypeInTerm,
-        checkRawChildren, TermQuantifiedKernel.encodeTm,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTypeSubstituteTerm]
+      replay_environment_rule lookup_substituteTypeTermTypeLamRule substituteTypeTermTypeLamRule
       exact bodyHypothesis (index + 1)
   | typeAll body bodyHypothesis =>
-      simp only [compileTypeSubstituteTerm, node, checkRaw, validated,
-        instantiateRule?]
-      rw [lookup_substituteTypeTermTypeAllRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        substituteTypeTermTypeAllRule, rule, ruleId, substituteTypeInTerm,
-        checkRawChildren, TermQuantifiedKernel.encodeTm,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTypeSubstituteTerm]
+      replay_environment_rule lookup_substituteTypeTermTypeAllRule substituteTypeTermTypeAllRule
       exact bodyHypothesis (index + 1)
 
 def compileTermVariableShift (amount : Nat) :
@@ -1932,112 +1809,38 @@ theorem compileTermShift_checked (amount cutoff : Nat)
   | db index =>
       exact compileTermVariableShift_checked amount cutoff index
   | named name =>
-      simp only [compileTermShift, node, checkRaw, validated, instantiateRule?]
-      rw [lookup_shiftTermNamedRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        TermQuantifiedKernel.shiftNamedRule,
-        TermQuantifiedKernel.rule, TermQuantifiedKernel.ruleId,
-        TermQuantifiedKernel.shiftTerm, checkRawChildren,
-        TermQuantifiedKernel.encodeTm, TermQuantifiedKernel.a,
-        TermQuantifiedKernel.m, a,
-        Pattern.isGroundAt, Pattern.isGroundListAt,
-        Pattern.hasCanonicalBinderMetadata,
-        Pattern.hasCanonicalBinderMetadataList]
+      simp only [compileTermShift]
+      replay_environment_rule lookup_shiftTermNamedRule TermQuantifiedKernel.shiftNamedRule
   | prim primitive =>
-      simp only [compileTermShift, node, checkRaw, validated, instantiateRule?]
-      rw [lookup_shiftTermPrimRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        shiftTermPrimRule, rule, ruleId, checkRawChildren,
-        TermQuantifiedKernel.shiftTerm, TermQuantifiedKernel.encodeTm,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTermShift]
+      replay_environment_rule lookup_shiftTermPrimRule shiftTermPrimRule
   | app function argument functionHypothesis argumentHypothesis =>
-      simp only [compileTermShift, node, checkRaw, validated, instantiateRule?]
-      rw [lookup_shiftTermAppRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        TermQuantifiedKernel.shiftAppRule,
-        TermQuantifiedKernel.rule, TermQuantifiedKernel.ruleId,
-        TermQuantifiedKernel.shiftTerm, checkRawChildren,
-        TermQuantifiedKernel.encodeTm, TermQuantifiedKernel.a,
-        TermQuantifiedKernel.m]
+      simp only [compileTermShift]
+      replay_environment_rule lookup_shiftTermAppRule TermQuantifiedKernel.shiftAppRule
       exact ⟨functionHypothesis cutoff, argumentHypothesis cutoff⟩
   | lam type body bodyHypothesis =>
-      simp only [compileTermShift, node, checkRaw, validated, instantiateRule?]
-      rw [lookup_shiftTermLamRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        shiftTermLamRule, rule, ruleId, checkRawChildren,
-        TermQuantifiedKernel.shiftTerm, TermQuantifiedKernel.encodeTm,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTermShift]
+      replay_environment_rule lookup_shiftTermLamRule shiftTermLamRule
       exact bodyHypothesis (cutoff + 1)
   | imp domain codomain domainHypothesis codomainHypothesis =>
-      simp only [compileTermShift, node, checkRaw, validated, instantiateRule?]
-      rw [lookup_shiftTermImpRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        TermQuantifiedKernel.shiftImpRule,
-        TermQuantifiedKernel.rule, TermQuantifiedKernel.ruleId,
-        TermQuantifiedKernel.shiftTerm, checkRawChildren,
-        TermQuantifiedKernel.encodeTm, TermQuantifiedKernel.a,
-        TermQuantifiedKernel.m]
+      simp only [compileTermShift]
+      replay_environment_rule lookup_shiftTermImpRule TermQuantifiedKernel.shiftImpRule
       exact ⟨domainHypothesis cutoff, codomainHypothesis cutoff⟩
   | all type body bodyHypothesis =>
-      simp only [compileTermShift, node, checkRaw, validated, instantiateRule?]
-      rw [lookup_shiftTermAllRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        TermQuantifiedKernel.shiftAllRule,
-        TermQuantifiedKernel.rule, TermQuantifiedKernel.ruleId,
-        TermQuantifiedKernel.shiftTerm, checkRawChildren,
-        TermQuantifiedKernel.encodeTm, TermQuantifiedKernel.a,
-        TermQuantifiedKernel.m]
+      simp only [compileTermShift]
+      replay_environment_rule lookup_shiftTermAllRule TermQuantifiedKernel.shiftAllRule
       exact bodyHypothesis (cutoff + 1)
   | typeApp function type functionHypothesis =>
-      simp only [compileTermShift, node, checkRaw, validated, instantiateRule?]
-      rw [lookup_shiftTermTypeAppRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        shiftTermTypeAppRule, rule, ruleId, checkRawChildren,
-        TermQuantifiedKernel.shiftTerm, TermQuantifiedKernel.encodeTm,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTermShift]
+      replay_environment_rule lookup_shiftTermTypeAppRule shiftTermTypeAppRule
       exact functionHypothesis cutoff
   | typeLam body bodyHypothesis =>
-      simp only [compileTermShift, node, checkRaw, validated, instantiateRule?]
-      rw [lookup_shiftTermTypeLamRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        shiftTermTypeLamRule, rule, ruleId, checkRawChildren,
-        TermQuantifiedKernel.shiftTerm, TermQuantifiedKernel.encodeTm,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTermShift]
+      replay_environment_rule lookup_shiftTermTypeLamRule shiftTermTypeLamRule
       exact bodyHypothesis cutoff
   | typeAll body bodyHypothesis =>
-      simp only [compileTermShift, node, checkRaw, validated, instantiateRule?]
-      rw [lookup_shiftTermTypeAllRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        shiftTermTypeAllRule, rule, ruleId, checkRawChildren,
-        TermQuantifiedKernel.shiftTerm, TermQuantifiedKernel.encodeTm,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTermShift]
+      replay_environment_rule lookup_shiftTermTypeAllRule shiftTermTypeAllRule
       exact bodyHypothesis cutoff
 
 def compileTermSubstitute (index : Nat) (replacement : MathdataKernel.Tm) :
@@ -2225,121 +2028,38 @@ theorem compileTermSubstitute_checked (index : Nat)
               TermQuantifiedKernel.a] using
               lessArticle_checked index (varIndex - 1 + 1) (by omega)
   | named name =>
-      simp only [compileTermSubstitute, node, checkRaw, validated,
-        instantiateRule?]
-      rw [lookup_substituteTermNamedRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        TermQuantifiedKernel.substNamedRule,
-        TermQuantifiedKernel.rule, TermQuantifiedKernel.ruleId,
-        TermQuantifiedKernel.substituteTerm, checkRawChildren,
-        TermQuantifiedKernel.encodeTm, TermQuantifiedKernel.a,
-        TermQuantifiedKernel.m, substituteTerm, a,
-        Pattern.isGroundAt, Pattern.isGroundListAt,
-        Pattern.hasCanonicalBinderMetadata,
-        Pattern.hasCanonicalBinderMetadataList]
+      simp only [compileTermSubstitute]
+      replay_environment_rule lookup_substituteTermNamedRule TermQuantifiedKernel.substNamedRule
   | prim primitive =>
-      simp only [compileTermSubstitute, node, checkRaw, validated,
-        instantiateRule?]
-      rw [lookup_substituteTermPrimRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        substituteTermPrimRule, rule, ruleId, substituteTerm,
-        checkRawChildren, TermQuantifiedKernel.encodeTm,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTermSubstitute]
+      replay_environment_rule lookup_substituteTermPrimRule substituteTermPrimRule
   | app function argument functionHypothesis argumentHypothesis =>
-      simp only [compileTermSubstitute, node, checkRaw, validated,
-        instantiateRule?]
-      rw [lookup_substituteTermAppRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        TermQuantifiedKernel.substAppRule,
-        TermQuantifiedKernel.rule, TermQuantifiedKernel.ruleId,
-        TermQuantifiedKernel.substituteTerm, checkRawChildren,
-        TermQuantifiedKernel.encodeTm, TermQuantifiedKernel.a,
-        TermQuantifiedKernel.m, substituteTerm, a]
+      simp only [compileTermSubstitute]
+      replay_environment_rule lookup_substituteTermAppRule TermQuantifiedKernel.substAppRule
       exact ⟨functionHypothesis index, argumentHypothesis index⟩
   | lam type body bodyHypothesis =>
-      simp only [compileTermSubstitute, node, checkRaw, validated,
-        instantiateRule?]
-      rw [lookup_substituteTermLamRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        substituteTermLamRule, rule, ruleId, substituteTerm,
-        checkRawChildren, TermQuantifiedKernel.encodeTm,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTermSubstitute]
+      replay_environment_rule lookup_substituteTermLamRule substituteTermLamRule
       exact bodyHypothesis (index + 1)
   | imp domain codomain domainHypothesis codomainHypothesis =>
-      simp only [compileTermSubstitute, node, checkRaw, validated,
-        instantiateRule?]
-      rw [lookup_substituteTermImpRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        TermQuantifiedKernel.substImpRule,
-        TermQuantifiedKernel.rule, TermQuantifiedKernel.ruleId,
-        TermQuantifiedKernel.substituteTerm, checkRawChildren,
-        TermQuantifiedKernel.encodeTm, TermQuantifiedKernel.a,
-        TermQuantifiedKernel.m, substituteTerm, a]
+      simp only [compileTermSubstitute]
+      replay_environment_rule lookup_substituteTermImpRule TermQuantifiedKernel.substImpRule
       exact ⟨domainHypothesis index, codomainHypothesis index⟩
   | all type body bodyHypothesis =>
-      simp only [compileTermSubstitute, node, checkRaw, validated,
-        instantiateRule?]
-      rw [lookup_substituteTermAllRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        TermQuantifiedKernel.substAllRule,
-        TermQuantifiedKernel.rule, TermQuantifiedKernel.ruleId,
-        TermQuantifiedKernel.substituteTerm, checkRawChildren,
-        TermQuantifiedKernel.encodeTm, TermQuantifiedKernel.a,
-        TermQuantifiedKernel.m, substituteTerm, a]
+      simp only [compileTermSubstitute]
+      replay_environment_rule lookup_substituteTermAllRule TermQuantifiedKernel.substAllRule
       exact bodyHypothesis (index + 1)
   | typeApp function type functionHypothesis =>
-      simp only [compileTermSubstitute, node, checkRaw, validated,
-        instantiateRule?]
-      rw [lookup_substituteTermTypeAppRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        substituteTermTypeAppRule, rule, ruleId, substituteTerm,
-        checkRawChildren, TermQuantifiedKernel.encodeTm,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTermSubstitute]
+      replay_environment_rule lookup_substituteTermTypeAppRule substituteTermTypeAppRule
       exact functionHypothesis index
   | typeLam body bodyHypothesis =>
-      simp only [compileTermSubstitute, node, checkRaw, validated,
-        instantiateRule?]
-      rw [lookup_substituteTermTypeLamRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        substituteTermTypeLamRule, rule, ruleId, substituteTerm,
-        checkRawChildren, TermQuantifiedKernel.encodeTm,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTermSubstitute]
+      replay_environment_rule lookup_substituteTermTypeLamRule substituteTermTypeLamRule
       exact bodyHypothesis index
   | typeAll body bodyHypothesis =>
-      simp only [compileTermSubstitute, node, checkRaw, validated,
-        instantiateRule?]
-      rw [lookup_substituteTermTypeAllRule]
-      simp [argumentsValidAt, argumentValidAt,
-        instantiateSchemas?, instantiateSchema?,
-        instantiateSchemasAt?, instantiateSchemaAt?, lookupArgumentAt?,
-        RuleSchema.sideConditionsHold,
-        substituteTermTypeAllRule, rule, ruleId, substituteTerm,
-        checkRawChildren, TermQuantifiedKernel.encodeTm,
-        TermQuantifiedKernel.a, a, m]
+      simp only [compileTermSubstitute]
+      replay_environment_rule lookup_substituteTermTypeAllRule substituteTermTypeAllRule
       exact bodyHypothesis index
 
 theorem compiled_type_shift_is_sortedABT

@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.PeTTa.EquationEquality
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.RecursiveCollectionStateExecution
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CollectionContextExecution
 import Mettapedia.OSLF.MeTTaIL.CollectionOccurrenceMatcher
@@ -37,20 +38,8 @@ theorem checked : library.check = true := RetainedMatchingWire.interpreted_check
 
 section ProofMetadata
 
-private local instance matcherEquationEq : DecidableEq SpaceSemantics.Equation := by
-  intro left right
-  apply decidable_of_iff (left.head = right.head ∧ left.arguments = right.arguments ∧ left.body = right.body)
-  constructor
-  · rintro ⟨head, arguments, body⟩
-    cases left
-    cases right
-    cases head
-    cases arguments
-    cases body
-    rfl
-  · intro same
-    cases same
-    exact ⟨rfl, rfl, rfl⟩
+private local instance matcherEquationEq : DecidableEq SpaceSemantics.Equation :=
+  SpaceSemantics.Equation.decideEq
 
 def matcherProofInheritedHeads : List String := ["gslt:recursive-collection:start",
   "gslt:recursive-collection:run", "gslt:automata:length", "gslt:complete:drop"]

@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentLeastAnnotation
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentUniverseInjectiveSigma
 
@@ -420,8 +421,7 @@ theorem lowerWithinUpdate_keeps (candidates : List Head) (fuel : Nat) {Θ : Cont
 
 /-! ## Eventual constancy -/
 
-variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
-  Keeps (reducer fuel term) (reducer (fuel + 1) term))
+variable (stable : SolverPremises.StableReducer (rules := S.R) reducer)
 
 include stable in
 /-- Reading at one lowered annotation is eventually constant: type formation and checking keep their results. -/

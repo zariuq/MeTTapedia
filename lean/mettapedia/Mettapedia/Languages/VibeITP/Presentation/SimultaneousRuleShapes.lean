@@ -21,20 +21,11 @@ theorem sound_rManyPrepareNil {P : Pattern → Prop}
       (∀ premise ∈ rManyPrepareNil.instPremises args, P premise) → P (rManyPrepareNil.instConclusion args) := by
   intro args length premises
   match args, length with
-  | [], _ =>
-      rw [(inst_rManyPrepareNil ).1] at premises
-      rw [(inst_rManyPrepareNil ).2]
-      exact sound  
+  | [], _ => exact FORule.sound_of_shape (inst_rManyPrepareNil) sound premises
 
 theorem intro_rManyPrepareNil {R : List FORule} (member : rManyPrepareNil ∈ R) 
-      : FODerivable R (jManyPrepare cNil cNil) := by
-  apply FODerivable.intro member [] rfl
-  · intro argument included
-    simp only [List.not_mem_nil] at included
-  · exact (inst_rManyPrepareNil ).2
-  · rw [(inst_rManyPrepareNil ).1]
-    intro goal included
-    simp only [List.not_mem_nil] at included
+      : FODerivable R (jManyPrepare cNil cNil) :=
+  FODerivable.intro_of_shape member (inst_rManyPrepareNil) rfl trivial trivial
 
 theorem inst_rManyPrepareCons (fid fbs v n d reps entries : Pattern) :
     rManyPrepareCons.instPremises [fid, fbs, v, n, d, reps, entries] = [jSymDecl (cSym fid cKFvar fbs), jLen fbs n, jWf v, jDepth v d, jNLe d n, jManyPrepare reps entries] ∧
@@ -47,22 +38,11 @@ theorem sound_rManyPrepareCons {P : Pattern → Prop}
       (∀ premise ∈ rManyPrepareCons.instPremises args, P premise) → P (rManyPrepareCons.instConclusion args) := by
   intro args length premises
   match args, length with
-  | [fid, fbs, v, n, d, reps, entries], _ =>
-      rw [(inst_rManyPrepareCons fid fbs v n d reps entries).1] at premises
-      rw [(inst_rManyPrepareCons fid fbs v n d reps entries).2]
-      exact sound fid fbs v n d reps entries (premises _ (by simp)) (premises _ (by simp)) (premises _ (by simp)) (premises _ (by simp)) (premises _ (by simp)) (premises _ (by simp))
+  | [fid, fbs, v, n, d, reps, entries], _ => exact FORule.sound_of_shape (inst_rManyPrepareCons fid fbs v n d reps entries) (sound fid fbs v n d reps entries) premises
 
 theorem intro_rManyPrepareCons {R : List FORule} (member : rManyPrepareCons ∈ R) {fid fbs v n d reps entries : Pattern}
-    (data_fid : IsData fid) (data_fbs : IsData fbs) (data_v : IsData v) (data_n : IsData n) (data_d : IsData d) (data_reps : IsData reps) (data_entries : IsData entries) (premise0 : FODerivable R (jSymDecl (cSym fid cKFvar fbs))) (premise1 : FODerivable R (jLen fbs n)) (premise2 : FODerivable R (jWf v)) (premise3 : FODerivable R (jDepth v d)) (premise4 : FODerivable R (jNLe d n)) (premise5 : FODerivable R (jManyPrepare reps entries)) : FODerivable R (jManyPrepare (cCons (pairPattern (cSym fid cKFvar fbs) v) reps) (cCons (entryPattern (cSym fid cKFvar fbs) n v) entries)) := by
-  apply FODerivable.intro member [fid, fbs, v, n, d, reps, entries] rfl
-  · intro argument included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rManyPrepareCons fid fbs v n d reps entries).2
-  · rw [(inst_rManyPrepareCons fid fbs v n d reps entries).1]
-    intro goal included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
+    (data_fid : IsData fid) (data_fbs : IsData fbs) (data_v : IsData v) (data_n : IsData n) (data_d : IsData d) (data_reps : IsData reps) (data_entries : IsData entries) (premise0 : FODerivable R (jSymDecl (cSym fid cKFvar fbs))) (premise1 : FODerivable R (jLen fbs n)) (premise2 : FODerivable R (jWf v)) (premise3 : FODerivable R (jDepth v d)) (premise4 : FODerivable R (jNLe d n)) (premise5 : FODerivable R (jManyPrepare reps entries)) : FODerivable R (jManyPrepare (cCons (pairPattern (cSym fid cKFvar fbs) v) reps) (cCons (entryPattern (cSym fid cKFvar fbs) n v) entries)) :=
+  FODerivable.intro_of_shape member (inst_rManyPrepareCons fid fbs v n d reps entries) rfl ⟨data_fid, data_fbs, data_v, data_n, data_d, data_reps, data_entries⟩ ⟨premise0, premise1, premise2, premise3, premise4, premise5⟩
 
 theorem inst_rManyHitFirst (fid fbs n v rest : Pattern) :
     rManyHitFirst.instPremises [fid, fbs, n, v, rest] = [] ∧
@@ -75,21 +55,11 @@ theorem sound_rManyHitFirst {P : Pattern → Prop}
       (∀ premise ∈ rManyHitFirst.instPremises args, P premise) → P (rManyHitFirst.instConclusion args) := by
   intro args length premises
   match args, length with
-  | [fid, fbs, n, v, rest], _ =>
-      rw [(inst_rManyHitFirst fid fbs n v rest).1] at premises
-      rw [(inst_rManyHitFirst fid fbs n v rest).2]
-      exact sound fid fbs n v rest 
+  | [fid, fbs, n, v, rest], _ => exact FORule.sound_of_shape (inst_rManyHitFirst fid fbs n v rest) (sound fid fbs n v rest) premises
 
 theorem intro_rManyHitFirst {R : List FORule} (member : rManyHitFirst ∈ R) {fid fbs n v rest : Pattern}
-    (data_fid : IsData fid) (data_fbs : IsData fbs) (data_n : IsData n) (data_v : IsData v) (data_rest : IsData rest)  : FODerivable R (jManyHit (cCons (entryPattern (cSym fid cKFvar fbs) n v) rest) (cSym fid cKFvar fbs) n v) := by
-  apply FODerivable.intro member [fid, fbs, n, v, rest] rfl
-  · intro argument included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rManyHitFirst fid fbs n v rest).2
-  · rw [(inst_rManyHitFirst fid fbs n v rest).1]
-    intro goal included
-    simp only [List.not_mem_nil] at included
+    (data_fid : IsData fid) (data_fbs : IsData fbs) (data_n : IsData n) (data_v : IsData v) (data_rest : IsData rest)  : FODerivable R (jManyHit (cCons (entryPattern (cSym fid cKFvar fbs) n v) rest) (cSym fid cKFvar fbs) n v) :=
+  FODerivable.intro_of_shape member (inst_rManyHitFirst fid fbs n v rest) rfl ⟨data_fid, data_fbs, data_n, data_v, data_rest⟩ trivial
 
 theorem inst_rManyHitLt (idv bs k w rest fid fbs n v : Pattern) :
     rManyHitLt.instPremises [idv, bs, k, w, rest, fid, fbs, n, v] = [jNLt idv fid, jManyHit rest (cSym fid cKFvar fbs) n v] ∧
@@ -102,22 +72,11 @@ theorem sound_rManyHitLt {P : Pattern → Prop}
       (∀ premise ∈ rManyHitLt.instPremises args, P premise) → P (rManyHitLt.instConclusion args) := by
   intro args length premises
   match args, length with
-  | [idv, bs, k, w, rest, fid, fbs, n, v], _ =>
-      rw [(inst_rManyHitLt idv bs k w rest fid fbs n v).1] at premises
-      rw [(inst_rManyHitLt idv bs k w rest fid fbs n v).2]
-      exact sound idv bs k w rest fid fbs n v (premises _ (by simp)) (premises _ (by simp))
+  | [idv, bs, k, w, rest, fid, fbs, n, v], _ => exact FORule.sound_of_shape (inst_rManyHitLt idv bs k w rest fid fbs n v) (sound idv bs k w rest fid fbs n v) premises
 
 theorem intro_rManyHitLt {R : List FORule} (member : rManyHitLt ∈ R) {idv bs k w rest fid fbs n v : Pattern}
-    (data_idv : IsData idv) (data_bs : IsData bs) (data_k : IsData k) (data_w : IsData w) (data_rest : IsData rest) (data_fid : IsData fid) (data_fbs : IsData fbs) (data_n : IsData n) (data_v : IsData v) (premise0 : FODerivable R (jNLt idv fid)) (premise1 : FODerivable R (jManyHit rest (cSym fid cKFvar fbs) n v)) : FODerivable R (jManyHit (cCons (entryPattern (cSym idv cKFvar bs) k w) rest) (cSym fid cKFvar fbs) n v) := by
-  apply FODerivable.intro member [idv, bs, k, w, rest, fid, fbs, n, v] rfl
-  · intro argument included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rManyHitLt idv bs k w rest fid fbs n v).2
-  · rw [(inst_rManyHitLt idv bs k w rest fid fbs n v).1]
-    intro goal included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl <;> assumption
+    (data_idv : IsData idv) (data_bs : IsData bs) (data_k : IsData k) (data_w : IsData w) (data_rest : IsData rest) (data_fid : IsData fid) (data_fbs : IsData fbs) (data_n : IsData n) (data_v : IsData v) (premise0 : FODerivable R (jNLt idv fid)) (premise1 : FODerivable R (jManyHit rest (cSym fid cKFvar fbs) n v)) : FODerivable R (jManyHit (cCons (entryPattern (cSym idv cKFvar bs) k w) rest) (cSym fid cKFvar fbs) n v) :=
+  FODerivable.intro_of_shape member (inst_rManyHitLt idv bs k w rest fid fbs n v) rfl ⟨data_idv, data_bs, data_k, data_w, data_rest, data_fid, data_fbs, data_n, data_v⟩ ⟨premise0, premise1⟩
 
 theorem inst_rManyHitGt (idv bs k w rest fid fbs n v : Pattern) :
     rManyHitGt.instPremises [idv, bs, k, w, rest, fid, fbs, n, v] = [jNLt fid idv, jManyHit rest (cSym fid cKFvar fbs) n v] ∧
@@ -130,22 +89,11 @@ theorem sound_rManyHitGt {P : Pattern → Prop}
       (∀ premise ∈ rManyHitGt.instPremises args, P premise) → P (rManyHitGt.instConclusion args) := by
   intro args length premises
   match args, length with
-  | [idv, bs, k, w, rest, fid, fbs, n, v], _ =>
-      rw [(inst_rManyHitGt idv bs k w rest fid fbs n v).1] at premises
-      rw [(inst_rManyHitGt idv bs k w rest fid fbs n v).2]
-      exact sound idv bs k w rest fid fbs n v (premises _ (by simp)) (premises _ (by simp))
+  | [idv, bs, k, w, rest, fid, fbs, n, v], _ => exact FORule.sound_of_shape (inst_rManyHitGt idv bs k w rest fid fbs n v) (sound idv bs k w rest fid fbs n v) premises
 
 theorem intro_rManyHitGt {R : List FORule} (member : rManyHitGt ∈ R) {idv bs k w rest fid fbs n v : Pattern}
-    (data_idv : IsData idv) (data_bs : IsData bs) (data_k : IsData k) (data_w : IsData w) (data_rest : IsData rest) (data_fid : IsData fid) (data_fbs : IsData fbs) (data_n : IsData n) (data_v : IsData v) (premise0 : FODerivable R (jNLt fid idv)) (premise1 : FODerivable R (jManyHit rest (cSym fid cKFvar fbs) n v)) : FODerivable R (jManyHit (cCons (entryPattern (cSym idv cKFvar bs) k w) rest) (cSym fid cKFvar fbs) n v) := by
-  apply FODerivable.intro member [idv, bs, k, w, rest, fid, fbs, n, v] rfl
-  · intro argument included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rManyHitGt idv bs k w rest fid fbs n v).2
-  · rw [(inst_rManyHitGt idv bs k w rest fid fbs n v).1]
-    intro goal included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl <;> assumption
+    (data_idv : IsData idv) (data_bs : IsData bs) (data_k : IsData k) (data_w : IsData w) (data_rest : IsData rest) (data_fid : IsData fid) (data_fbs : IsData fbs) (data_n : IsData n) (data_v : IsData v) (premise0 : FODerivable R (jNLt fid idv)) (premise1 : FODerivable R (jManyHit rest (cSym fid cKFvar fbs) n v)) : FODerivable R (jManyHit (cCons (entryPattern (cSym idv cKFvar bs) k w) rest) (cSym fid cKFvar fbs) n v) :=
+  FODerivable.intro_of_shape member (inst_rManyHitGt idv bs k w rest fid fbs n v) rfl ⟨data_idv, data_bs, data_k, data_w, data_rest, data_fid, data_fbs, data_n, data_v⟩ ⟨premise0, premise1⟩
 
 theorem inst_rManyMissNil (fid fbs : Pattern) :
     rManyMissNil.instPremises [fid, fbs] = [] ∧
@@ -158,21 +106,11 @@ theorem sound_rManyMissNil {P : Pattern → Prop}
       (∀ premise ∈ rManyMissNil.instPremises args, P premise) → P (rManyMissNil.instConclusion args) := by
   intro args length premises
   match args, length with
-  | [fid, fbs], _ =>
-      rw [(inst_rManyMissNil fid fbs).1] at premises
-      rw [(inst_rManyMissNil fid fbs).2]
-      exact sound fid fbs 
+  | [fid, fbs], _ => exact FORule.sound_of_shape (inst_rManyMissNil fid fbs) (sound fid fbs) premises
 
 theorem intro_rManyMissNil {R : List FORule} (member : rManyMissNil ∈ R) {fid fbs : Pattern}
-    (data_fid : IsData fid) (data_fbs : IsData fbs)  : FODerivable R (jManyMiss cNil (cSym fid cKFvar fbs)) := by
-  apply FODerivable.intro member [fid, fbs] rfl
-  · intro argument included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl <;> assumption
-  · exact (inst_rManyMissNil fid fbs).2
-  · rw [(inst_rManyMissNil fid fbs).1]
-    intro goal included
-    simp only [List.not_mem_nil] at included
+    (data_fid : IsData fid) (data_fbs : IsData fbs)  : FODerivable R (jManyMiss cNil (cSym fid cKFvar fbs)) :=
+  FODerivable.intro_of_shape member (inst_rManyMissNil fid fbs) rfl ⟨data_fid, data_fbs⟩ trivial
 
 theorem inst_rManyMissLt (idv bs k w rest fid fbs : Pattern) :
     rManyMissLt.instPremises [idv, bs, k, w, rest, fid, fbs] = [jNLt idv fid, jManyMiss rest (cSym fid cKFvar fbs)] ∧
@@ -185,22 +123,11 @@ theorem sound_rManyMissLt {P : Pattern → Prop}
       (∀ premise ∈ rManyMissLt.instPremises args, P premise) → P (rManyMissLt.instConclusion args) := by
   intro args length premises
   match args, length with
-  | [idv, bs, k, w, rest, fid, fbs], _ =>
-      rw [(inst_rManyMissLt idv bs k w rest fid fbs).1] at premises
-      rw [(inst_rManyMissLt idv bs k w rest fid fbs).2]
-      exact sound idv bs k w rest fid fbs (premises _ (by simp)) (premises _ (by simp))
+  | [idv, bs, k, w, rest, fid, fbs], _ => exact FORule.sound_of_shape (inst_rManyMissLt idv bs k w rest fid fbs) (sound idv bs k w rest fid fbs) premises
 
 theorem intro_rManyMissLt {R : List FORule} (member : rManyMissLt ∈ R) {idv bs k w rest fid fbs : Pattern}
-    (data_idv : IsData idv) (data_bs : IsData bs) (data_k : IsData k) (data_w : IsData w) (data_rest : IsData rest) (data_fid : IsData fid) (data_fbs : IsData fbs) (premise0 : FODerivable R (jNLt idv fid)) (premise1 : FODerivable R (jManyMiss rest (cSym fid cKFvar fbs))) : FODerivable R (jManyMiss (cCons (entryPattern (cSym idv cKFvar bs) k w) rest) (cSym fid cKFvar fbs)) := by
-  apply FODerivable.intro member [idv, bs, k, w, rest, fid, fbs] rfl
-  · intro argument included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rManyMissLt idv bs k w rest fid fbs).2
-  · rw [(inst_rManyMissLt idv bs k w rest fid fbs).1]
-    intro goal included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl <;> assumption
+    (data_idv : IsData idv) (data_bs : IsData bs) (data_k : IsData k) (data_w : IsData w) (data_rest : IsData rest) (data_fid : IsData fid) (data_fbs : IsData fbs) (premise0 : FODerivable R (jNLt idv fid)) (premise1 : FODerivable R (jManyMiss rest (cSym fid cKFvar fbs))) : FODerivable R (jManyMiss (cCons (entryPattern (cSym idv cKFvar bs) k w) rest) (cSym fid cKFvar fbs)) :=
+  FODerivable.intro_of_shape member (inst_rManyMissLt idv bs k w rest fid fbs) rfl ⟨data_idv, data_bs, data_k, data_w, data_rest, data_fid, data_fbs⟩ ⟨premise0, premise1⟩
 
 theorem inst_rManyMissGt (idv bs k w rest fid fbs : Pattern) :
     rManyMissGt.instPremises [idv, bs, k, w, rest, fid, fbs] = [jNLt fid idv, jManyMiss rest (cSym fid cKFvar fbs)] ∧
@@ -213,22 +140,11 @@ theorem sound_rManyMissGt {P : Pattern → Prop}
       (∀ premise ∈ rManyMissGt.instPremises args, P premise) → P (rManyMissGt.instConclusion args) := by
   intro args length premises
   match args, length with
-  | [idv, bs, k, w, rest, fid, fbs], _ =>
-      rw [(inst_rManyMissGt idv bs k w rest fid fbs).1] at premises
-      rw [(inst_rManyMissGt idv bs k w rest fid fbs).2]
-      exact sound idv bs k w rest fid fbs (premises _ (by simp)) (premises _ (by simp))
+  | [idv, bs, k, w, rest, fid, fbs], _ => exact FORule.sound_of_shape (inst_rManyMissGt idv bs k w rest fid fbs) (sound idv bs k w rest fid fbs) premises
 
 theorem intro_rManyMissGt {R : List FORule} (member : rManyMissGt ∈ R) {idv bs k w rest fid fbs : Pattern}
-    (data_idv : IsData idv) (data_bs : IsData bs) (data_k : IsData k) (data_w : IsData w) (data_rest : IsData rest) (data_fid : IsData fid) (data_fbs : IsData fbs) (premise0 : FODerivable R (jNLt fid idv)) (premise1 : FODerivable R (jManyMiss rest (cSym fid cKFvar fbs))) : FODerivable R (jManyMiss (cCons (entryPattern (cSym idv cKFvar bs) k w) rest) (cSym fid cKFvar fbs)) := by
-  apply FODerivable.intro member [idv, bs, k, w, rest, fid, fbs] rfl
-  · intro argument included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rManyMissGt idv bs k w rest fid fbs).2
-  · rw [(inst_rManyMissGt idv bs k w rest fid fbs).1]
-    intro goal included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl <;> assumption
+    (data_idv : IsData idv) (data_bs : IsData bs) (data_k : IsData k) (data_w : IsData w) (data_rest : IsData rest) (data_fid : IsData fid) (data_fbs : IsData fbs) (premise0 : FODerivable R (jNLt fid idv)) (premise1 : FODerivable R (jManyMiss rest (cSym fid cKFvar fbs))) : FODerivable R (jManyMiss (cCons (entryPattern (cSym idv cKFvar bs) k w) rest) (cSym fid cKFvar fbs)) :=
+  FODerivable.intro_of_shape member (inst_rManyMissGt idv bs k w rest fid fbs) rfl ⟨data_idv, data_bs, data_k, data_w, data_rest, data_fid, data_fbs⟩ ⟨premise0, premise1⟩
 
 theorem inst_rManyNofv (entries o t : Pattern) :
     rManyNofv.instPremises [entries, o, t] = [jHasFv t cFalse] ∧
@@ -241,23 +157,11 @@ theorem sound_rManyNofv {P : Pattern → Prop}
       (∀ premise ∈ rManyNofv.instPremises args, P premise) → P (rManyNofv.instConclusion args) := by
   intro args length premises
   match args, length with
-  | [entries, o, t], _ =>
-      rw [(inst_rManyNofv entries o t).1] at premises
-      rw [(inst_rManyNofv entries o t).2]
-      exact sound entries o t (premises _ (by simp))
+  | [entries, o, t], _ => exact FORule.sound_of_shape (inst_rManyNofv entries o t) (sound entries o t) premises
 
 theorem intro_rManyNofv {R : List FORule} (member : rManyNofv ∈ R) {entries o t : Pattern}
-    (data_entries : IsData entries) (data_o : IsData o) (data_t : IsData t) (premise0 : FODerivable R (jHasFv t cFalse)) : FODerivable R (jMany entries o t t) := by
-  apply FODerivable.intro member [entries, o, t] rfl
-  · intro argument included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl | rfl <;> assumption
-  · exact (inst_rManyNofv entries o t).2
-  · rw [(inst_rManyNofv entries o t).1]
-    intro goal included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl
-    assumption
+    (data_entries : IsData entries) (data_o : IsData o) (data_t : IsData t) (premise0 : FODerivable R (jHasFv t cFalse)) : FODerivable R (jMany entries o t t) :=
+  FODerivable.intro_of_shape member (inst_rManyNofv entries o t) rfl ⟨data_entries, data_o, data_t⟩ premise0
 
 theorem inst_rManyConst (entries o idv bs ts d us e g : Pattern) :
     rManyConst.instPremises [entries, o, idv, bs, ts, d, us, e, g] = [jManyArgs entries o bs ts us, jAnnArgs bs us e g] ∧
@@ -270,22 +174,11 @@ theorem sound_rManyConst {P : Pattern → Prop}
       (∀ premise ∈ rManyConst.instPremises args, P premise) → P (rManyConst.instConclusion args) := by
   intro args length premises
   match args, length with
-  | [entries, o, idv, bs, ts, d, us, e, g], _ =>
-      rw [(inst_rManyConst entries o idv bs ts d us e g).1] at premises
-      rw [(inst_rManyConst entries o idv bs ts d us e g).2]
-      exact sound entries o idv bs ts d us e g (premises _ (by simp)) (premises _ (by simp))
+  | [entries, o, idv, bs, ts, d, us, e, g], _ => exact FORule.sound_of_shape (inst_rManyConst entries o idv bs ts d us e g) (sound entries o idv bs ts d us e g) premises
 
 theorem intro_rManyConst {R : List FORule} (member : rManyConst ∈ R) {entries o idv bs ts d us e g : Pattern}
-    (data_entries : IsData entries) (data_o : IsData o) (data_idv : IsData idv) (data_bs : IsData bs) (data_ts : IsData ts) (data_d : IsData d) (data_us : IsData us) (data_e : IsData e) (data_g : IsData g) (premise0 : FODerivable R (jManyArgs entries o bs ts us)) (premise1 : FODerivable R (jAnnArgs bs us e g)) : FODerivable R (jMany entries o (cApp (cSym idv cKConst bs) ts (cAnn d cTrue)) (cApp (cSym idv cKConst bs) us (cAnn e g))) := by
-  apply FODerivable.intro member [entries, o, idv, bs, ts, d, us, e, g] rfl
-  · intro argument included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rManyConst entries o idv bs ts d us e g).2
-  · rw [(inst_rManyConst entries o idv bs ts d us e g).1]
-    intro goal included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl <;> assumption
+    (data_entries : IsData entries) (data_o : IsData o) (data_idv : IsData idv) (data_bs : IsData bs) (data_ts : IsData ts) (data_d : IsData d) (data_us : IsData us) (data_e : IsData e) (data_g : IsData g) (premise0 : FODerivable R (jManyArgs entries o bs ts us)) (premise1 : FODerivable R (jAnnArgs bs us e g)) : FODerivable R (jMany entries o (cApp (cSym idv cKConst bs) ts (cAnn d cTrue)) (cApp (cSym idv cKConst bs) us (cAnn e g))) :=
+  FODerivable.intro_of_shape member (inst_rManyConst entries o idv bs ts d us e g) rfl ⟨data_entries, data_o, data_idv, data_bs, data_ts, data_d, data_us, data_e, data_g⟩ ⟨premise0, premise1⟩
 
 theorem inst_rManyAbsent (entries o fid fbs ts d us e g : Pattern) :
     rManyAbsent.instPremises [entries, o, fid, fbs, ts, d, us, e, g] = [jManyMiss entries (cSym fid cKFvar fbs), jManyArgs entries o fbs ts us, jAnnArgs fbs us e g] ∧
@@ -298,22 +191,11 @@ theorem sound_rManyAbsent {P : Pattern → Prop}
       (∀ premise ∈ rManyAbsent.instPremises args, P premise) → P (rManyAbsent.instConclusion args) := by
   intro args length premises
   match args, length with
-  | [entries, o, fid, fbs, ts, d, us, e, g], _ =>
-      rw [(inst_rManyAbsent entries o fid fbs ts d us e g).1] at premises
-      rw [(inst_rManyAbsent entries o fid fbs ts d us e g).2]
-      exact sound entries o fid fbs ts d us e g (premises _ (by simp)) (premises _ (by simp)) (premises _ (by simp))
+  | [entries, o, fid, fbs, ts, d, us, e, g], _ => exact FORule.sound_of_shape (inst_rManyAbsent entries o fid fbs ts d us e g) (sound entries o fid fbs ts d us e g) premises
 
 theorem intro_rManyAbsent {R : List FORule} (member : rManyAbsent ∈ R) {entries o fid fbs ts d us e g : Pattern}
-    (data_entries : IsData entries) (data_o : IsData o) (data_fid : IsData fid) (data_fbs : IsData fbs) (data_ts : IsData ts) (data_d : IsData d) (data_us : IsData us) (data_e : IsData e) (data_g : IsData g) (premise0 : FODerivable R (jManyMiss entries (cSym fid cKFvar fbs))) (premise1 : FODerivable R (jManyArgs entries o fbs ts us)) (premise2 : FODerivable R (jAnnArgs fbs us e g)) : FODerivable R (jMany entries o (cApp (cSym fid cKFvar fbs) ts (cAnn d cTrue)) (cApp (cSym fid cKFvar fbs) us (cAnn e cTrue))) := by
-  apply FODerivable.intro member [entries, o, fid, fbs, ts, d, us, e, g] rfl
-  · intro argument included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rManyAbsent entries o fid fbs ts d us e g).2
-  · rw [(inst_rManyAbsent entries o fid fbs ts d us e g).1]
-    intro goal included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl | rfl <;> assumption
+    (data_entries : IsData entries) (data_o : IsData o) (data_fid : IsData fid) (data_fbs : IsData fbs) (data_ts : IsData ts) (data_d : IsData d) (data_us : IsData us) (data_e : IsData e) (data_g : IsData g) (premise0 : FODerivable R (jManyMiss entries (cSym fid cKFvar fbs))) (premise1 : FODerivable R (jManyArgs entries o fbs ts us)) (premise2 : FODerivable R (jAnnArgs fbs us e g)) : FODerivable R (jMany entries o (cApp (cSym fid cKFvar fbs) ts (cAnn d cTrue)) (cApp (cSym fid cKFvar fbs) us (cAnn e cTrue))) :=
+  FODerivable.intro_of_shape member (inst_rManyAbsent entries o fid fbs ts d us e g) rfl ⟨data_entries, data_o, data_fid, data_fbs, data_ts, data_d, data_us, data_e, data_g⟩ ⟨premise0, premise1, premise2⟩
 
 theorem inst_rManySelected (entries o fid fbs n v ts d us w r : Pattern) :
     rManySelected.instPremises [entries, o, fid, fbs, n, v, ts, d, us, w, r] = [jManyHit entries (cSym fid cKFvar fbs) n v, jManyArgs entries o fbs ts us, jShift o n v w, jSubstTop n us w r] ∧
@@ -326,22 +208,11 @@ theorem sound_rManySelected {P : Pattern → Prop}
       (∀ premise ∈ rManySelected.instPremises args, P premise) → P (rManySelected.instConclusion args) := by
   intro args length premises
   match args, length with
-  | [entries, o, fid, fbs, n, v, ts, d, us, w, r], _ =>
-      rw [(inst_rManySelected entries o fid fbs n v ts d us w r).1] at premises
-      rw [(inst_rManySelected entries o fid fbs n v ts d us w r).2]
-      exact sound entries o fid fbs n v ts d us w r (premises _ (by simp)) (premises _ (by simp)) (premises _ (by simp)) (premises _ (by simp))
+  | [entries, o, fid, fbs, n, v, ts, d, us, w, r], _ => exact FORule.sound_of_shape (inst_rManySelected entries o fid fbs n v ts d us w r) (sound entries o fid fbs n v ts d us w r) premises
 
 theorem intro_rManySelected {R : List FORule} (member : rManySelected ∈ R) {entries o fid fbs n v ts d us w r : Pattern}
-    (data_entries : IsData entries) (data_o : IsData o) (data_fid : IsData fid) (data_fbs : IsData fbs) (data_n : IsData n) (data_v : IsData v) (data_ts : IsData ts) (data_d : IsData d) (data_us : IsData us) (data_w : IsData w) (data_r : IsData r) (premise0 : FODerivable R (jManyHit entries (cSym fid cKFvar fbs) n v)) (premise1 : FODerivable R (jManyArgs entries o fbs ts us)) (premise2 : FODerivable R (jShift o n v w)) (premise3 : FODerivable R (jSubstTop n us w r)) : FODerivable R (jMany entries o (cApp (cSym fid cKFvar fbs) ts (cAnn d cTrue)) r) := by
-  apply FODerivable.intro member [entries, o, fid, fbs, n, v, ts, d, us, w, r] rfl
-  · intro argument included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rManySelected entries o fid fbs n v ts d us w r).2
-  · rw [(inst_rManySelected entries o fid fbs n v ts d us w r).1]
-    intro goal included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl | rfl | rfl <;> assumption
+    (data_entries : IsData entries) (data_o : IsData o) (data_fid : IsData fid) (data_fbs : IsData fbs) (data_n : IsData n) (data_v : IsData v) (data_ts : IsData ts) (data_d : IsData d) (data_us : IsData us) (data_w : IsData w) (data_r : IsData r) (premise0 : FODerivable R (jManyHit entries (cSym fid cKFvar fbs) n v)) (premise1 : FODerivable R (jManyArgs entries o fbs ts us)) (premise2 : FODerivable R (jShift o n v w)) (premise3 : FODerivable R (jSubstTop n us w r)) : FODerivable R (jMany entries o (cApp (cSym fid cKFvar fbs) ts (cAnn d cTrue)) r) :=
+  FODerivable.intro_of_shape member (inst_rManySelected entries o fid fbs n v ts d us w r) rfl ⟨data_entries, data_o, data_fid, data_fbs, data_n, data_v, data_ts, data_d, data_us, data_w, data_r⟩ ⟨premise0, premise1, premise2, premise3⟩
 
 theorem inst_rManyArgsNil (entries o : Pattern) :
     rManyArgsNil.instPremises [entries, o] = [] ∧
@@ -354,21 +225,11 @@ theorem sound_rManyArgsNil {P : Pattern → Prop}
       (∀ premise ∈ rManyArgsNil.instPremises args, P premise) → P (rManyArgsNil.instConclusion args) := by
   intro args length premises
   match args, length with
-  | [entries, o], _ =>
-      rw [(inst_rManyArgsNil entries o).1] at premises
-      rw [(inst_rManyArgsNil entries o).2]
-      exact sound entries o 
+  | [entries, o], _ => exact FORule.sound_of_shape (inst_rManyArgsNil entries o) (sound entries o) premises
 
 theorem intro_rManyArgsNil {R : List FORule} (member : rManyArgsNil ∈ R) {entries o : Pattern}
-    (data_entries : IsData entries) (data_o : IsData o)  : FODerivable R (jManyArgs entries o cNil cNil cNil) := by
-  apply FODerivable.intro member [entries, o] rfl
-  · intro argument included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl <;> assumption
-  · exact (inst_rManyArgsNil entries o).2
-  · rw [(inst_rManyArgsNil entries o).1]
-    intro goal included
-    simp only [List.not_mem_nil] at included
+    (data_entries : IsData entries) (data_o : IsData o)  : FODerivable R (jManyArgs entries o cNil cNil cNil) :=
+  FODerivable.intro_of_shape member (inst_rManyArgsNil entries o) rfl ⟨data_entries, data_o⟩ trivial
 
 theorem inst_rManyArgsCons (entries o b bs t ts u us k : Pattern) :
     rManyArgsCons.instPremises [entries, o, b, bs, t, ts, u, us, k] = [jNAdd o b k, jNWord k, jMany entries k t u, jManyArgs entries o bs ts us] ∧
@@ -381,22 +242,11 @@ theorem sound_rManyArgsCons {P : Pattern → Prop}
       (∀ premise ∈ rManyArgsCons.instPremises args, P premise) → P (rManyArgsCons.instConclusion args) := by
   intro args length premises
   match args, length with
-  | [entries, o, b, bs, t, ts, u, us, k], _ =>
-      rw [(inst_rManyArgsCons entries o b bs t ts u us k).1] at premises
-      rw [(inst_rManyArgsCons entries o b bs t ts u us k).2]
-      exact sound entries o b bs t ts u us k (premises _ (by simp)) (premises _ (by simp)) (premises _ (by simp)) (premises _ (by simp))
+  | [entries, o, b, bs, t, ts, u, us, k], _ => exact FORule.sound_of_shape (inst_rManyArgsCons entries o b bs t ts u us k) (sound entries o b bs t ts u us k) premises
 
 theorem intro_rManyArgsCons {R : List FORule} (member : rManyArgsCons ∈ R) {entries o b bs t ts u us k : Pattern}
-    (data_entries : IsData entries) (data_o : IsData o) (data_b : IsData b) (data_bs : IsData bs) (data_t : IsData t) (data_ts : IsData ts) (data_u : IsData u) (data_us : IsData us) (data_k : IsData k) (premise0 : FODerivable R (jNAdd o b k)) (premise1 : FODerivable R (jNWord k)) (premise2 : FODerivable R (jMany entries k t u)) (premise3 : FODerivable R (jManyArgs entries o bs ts us)) : FODerivable R (jManyArgs entries o (cCons b bs) (cCons t ts) (cCons u us)) := by
-  apply FODerivable.intro member [entries, o, b, bs, t, ts, u, us, k] rfl
-  · intro argument included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rManyArgsCons entries o b bs t ts u us k).2
-  · rw [(inst_rManyArgsCons entries o b bs t ts u us k).1]
-    intro goal included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl | rfl | rfl <;> assumption
+    (data_entries : IsData entries) (data_o : IsData o) (data_b : IsData b) (data_bs : IsData bs) (data_t : IsData t) (data_ts : IsData ts) (data_u : IsData u) (data_us : IsData us) (data_k : IsData k) (premise0 : FODerivable R (jNAdd o b k)) (premise1 : FODerivable R (jNWord k)) (premise2 : FODerivable R (jMany entries k t u)) (premise3 : FODerivable R (jManyArgs entries o bs ts us)) : FODerivable R (jManyArgs entries o (cCons b bs) (cCons t ts) (cCons u us)) :=
+  FODerivable.intro_of_shape member (inst_rManyArgsCons entries o b bs t ts u us k) rfl ⟨data_entries, data_o, data_b, data_bs, data_t, data_ts, data_u, data_us, data_k⟩ ⟨premise0, premise1, premise2, premise3⟩
 
 theorem inst_rInstantiateManyNil (phi : Pattern) :
     rInstantiateManyNil.instPremises [phi] = [jThm phi, jDepth phi cN0] ∧
@@ -409,23 +259,11 @@ theorem sound_rInstantiateManyNil {P : Pattern → Prop}
       (∀ premise ∈ rInstantiateManyNil.instPremises args, P premise) → P (rInstantiateManyNil.instConclusion args) := by
   intro args length premises
   match args, length with
-  | [phi], _ =>
-      rw [(inst_rInstantiateManyNil phi).1] at premises
-      rw [(inst_rInstantiateManyNil phi).2]
-      exact sound phi (premises _ (by simp)) (premises _ (by simp))
+  | [phi], _ => exact FORule.sound_of_shape (inst_rInstantiateManyNil phi) (sound phi) premises
 
 theorem intro_rInstantiateManyNil {R : List FORule} (member : rInstantiateManyNil ∈ R) {phi : Pattern}
-    (data_phi : IsData phi) (premise0 : FODerivable R (jThm phi)) (premise1 : FODerivable R (jDepth phi cN0)) : FODerivable R (jThm phi) := by
-  apply FODerivable.intro member [phi] rfl
-  · intro argument included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl
-    assumption
-  · exact (inst_rInstantiateManyNil phi).2
-  · rw [(inst_rInstantiateManyNil phi).1]
-    intro goal included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl <;> assumption
+    (data_phi : IsData phi) (premise0 : FODerivable R (jThm phi)) (premise1 : FODerivable R (jDepth phi cN0)) : FODerivable R (jThm phi) :=
+  FODerivable.intro_of_shape member (inst_rInstantiateManyNil phi) rfl data_phi ⟨premise0, premise1⟩
 
 theorem inst_rInstantiateManyCons (rep reps entry entries phi psi : Pattern) :
     rInstantiateManyCons.instPremises [rep, reps, entry, entries, phi, psi] = [jThm phi, jManyPrepare (cCons rep reps) (cCons entry entries), jMany (cCons entry entries) cN0 phi psi, jDepth psi cN0] ∧
@@ -438,21 +276,10 @@ theorem sound_rInstantiateManyCons {P : Pattern → Prop}
       (∀ premise ∈ rInstantiateManyCons.instPremises args, P premise) → P (rInstantiateManyCons.instConclusion args) := by
   intro args length premises
   match args, length with
-  | [rep, reps, entry, entries, phi, psi], _ =>
-      rw [(inst_rInstantiateManyCons rep reps entry entries phi psi).1] at premises
-      rw [(inst_rInstantiateManyCons rep reps entry entries phi psi).2]
-      exact sound rep reps entry entries phi psi (premises _ (by simp)) (premises _ (by simp)) (premises _ (by simp)) (premises _ (by simp))
+  | [rep, reps, entry, entries, phi, psi], _ => exact FORule.sound_of_shape (inst_rInstantiateManyCons rep reps entry entries phi psi) (sound rep reps entry entries phi psi) premises
 
 theorem intro_rInstantiateManyCons {R : List FORule} (member : rInstantiateManyCons ∈ R) {rep reps entry entries phi psi : Pattern}
-    (data_rep : IsData rep) (data_reps : IsData reps) (data_entry : IsData entry) (data_entries : IsData entries) (data_phi : IsData phi) (data_psi : IsData psi) (premise0 : FODerivable R (jThm phi)) (premise1 : FODerivable R (jManyPrepare (cCons rep reps) (cCons entry entries))) (premise2 : FODerivable R (jMany (cCons entry entries) cN0 phi psi)) (premise3 : FODerivable R (jDepth psi cN0)) : FODerivable R (jThm psi) := by
-  apply FODerivable.intro member [rep, reps, entry, entries, phi, psi] rfl
-  · intro argument included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rInstantiateManyCons rep reps entry entries phi psi).2
-  · rw [(inst_rInstantiateManyCons rep reps entry entries phi psi).1]
-    intro goal included
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at included
-    rcases included with rfl | rfl | rfl | rfl <;> assumption
+    (data_rep : IsData rep) (data_reps : IsData reps) (data_entry : IsData entry) (data_entries : IsData entries) (data_phi : IsData phi) (data_psi : IsData psi) (premise0 : FODerivable R (jThm phi)) (premise1 : FODerivable R (jManyPrepare (cCons rep reps) (cCons entry entries))) (premise2 : FODerivable R (jMany (cCons entry entries) cN0 phi psi)) (premise3 : FODerivable R (jDepth psi cN0)) : FODerivable R (jThm psi) :=
+  FODerivable.intro_of_shape member (inst_rInstantiateManyCons rep reps entry entries phi psi) rfl ⟨data_rep, data_reps, data_entry, data_entries, data_phi, data_psi⟩ ⟨premise0, premise1, premise2, premise3⟩
 
 end Mettapedia.Languages.VibeITP.Presentation.SimultaneousPresentation

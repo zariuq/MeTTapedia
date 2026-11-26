@@ -14,15 +14,11 @@ The linear generalization instantiates to the least general one by sending
 each of its obligations to the shared obligation of the same erasure pair.
 Two substitutions recover the original plans.
 
-A second generalization of a pair whose slots are already allocated opens no
-further slot, and a citation weakens to the citation of the same numeral.
-The minimality substitution is not proved.  It would send each obligation of a
-plan that uses every obligation to the least general sub-plan of that
-obligation's two instances, computed in the slot context already allocated and
-then weakened to the final slot context.  The missing step is that
-local-to-global transport of a replayed plan.  An obligation the plan never
-cites has no such sub-plan, because it then has no derivation from the shared
-context.
+A second generalization in the allocated table recalls the same rule instances
+and slot indices. Every plan that generalizes the two inputs and cites all its
+obligations has a unique specialization to the least general plan. Its
+substitution restricts along each input environment to that original
+environment, preserving its ordered premises.
 -/
 
 set_option autoImplicit false
@@ -1394,6 +1390,24 @@ theorem found_identified_neg
   | isTrue hc => exact absurd hc h
   | isFalse _ => rfl
 
+private theorem erase_contextCast {first second : List Pattern} {goal : Pattern}
+    (same : first = second) (proof : OpenDerivation definition first goal) :
+    (same ▸ proof : OpenDerivation definition second goal).eraseOpen = proof.eraseOpen := by
+  cases same
+  rfl
+
+private theorem erase_contextListCast {first second goals : List Pattern}
+    (same : first = second) (proofs : OpenDerivationList definition first goals) :
+    (same ▸ proofs : OpenDerivationList definition second goals).eraseOpen = proofs.eraseOpen := by
+  cases same
+  rfl
+
+private theorem erase_goalsListCast {context first second : List Pattern}
+    (same : first = second) (proofs : OpenDerivationList definition context first) :
+    (same ▸ proofs : OpenDerivationList definition context second).eraseOpen = proofs.eraseOpen := by
+  cases same
+  rfl
+
 theorem antiUnify_obligations_match {goal : Pattern} {premises premises' : List Pattern}
     {ruleInstance ruleInstance' : RuleInstance}
     (application : RuleApplication definition ruleInstance premises goal)
@@ -1406,15 +1420,7 @@ theorem antiUnify_obligations_match {goal : Pattern} {premises premises' : List 
         (.byRule (premises := premises') ruleInstance' application' children')).obligations =
       (antiUnifyList children (same.2.2 ▸ children')).obligations := by
   simp only [antiUnify, rootRule?]
-  exact generalization_obligations_pos same
-    (fun h =>
-      { obligations := (antiUnifyList children (h.2.2 ▸ children')).obligations
-        plan := .byRule ruleInstance application
-          (antiUnifyList children (h.2.2 ▸ children')).plans
-        left := (antiUnifyList children (h.2.2 ▸ children')).left
-        right := (antiUnifyList children (h.2.2 ▸ children')).right })
-    (fun _ => slot (.byRule (premises := premises) ruleInstance application children)
-      (.byRule (premises := premises') ruleInstance' application' children'))
+  rw [dif_pos same]
 
 theorem antiUnify_plan_match {goal : Pattern} {premises premises' : List Pattern}
     {ruleInstance ruleInstance' : RuleInstance}
@@ -1429,16 +1435,10 @@ theorem antiUnify_plan_match {goal : Pattern} {premises premises' : List Pattern
       (antiUnify_obligations_match application application' children children' same).symm ▸
         (.byRule ruleInstance application
           (antiUnifyList children (same.2.2 ▸ children')).plans) := by
+  apply eraseOpen_injective
+  rw [erase_contextCast]
   simp only [antiUnify, rootRule?]
-  exact generalization_plan_pos same
-    (fun h =>
-      { obligations := (antiUnifyList children (h.2.2 ▸ children')).obligations
-        plan := .byRule ruleInstance application
-          (antiUnifyList children (h.2.2 ▸ children')).plans
-        left := (antiUnifyList children (h.2.2 ▸ children')).left
-        right := (antiUnifyList children (h.2.2 ▸ children')).right })
-    (fun _ => slot (.byRule (premises := premises) ruleInstance application children)
-      (.byRule (premises := premises') ruleInstance' application' children'))
+  rw [dif_pos same]
 
 theorem antiUnify_obligations_mismatch {goal : Pattern} {premises premises' : List Pattern}
     {ruleInstance ruleInstance' : RuleInstance}
@@ -1451,16 +1451,9 @@ theorem antiUnify_obligations_mismatch {goal : Pattern} {premises premises' : Li
     (antiUnify (.byRule (premises := premises) ruleInstance application children)
         (.byRule (premises := premises') ruleInstance' application' children')).obligations =
       [goal] := by
-  simp only [antiUnify, rootRule?, slot]
-  exact generalization_obligations_neg diff
-    (fun h =>
-      { obligations := (antiUnifyList children (h.2.2 ▸ children')).obligations
-        plan := .byRule ruleInstance application
-          (antiUnifyList children (h.2.2 ▸ children')).plans
-        left := (antiUnifyList children (h.2.2 ▸ children')).left
-        right := (antiUnifyList children (h.2.2 ▸ children')).right })
-    (fun _ => slot (.byRule (premises := premises) ruleInstance application children)
-      (.byRule (premises := premises') ruleInstance' application' children'))
+  simp only [antiUnify, rootRule?]
+  rw [dif_neg diff]
+  rfl
 
 theorem antiUnify_plan_mismatch {goal : Pattern} {premises premises' : List Pattern}
     {ruleInstance ruleInstance' : RuleInstance}
@@ -1474,16 +1467,11 @@ theorem antiUnify_plan_mismatch {goal : Pattern} {premises premises' : List Patt
         (.byRule (premises := premises') ruleInstance' application' children')).plan =
       (antiUnify_obligations_mismatch application application' children children' diff).symm ▸
         (.assumption (⟨0, Nat.zero_lt_succ 0⟩ : Fin [goal].length)) := by
-  simp only [antiUnify, rootRule?, slot]
-  exact generalization_plan_neg diff
-    (fun h =>
-      { obligations := (antiUnifyList children (h.2.2 ▸ children')).obligations
-        plan := .byRule ruleInstance application
-          (antiUnifyList children (h.2.2 ▸ children')).plans
-        left := (antiUnifyList children (h.2.2 ▸ children')).left
-        right := (antiUnifyList children (h.2.2 ▸ children')).right })
-    (fun _ => slot (.byRule (premises := premises) ruleInstance application children)
-      (.byRule (premises := premises') ruleInstance' application' children'))
+  apply eraseOpen_injective
+  rw [erase_contextCast]
+  simp only [antiUnify, rootRule?]
+  rw [dif_neg diff]
+  rfl
 
 theorem least_added_match {goal : Pattern} {premises premises' : List Pattern}
     (seen : List (Slot definition leftContext rightContext))
@@ -1498,14 +1486,7 @@ theorem least_added_match {goal : Pattern} {premises premises' : List Pattern}
         (.byRule (premises := premises') ruleInstance' application' children')).added =
       (leastStepList seen children (same.2.2 ▸ children')).added := by
   simp only [leastStep]
-  exact least_added_pos seen same
-    (fun h =>
-      { added := (leastStepList seen children (h.2.2 ▸ children')).added
-        plan := .byRule ruleInstance application
-          (leastStepList seen children (h.2.2 ▸ children')).plans })
-    (fun _ => share seen
-      (.byRule (premises := premises) ruleInstance application children)
-      (.byRule (premises := premises') ruleInstance' application' children'))
+  rw [dif_pos same]
 
 theorem least_plan_match {goal : Pattern} {premises premises' : List Pattern}
     (seen : List (Slot definition leftContext rightContext))
@@ -1522,15 +1503,10 @@ theorem least_plan_match {goal : Pattern} {premises premises' : List Pattern}
           (least_added_match seen application application' children children' same)).symm ▸
         (.byRule ruleInstance application
           (leastStepList seen children (same.2.2 ▸ children')).plans) := by
+  apply eraseOpen_injective
+  rw [erase_contextCast]
   simp only [leastStep]
-  exact least_plan_pos seen same
-    (fun h =>
-      { added := (leastStepList seen children (h.2.2 ▸ children')).added
-        plan := .byRule ruleInstance application
-          (leastStepList seen children (h.2.2 ▸ children')).plans })
-    (fun _ => share seen
-      (.byRule (premises := premises) ruleInstance application children)
-      (.byRule (premises := premises') ruleInstance' application' children'))
+  rw [dif_pos same]
 
 theorem least_added_mismatch {goal : Pattern} {premises premises' : List Pattern}
     (seen : List (Slot definition leftContext rightContext))
@@ -1546,14 +1522,7 @@ theorem least_added_mismatch {goal : Pattern} {premises premises' : List Pattern
       (share seen (.byRule (premises := premises) ruleInstance application children)
         (.byRule (premises := premises') ruleInstance' application' children')).added := by
   simp only [leastStep]
-  exact least_added_neg seen diff
-    (fun h =>
-      { added := (leastStepList seen children (h.2.2 ▸ children')).added
-        plan := .byRule ruleInstance application
-          (leastStepList seen children (h.2.2 ▸ children')).plans })
-    (fun _ => share seen
-      (.byRule (premises := premises) ruleInstance application children)
-      (.byRule (premises := premises') ruleInstance' application' children'))
+  rw [dif_neg diff]
 
 theorem least_plan_mismatch {goal : Pattern} {premises premises' : List Pattern}
     (seen : List (Slot definition leftContext rightContext))
@@ -1570,15 +1539,10 @@ theorem least_plan_mismatch {goal : Pattern} {premises premises' : List Pattern}
           (least_added_mismatch seen application application' children children' diff)).symm ▸
         (share seen (.byRule (premises := premises) ruleInstance application children)
           (.byRule (premises := premises') ruleInstance' application' children')).plan := by
+  apply eraseOpen_injective
+  rw [erase_contextCast]
   simp only [leastStep]
-  exact least_plan_neg seen diff
-    (fun h =>
-      { added := (leastStepList seen children (h.2.2 ▸ children')).added
-        plan := .byRule ruleInstance application
-          (leastStepList seen children (h.2.2 ▸ children')).plans })
-    (fun _ => share seen
-      (.byRule (premises := premises) ruleInstance application children)
-      (.byRule (premises := premises') ruleInstance' application' children'))
+  rw [dif_neg diff]
 
 theorem identify_added_match {goal : Pattern} {premises premises' : List Pattern}
     (seen : List (Slot definition leftContext rightContext))
@@ -1593,15 +1557,7 @@ theorem identify_added_match {goal : Pattern} {premises premises' : List Pattern
         (.byRule (premises := premises') ruleInstance' application' children')).added =
       (identifyList seen children (same.2.2 ▸ children')).added := by
   simp only [identifyStep]
-  exact found_added_pos seen same
-    (fun h =>
-      let descended := identifyList seen children (h.2.2 ▸ children')
-      { added := descended.added
-        obligations := descended.obligations
-        identified := descended.identified })
-    (fun _ => foundFromShare seen
-      (.byRule (premises := premises) ruleInstance application children)
-      (.byRule (premises := premises') ruleInstance' application' children'))
+  rw [dif_pos same]
 
 theorem identify_obligations_match {goal : Pattern} {premises premises' : List Pattern}
     (seen : List (Slot definition leftContext rightContext))
@@ -1616,15 +1572,7 @@ theorem identify_obligations_match {goal : Pattern} {premises premises' : List P
         (.byRule (premises := premises') ruleInstance' application' children')).obligations =
       (identifyList seen children (same.2.2 ▸ children')).obligations := by
   simp only [identifyStep]
-  exact found_obligations_pos seen same
-    (fun h =>
-      let descended := identifyList seen children (h.2.2 ▸ children')
-      { added := descended.added
-        obligations := descended.obligations
-        identified := descended.identified })
-    (fun _ => foundFromShare seen
-      (.byRule (premises := premises) ruleInstance application children)
-      (.byRule (premises := premises') ruleInstance' application' children'))
+  rw [dif_pos same]
 
 theorem identifyStep_identified_match {goal : Pattern} {premises premises' : List Pattern}
     (seen : List (Slot definition leftContext rightContext))
@@ -1641,16 +1589,10 @@ theorem identifyStep_identified_match {goal : Pattern} {premises premises' : Lis
           (identify_added_match seen application application' children children' same)).symm ▸
         ((identify_obligations_match seen application application' children children' same).symm ▸
           (identifyList seen children (same.2.2 ▸ children')).identified) := by
+  apply eraseOpenList_injective
+  rw [erase_contextListCast, erase_goalsListCast]
   simp only [identifyStep]
-  exact found_identified_pos seen same
-    (fun h =>
-      let descended := identifyList seen children (h.2.2 ▸ children')
-      { added := descended.added
-        obligations := descended.obligations
-        identified := descended.identified })
-    (fun _ => foundFromShare seen
-      (.byRule (premises := premises) ruleInstance application children)
-      (.byRule (premises := premises') ruleInstance' application' children'))
+  rw [dif_pos same]
 
 theorem identify_added_mismatch {goal : Pattern} {premises premises' : List Pattern}
     (seen : List (Slot definition leftContext rightContext))
@@ -1666,15 +1608,7 @@ theorem identify_added_mismatch {goal : Pattern} {premises premises' : List Patt
       (foundFromShare seen (.byRule (premises := premises) ruleInstance application children)
         (.byRule (premises := premises') ruleInstance' application' children')).added := by
   simp only [identifyStep]
-  exact found_added_neg seen diff
-    (fun h =>
-      let descended := identifyList seen children (h.2.2 ▸ children')
-      { added := descended.added
-        obligations := descended.obligations
-        identified := descended.identified })
-    (fun _ => foundFromShare seen
-      (.byRule (premises := premises) ruleInstance application children)
-      (.byRule (premises := premises') ruleInstance' application' children'))
+  rw [dif_neg diff]
 
 theorem identify_obligations_mismatch {goal : Pattern} {premises premises' : List Pattern}
     (seen : List (Slot definition leftContext rightContext))
@@ -1690,15 +1624,7 @@ theorem identify_obligations_mismatch {goal : Pattern} {premises premises' : Lis
       (foundFromShare seen (.byRule (premises := premises) ruleInstance application children)
         (.byRule (premises := premises') ruleInstance' application' children')).obligations := by
   simp only [identifyStep]
-  exact found_obligations_neg seen diff
-    (fun h =>
-      let descended := identifyList seen children (h.2.2 ▸ children')
-      { added := descended.added
-        obligations := descended.obligations
-        identified := descended.identified })
-    (fun _ => foundFromShare seen
-      (.byRule (premises := premises) ruleInstance application children)
-      (.byRule (premises := premises') ruleInstance' application' children'))
+  rw [dif_neg diff]
 
 theorem identifyStep_identified_mismatch {goal : Pattern} {premises premises' : List Pattern}
     (seen : List (Slot definition leftContext rightContext))
@@ -1717,16 +1643,10 @@ theorem identifyStep_identified_mismatch {goal : Pattern} {premises premises' : 
           (foundFromShare seen
             (.byRule (premises := premises) ruleInstance application children)
             (.byRule (premises := premises') ruleInstance' application' children')).identified) := by
+  apply eraseOpenList_injective
+  rw [erase_contextListCast, erase_goalsListCast]
   simp only [identifyStep]
-  exact found_identified_neg seen diff
-    (fun h =>
-      let descended := identifyList seen children (h.2.2 ▸ children')
-      { added := descended.added
-        obligations := descended.obligations
-        identified := descended.identified })
-    (fun _ => foundFromShare seen
-      (.byRule (premises := premises) ruleInstance application children)
-      (.byRule (premises := premises') ruleInstance' application' children'))
+  rw [dif_neg diff]
 
 theorem castIdentified_match {goal : Pattern} {premises premises' : List Pattern}
     (seen : List (Slot definition leftContext rightContext))
@@ -2225,10 +2145,9 @@ end
 
 /-! ## Replaying a generalization
 
-Once the slots of a pair have been allocated, generalizing that same pair
-again allocates nothing.  A citation in the original context weakens to the
-citation of the same numeral.  Identifying the replayed plan with that
-weakened plan, and packaging one entry per obligation, is not proved here.
+Once all slots of a pair have been allocated, generalizing the pair again
+recalls every original citation and rule instance. The readout commutes with
+each prefix-preserving extension of the allocated table.
 -/
 
 theorem leastStep_cast {goal : Pattern}
@@ -2270,155 +2189,255 @@ theorem slot_matches_self {goal : Pattern}
   unfold Slot.matches Slot.matchesErasure
   exact decide_eq_true ⟨rfl, rfl⟩
 
-/-- A second share of the same pair allocates no slot, whether the first share
-reused one or opened one. -/
+@[simp] private theorem erase_transportGoal {context : List Pattern}
+    {source goal : Pattern} (same : source = goal)
+    (proof : OpenDerivation definition context source) :
+    (transportGoal same proof).eraseOpen = proof.eraseOpen := by
+  cases same
+  rw [transportGoal_id]
+
+@[simp] private theorem erase_transportContext {source target : List Pattern}
+    {goal : Pattern} (same : source = target)
+    (proof : OpenDerivation definition source goal) :
+    (transportContext same proof).eraseOpen = proof.eraseOpen := by
+  rw [transportContext_cast]
+  cases same
+  rfl
+
+@[simp] private theorem erase_transportContextList {source target goals : List Pattern}
+    (same : source = target) (proofs : OpenDerivationList definition source goals) :
+    (transportContextList same proofs).eraseOpen = proofs.eraseOpen := by
+  rw [transportContextList_cast]
+  cases same
+  rfl
+
+@[simp] private theorem erase_cite {context : List Pattern} {goal : Pattern}
+    (index : Fin context.length) (same : context.get index = goal) :
+    (cite (definition := definition) index same).eraseOpen = .premise index.val := by
+  simp only [cite, erase_transportGoal, OpenDerivation.eraseOpen]
+
+mutual
+
+@[simp] private theorem erase_weakenAppend {context extra : List Pattern} {goal : Pattern}
+    (proof : OpenDerivation definition context goal) :
+    (weakenAppend (extra := extra) proof).eraseOpen = proof.eraseOpen := by
+  cases proof with
+  | assumption index => simp only [weakenAppend, erase_cite, OpenDerivation.eraseOpen]
+  | byRule rule application children =>
+      simp only [weakenAppend, OpenDerivation.eraseOpen, erase_weakenAppendList children]
+
+@[simp] private theorem erase_weakenAppendList {context extra goals : List Pattern}
+    (proofs : OpenDerivationList definition context goals) :
+    (weakenAppendList (extra := extra) proofs).eraseOpen = proofs.eraseOpen := by
+  cases proofs with
+  | nil => rfl
+  | cons head tail =>
+      simp only [weakenAppendList, OpenDerivationList.eraseOpen, erase_weakenAppend,
+        erase_weakenAppendList tail]
+
+end
+
+/-- A step recalls the same result once its recorded slots are present.
+Later slots may extend the table while leaving the earlier indices valid. -/
+private def AppendStable {α β : Type*} (step : List α → List α × β) : Prop :=
+  ∀ seen later, step ((seen ++ (step seen).1) ++ later) = ([], (step seen).2)
+
+private theorem AppendStable.map {α β γ : Type*} {step : List α → List α × β}
+    (stable : AppendStable step) (transform : β → γ) :
+    AppendStable (fun seen => ((step seen).1, transform (step seen).2)) := by
+  intro seen later
+  dsimp only
+  rw [stable seen later]
+
+private theorem AppendStable.combine {α β γ δ : Type*}
+    {head : List α → List α × β} {tail : List α → List α × γ}
+    (headStable : AppendStable head) (tailStable : AppendStable tail) (combine : β → γ → δ) :
+    AppendStable (fun seen =>
+      let first := head seen
+      let rest := tail (seen ++ first.1)
+      (first.1 ++ rest.1, combine first.2 rest.2)) := by
+  intro seen later
+  dsimp only
+  let first := head seen
+  let rest := tail (seen ++ first.1)
+  let extended := (seen ++ (first.1 ++ rest.1)) ++ later
+  have headReplay : head extended = ([], first.2) := by
+    simpa only [extended, first, List.append_assoc] using headStable seen (rest.1 ++ later)
+  have tailReplay : tail extended = ([], rest.2) := by
+    simpa only [extended, rest, List.append_assoc] using tailStable (seen ++ first.1) later
+  change ((head extended).1 ++ (tail (extended ++ (head extended).1)).1,
+    combine (head extended).2 (tail (extended ++ (head extended).1)).2) =
+      ([], combine first.2 rest.2)
+  simp only [headReplay, List.append_nil, tailReplay]
+
+private theorem share_readout {goal : Pattern}
+    (seen : List (Slot definition leftContext rightContext))
+    (left : OpenDerivation definition leftContext goal)
+    (right : OpenDerivation definition rightContext goal) :
+    let index := seen.findIdx (fun slot => slot.matches left right)
+    ((share seen left right).added, (share seen left right).plan.eraseOpen) =
+      (if index < seen.length then [] else [⟨goal, left, right⟩], .premise index) := by
+  dsimp only
+  unfold share
+  by_cases found : seen.findIdx (fun slot => slot.matches left right) < seen.length
+  · rw [dif_pos found, if_pos found]
+    simp only [reusePlan, citeMatchingSlot, erase_transportContext, erase_cite, obligationIndex]
+  · rw [dif_neg found, if_neg found]
+    have atEnd : seen.findIdx (fun slot => slot.matches left right) = seen.length :=
+      Nat.le_antisymm List.findIdx_le_length (Nat.le_of_not_lt found)
+    simp only [erase_cite, appendedIndex, atEnd]
+
+private theorem shareIndex_stable {α : Type*} (slot : α) (test : α → Bool)
+    (self : test slot = true) :
+    AppendStable (fun seen =>
+      let index := seen.findIdx test
+      (if index < seen.length then [] else [slot], RawOpenProof.premise index)) := by
+  intro seen later
+  dsimp only
+  by_cases found : seen.findIdx test < seen.length
+  · have index : (seen ++ later).findIdx test = seen.findIdx test := by
+      rw [List.findIdx_append, if_pos found]
+    have hit : (seen ++ later).findIdx test < (seen ++ later).length := by
+      rw [index, List.length_append]
+      omega
+    rw [index] at hit
+    simp only [if_pos found, List.append_nil, index, if_pos hit]
+  · have atEnd : seen.findIdx test = seen.length :=
+      Nat.le_antisymm List.findIdx_le_length (Nat.le_of_not_lt found)
+    have atSlot : (seen ++ [slot]).findIdx test = seen.length := by
+      rw [List.findIdx_append, if_neg found, List.findIdx_singleton, self,
+        if_pos rfl, Nat.zero_add]
+    have inside : (seen ++ [slot]).findIdx test < (seen ++ [slot]).length := by
+      simp only [atSlot, List.length_append, List.length_singleton, Nat.lt_succ_self]
+    have index : ((seen ++ [slot]) ++ later).findIdx test = seen.findIdx test := by
+      rw [List.findIdx_append, if_pos inside, atSlot, atEnd]
+    have hit : ((seen ++ [slot]) ++ later).findIdx test < ((seen ++ [slot]) ++ later).length := by
+      rw [index, atEnd, List.length_append, List.length_append, List.length_singleton]
+      omega
+    rw [index] at hit
+    simp only [if_neg found, index, if_pos hit]
+
+private theorem share_stable {goal : Pattern}
+    (left : OpenDerivation definition leftContext goal)
+    (right : OpenDerivation definition rightContext goal) :
+    AppendStable (fun seen => ((share seen left right).added, (share seen left right).plan.eraseOpen)) := by
+  have readout :
+      (fun seen => ((share seen left right).added, (share seen left right).plan.eraseOpen)) =
+        fun seen =>
+          let index := seen.findIdx (fun slot => slot.matches left right)
+          (if index < seen.length then [] else [⟨goal, left, right⟩], RawOpenProof.premise index) :=
+    funext fun seen => share_readout seen left right
+  rw [readout]
+  exact shareIndex_stable (⟨goal, left, right⟩ : Slot definition leftContext rightContext)
+    (fun slot => slot.matches left right) (slot_matches_self left right)
+
+/-- Sharing the same pair twice allocates no extra slot. -/
 theorem share_replay_added {goal : Pattern}
     (seen later : List (Slot definition leftContext rightContext))
     (left : OpenDerivation definition leftContext goal)
     (right : OpenDerivation definition rightContext goal) :
-    (share ((seen ++ (share seen left right).added) ++ later) left right).added = [] := by
-  unfold share
-  let pred := fun slot : Slot definition leftContext rightContext => slot.matches left right
-  cases decision : decide (seen.findIdx pred < seen.length) with
-  | true =>
-      have found := of_decide_eq_true decision
-      rw [dif_pos found]
-      have idx :
-          ((seen ++ []) ++ later).findIdx pred = seen.findIdx pred := by
-        rw [List.append_nil, List.findIdx_append, if_pos found]
-      have lt :
-          ((seen ++ []) ++ later).findIdx pred < ((seen ++ []) ++ later).length := by
-        rw [idx]
-        refine Nat.lt_of_lt_of_le found ?_
-        rw [List.append_nil, List.length_append]
-        omega
-      rw [dif_pos lt]
-  | false =>
-      have miss := of_decide_eq_false decision
-      rw [dif_neg miss]
-      let slot : Slot definition leftContext rightContext := ⟨goal, left, right⟩
-      have atSlot : (seen ++ [slot]).findIdx pred = seen.length := by
-        rw [List.findIdx_append, if_neg miss]
-        have matched : pred slot = true := by
-          dsimp only [pred, slot]
-          exact slot_matches_self left right
-        rw [List.findIdx_singleton, matched, if_pos rfl, Nat.zero_add]
-      have ltSlot :
-          (seen ++ [slot]).findIdx pred < (seen ++ [slot]).length := by
-        rw [atSlot, List.length_append, List.length_singleton]
-        omega
-      have idx : ((seen ++ [slot]) ++ later).findIdx pred = seen.length := by
-        rw [List.findIdx_append, if_pos ltSlot, atSlot]
-      have lt :
-          ((seen ++ [slot]) ++ later).findIdx pred <
-            ((seen ++ [slot]) ++ later).length := by
-        rw [idx, List.length_append]
-        omega
-      rw [dif_pos lt]
+    (share ((seen ++ (share seen left right).added) ++ later) left right).added = [] :=
+  congrArg Prod.fst (share_stable left right seen later)
+
+private def stepReadout {goal : Pattern}
+    (left : OpenDerivation definition leftContext goal)
+    (right : OpenDerivation definition rightContext goal)
+    (seen : List (Slot definition leftContext rightContext)) :
+    List (Slot definition leftContext rightContext) × RawOpenProof :=
+  let step := leastStep seen left right
+  (step.added, step.plan.eraseOpen)
+
+private def listReadout {goals : List Pattern}
+    (left : OpenDerivationList definition leftContext goals)
+    (right : OpenDerivationList definition rightContext goals)
+    (seen : List (Slot definition leftContext rightContext)) :
+    List (Slot definition leftContext rightContext) × List RawOpenProof :=
+  let step := leastStepList seen left right
+  (step.added, step.plans.eraseOpen)
 
 mutual
 
-/-- Generalizing a pair whose own slots are already present allocates nothing. -/
-theorem replay_added {goal : Pattern} :
-    (seen later : List (Slot definition leftContext rightContext)) →
+private theorem stepReadout_stable {goal : Pattern} :
     (left : OpenDerivation definition leftContext goal) →
     (right : OpenDerivation definition rightContext goal) →
-      (leastStep ((seen ++ (leastStep seen left right).added) ++ later) left right).added = []
-  | seen, later, .assumption index, right => by
-      simp only [leastStep]
-      exact share_replay_added seen later (.assumption index) right
-  | seen, later, .byRule _ _ _, .assumption _ => by
-      simp only [leastStep]
-      exact share_replay_added seen later _ _
-  | seen, later,
-      .byRule (premises := premises) ruleInstance application children,
-      .byRule (premises := premises') ruleInstance' application' children' => by
-      cases decision : decide
-          (ruleInstance.ruleId = ruleInstance'.ruleId ∧
-            ruleInstance.arguments = ruleInstance'.arguments ∧ premises = premises') with
-      | false =>
-          simp only [leastStep]
-          rw [dif_neg (of_decide_eq_false decision), dif_neg (of_decide_eq_false decision)]
-          exact share_replay_added seen later
-            (.byRule (premises := premises) ruleInstance application children)
-            (.byRule (premises := premises') ruleInstance' application' children')
-      | true =>
-          have same := of_decide_eq_true decision
-          have innerAdded :
-              (leastStep seen
-                  (.byRule (premises := premises) ruleInstance application children)
-                  (.byRule (premises := premises') ruleInstance' application'
-                    children')).added =
-                (leastStepList seen children (same.2.2 ▸ children')).added := by
-            simp only [leastStep]
-            rw [dif_pos same]
-          rw [innerAdded]
-          have outerAdded :
-              (leastStep
-                  ((seen ++ (leastStepList seen children (same.2.2 ▸ children')).added) ++
-                    later)
-                  (.byRule (premises := premises) ruleInstance application children)
-                  (.byRule (premises := premises') ruleInstance' application'
-                    children')).added =
-                (leastStepList
-                    ((seen ++ (leastStepList seen children (same.2.2 ▸ children')).added) ++
-                      later)
-                    children (same.2.2 ▸ children')).added := by
-            simp only [leastStep]
-            rw [dif_pos same]
-          exact outerAdded.trans
-            (replayList_added seen later children (same.2.2 ▸ children'))
+      AppendStable (stepReadout left right)
+  | .assumption index, right => share_stable (.assumption index) right
+  | .byRule _ _ _, .assumption _ => by
+      intro seen later
+      simp only [stepReadout, leastStep]
+      exact share_stable _ _ seen later
+  | .byRule (premises := premises) rule app children,
+      .byRule (premises := premises') rule' app' children' => by
+      by_cases same : rule.ruleId = rule'.ruleId ∧ rule.arguments = rule'.arguments ∧
+          premises = premises'
+      · have descends :
+            stepReadout (.byRule rule app children) (.byRule rule' app' children') =
+              fun seen =>
+                let step := listReadout children (same.2.2 ▸ children') seen
+                (step.1, .node rule step.2) := by
+          funext seen
+          simp only [stepReadout, listReadout, leastStep]
+          rw [dif_pos same]
+          rfl
+        rw [descends]
+        exact (listReadout_stable children (same.2.2 ▸ children')).map (RawOpenProof.node rule)
+      · have shares :
+            stepReadout (.byRule rule app children) (.byRule rule' app' children') =
+              fun seen =>
+                let step := share seen (.byRule rule app children) (.byRule rule' app' children')
+                (step.added, step.plan.eraseOpen) := by
+          funext seen
+          simp only [stepReadout, leastStep]
+          rw [dif_neg same]
+        rw [shares]
+        exact share_stable (.byRule rule app children) (.byRule rule' app' children')
 
-/-- The same replay for an ordered vector of premises. -/
-theorem replayList_added {goals : List Pattern} :
-    (seen later : List (Slot definition leftContext rightContext)) →
+private theorem listReadout_stable {goals : List Pattern} :
     (left : OpenDerivationList definition leftContext goals) →
     (right : OpenDerivationList definition rightContext goals) →
-      (leastStepList
-          ((seen ++ (leastStepList seen left right).added) ++ later) left right).added = []
-  | _, _, .nil, .nil => by
-      simp only [leastStepList]
-  | seen, later, .cons head tail, .cons head' tail' => by
-      have innerAdded :
-          (leastStepList seen (.cons head tail) (.cons head' tail')).added =
-            (leastStep seen head head').added ++
-              (leastStepList (seen ++ (leastStep seen head head').added) tail tail').added := by
+      AppendStable (listReadout left right)
+  | .nil, .nil => fun _ _ => rfl
+  | .cons head tail, .cons head' tail' => by
+      have combines : listReadout (.cons head tail) (.cons head' tail') =
+          fun seen =>
+            let first := stepReadout head head' seen
+            let rest := listReadout tail tail' (seen ++ first.1)
+            (first.1 ++ rest.1, first.2 :: rest.2) := by
+        funext seen
+        simp only [listReadout, stepReadout]
         rw [leastStepList_cons]
-      rw [innerAdded]
-      let headStep := leastStep seen head head'
-      let tailStep := leastStepList (seen ++ headStep.added) tail tail'
-      let big := (seen ++ (headStep.added ++ tailStep.added)) ++ later
-      have headNil : (leastStep big head head').added = [] := by
-        have assoc :
-            (seen ++ headStep.added) ++ (tailStep.added ++ later) = big := by
-          dsimp only [big]
-          simp only [List.append_assoc]
-        have ih := replay_added seen (tailStep.added ++ later) head head'
-        have castEq := leastStep_cast assoc head head'
-        rw [← castEq, leastAdded_cast assoc
-          (leastStep ((seen ++ headStep.added) ++ (tailStep.added ++ later)) head head')]
-        exact ih
-      have tailNil :
-          (leastStepList (big ++ (leastStep big head head').added) tail tail').added = [] := by
-        rw [headNil]
-        have seenEq :
-            ((seen ++ headStep.added) ++ tailStep.added) ++ later = big ++ [] := by
-          dsimp only [big]
-          simp only [List.append_assoc, List.append_nil]
-        have ih := replayList_added (seen ++ headStep.added) later tail tail'
-        have castEq := leastStepList_cast seenEq tail tail'
-        rw [← castEq, leastListAdded_cast seenEq
-          (leastStepList (((seen ++ headStep.added) ++ tailStep.added) ++ later) tail tail')]
-        exact ih
-      have outerAdded :
-          (leastStepList big (.cons head tail) (.cons head' tail')).added =
-            (leastStep big head head').added ++
-              (leastStepList (big ++ (leastStep big head head').added) tail tail').added := by
-        rw [leastStepList_cons]
-      rw [outerAdded, tailNil, headNil]
-      rfl
+        simp only [OpenDerivationList.eraseOpen, erase_transportContext,
+          erase_transportContextList, weakenSlots, erase_weakenAppend]
+      rw [combines]
+      exact AppendStable.combine (stepReadout_stable head head')
+        (listReadout_stable tail tail') List.cons
 
 end
+
+/-- Generalizing a pair whose own slots are already present allocates nothing. -/
+theorem replay_added {goal : Pattern}
+    (seen later : List (Slot definition leftContext rightContext))
+    (left : OpenDerivation definition leftContext goal)
+    (right : OpenDerivation definition rightContext goal) :
+    (leastStep ((seen ++ (leastStep seen left right).added) ++ later) left right).added = [] :=
+  congrArg Prod.fst (stepReadout_stable left right seen later)
+
+/-- The same replay for an ordered vector of premises. -/
+theorem replayList_added {goals : List Pattern}
+    (seen later : List (Slot definition leftContext rightContext))
+    (left : OpenDerivationList definition leftContext goals)
+    (right : OpenDerivationList definition rightContext goals) :
+    (leastStepList ((seen ++ (leastStepList seen left right).added) ++ later) left right).added = [] :=
+  congrArg Prod.fst (listReadout_stable left right seen later)
+
+/-- Replay preserves rule instances, child order and the exact numeral of every cited slot. -/
+theorem replay_eraseOpen {goal : Pattern}
+    (seen later : List (Slot definition leftContext rightContext))
+    (left : OpenDerivation definition leftContext goal)
+    (right : OpenDerivation definition rightContext goal) :
+    (leastStep ((seen ++ (leastStep seen left right).added) ++ later) left right).plan.eraseOpen =
+      (leastStep seen left right).plan.eraseOpen :=
+  congrArg Prod.snd (stepReadout_stable left right seen later)
 
 theorem weakenAppend_transportGoal {context extra : List Pattern} {source goal : Pattern}
     (backup : source = goal) (derivation : OpenDerivation definition context source) :
@@ -2440,6 +2459,157 @@ theorem weakenAppend_cite {context extra : List Pattern} {goal : Pattern}
   unfold weakenAppend cite
   rw [← transportGoal_trans
     (OpenDerivationList.get_left (secondGoals := extra) index) backup]
+
+/-! ## Specializing every used obligation -/
+
+private def obligationStep {context : List Pattern}
+    (seen : List (Slot definition leftContext rightContext))
+    (left : OpenDerivationList definition leftContext context)
+    (right : OpenDerivationList definition rightContext context) (index : Fin context.length) :
+    LeastStep seen (context.get index) :=
+  leastStep seen (left.get index) (right.get index)
+
+private def obligationReadouts {context : List Pattern}
+    (seen : List (Slot definition leftContext rightContext))
+    (left : OpenDerivationList definition leftContext context)
+    (right : OpenDerivationList definition rightContext context) : List RawOpenProof :=
+  List.ofFn fun index => (obligationStep seen left right index).plan.eraseOpen
+
+private theorem obligationReadouts_getD {context : List Pattern}
+    (seen : List (Slot definition leftContext rightContext))
+    (left : OpenDerivationList definition leftContext context)
+    (right : OpenDerivationList definition rightContext context)
+    (index : Fin context.length) (fallback : RawOpenProof) :
+    (obligationReadouts seen left right).getD index.val fallback =
+      (obligationStep seen left right index).plan.eraseOpen := by
+  have inside : index.val < (obligationReadouts seen left right).length := by
+    simpa only [obligationReadouts, List.length_ofFn] using index.isLt
+  rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem inside]
+  simp only [obligationReadouts, List.getElem_ofFn, Option.getD_some]
+
+mutual
+
+private theorem skeletonFixed {context : List Pattern}
+    (seen : List (Slot definition leftContext rightContext))
+    (left : OpenDerivationList definition leftContext context)
+    (right : OpenDerivationList definition rightContext context) :
+    ∀ {goal : Pattern} (plan : OpenDerivation definition context goal),
+      (skeletonStep seen plan left right).added = [] →
+      (∀ index ∈ holeOccurrences plan, (obligationStep seen left right index).added = []) ∧
+      (skeletonStep seen plan left right).plan.eraseOpen =
+        RawOpenProof.substitute (obligationReadouts seen left right) plan.eraseOpen
+  | _, .assumption index, done => by
+      refine ⟨?_, ?_⟩
+      · intro i occurs
+        simp only [holeOccurrences, List.mem_singleton] at occurs
+        subst i
+        exact done
+      · simp only [skeletonStep, OpenDerivation.eraseOpen, RawOpenProof.substitute_premise,
+          obligationReadouts_getD, obligationStep]
+  | _, .byRule rule application children, done => by
+      obtain ⟨ready, erased⟩ := skeletonListFixed seen left right children done
+      refine ⟨ready, ?_⟩
+      simp only [skeletonStep, OpenDerivation.eraseOpen, RawOpenProof.substitute_node, erased]
+
+private theorem skeletonListFixed {context : List Pattern}
+    (seen : List (Slot definition leftContext rightContext))
+    (left : OpenDerivationList definition leftContext context)
+    (right : OpenDerivationList definition rightContext context) :
+    ∀ {goals : List Pattern} (plans : OpenDerivationList definition context goals),
+      (skeletonStepList seen plans left right).added = [] →
+      (∀ index ∈ holeOccurrencesList plans, (obligationStep seen left right index).added = []) ∧
+      (skeletonStepList seen plans left right).plans.eraseOpen =
+        RawOpenProof.substituteList (obligationReadouts seen left right) plans.eraseOpen
+  | _, .nil, _ => by
+      simp only [holeOccurrencesList, List.not_mem_nil, false_implies, implies_true, true_and]
+      rfl
+  | _, .cons head tail, done => by
+      rw [skeletonStepList_cons] at done
+      obtain ⟨headDone, tailDone⟩ := List.append_eq_nil_iff.mp done
+      have tailSeen : seen ++ (skeletonStep seen head left right).added = seen := by
+        rw [headDone, List.append_nil]
+      rw [tailSeen] at tailDone
+      obtain ⟨headReady, headErased⟩ := skeletonFixed seen left right head headDone
+      obtain ⟨tailReady, tailErased⟩ := skeletonListFixed seen left right tail tailDone
+      refine ⟨?_, ?_⟩
+      · intro i occurs
+        simp only [holeOccurrencesList, List.mem_append] at occurs
+        exact occurs.elim (headReady i) (tailReady i)
+      · rw [skeletonStepList_cons]
+        simp only [OpenDerivationList.eraseOpen, erase_transportContext,
+          erase_transportContextList, weakenSlots, erase_weakenAppend, RawOpenProof.substituteList_cons]
+        exact congrArg₂ List.cons headErased
+          ((congrArg (fun table =>
+            (skeletonStepList table tail left right).plans.eraseOpen) tailSeen).trans tailErased)
+
+end
+
+private theorem eraseOpen_ofFn {context : List Pattern} :
+    (goals : List Pattern) →
+    (entries : (index : Fin goals.length) →
+      OpenDerivation definition context (goals.get index)) →
+    (OpenDerivationList.ofFn goals entries).eraseOpen =
+      List.ofFn (fun index => (entries index).eraseOpen)
+  | [], _ => rfl
+  | premise :: premises, entries => by
+      rw [List.ofFn_succ]
+      have tailErased := eraseOpen_ofFn premises (fun index => entries index.succ)
+      exact congrArg (List.cons (entries 0).eraseOpen) tailErased
+
+/-- The least general plan is a unique specialization of every plan that
+uses all of its obligations and yields the two input proofs. The substitution
+keeps the input plan's binding context and the exact order of its obligations. -/
+theorem leastGeneral_specializes_used {context : List Pattern} {goal : Pattern}
+    (plan : OpenDerivation definition context goal) (used : UsesAll plan)
+    (left : OpenDerivationList definition leftContext context)
+    (right : OpenDerivationList definition rightContext context) :
+    let generalized := leastGeneral (plan.bind left) (plan.bind right)
+    ∃! environment : OpenDerivationList definition generalized.obligations context,
+      plan.bind environment = generalized.plan ∧
+        environment.bind generalized.left = left ∧ environment.bind generalized.right = right := by
+  let leftProof := plan.bind left
+  let rightProof := plan.bind right
+  let slots := (leastStep [] leftProof rightProof).added
+  have replay : stepReadout leftProof rightProof slots =
+      ([], (leastGeneral leftProof rightProof).plan.eraseOpen) := by
+    have law := stepReadout_stable leftProof rightProof [] []
+    change stepReadout leftProof rightProof (([] ++ slots) ++ []) =
+      ([], (leastGeneral leftProof rightProof).plan.eraseOpen) at law
+    simpa only [List.nil_append, List.append_nil] using law
+  have ready : (leastStep slots leftProof rightProof).added = [] :=
+    congrArg Prod.fst replay
+  have recalled : (leastStep slots leftProof rightProof).plan.eraseOpen =
+      (leastGeneral leftProof rightProof).plan.eraseOpen :=
+    congrArg Prod.snd replay
+  have fixed : (skeletonStep slots plan left right).added = [] := by
+    rw [skeletonStep_spec]
+    exact ready
+  obtain ⟨available, erased⟩ := skeletonFixed slots left right plan fixed
+  let entry (index : Fin context.length) :
+      OpenDerivation definition (obligationsOf slots) (context.get index) :=
+    transportContext (by rw [available index (used index), List.append_nil])
+      (obligationStep slots left right index).plan
+  let environment : OpenDerivationList definition
+      (leastGeneral leftProof rightProof).obligations context :=
+    OpenDerivationList.ofFn context entry
+  have observed : environment.eraseOpen = obligationReadouts slots left right := by
+    change (OpenDerivationList.ofFn context entry).eraseOpen = obligationReadouts slots left right
+    rw [eraseOpen_ofFn]
+    simp only [entry, obligationReadouts, erase_transportContext]
+  have specialization :
+      plan.bind environment = (leastGeneral leftProof rightProof).plan := by
+    apply eraseOpen_injective
+    rw [OpenDerivation.eraseOpen_bind, observed, ← erased, skeletonStep_spec]
+    exact recalled
+  refine ⟨environment, ⟨specialization, ?_, ?_⟩, ?_⟩
+  · apply used.bind_injective
+    change plan.bind (environment.bind (leastGeneral leftProof rightProof).left) = leftProof
+    rw [← OpenDerivation.bind_assoc, specialization, leastGeneral_left]
+  · apply used.bind_injective
+    change plan.bind (environment.bind (leastGeneral leftProof rightProof).right) = rightProof
+    rw [← OpenDerivation.bind_assoc, specialization, leastGeneral_right]
+  · intro other same
+    exact used.bind_injective (same.1.trans specialization.symm)
 
 /-! ## Controls -/
 
@@ -2463,6 +2633,47 @@ theorem shared_slot :
       (leastGeneral pairSameLeft pairSameRight).plan.ruleCount = 1 ∧
       (holeOccurrences (leastGeneral pairSameLeft pairSameRight).plan).map Fin.val = [0, 0] := by
   decide
+
+private def splitPair : OpenDerivation kernelDefinition [A, A] D :=
+  .byRule _ (kernelApp (rule := rulePair) (by simp [kernelRules]))
+    (.cons (.assumption ⟨0, by decide⟩) (.cons (.assumption ⟨1, by decide⟩) .nil))
+
+private def both (proof : Derivation kernelDefinition A) :
+    OpenDerivationList kernelDefinition [] [A, A] :=
+  .cons (.ofClosed proof) (.cons (.ofClosed proof) .nil)
+
+example :
+    let generalized := leastGeneral (splitPair.bind (both dA₁)) (splitPair.bind (both dA₂))
+    ∃ environment : OpenDerivationList kernelDefinition generalized.obligations [A, A],
+      environment.eraseOpen = [.premise 0, .premise 0] ∧
+        environment.bind generalized.left = both dA₁ ∧
+        environment.bind generalized.right = both dA₂ := by
+  let generalized := leastGeneral (splitPair.bind (both dA₁)) (splitPair.bind (both dA₂))
+  have used : UsesAll splitPair := by
+    intro i
+    fin_cases i <;> decide
+  obtain ⟨environment, agreement, _⟩ :=
+    leastGeneral_specializes_used splitPair used (both dA₁) (both dA₂)
+  let children : RawOpenProof → List RawOpenProof
+    | .premise _ => []
+    | .node _ premises => premises
+  have expected : children generalized.plan.eraseOpen = [.premise 0, .premise 0] := by
+    decide +kernel
+  have observed := congrArg (fun plan => children plan.eraseOpen) agreement.1
+  change children (splitPair.bind environment).eraseOpen = children generalized.plan.eraseOpen at observed
+  rw [expected] at observed
+  refine ⟨environment, ?_, agreement.2.1, agreement.2.2⟩
+  cases environment with
+  | cons first rest =>
+      cases rest with
+      | cons second rest => cases rest; exact observed
+
+example :
+    let first : Slot kernelDefinition [] [] := ⟨A, .ofClosed dA₁, .ofClosed dA₂⟩
+    let second : Slot kernelDefinition [] [] := ⟨A, .ofClosed dA₂, .ofClosed dA₁⟩
+    (share [first, second] first.left first.right).plan.eraseOpen = .premise 0 ∧
+      (share [second, first] first.left first.right).plan.eraseOpen = .premise 1 := by
+  decide +kernel
 
 /-- **Negative.**  `pair(a,b)` and `pair(b,a)` are two distinct erasure pairs,
 so least general generalization still opens two slots. -/

@@ -1,3 +1,5 @@
+import Mettapedia.GSLT.LanguageDef.BaseSortDeclarations
+import Mettapedia.GSLT.LanguageDef.StructuralInclusion
 import Mettapedia.GSLT.LanguageDef.TptpFofSkolemLanguageDef
 import Mettapedia.GSLT.LanguageDef.CanonicalWire
 import Mettapedia.GSLT.LanguageDef.RewriteValidationCertificate
@@ -33,7 +35,7 @@ def v (name : String) : Pattern := .fvar name
 
 def typed (entries : List (String × String)) :
     List (String × TypeExpr) :=
-  entries.map fun entry => (entry.1, .base entry.2)
+  BaseSortDeclarations.context entries
 
 def ctor (label category : String) (parameters : List (String × String)) :
     GrammarRule := {
@@ -46,13 +48,8 @@ def ctor (label category : String) (parameters : List (String × String)) :
 }
 
 def mkRule (name : String) (context : List (String × String))
-    (premises : List Premise) (left right : Pattern) : RewriteRule := {
-  name
-  typeContext := typed context
-  premises
-  left
-  right
-}
+    (premises : List Premise) (left right : Pattern) : RewriteRule :=
+  BaseSortDeclarations.rule name (typed context) premises left right
 
 def congruence (source target : Pattern) : Premise :=
   .congruence source target
@@ -594,20 +591,16 @@ theorem transition_certificate (rewrite : RewriteRule)
 def validated : ValidatedLanguageDef := ⟨language, language_validate⟩
 
 def targetInclusion :
-    StructuralMorphism TptpFofSkolemLanguageDef.validated validated where
-  symbols := LanguageDefSymbolMap.id
-  mapsTypes declaration membership := by
-    rw [mapTypeDecl_id]
-    exact List.mem_append_left _ membership
-  mapsTerms declaration membership := by
-    rw [mapGrammarRule_id]
-    exact List.mem_append_left _ membership
-  mapsEquations declaration membership := by
-    change declaration ∈ TptpFofSkolemLanguageDef.language.equations at membership
-    simp [TptpFofSkolemLanguageDef.no_equations] at membership
-  mapsRewrites declaration membership := by
-    change declaration ∈ TptpFofSkolemLanguageDef.language.rewrites at membership
-    simp [TptpFofSkolemLanguageDef.no_rewrites] at membership
+    StructuralMorphism TptpFofSkolemLanguageDef.validated validated :=
+  StructuralMorphism.ofDeclarationInclusion {
+    types := fun _ member => List.mem_append_left _ member
+    terms := fun _ member => List.mem_append_left _ member
+    equations := by
+      change TptpFofSkolemLanguageDef.language.equations ⊆ _
+      exact TptpFofSkolemLanguageDef.no_equations ▸ List.nil_subset _
+    rewrites := by
+      change TptpFofSkolemLanguageDef.language.rewrites ⊆ _
+      exact TptpFofSkolemLanguageDef.no_rewrites ▸ List.nil_subset _ }
 
 @[simp] theorem language_rewrites : language.rewrites = rewrites := rfl
 

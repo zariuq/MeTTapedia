@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentCumulativeClosureBinder
 
 /-!
@@ -248,7 +249,7 @@ theorem expandOne_annotations (fuel : Nat) {Θ : Context S.R} (equation : Equati
     · exact annotations
 
 variable (root : ExecutableReduction.RootEvaluator S.R)
-  (rootComplete : ∀ {n : Nat} (term : Tm Head n), root term = none → ∀ target, ¬ S.R.computation.step term target)
+  (rootComplete : SolverPremises.CompleteRootEvaluation (rules := S.R) root)
 
 include rigid in
 /-- **R112's η for Σ on the prepared store keeps the permuted class** on a strongly normalizing package. -/

@@ -1,3 +1,5 @@
+import Mettapedia.Languages.MeTTa.PeTTa.BridgeTransport
+import Mettapedia.Languages.MeTTa.PeTTa.AppendAgreement
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.GeneralProgramDriverExecution
 import Mettapedia.Coalgebra.CoherentPrefixTower
 import Mettapedia.Machines.ExecutionHistoryReadout
@@ -740,33 +742,11 @@ private def resumptionHeads : List String :=
 def driverHeads (head : String) : Bool := !resumptionHeads.contains head
 
 theorem driver_closed : ProgramClosed driverHeads GeneralProgramDriverExecution.runtime := by
-  constructor
-  · decide +kernel
-  · intro equation member supported
-    have checked : GeneralProgramDriverExecution.runtime.equations.all (fun equation =>
-        !driverHeads equation.head || codeWithin driverHeads equation.body) = true := by decide +kernel
-    have row := List.all_eq_true.mp checked equation member
-    simpa only [supported, Bool.not_true, Bool.false_or] using row
+  exact BridgeKit.closed_of_all _ _ (by decide +kernel) (by decide +kernel)
 
 theorem driver_agreement :
     ProgramAgreementOn driverHeads GeneralProgramDriverExecution.runtime runtime := by
-  apply appended_program_agreement
-  · intro equation member
-    have checked : source.program.equations.all (fun equation => !driverHeads equation.head) = true := by
-      decide +kernel
-    have row := List.all_eq_true.mp checked equation member
-    cases supported : driverHeads equation.head with
-    | false => rfl
-    | true => simp [supported] at row
-  · intro name types member
-    have checked : source.program.declarations.all (fun declaration => match declaration with
-        | .expression [.symbol ":", .symbol head, .expression (.symbol "->" :: _)] => !driverHeads head
-        | _ => true) = true := by decide +kernel
-    have row := List.all_eq_true.mp checked
-      (.expression [.symbol ":", .symbol name, .expression (.symbol "->" :: types)]) member
-    cases supported : driverHeads name with
-    | false => rfl
-    | true => simp [supported] at row
+  exact appended_program_agreement_of_all _ _ _ (by decide +kernel) (by decide +kernel)
 
 /-- Driver code runs unchanged beside the resumption. -/
 theorem driver_returns {caller : Subst} {before after : State} {code answer : Atom}

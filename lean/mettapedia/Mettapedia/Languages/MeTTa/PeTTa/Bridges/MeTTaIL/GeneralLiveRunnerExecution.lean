@@ -1,3 +1,5 @@
+import Mettapedia.Languages.MeTTa.PeTTa.BridgeTransport
+import Mettapedia.Languages.MeTTa.PeTTa.AppendAgreement
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.GeneralProgramResumptionExecution
 import Mettapedia.OSLF.MeTTaIL.GeneralOccurrenceLocalCompletion
 import Mettapedia.Machines.ResumableSearchRunner
@@ -666,34 +668,11 @@ private def localHeads : List String :=
 private def resumptionHeads (head : String) : Bool := !localHeads.contains head
 
 private theorem resumption_closed : ProgramClosed resumptionHeads GeneralProgramResumptionExecution.runtime := by
-  constructor
-  · decide +kernel
-  · intro equation member supported
-    have checked : GeneralProgramResumptionExecution.runtime.equations.all (fun equation =>
-        !resumptionHeads equation.head || codeWithin resumptionHeads equation.body) = true := by decide +kernel
-    have row := List.all_eq_true.mp checked equation member
-    simpa only [supported, Bool.not_true, Bool.false_or] using row
+  exact BridgeKit.closed_of_all _ _ (by decide +kernel) (by decide +kernel)
 
 private theorem resumption_agreement :
     ProgramAgreementOn resumptionHeads GeneralProgramResumptionExecution.runtime runtime := by
-  apply appended_program_agreement
-  · intro equation member
-    have checked : source.program.equations.all (fun equation => !resumptionHeads equation.head) = true := by
-      decide +kernel
-    have row := List.all_eq_true.mp checked equation member
-    cases supported : resumptionHeads equation.head with
-    | false => rfl
-    | true => simp [supported] at row
-  · intro name types member
-    have checked : source.program.declarations.all (fun declaration =>
-        match declaration with
-        | .expression [.symbol ":", .symbol head, .expression (.symbol "->" :: _)] => !resumptionHeads head
-        | _ => true) = true := by decide +kernel
-    have row := List.all_eq_true.mp checked
-      (.expression [.symbol ":", .symbol name, .expression (.symbol "->" :: types)]) member
-    cases supported : resumptionHeads name with
-    | false => rfl
-    | true => simp [supported] at row
+  exact appended_program_agreement_of_all _ _ _ (by decide +kernel) (by decide +kernel)
 
 /-- The driver and the resumption run unchanged beneath the runner. -/
 private theorem resumption_returns {caller : Subst} {before after : State} {code answer : Atom}

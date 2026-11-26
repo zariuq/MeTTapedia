@@ -1,6 +1,8 @@
 import Mettapedia.TypeTheory.Calculi.NativeDependent.RefinementSoundnessLogic
 import Mettapedia.TypeTheory.Calculi.NativeDependent.RefinementRenamingEvaluation
 import Mettapedia.GSLT.Topos.PresheafPredicateAssumptionLogic
+import Mettapedia.TypeTheory.Calculi.NativeDependent.RefinementNativeAbstractComparison
+import Mettapedia.TypeTheory.Calculi.NativeDependent.RefinementAbstractSoundnessAssumptions
 
 /-!
 # Generated entailment in actual satisfying contexts
@@ -76,23 +78,20 @@ theorem hypothesis_read : {n : Nat} → {context : ContextExpr S n} → {predica
 theorem hypothesis_sound (context : ContextExpr S n) (predicate : PropExpr S n)
     (member : Hypothesis context predicate)
     (contextInterpreted : Interprets model (.context context)) :
-    Interprets model (.entails context predicate) := by
-  rcases contextInterpreted with ⟨Γ, contextRead⟩
-  exact ⟨Γ, contextRead, model.hypothesis_read stable member Γ contextRead⟩
+    Interprets model (.entails context predicate) :=
+  model.interprets_of_abstract
+    (Abstract.ModelData.hypothesis_sound model.toAbstract (model.stable_toAbstract stable) context
+      predicate member contextInterpreted.toAbstract)
 
 theorem implicationIntroduction_sound (context : ContextExpr S n) (first second : PropExpr S n)
     (firstInterpreted : Interprets model (.predicate context first))
     (secondInterpreted : Interprets model (.predicate context second))
     (branchInterpreted : Interprets model (.entails (.assume context first) second)) :
-    Interprets model (.entails context (.implies first second)) := by
-  rcases firstInterpreted with ⟨Γ, φ, contextRead, firstRead⟩
-  rcases secondInterpreted.predicateAt Γ contextRead with ⟨ψ, secondRead⟩
-  have assumedRead := model.evaluateContext_assume context first Γ φ contextRead firstRead
-  have branch : ψ.preimage φ.ι = ⊤ := Option.some.inj
-    ((model.predicateAssumptionRead stable Γ φ second ψ secondRead).symm.trans
-      (branchInterpreted.entailsAt (Γ.assume φ) assumedRead))
-  exact ⟨Γ, contextRead, (model.evaluate_implies Γ first second φ ψ firstRead secondRead).trans
-    (congrArg some (implication_top φ ψ branch))⟩
+    Interprets model (.entails context (.implies first second)) :=
+  model.interprets_of_abstract
+    (Abstract.ModelData.implicationIntroduction_sound model.toAbstract (model.stable_toAbstract stable)
+      context first second firstInterpreted.toAbstract secondInterpreted.toAbstract
+      branchInterpreted.toAbstract)
 
 theorem disjunctionElimination_sound (context : ContextExpr S n)
     (first second consequent : PropExpr S n)
@@ -102,42 +101,23 @@ theorem disjunctionElimination_sound (context : ContextExpr S n)
     (coveredInterpreted : Interprets model (.entails context (.or first second)))
     (firstBranch : Interprets model (.entails (.assume context first) consequent))
     (secondBranch : Interprets model (.entails (.assume context second) consequent)) :
-    Interprets model (.entails context consequent) := by
-  rcases firstInterpreted with ⟨Γ, φ, contextRead, firstRead⟩
-  rcases secondInterpreted.predicateAt Γ contextRead with ⟨ψ, secondRead⟩
-  rcases consequentInterpreted.predicateAt Γ contextRead with ⟨χ, consequentRead⟩
-  have covered : φ ⊔ ψ = ⊤ := Option.some.inj
-    ((model.evaluate_or Γ first second φ ψ firstRead secondRead).symm.trans
-      (coveredInterpreted.entailsAt Γ contextRead))
-  have firstHeld : χ.preimage φ.ι = ⊤ := Option.some.inj
-    ((model.predicateAssumptionRead stable Γ φ consequent χ consequentRead).symm.trans
-      (firstBranch.entailsAt (Γ.assume φ)
-        (model.evaluateContext_assume context first Γ φ contextRead firstRead)))
-  have secondHeld : χ.preimage ψ.ι = ⊤ := Option.some.inj
-    ((model.predicateAssumptionRead stable Γ ψ consequent χ consequentRead).symm.trans
-      (secondBranch.entailsAt (Γ.assume ψ)
-        (model.evaluateContext_assume context second Γ ψ contextRead secondRead)))
-  exact ⟨Γ, contextRead, consequentRead.trans
-    (congrArg some (disjunction_elimination φ ψ χ covered firstHeld secondHeld))⟩
+    Interprets model (.entails context consequent) :=
+  model.interprets_of_abstract
+    (Abstract.ModelData.disjunctionElimination_sound model.toAbstract (model.stable_toAbstract stable)
+      context first second consequent firstInterpreted.toAbstract secondInterpreted.toAbstract
+      consequentInterpreted.toAbstract coveredInterpreted.toAbstract firstBranch.toAbstract
+      secondBranch.toAbstract)
 
 theorem predicateExtensionality_sound (context : ContextExpr S n) (first second : PropExpr S n)
     (firstInterpreted : Interprets model (.predicate context first))
     (secondInterpreted : Interprets model (.predicate context second))
     (firstBranch : Interprets model (.entails (.assume context first) second))
     (secondBranch : Interprets model (.entails (.assume context second) first)) :
-    Interprets model (.predicateEq context first second) := by
-  rcases firstInterpreted with ⟨Γ, φ, contextRead, firstRead⟩
-  rcases secondInterpreted.predicateAt Γ contextRead with ⟨ψ, secondRead⟩
-  have firstHeld : ψ.preimage φ.ι = ⊤ := Option.some.inj
-    ((model.predicateAssumptionRead stable Γ φ second ψ secondRead).symm.trans
-      (firstBranch.entailsAt (Γ.assume φ)
-        (model.evaluateContext_assume context first Γ φ contextRead firstRead)))
-  have secondHeld : φ.preimage ψ.ι = ⊤ := Option.some.inj
-    ((model.predicateAssumptionRead stable Γ ψ first φ firstRead).symm.trans
-      (secondBranch.entailsAt (Γ.assume ψ)
-        (model.evaluateContext_assume context second Γ ψ contextRead secondRead)))
-  exact ⟨Γ, φ, contextRead, firstRead,
-    secondRead.trans (congrArg some (predicate_equal φ ψ firstHeld secondHeld).symm)⟩
+    Interprets model (.predicateEq context first second) :=
+  model.interprets_of_abstract
+    (Abstract.ModelData.predicateExtensionality_sound model.toAbstract (model.stable_toAbstract stable)
+      context first second firstInterpreted.toAbstract secondInterpreted.toAbstract firstBranch.toAbstract
+      secondBranch.toAbstract)
 
 theorem existentialElimination_sound (context : ContextExpr S n) (domain : TypeExpr S n)
     (predicate : PropExpr S (n + 1)) (consequent : PropExpr S n)
@@ -147,41 +127,22 @@ theorem existentialElimination_sound (context : ContextExpr S n) (domain : TypeE
     (coveredInterpreted : Interprets model (.entails context (.exists domain predicate)))
     (branchInterpreted : Interprets model
       (.entails (.assume (.snoc context domain) predicate) (consequent.rename Fin.succ))) :
-    Interprets model (.entails context consequent) := by
-  rcases domainInterpreted with ⟨Γ, A, contextRead, domainRead⟩
-  have extendedRead := model.evaluateContext_snoc context domain Γ A contextRead domainRead
-  rcases predicateInterpreted.predicateAt (Γ.snoc A) extendedRead with ⟨φ, predicateRead⟩
-  rcases consequentInterpreted.predicateAt Γ contextRead with ⟨ψ, consequentRead⟩
-  have covered : φ.image ((NativeModel C).toCwf.wk A) = ⊤ := Option.some.inj
-    ((model.evaluate_exists Γ domain predicate A φ domainRead predicateRead).symm.trans
-      (coveredInterpreted.entailsAt Γ contextRead))
-  have variableRead := model.predicateVariableRead stable Γ A consequent ψ consequentRead
-  have assumedRead := model.evaluateContext_assume (.snoc context domain) predicate
-    (Γ.snoc A) φ extendedRead predicateRead
-  have restricted : (ψ.preimage ((NativeModel C).toCwf.wk A)).preimage φ.ι = ⊤ := Option.some.inj
-    ((model.predicateAssumptionRead stable (Γ.snoc A) φ (consequent.rename Fin.succ) _
-      variableRead).symm.trans (branchInterpreted.entailsAt ((Γ.snoc A).assume φ) assumedRead))
-  exact ⟨Γ, contextRead, consequentRead.trans
-    (congrArg some (existential_elimination _ φ ψ covered restricted))⟩
+    Interprets model (.entails context consequent) :=
+  model.interprets_of_abstract
+    (Abstract.ModelData.existentialElimination_sound model.toAbstract (model.stable_toAbstract stable)
+      context domain predicate consequent domainInterpreted.toAbstract predicateInterpreted.toAbstract
+      consequentInterpreted.toAbstract coveredInterpreted.toAbstract branchInterpreted.toAbstract)
 
 theorem imageElimination_sound (context : ContextExpr S n) (type : TypeExpr S n)
     (predicate : PropExpr S n) (typeInterpreted : Interprets model (.type context type))
     (predicateInterpreted : Interprets model (.predicate context predicate))
     (coveredInterpreted : Interprets model (.entails context (.image type)))
     (branchInterpreted : Interprets model (.entails (.snoc context type) (predicate.rename Fin.succ))) :
-    Interprets model (.entails context predicate) := by
-  rcases typeInterpreted with ⟨Γ, A, contextRead, typeRead⟩
-  rcases predicateInterpreted.predicateAt Γ contextRead with ⟨φ, predicateRead⟩
-  have covered : Subfunctor.range ((NativeModel C).toCwf.wk A) = ⊤ := Option.some.inj
-    ((model.evaluate_image Γ type A typeRead).symm.trans
-      (coveredInterpreted.entailsAt Γ contextRead))
-  have restricted : φ.preimage ((NativeModel C).toCwf.wk A) =
-      (⊤ : Subfunctor (Γ.snoc A).1) := Option.some.inj
-    ((model.predicateVariableRead stable Γ A predicate φ predicateRead).symm.trans
-      (branchInterpreted.entailsAt (Γ.snoc A)
-        (model.evaluateContext_snoc context type Γ A contextRead typeRead)))
-  exact ⟨Γ, contextRead, predicateRead.trans
-    (congrArg some (image_cover_cancel _ φ covered restricted))⟩
+    Interprets model (.entails context predicate) :=
+  model.interprets_of_abstract
+    (Abstract.ModelData.imageElimination_sound model.toAbstract (model.stable_toAbstract stable) context
+      type predicate typeInterpreted.toAbstract predicateInterpreted.toAbstract
+      coveredInterpreted.toAbstract branchInterpreted.toAbstract)
 
 end ModelData
 

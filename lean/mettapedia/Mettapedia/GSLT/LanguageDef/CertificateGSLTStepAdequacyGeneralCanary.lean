@@ -65,6 +65,19 @@ private def termThunkIdentity : Pattern :=
 private def termPair (first second : Pattern) : Pattern :=
   .apply "gen-pair" [first, second]
 
+example :
+    let pattern := termPair (.multiLambda 2 ["x", "y"] (.bvar 1)) (.fvar "z")
+    patternHoleSkeleton pattern = true ∧ captureDepth "z" 7 pattern = some 7 := by
+  simp [termPair, patternHoleSkeleton, patternClosedSkeleton, patternsHoleSkeleton,
+    captureDepth, captureDepthList]
+
+example :
+    let pattern := termPair (.multiLambda 2 ["x", "y"] (.fvar "z")) (.fvar "z")
+    patternHoleSkeleton pattern = false ∧ captureDepth "z" 7 pattern = some 9 ∧
+      depthAligned pattern 0 (.fvar "z") = false := by
+  simp [termPair, patternHoleSkeleton, patternClosedSkeleton, patternsHoleSkeleton,
+    captureDepth, captureDepthList, depthAligned]
+
 /-- Ground rule whose reduct contains a binder literal. -/
 private def mkRule : RewriteRule :=
   { name := "mk"

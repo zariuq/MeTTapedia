@@ -221,86 +221,22 @@ theorem bag_fine (notHost : ¬ dispatch.executable (.symbol "if")) (policy : Pol
   obtain ⟨Tc, typesC, acceptsC, keepsC⟩ := bag.conditionTyped
   obtain ⟨Ty, typesY⟩ := bag.typedYes
   obtain ⟨Tn, typesN⟩ := bag.typedNo
-  have entry := call_entry policy if_data [c, y, n]
-  have shape : Completed.Frame.empty.read policy (Entry.Value.ofAtom (callC c y n)) =
-      .expression .active (Entry.Value.ofAtom (.symbol "if") ::
-        [c, y, n].map Entry.Value.ofAtom) := by
-    rw [Completed.Frame.read_empty]
-    simp only [callC, app, Entry.Value.ofAtom, List.map_cons, List.map_nil]
-  have selection : Completed.ArgumentService.historical.selection (Space.ofList atoms)
-      Completed.rawLookup policy [] []
-      (Completed.Frame.empty.read policy (Entry.Value.ofAtom (callC c y n))).erase
-      (Entry.Value.ofAtom (.symbol "if")).erase Atom.undefinedType Completed.Frame.empty
-      (.selected ifPolicy [Completed.Frame.empty]) := by
-    rw [Completed.Frame.read_empty, Entry.Value.erase_ofAtom, Entry.Value.erase_ofAtom]
-    exact cond_selection_succeeds policy program typesC acceptsC typesY typesN
   have cleanL := answersOf_answerable (Lc := Lc) (settlesK_shape bag.yesSettles).1.answers
     (settlesK_shape bag.noSettles).1.answers
-  show Fine dispatch Completed.rawLookup policy ⟨Space.ofList atoms,
-    .work (.atom [] [] (Entry.Value.ofAtom (callC c y n)) Atom.undefinedType Completed.Frame.empty),
-    [], []⟩
-  refine .step ⟨_, .internal (LocalStepWith.atomFunction (admission := .historical) entry shape
-    selection)⟩ ?_
-  intro z moved
-  cases moved with
-  | internal l =>
-      cases l with
-      | delivered entered => cases Entry.functional entered entry
-      | cast entered => cases Entry.functional entered entry
-      | atomTuple _ shaped occurs =>
-          rw [shape] at shaped
-          simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-          obtain ⟨_, rfl, _⟩ := shaped
-          rw [Entry.Value.erase_ofAtom] at occurs
-          have same := Mettapedia.Languages.MeTTa.HE.Spec.Type.TypeOccurrencesRel.unique occurs
-            program.types.occurrences
-          simp [Atom.undefinedType] at same
-      | atomFallback _ shaped chosen =>
-          rw [shape] at shaped
-          simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-          obtain ⟨_, rfl, _⟩ := shaped
-          rw [Completed.Frame.read_empty, Entry.Value.erase_ofAtom, Entry.Value.erase_ofAtom]
-            at chosen
-          obtain ⟨_, _, _, _, impossible⟩ := cond_selection program typesC acceptsC keepsC typesY
-            typesN chosen
-          cases impossible
-      | atomSelectionFailed _ shaped chosen =>
-          rw [shape] at shaped
-          simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-          obtain ⟨_, rfl, _⟩ := shaped
-          rw [Completed.Frame.read_empty, Entry.Value.erase_ofAtom, Entry.Value.erase_ofAtom]
-            at chosen
-          obtain ⟨_, _, _, _, impossible⟩ := cond_selection program typesC acceptsC keepsC typesY
-            typesN chosen
-          cases impossible
-      | atomFunction _ shaped chosen =>
-          rw [shape] at shaped
-          simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-          obtain ⟨_, rfl, rfl⟩ := shaped
-          rw [Completed.Frame.read_empty, Entry.Value.erase_ofAtom, Entry.Value.erase_ofAtom]
-            at chosen
-          obtain ⟨signature, after, functionType, afterBindings, selected⟩ :=
-            cond_selection program typesC acceptsC keepsC typesY typesN chosen
-          simp only [Completed.InvocationSelection.selected.injEq] at selected
-          obtain ⟨rfl, rfl⟩ := selected
-          have returnTypeOf : ∀ {s : SelectedTypePolicy}, s.returnType = .var "t" →
-              Completed.invocationReturnType s = .var "t" := by
-            intro s same
-            simp [Completed.invocationReturnType, same, Atom.expressionType]
-          apply fine_invocations_cons
-          rw [returnTypeOf (if_projections functionType).2]
-          simp only [List.map_cons, List.map_nil]
-          refine fine_bag_function program bag functionType afterBindings _ _ ?_
-          intro R shapeR
-          apply fine_calls_frame
-          refine fine_bag_calls notHost program bag R Lc (fun _ member => member) shapeR
-            bag.booleans _ _ ?_
-          intro Q eraseQ
-          apply fine_append
-          apply fine_invocations_nil
-          apply fine_prepend
-          refine fine_publish (HENested.clean_of_erase (by simpa using eraseQ) cleanL) ?_
-          exact fine_top _ _
+  refine fine_if_entry program.types (cond_selection_succeeds policy program typesC acceptsC typesY typesN)
+    (fun {_} chosen => cond_selection program typesC acceptsC keepsC typesY typesN chosen) ?_
+  intro _ _ functionType afterBindings
+  refine fine_bag_function program bag functionType afterBindings _ _ ?_
+  intro R shapeR
+  apply fine_calls_frame
+  refine fine_bag_calls notHost program bag R Lc (fun _ member => member) shapeR
+    bag.booleans _ _ ?_
+  intro Q eraseQ
+  apply fine_append
+  apply fine_invocations_nil
+  apply fine_prepend
+  refine fine_publish (HENested.clean_of_erase (by simpa using eraseQ) cleanL) ?_
+  exact fine_top _ _
 
 /-- **Every run of `(if c y n)` on a nondeterministic condition finishes, and every finished run
 publishes the bag of `answersOf Lc Ly Ln`.** Under the hypotheses of `IfBags.bag_every_run`: HE's
@@ -322,14 +258,8 @@ theorem bag_every_run_finishes (dispatch : GroundedDispatch)
         (Streaming.enter { state := store atoms } (callC c y n))) = answersOf Lc Ly Ln := by
   have fine := bag_fine notHost policy program bag
   refine ⟨fine.acc, fun x path => ?_, (bag_every_run dispatch notHost policy program bag).2.2⟩
-  rcases (fine.reaches path).progress with moves | ⟨space, emitted, rfl⟩
-  · exact Or.inl moves
-  · have sameSpace := space_fixed path
-    simp only [load, Mettapedia.Languages.MeTTa.HE.RecursiveTasks.Contextual.Configuration.initial]
-      at sameSpace
-    subst sameSpace
-    exact Or.inr ⟨emitted, rfl, congrArg (fun l : List Atom => (l : Multiset Atom))
-      (bag_source program bag (complete_source path))⟩
+  exact fine.progress_observing path fun _ run =>
+    congrArg (fun l : List Atom => (l : Multiset Atom)) (bag_source program bag (complete_source run))
 
 /-! ## Controls -/
 

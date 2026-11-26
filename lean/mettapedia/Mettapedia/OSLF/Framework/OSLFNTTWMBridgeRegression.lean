@@ -25,6 +25,7 @@ open Mettapedia.OSLF.Framework.CategoryBridge
 open Mettapedia.PLN.Evidence.EvidenceClass
 open Mettapedia.OSLF.Framework.EvidenceSemantics
 open Mettapedia.PLN.WorldModel
+open Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure (SingletonRuleClosure)
 open Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge.WMHyperdoctrine
 
 universe u v x
@@ -809,10 +810,7 @@ theorem canonical_context_transportGoal_rulePack_fixpoint_endpoint_fixture_via_r
         canonicalConsequenceRuleOn_compact_of_goal
           (ctx := ctx) (modal := modal) (cat := cat) (fa := fa)
           (goal := transportGoal.goal)
-      let R : Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.RuleSet SemEState SemEQuery := ({r} : Set _)
-      transportGoal.goal.p ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.immediateIter R W0 ({transportGoal.goal.p} : Set SemEQuery) 0
-        ∧ transportGoal.goal.q ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.immediateIter R W0 ({transportGoal.goal.p} : Set SemEQuery) 1
-        ∧ transportGoal.goal.q ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.leastRuleClosure R W0 ({transportGoal.goal.p} : Set SemEQuery)) := by
+      SingletonRuleClosure r W0 transportGoal.goal.p transportGoal.goal.q) := by
   simpa using canonical_rulePack_transport_piSigma_and_fixpoint_of_transportGoal
     (ctx := ctx) (modal := modal) (cat := cat) (fa := fa)
     (hPiSigmaPack := hPiSigmaPack)
@@ -856,10 +854,7 @@ theorem canonical_context_transportGoal_rulePack_fixpoint_endpoint_fixture
         canonicalConsequenceRuleOn_compact_of_goal
           (ctx := ctx) (modal := modal) (cat := cat) (fa := fa)
           (goal := transportGoal.goal)
-      let R : Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.RuleSet SemEState SemEQuery := ({r} : Set _)
-      transportGoal.goal.p ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.immediateIter R W0 ({transportGoal.goal.p} : Set SemEQuery) 0
-        ∧ transportGoal.goal.q ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.immediateIter R W0 ({transportGoal.goal.p} : Set SemEQuery) 1
-        ∧ transportGoal.goal.q ∈ Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure.leastRuleClosure R W0 ({transportGoal.goal.p} : Set SemEQuery)) := by
+      SingletonRuleClosure r W0 transportGoal.goal.p transportGoal.goal.q) := by
   simpa using canonical_context_transportGoal_rulePack_fixpoint_endpoint_fixture_via_rulePack
     (ctx := ctx) (modal := modal) (cat := cat) (fa := fa)
     (hPiSigmaPack := Mettapedia.OSLF.PresheafNativeType.prop12_piSigmaPredicateRulePack

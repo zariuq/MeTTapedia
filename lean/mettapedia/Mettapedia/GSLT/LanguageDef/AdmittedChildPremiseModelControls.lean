@@ -62,7 +62,8 @@ theorem leastNil :
     (zero := AdmittedChildPremiseControls.zero) (successor := AdmittedChildPremiseControls.successor)
     (full := full) (arithmeticValues := empty) (zero_meaning := rfl) (successor_meaning := fun _ => rfl)
     (bottomCode := bottom) (constructorCode := ctor) (injections := injections)
-    (constructor_fields := constructor_fields) index_injective (num_meaning world) nilValue).mpr
+    (constructor_fields := HOLShapeSeparation.of_raw block registered sourceOrder interpreted
+      ctor world constructor_fields) index_injective (num_meaning world) nilValue).mpr
   exact ⟨Natural.zero, nil_generated⟩
 
 def predicate : Term Symbol AdmittedChildPremiseControls.context (space ⇒ .prop) :=

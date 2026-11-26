@@ -1723,23 +1723,19 @@ private theorem simpleMatch_leaf_seeded_lookup_bridge_disjoint :
   | expression ps =>
       exact False.elim (hnonexpr ⟨ps, rfl⟩)
 
-/-- Exact canonical leaf bridge on the non-expression fragment: when seeded HE
-matching succeeds on a leaf-shape pattern, the canonical LeaTTa matcher-facing
-binding order `toLeaTTaMatchBindings qb` is itself produced by LeaTTa's direct
-matcher/merge interface. This sharpens the lookup-extensional bridge to the exact
-binding list shape later factorization lemmas want. -/
-private theorem simpleMatch_leaf_seeded_exact_bridge_disjoint :
+/-- At a leaf, occurrence-freedom excludes the self case for a fresh
+variable. The remaining shapes use the exact seeded merge. -/
+private theorem simpleMatch_leaf_seeded_exact_bridge_of_occursFree :
     ∀ fuel,
       ∀ {pattern target b qb},
         AssignmentsNodup b →
         (¬ ∃ ps, pattern = .expression ps) →
-        AtomVarsDisjoint pattern target fuel →
         VarPatternTargetOccursFree pattern target →
         simpleMatch pattern target b fuel = some qb →
           toLeaTTaMatchBindings qb ∈
             (Metta.matchAtoms (encodeModelAtom pattern) (encodeModelAtom target)).flatMap
               (fun mb => Metta.Bindings.merge (toLeaTTaMatchBindings b) mb) := by
-  intro fuel pattern target b qb hkeys hnonexpr hdisj hoccurs hmatch
+  intro fuel pattern target b qb hkeys hnonexpr hoccurs hmatch
   cases pattern with
   | var v =>
       cases fuel with
@@ -1756,7 +1752,7 @@ private theorem simpleMatch_leaf_seeded_exact_bridge_disjoint :
               | var w =>
                   have hneq : w ≠ v := by
                     intro hwv
-                    exact (atomVarsDisjoint_var_ne_self hdisj) (by simp [hwv])
+                    exact hoccurs v rfl (by simp [hwv, encodeModelAtom, Metta.Atom.vars])
                   refine List.mem_flatMap.mpr ?_
                   refine ⟨[Metta.BindingRel.val v (.var w)], ?_, ?_⟩
                   · have hvw : v ≠ w := by
@@ -1929,11 +1925,22 @@ private theorem simpleMatch_leaf_seeded_exact_bridge_disjoint :
   | expression ps =>
       exact False.elim (hnonexpr ⟨ps, rfl⟩)
 
-/-- Honest leaf-fragment exact bridge under the semantic boundary we actually
-need later: the successful HE result bindings may contain expressions with
-variables, but they must not bind any variable directly to another variable.
-This removes the older disjointness side condition on the non-expression
-fragment while still excluding the genuine chain-resolution mismatch. -/
+/-- The disjoint leaf interface uses the occurrence-free leaf proof. -/
+private theorem simpleMatch_leaf_seeded_exact_bridge_disjoint :
+    ∀ fuel,
+      ∀ {pattern target b qb},
+        AssignmentsNodup b →
+        (¬ ∃ ps, pattern = .expression ps) →
+        AtomVarsDisjoint pattern target fuel →
+        VarPatternTargetOccursFree pattern target →
+        simpleMatch pattern target b fuel = some qb →
+          toLeaTTaMatchBindings qb ∈
+            (Metta.matchAtoms (encodeModelAtom pattern) (encodeModelAtom target)).flatMap
+              (fun mb => Metta.Bindings.merge (toLeaTTaMatchBindings b) mb) := by
+  intro fuel pattern target b qb keys leaf _disjoint occurs matched
+  exact simpleMatch_leaf_seeded_exact_bridge_of_occursFree fuel keys leaf occurs matched
+
+/-- The leaf interface used when the output binds no variable to a variable. -/
 private theorem simpleMatch_leaf_seeded_exact_bridge_noVar :
     ∀ fuel,
       ∀ {pattern target b qb},
@@ -1945,164 +1952,8 @@ private theorem simpleMatch_leaf_seeded_exact_bridge_noVar :
           toLeaTTaMatchBindings qb ∈
             (Metta.matchAtoms (encodeModelAtom pattern) (encodeModelAtom target)).flatMap
               (fun mb => Metta.Bindings.merge (toLeaTTaMatchBindings b) mb) := by
-  intro fuel pattern target b qb hkeys hno hnonexpr hoccurs hmatch
-  cases pattern with
-  | var v =>
-      cases fuel with
-      | zero =>
-          simp [simpleMatch] at hmatch
-      | succ n =>
-          have hoccursEq : Metta.Subst.occurs v (encodeModelAtom target) = false :=
-            occurs_eq_false_of_not_mem_vars v (encodeModelAtom target) (hoccurs v rfl)
-          cases hlook : b.lookup v with
-          | none =>
-              simp [simpleMatch, hlook] at hmatch
-              subst hmatch
-              cases target with
-              | var w =>
-                  have hbad :
-                      (b.assign v (.var w)).lookup v = some (.var w) := by
-                    exact lookup_assign_of_lookup_none b v (.var w) hlook
-                  exact False.elim (hno hbad)
-              | symbol s =>
-                  refine List.mem_flatMap.mpr ?_
-                  refine ⟨[Metta.BindingRel.val v (.sym s)], ?_, ?_⟩
-                  · simp [Metta.matchAtoms, Metta.matchAtomsWith, encodeModelAtom]
-                  · rw [show
-                        Metta.Bindings.merge (toLeaTTaMatchBindings b)
-                          [Metta.BindingRel.val v (.sym s)] =
-                            [toLeaTTaMatchBindings (b.assign v (.symbol s))] by
-                        simpa [encodeModelAtom] using
-                          (merge_singleton_val_of_lookup_none
-                            (b := b) (v := v) (val := .symbol s) hkeys hlook)]
-                    simp
-              | grounded g =>
-                  refine List.mem_flatMap.mpr ?_
-                  refine ⟨[Metta.BindingRel.val v (.gnd (encodeModelGround g))], ?_, ?_⟩
-                  · simp [Metta.matchAtoms, Metta.matchAtomsWith, encodeModelAtom]
-                  · rw [show
-                        Metta.Bindings.merge (toLeaTTaMatchBindings b)
-                          [Metta.BindingRel.val v (.gnd (encodeModelGround g))] =
-                            [toLeaTTaMatchBindings (b.assign v (.grounded g))] by
-                        simpa [encodeModelAtom] using
-                          (merge_singleton_val_of_lookup_none
-                            (b := b) (v := v) (val := .grounded g) hkeys hlook)]
-                    simp
-              | expression es =>
-                  have hoccursExpr :
-                      Metta.Subst.occurs v (Metta.Atom.expr (encodeModelAtoms es)) = false := by
-                    simpa [encodeModelAtom] using hoccursEq
-                  refine List.mem_flatMap.mpr ?_
-                  refine ⟨[Metta.BindingRel.val v (.expr (encodeModelAtoms es))], ?_, ?_⟩
-                  · simp [Metta.matchAtoms, Metta.matchAtomsWith, encodeModelAtom, hoccursExpr]
-                  · rw [show
-                        Metta.Bindings.merge (toLeaTTaMatchBindings b)
-                          [Metta.BindingRel.val v (.expr (encodeModelAtoms es))] =
-                            [toLeaTTaMatchBindings (b.assign v (.expression es))] by
-                        simpa [encodeModelAtom] using
-                          (merge_singleton_val_of_lookup_none
-                            (b := b) (v := v) (val := .expression es) hkeys hlook)]
-                    simp
-          | some existing =>
-              by_cases hEq : existing = target
-              · subst hEq
-                simp [simpleMatch, hlook] at hmatch
-                obtain ⟨_, rfl⟩ := hmatch
-                cases existing with
-                | var w =>
-                    exact False.elim (hno hlook)
-                | symbol s =>
-                    refine List.mem_flatMap.mpr ?_
-                    refine ⟨[Metta.BindingRel.val v (.sym s)], ?_, ?_⟩
-                    · simp [Metta.matchAtoms, Metta.matchAtomsWith, encodeModelAtom]
-                    · rw [show
-                          Metta.Bindings.merge (toLeaTTaMatchBindings b)
-                            [Metta.BindingRel.val v (.sym s)] =
-                              [toLeaTTaMatchBindings b] by
-                          simpa [encodeModelAtom] using
-                            (merge_singleton_val_of_lookup_some_eq
-                              (b := b) (v := v) (val := .symbol s) hkeys hlook)]
-                      simp
-                | grounded g =>
-                    refine List.mem_flatMap.mpr ?_
-                    refine ⟨[Metta.BindingRel.val v (.gnd (encodeModelGround g))], ?_, ?_⟩
-                    · simp [Metta.matchAtoms, Metta.matchAtomsWith, encodeModelAtom]
-                    · rw [show
-                          Metta.Bindings.merge (toLeaTTaMatchBindings b)
-                            [Metta.BindingRel.val v (.gnd (encodeModelGround g))] =
-                              [toLeaTTaMatchBindings b] by
-                          simpa [encodeModelAtom] using
-                            (merge_singleton_val_of_lookup_some_eq
-                              (b := b) (v := v) (val := .grounded g) hkeys hlook)]
-                      simp
-                | expression es =>
-                    have hoccursExpr :
-                        Metta.Subst.occurs v (Metta.Atom.expr (encodeModelAtoms es)) = false := by
-                      simpa [encodeModelAtom] using hoccursEq
-                    refine List.mem_flatMap.mpr ?_
-                    refine ⟨[Metta.BindingRel.val v (.expr (encodeModelAtoms es))], ?_, ?_⟩
-                    · simp [Metta.matchAtoms, Metta.matchAtomsWith, encodeModelAtom, hoccursExpr]
-                    · rw [show
-                          Metta.Bindings.merge (toLeaTTaMatchBindings b)
-                            [Metta.BindingRel.val v (.expr (encodeModelAtoms es))] =
-                              [toLeaTTaMatchBindings b] by
-                          simpa [encodeModelAtom] using
-                            (merge_singleton_val_of_lookup_some_eq
-                              (b := b) (v := v) (val := .expression es) hkeys hlook)]
-                      simp
-              · simp [simpleMatch, hlook, hEq] at hmatch
-  | symbol s =>
-      cases fuel with
-      | zero =>
-          simp [simpleMatch] at hmatch
-      | succ n =>
-          cases target with
-          | symbol t =>
-              by_cases hst : s = t
-              · subst hst
-                simp [simpleMatch] at hmatch
-                obtain ⟨_, rfl⟩ := hmatch
-                refine List.mem_flatMap.mpr ?_
-                refine ⟨[], ?_, ?_⟩
-                · simp [Metta.matchAtoms, Metta.matchAtomsWith, encodeModelAtom]
-                · rw [merge_empty_right]
-                  simp
-              · simp [simpleMatch, hst] at hmatch
-          | var v =>
-              simp [simpleMatch] at hmatch
-          | grounded g =>
-              simp [simpleMatch] at hmatch
-          | expression es =>
-              simp [simpleMatch] at hmatch
-  | grounded g =>
-      cases fuel with
-      | zero =>
-          simp [simpleMatch] at hmatch
-      | succ n =>
-          cases target with
-          | grounded h =>
-              by_cases hgh : g = h
-              · subst hgh
-                simp [simpleMatch] at hmatch
-                obtain ⟨_, rfl⟩ := hmatch
-                refine List.mem_flatMap.mpr ?_
-                refine ⟨[], ?_, ?_⟩
-                · have hself :
-                    Metta.Atom.equiv (Metta.Atom.gnd (encodeModelGround g))
-                      (Metta.Atom.gnd (encodeModelGround g)) = true := by
-                    simpa [encodeModelAtom] using encodeModelAtom_grounded_equiv_self g
-                  simp [Metta.matchAtoms, Metta.matchAtomsWith, encodeModelAtom, hself]
-                · rw [merge_empty_right]
-                  simp
-              · simp [simpleMatch, hgh] at hmatch
-          | symbol s =>
-              simp [simpleMatch] at hmatch
-          | var v =>
-              simp [simpleMatch] at hmatch
-          | expression es =>
-              simp [simpleMatch] at hmatch
-  | expression ps =>
-      exact False.elim (hnonexpr ⟨ps, rfl⟩)
+  intro fuel pattern target b qb keys _noVariableValues leaf occurs matched
+  exact simpleMatch_leaf_seeded_exact_bridge_of_occursFree fuel keys leaf occurs matched
 
 /-- Lookup-extensional leaf bridge under the same no-variable-values boundary
 as `simpleMatch_leaf_seeded_exact_bridge_noVar`. This is the exact shape the

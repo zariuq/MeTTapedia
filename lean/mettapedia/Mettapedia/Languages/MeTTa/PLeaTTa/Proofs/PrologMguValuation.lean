@@ -216,21 +216,21 @@ theorem TreeRuntimeRepresentable.children
       · exact ⟨headAtom, head⟩
       · exact ⟨tailAtom, tail⟩
 
-/-- Canonical child-list unification preserves runtime-representability of
-the generated binding. -/
-theorem TreesMgu.binding_runtimeRepresentable
-    {alpha : List (LogicVar × String)}
-    {left right : List Tree} {binding : TreeSubstitution}
-    (derivation : TreesMgu left right binding)
-    (leftRepresentable : TreesRuntimeRepresentable alpha left)
-    (rightRepresentable : TreesRuntimeRepresentable alpha right) :
-    TreeSubstitutionRuntimeRepresentable alpha binding := by
-  exact TreesMgu.rec
-    (motive_1 := fun left right binding _ =>
+private theorem treeAndForest_binding_runtimeRepresentable {alpha : List (LogicVar × String)} :
+    (∀ {left right binding}, TreeMgu left right binding →
+      TreeRuntimeRepresentable alpha left →
+        TreeRuntimeRepresentable alpha right →
+        TreeSubstitutionRuntimeRepresentable alpha binding) ∧
+    (∀ {left right binding}, TreesMgu left right binding →
+      TreesRuntimeRepresentable alpha left →
+        TreesRuntimeRepresentable alpha right →
+        TreeSubstitutionRuntimeRepresentable alpha binding) :=
+  TreeMgu.inductBoth
+    (tree := fun left right binding =>
       TreeRuntimeRepresentable alpha left →
         TreeRuntimeRepresentable alpha right →
         TreeSubstitutionRuntimeRepresentable alpha binding)
-    (motive_2 := fun left right binding _ =>
+    (forest := fun left right binding =>
       TreesRuntimeRepresentable alpha left →
         TreesRuntimeRepresentable alpha right →
         TreeSubstitutionRuntimeRepresentable alpha binding)
@@ -269,7 +269,17 @@ theorem TreesMgu.binding_runtimeRepresentable
         (baseRepresentable.applyTrees leftTail)
         (baseRepresentable.applyTrees rightTail)
       exact extensionRepresentable.append baseRepresentable)
-    derivation leftRepresentable rightRepresentable
+
+/-- Canonical child-list unification preserves runtime-representability of
+the generated binding. -/
+theorem TreesMgu.binding_runtimeRepresentable
+    {alpha : List (LogicVar × String)}
+    {left right : List Tree} {binding : TreeSubstitution}
+    (derivation : TreesMgu left right binding)
+    (leftRepresentable : TreesRuntimeRepresentable alpha left)
+    (rightRepresentable : TreesRuntimeRepresentable alpha right) :
+    TreeSubstitutionRuntimeRepresentable alpha binding :=
+  (@treeAndForest_binding_runtimeRepresentable alpha).2 derivation leftRepresentable rightRepresentable
 
 /-- Root canonical unification preserves runtime-representability of the
 generated binding. -/
@@ -279,52 +289,8 @@ theorem TreeMgu.binding_runtimeRepresentable
     (derivation : TreeMgu left right binding)
     (leftRepresentable : TreeRuntimeRepresentable alpha left)
     (rightRepresentable : TreeRuntimeRepresentable alpha right) :
-    TreeSubstitutionRuntimeRepresentable alpha binding := by
-  exact TreeMgu.rec
-    (motive_1 := fun left right binding _ =>
-      TreeRuntimeRepresentable alpha left →
-        TreeRuntimeRepresentable alpha right →
-        TreeSubstitutionRuntimeRepresentable alpha binding)
-    (motive_2 := fun left right binding _ =>
-      TreesRuntimeRepresentable alpha left →
-        TreesRuntimeRepresentable alpha right →
-        TreeSubstitutionRuntimeRepresentable alpha binding)
-    (fun _ _ _ => by
-      intro entry member
-      simp at member)
-    (fun source value _ _ _ valueRepresentable =>
-      fun entry member => by
-        simp only [List.mem_singleton] at member
-        subst entry
-        exact valueRepresentable)
-    (fun value target _ _ valueRepresentable _ =>
-      fun entry member => by
-        simp only [List.mem_singleton] at member
-        subst entry
-        exact valueRepresentable)
-    (fun _ _ _ _ _ childrenInduction leftNode rightNode =>
-      childrenInduction leftNode.children rightNode.children)
-    (fun _ _ => by
-      intro entry member
-      simp at member)
-    (fun left right lefts rights base extension _ _ headInduction
-        tailInduction leftTrees rightTrees => by
-      have leftHead := leftTrees left (by simp)
-      have rightHead := rightTrees right (by simp)
-      have baseRepresentable := headInduction leftHead rightHead
-      have leftTail :
-          TreesRuntimeRepresentable alpha lefts := by
-        intro tree member
-        exact leftTrees tree (by simp [member])
-      have rightTail :
-          TreesRuntimeRepresentable alpha rights := by
-        intro tree member
-        exact rightTrees tree (by simp [member])
-      have extensionRepresentable := tailInduction
-        (baseRepresentable.applyTrees leftTail)
-        (baseRepresentable.applyTrees rightTail)
-      exact extensionRepresentable.append baseRepresentable)
-    derivation leftRepresentable rightRepresentable
+    TreeSubstitutionRuntimeRepresentable alpha binding :=
+  (@treeAndForest_binding_runtimeRepresentable alpha).1 derivation leftRepresentable rightRepresentable
 
 /-- Applying a representable substitution preserves representability on both
 sides of every equation. -/

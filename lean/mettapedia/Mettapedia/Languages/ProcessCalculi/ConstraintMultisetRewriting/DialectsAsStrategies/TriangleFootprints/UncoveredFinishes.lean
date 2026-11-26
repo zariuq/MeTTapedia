@@ -820,17 +820,8 @@ theorem uncovered_finishes (policy : Policy) :
       emitted.map (fun r => r.1.erase) = [uncoveredCall] :=
     fun emitted run => if_source_uncovered uncovered_program isZero_one_uncovered uncovered_if_shape
       (complete_source run)
-  refine ⟨PublishesInOrder.bag ⟨?_, every⟩, FinishesInOrder.bag ⟨fine.acc, fun y path => ?_⟩,
-    petta_uncovered⟩
-  · obtain ⟨space, emitted, path⟩ := IfAtFrames.Fine.exists_final fine
-    have same : space = Space.ofList uncoveredRows := space_fixed path
-    subst same
-    exact ⟨emitted, path⟩
-  · rcases (fine.reaches path).progress with moves | ⟨space, emitted, rfl⟩
-    · exact Or.inl moves
-    · have same : space = Space.ofList uncoveredRows := space_fixed path
-      subst same
-      exact Or.inr ⟨emitted, rfl, every emitted path⟩
+  have finishes := FinishesInOrder.of_fine fine every
+  exact ⟨finishes.publishes.bag, finishes.bag, petta_uncovered⟩
 
 /-! ## Controls -/
 
@@ -877,9 +868,7 @@ theorem uncovered_not_condition (policy : Policy) (b : Bool) :
   have fine : Fine noHost Completed.scopedLookup policy
       (load (Space.ofList uncoveredRows) condition (sym "Bool")) :=
     isCondition.fine [] [] Completed.Frame.empty [] [] (fun R _ => fine_top R [])
-  obtain ⟨space, emitted, path⟩ := IfAtFrames.Fine.exists_final fine
-  have same : space = Space.ofList uncoveredRows := space_fixed path
-  subst same
+  obtain ⟨emitted, path⟩ := fine.reaches_final_in_space
   have derived := complete_source_at path
   have boolean := isCondition.determined [] [] Completed.Frame.empty emitted derived
   have itself := uncovered_call_source uncovered_program.rows isZero_one_uncovered derived

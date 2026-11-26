@@ -1,3 +1,4 @@
+import Mettapedia.GSLT.Distinction.ProductiveBlockRunCongruence
 import Mettapedia.Languages.MeTTa.HE.FirstSuccessContinuationPaths
 import Mettapedia.Languages.MeTTa.HE.FirstSuccessSourceExecution
 import Mettapedia.Languages.MeTTa.HE.ExecutableBoundary
@@ -144,7 +145,7 @@ theorem scoped_realizes_completed_unique {space : Space} {task : Task} {results 
       ⟨space, .work task, [], earned⟩ = (actual, .finished finished)) :
     actual = results ∧ finished = ⟨space, .returning [], [], earned ++ results⟩ := by
   obtain ⟨_, complete⟩ := scoped_realizes_completed realized earned
-  exact Machine.finished_unique ran complete
+  exact Machine.finished_run_eq ran complete
 
 /-- Any budget-exhausted intermediate state of a `ScopedRealizes` task resumes from
 the exact saved configuration to complete the remaining suffix of results. -/
@@ -403,27 +404,13 @@ theorem run_scopedTypes_eq_rawTypes (dispatch : HE.GroundedDispatch) (budget : N
     (state : Configuration) (closed : ClosedTypeAnnotations state.space) :
     (FirstSuccessRecursiveExecution.machine dispatch scopedTypes).run budget state =
       (FirstSuccessRecursiveExecution.machine dispatch rawTypes).run budget state := by
-  induction budget generalizing state with
-  | zero => rfl
-  | succ budget ih =>
-      rw [Machine.run, Machine.run, step_scopedTypes_eq_rawTypes dispatch state closed]
-      cases hStep : (FirstSuccessRecursiveExecution.machine dispatch rawTypes).step state with
-      | none => rfl
-      | some action =>
-          cases action with
-          | silent after =>
-              have afterClosed : ClosedTypeAnnotations after.space := by
-                rw [machine_step_silent_preserves_space dispatch rawTypes hStep]
-                exact closed
-              simpa using ih after afterClosed
-          | publish events after =>
-              have afterClosed : ClosedTypeAnnotations after.space := by
-                rw [machine_step_publish_preserves_space dispatch rawTypes hStep]
-                exact closed
-              simp only [ih after afterClosed]
-          | finish _ => rfl
-          | fail _ => rfl
-          | call request _ => nomatch request
+  refine Machine.run_eq_of_step_eq_on
+    (region := fun s => ClosedTypeAnnotations s.space)
+    (step_scopedTypes_eq_rawTypes dispatch) ?_ ?_ budget state closed
+  · intro before after valid step
+    simpa only [machine_step_silent_preserves_space dispatch rawTypes step] using valid
+  · intro before after events valid step
+    simpa only [machine_step_publish_preserves_space dispatch rawTypes step] using valid
 
 /-- For any budget, running `Checked.machine dispatch scopedTypes` equals running
 `Checked.machine dispatch rawTypes` when `state.space` has closed type annotations. -/
@@ -431,27 +418,13 @@ theorem checked_run_scopedTypes_eq_rawTypes (dispatch : HE.GroundedDispatch) (bu
     (state : Configuration) (closed : ClosedTypeAnnotations state.space) :
     (Checked.machine dispatch scopedTypes).run budget state =
       (Checked.machine dispatch rawTypes).run budget state := by
-  induction budget generalizing state with
-  | zero => rfl
-  | succ budget ih =>
-      rw [Machine.run, Machine.run, checked_step_scopedTypes_eq_rawTypes dispatch state closed]
-      cases hStep : (Checked.machine dispatch rawTypes).step state with
-      | none => rfl
-      | some action =>
-          cases action with
-          | silent after =>
-              have afterClosed : ClosedTypeAnnotations after.space := by
-                rw [checked_step_silent_preserves_space dispatch rawTypes hStep]
-                exact closed
-              simpa using ih after afterClosed
-          | publish events after =>
-              have afterClosed : ClosedTypeAnnotations after.space := by
-                rw [checked_step_publish_preserves_space dispatch rawTypes hStep]
-                exact closed
-              simp only [ih after afterClosed]
-          | finish _ => rfl
-          | fail _ => rfl
-          | call _ _ => rfl
+  refine Machine.run_eq_of_step_eq_on
+    (region := fun s => ClosedTypeAnnotations s.space)
+    (checked_step_scopedTypes_eq_rawTypes dispatch) ?_ ?_ budget state closed
+  · intro before after valid step
+    simpa only [checked_step_silent_preserves_space dispatch rawTypes step] using valid
+  · intro before after events valid step
+    simpa only [checked_step_publish_preserves_space dispatch rawTypes step] using valid
 
 /-- Along any silent path of `Checked.machine`, the space is invariant. -/
 theorem silentPath_preserves_space {dispatch : HE.GroundedDispatch} {policy : TypePolicy}
@@ -1203,20 +1176,9 @@ theorem strictMachine_step_eq (dispatch : HE.GroundedDispatch) (policy : TypePol
 theorem strictMachine_run_eq (dispatch : HE.GroundedDispatch) (policy : TypePolicy)
     (budget : Nat) (state : Configuration) :
     (strictMachine dispatch policy).run budget state =
-      (Checked.machine dispatch policy).run budget state := by
-  induction budget generalizing state with
-  | zero => rfl
-  | succ budget ih =>
-      rw [Machine.run, Machine.run, strictMachine_step_eq]
-      cases (Checked.machine dispatch policy).step state with
-      | none => rfl
-      | some action =>
-          cases action with
-          | silent after => exact ih after
-          | publish events after => simp only [ih after]
-          | finish _ => rfl
-          | fail _ => rfl
-          | call _ _ => rfl
+      (Checked.machine dispatch policy).run budget state :=
+  congrArg (fun machine => machine.run budget state)
+    (congrArg Machine.mk (funext (strictMachine_step_eq dispatch policy)))
 
 theorem run_eq_finished_of_strict {dispatch : HE.GroundedDispatch} {policy : TypePolicy}
     {budget : Nat} {state : Configuration} {published emitted : List ResultPair}

@@ -52,14 +52,10 @@ theorem WeightedObservable.windowedColeHopfHeatMaskedShiftKernelCandidate_eq_sat
         (L.windowedColeHopfHeatUniformVorticityTendril
           (ι := ι) (X := X)
           selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t y)
-    (hstat :
-      ∀ t : NNReal, ∀ y : X,
-        (L.windowedColeHopfHeatUniformVorticityTendril
+    (hstat : UniformVorticityTendril.IsVorticityStationaryAt 1
+      (L.windowedColeHopfHeatUniformVorticityTendril
           (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity 1 y =
-        (L.windowedColeHopfHeatUniformVorticityTendril
-          (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t y)
+          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity)
     (habs :
       ∀ t : NNReal, ∀ y : X,
         |(L.windowedColeHopfHeatUniformVorticityTendril
@@ -173,14 +169,10 @@ theorem WeightedObservable.exists_windowedColeHopfHeatSaturatedMaskedShiftKernel
         (L.windowedColeHopfHeatUniformVorticityTendril
           (ι := ι) (X := X)
           selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t y)
-    (hstat :
-      ∀ t : NNReal, ∀ y : X,
-        (L.windowedColeHopfHeatUniformVorticityTendril
+    (hstat : UniformVorticityTendril.IsVorticityStationaryAt 1
+      (L.windowedColeHopfHeatUniformVorticityTendril
           (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity 1 y =
-        (L.windowedColeHopfHeatUniformVorticityTendril
-          (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t y)
+          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity)
     (habs :
       ∀ t : NNReal, ∀ y : X,
         |(L.windowedColeHopfHeatUniformVorticityTendril
@@ -245,14 +237,10 @@ theorem WeightedObservable.windowedColeHopfHeatMaskedShiftKernelCandidate_eq_sat
         (L.windowedColeHopfHeatUniformVorticityTendril_of_componentwise_abs_le
           (ι := ι) (X := X)
           selector c ν hc hν curlFrame curlComponentBound hcurlComponentBound_nonneg hcurl x).vorticity t y)
-    (hstat :
-      ∀ t : NNReal, ∀ y : X,
-        (L.windowedColeHopfHeatUniformVorticityTendril_of_componentwise_abs_le
+    (hstat : UniformVorticityTendril.IsVorticityStationaryAt 1
+      (L.windowedColeHopfHeatUniformVorticityTendril_of_componentwise_abs_le
           (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlComponentBound hcurlComponentBound_nonneg hcurl x).vorticity 1 y =
-        (L.windowedColeHopfHeatUniformVorticityTendril_of_componentwise_abs_le
-          (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlComponentBound hcurlComponentBound_nonneg hcurl x).vorticity t y)
+          selector c ν hc hν curlFrame curlComponentBound hcurlComponentBound_nonneg hcurl x).vorticity)
     (habs :
       ∀ t : NNReal, ∀ y : X,
         |(L.windowedColeHopfHeatUniformVorticityTendril_of_componentwise_abs_le
@@ -366,14 +354,10 @@ theorem WeightedObservable.exists_windowedColeHopfHeatSaturatedMaskedShiftKernel
         (L.windowedColeHopfHeatUniformVorticityTendril_of_componentwise_abs_le
           (ι := ι) (X := X)
           selector c ν hc hν curlFrame curlComponentBound hcurlComponentBound_nonneg hcurl x).vorticity t y)
-    (hstat :
-      ∀ t : NNReal, ∀ y : X,
-        (L.windowedColeHopfHeatUniformVorticityTendril_of_componentwise_abs_le
+    (hstat : UniformVorticityTendril.IsVorticityStationaryAt 1
+      (L.windowedColeHopfHeatUniformVorticityTendril_of_componentwise_abs_le
           (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlComponentBound hcurlComponentBound_nonneg hcurl x).vorticity 1 y =
-        (L.windowedColeHopfHeatUniformVorticityTendril_of_componentwise_abs_le
-          (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlComponentBound hcurlComponentBound_nonneg hcurl x).vorticity t y)
+          selector c ν hc hν curlFrame curlComponentBound hcurlComponentBound_nonneg hcurl x).vorticity)
     (habs :
       ∀ t : NNReal, ∀ y : X,
         |(L.windowedColeHopfHeatUniformVorticityTendril_of_componentwise_abs_le

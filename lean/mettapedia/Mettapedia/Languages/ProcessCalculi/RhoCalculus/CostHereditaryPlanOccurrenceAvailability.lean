@@ -128,17 +128,17 @@ mutual
       (occurrence : CostStaticPlanAbstractOccurrence rhoCIGSLT name
         plan.decoration context planAvailable) :
       planAvailable = rhoCanonicalOccurrenceAvailable sourceAvailable context := by
-    cases plan with
-    | bvar sourceIndex lookup correspondence availableScope =>
+    match (generalizing := true) pattern, sourceType, plan with
+    | _, _, .bvar sourceIndex lookup correspondence availableScope =>
         cases occurrence
-    | fvar lookup =>
+    | _, _, .fvar lookup =>
         cases occurrence
         rfl
-    | boundaryApplication constructor rendered outsideCurrent certified
+    | _, _, .boundaryApplication constructor rendered outsideCurrent certified
         certifies =>
         cases occurrence
         rfl
-    | application constructor rendered current preimage notBare children =>
+    | _, _, .application constructor rendered current preimage notBare children =>
         obtain ⟨before, child, after, inner, decomposition, contextEquality,
             ⟨nested⟩⟩ :=
           planOccurrence_application_split_context occurrence
@@ -153,12 +153,12 @@ mutual
             children childrenFree decomposition nested
         rw [contextEquality]
         simpa [rhoCanonicalOccurrenceAvailable] using childEquality
-    | lambda bodyPlan =>
+    | _, _, .lambda bodyPlan =>
         simp [CostStaticRegionPlan.abstractPattern] at frameFree
-    | multiLambda bodyPlan =>
+    | _, _, .multiLambda bodyPlan =>
         simp [CostStaticRegionPlan.abstractPattern,
           WellSorted.ReflectiveSubstitutionBinderFree] at frameFree
-    | collection choice selected children =>
+    | _, _, .collection choice selected children =>
         obtain ⟨before, child, after, inner, decomposition, contextEquality,
             ⟨nested⟩⟩ :=
           planOccurrence_collection_split_context occurrence
@@ -173,11 +173,11 @@ mutual
             children childrenFree decomposition nested
         rw [contextEquality]
         simpa [rhoCanonicalOccurrenceAvailable] using childEquality
-    | boundaryCollection currentRejected oppositeChoice oppositeSelected
+    | _, _, .boundaryCollection currentRejected oppositeChoice oppositeSelected
         certified certifies =>
         cases occurrence
         rfl
-  termination_by 3 * sizeOf pattern + 2
+  termination_by structural plan
 
   /-- Ordered-argument companion of exact planner availability. -/
   theorem CostStaticArgumentPlan.abstractOccurrence_available_eq_quoteLocal
@@ -202,9 +202,9 @@ mutual
       (nested : CostStaticPlanAbstractOccurrence rhoCIGSLT name
         selectedDecoration inner planAvailable) :
       planAvailable = rhoCanonicalOccurrenceAvailable sourceAvailable inner := by
-    cases plan with
-    | nil => simp [CostStaticArgumentPlan.decorations] at decomposition
-    | cons representation parameterType head tail =>
+    match (generalizing := true) arguments, parameters, plan with
+    | _, _, .nil => simp [CostStaticArgumentPlan.decorations] at decomposition
+    | _, _, .cons representation parameterType head tail =>
         have freeParts :
             WellSorted.ReflectiveSubstitutionBinderFree
                 head.abstractPattern = true ∧
@@ -228,7 +228,7 @@ mutual
             exact
               CostStaticArgumentPlan.abstractOccurrence_available_eq_quoteLocal
                 tail freeParts.2 decomposition.2 nested
-  termination_by 3 * sizeOf arguments + 1
+  termination_by structural plan
 
   /-- Homogeneous-collection companion of exact planner availability. -/
   theorem CostStaticElementPlan.abstractOccurrence_available_eq_quoteLocal
@@ -254,9 +254,9 @@ mutual
       (nested : CostStaticPlanAbstractOccurrence rhoCIGSLT name
         selectedDecoration inner planAvailable) :
       planAvailable = rhoCanonicalOccurrenceAvailable sourceAvailable inner := by
-    cases plan with
-    | nil => simp [CostStaticElementPlan.decorations] at decomposition
-    | cons head tail =>
+    match (generalizing := true) elements, sourceElementType, plan with
+    | _, _, .nil => simp [CostStaticElementPlan.decorations] at decomposition
+    | _, _, .cons head tail =>
         have freeParts :
             WellSorted.ReflectiveSubstitutionBinderFree
                 head.abstractPattern = true ∧
@@ -280,7 +280,7 @@ mutual
             exact
               CostStaticElementPlan.abstractOccurrence_available_eq_quoteLocal
                 tail freeParts.2 decomposition.2 nested
-  termination_by 3 * sizeOf elements + 1
+  termination_by structural plan
 end
 
 set_option maxRecDepth 2000 in
@@ -305,16 +305,16 @@ mutual
       (boundary : CostRegionBoundary)
       (nameEquality : name = costRegionBoundaryVariableName boundary) :
       planAvailable = boundary.targetSupport := by
-    cases plan with
-    | bvar sourceIndex lookup correspondence availableScope =>
+    match (generalizing := true) pattern, sourceType, plan with
+    | _, _, .bvar sourceIndex lookup correspondence availableScope =>
         cases occurrence
-    | @fvar sourceBound targetBound sourceAvailable thinning outer sourceName
+    | _, _, @CostStaticRegionPlan.fvar _ _ _ sourceBound targetBound sourceAvailable thinning outer sourceName
         sourceType lookup =>
         cases occurrence with
         | sourceFVar =>
             exact (costRegionSourceVariableName_ne_boundary sourceName boundary
               nameEquality).elim
-    | boundaryApplication constructor rendered outsideCurrent certified
+    | _, _, .boundaryApplication constructor rendered outsideCurrent certified
         certifies =>
         cases occurrence with
         | boundaryApplication =>
@@ -322,33 +322,33 @@ mutual
               costRegionBoundaryVariableName_injective nameEquality
             subst boundary
             exact certified.targetSupport_eq.symm
-    | application constructor rendered current preimage notBare children =>
+    | _, _, .application constructor rendered current preimage notBare children =>
         obtain ⟨before, child, after, inner, decomposition, _contextEquality,
             ⟨nested⟩⟩ :=
           planOccurrence_application_split_context occurrence
         exact
           CostStaticArgumentPlan.abstractOccurrence_available_eq_boundarySupport
             children decomposition nested boundary nameEquality
-    | lambda bodyPlan =>
+    | _, _, .lambda bodyPlan =>
         cases occurrence with
         | lambda nested =>
             exact
               CostStaticRegionPlan.abstractOccurrence_available_eq_boundarySupport
                 bodyPlan nested boundary nameEquality
-    | multiLambda bodyPlan =>
+    | _, _, .multiLambda bodyPlan =>
         cases occurrence with
         | multiLambda nested =>
             exact
               CostStaticRegionPlan.abstractOccurrence_available_eq_boundarySupport
                 bodyPlan nested boundary nameEquality
-    | collection choice selected children =>
+    | _, _, .collection choice selected children =>
         obtain ⟨before, child, after, inner, decomposition, _contextEquality,
             ⟨nested⟩⟩ :=
           planOccurrence_collection_split_context occurrence
         exact
           CostStaticElementPlan.abstractOccurrence_available_eq_boundarySupport
             children decomposition nested boundary nameEquality
-    | boundaryCollection currentRejected oppositeChoice oppositeSelected
+    | _, _, .boundaryCollection currentRejected oppositeChoice oppositeSelected
         certified certifies =>
         cases occurrence with
         | boundaryCollection =>
@@ -356,7 +356,7 @@ mutual
               costRegionBoundaryVariableName_injective nameEquality
             subst boundary
             exact certified.targetSupport_eq.symm
-  termination_by 3 * sizeOf pattern + 2
+  termination_by structural plan
 
   /-- Ordered-argument companion of boundary-support identification. -/
   theorem CostStaticArgumentPlan.abstractOccurrence_available_eq_boundarySupport
@@ -381,9 +381,9 @@ mutual
       (boundary : CostRegionBoundary)
       (nameEquality : name = costRegionBoundaryVariableName boundary) :
       planAvailable = boundary.targetSupport := by
-    cases plan with
-    | nil => simp [CostStaticArgumentPlan.decorations] at decomposition
-    | cons representation parameterType head tail =>
+    match (generalizing := true) arguments, parameters, plan with
+    | _, _, .nil => simp [CostStaticArgumentPlan.decorations] at decomposition
+    | _, _, .cons representation parameterType head tail =>
         cases selectedBefore with
         | nil =>
             simp only [CostStaticArgumentPlan.decorations,
@@ -400,7 +400,7 @@ mutual
             exact
               CostStaticArgumentPlan.abstractOccurrence_available_eq_boundarySupport
                 tail decomposition.2 nested boundary nameEquality
-  termination_by 3 * sizeOf arguments + 1
+  termination_by structural plan
 
   /-- Homogeneous-collection companion of boundary-support identification. -/
   theorem CostStaticElementPlan.abstractOccurrence_available_eq_boundarySupport
@@ -426,9 +426,9 @@ mutual
       (boundary : CostRegionBoundary)
       (nameEquality : name = costRegionBoundaryVariableName boundary) :
       planAvailable = boundary.targetSupport := by
-    cases plan with
-    | nil => simp [CostStaticElementPlan.decorations] at decomposition
-    | cons head tail =>
+    match (generalizing := true) elements, sourceElementType, plan with
+    | _, _, .nil => simp [CostStaticElementPlan.decorations] at decomposition
+    | _, _, .cons head tail =>
         cases selectedBefore with
         | nil =>
             simp only [CostStaticElementPlan.decorations,
@@ -445,7 +445,7 @@ mutual
             exact
               CostStaticElementPlan.abstractOccurrence_available_eq_boundarySupport
                 tail decomposition.2 nested boundary nameEquality
-  termination_by 3 * sizeOf elements + 1
+  termination_by structural plan
 end
 
 mutual
@@ -465,22 +465,22 @@ mutual
       (membership : boundary ∈ plan.boundaryTable.entries) :
       boundary.boundary.targetSupport = sourceAvailable ∨
         boundary.boundary.targetSupport = [] := by
-    cases plan with
-    | bvar sourceIndex lookup correspondence availableScope =>
+    match (generalizing := true) pattern, sourceType, plan with
+    | _, _, .bvar sourceIndex lookup correspondence availableScope =>
         change boundary ∈ ([] : List
           (TypedCostRegionBoundary rhoCIGSLT color targetFree)) at membership
         simp at membership
-    | fvar lookup =>
+    | _, _, .fvar lookup =>
         change boundary ∈ ([] : List
           (TypedCostRegionBoundary rhoCIGSLT color targetFree)) at membership
         simp at membership
-    | boundaryApplication constructor rendered outsideCurrent certified
+    | _, _, .boundaryApplication constructor rendered outsideCurrent certified
         certifies =>
         change boundary ∈ [certified.typed] at membership
         simp only [List.mem_singleton] at membership
         subst boundary
         exact Or.inl certified.targetSupport_eq
-    | application constructor rendered current preimage notBare children =>
+    | _, _, .application constructor rendered current preimage notBare children =>
         have childrenFree :
             WellSorted.ReflectiveSubstitutionBinderFreeList
               children.abstractPatterns = true := by
@@ -496,12 +496,12 @@ mutual
           · simpa [quote] using exposed
           · exact sealed
         · simpa [quote] using childResult
-    | lambda bodyPlan =>
+    | _, _, .lambda bodyPlan =>
         simp [CostStaticRegionPlan.abstractPattern] at frameFree
-    | multiLambda bodyPlan =>
+    | _, _, .multiLambda bodyPlan =>
         simp [CostStaticRegionPlan.abstractPattern,
           WellSorted.ReflectiveSubstitutionBinderFree] at frameFree
-    | collection choice selected children =>
+    | _, _, .collection choice selected children =>
         have childrenFree :
             WellSorted.ReflectiveSubstitutionBinderFreeList
               children.abstractPatterns = true := by
@@ -510,13 +510,13 @@ mutual
         exact
           CostStaticElementPlan.boundaryTargetSupport_eq_sourceAvailable_or_nil
             children childrenFree boundary membership
-    | boundaryCollection currentRejected oppositeChoice oppositeSelected
+    | _, _, .boundaryCollection currentRejected oppositeChoice oppositeSelected
         certified certifies =>
         change boundary ∈ [certified.typed] at membership
         simp only [List.mem_singleton] at membership
         subst boundary
         exact Or.inl certified.targetSupport_eq
-  termination_by 3 * sizeOf pattern + 2
+  termination_by structural plan
 
   /-- Argument-spine companion of the boundary support dichotomy. -/
   theorem CostStaticArgumentPlan.boundaryTargetSupport_eq_sourceAvailable_or_nil
@@ -535,12 +535,12 @@ mutual
       (membership : boundary ∈ plan.boundaryTable.entries) :
       boundary.boundary.targetSupport = sourceAvailable ∨
         boundary.boundary.targetSupport = [] := by
-    cases plan with
-    | nil =>
+    match (generalizing := true) arguments, parameters, plan with
+    | _, _, .nil =>
         change boundary ∈ ([] : List
           (TypedCostRegionBoundary rhoCIGSLT color targetFree)) at membership
         simp at membership
-    | cons representation parameterType head tail =>
+    | _, _, .cons representation parameterType head tail =>
         have freeParts :
             WellSorted.ReflectiveSubstitutionBinderFree head.abstractPattern =
                 true ∧
@@ -559,7 +559,7 @@ mutual
         · exact
             CostStaticArgumentPlan.boundaryTargetSupport_eq_sourceAvailable_or_nil
               tail freeParts.2 boundary tailMembership
-  termination_by 3 * sizeOf arguments + 1
+  termination_by structural plan
 
   /-- Collection-spine companion of the boundary support dichotomy. -/
   theorem CostStaticElementPlan.boundaryTargetSupport_eq_sourceAvailable_or_nil
@@ -579,12 +579,12 @@ mutual
       (membership : boundary ∈ plan.boundaryTable.entries) :
       boundary.boundary.targetSupport = sourceAvailable ∨
         boundary.boundary.targetSupport = [] := by
-    cases plan with
-    | nil =>
+    match (generalizing := true) elements, sourceElementType, plan with
+    | _, _, .nil =>
         change boundary ∈ ([] : List
           (TypedCostRegionBoundary rhoCIGSLT color targetFree)) at membership
         simp at membership
-    | cons head tail =>
+    | _, _, .cons head tail =>
         have freeParts :
             WellSorted.ReflectiveSubstitutionBinderFree head.abstractPattern =
                 true ∧
@@ -603,7 +603,7 @@ mutual
         · exact
             CostStaticElementPlan.boundaryTargetSupport_eq_sourceAvailable_or_nil
               tail freeParts.2 boundary tailMembership
-  termination_by 3 * sizeOf elements + 1
+  termination_by structural plan
 end
 
 end CostStaticRegionNode

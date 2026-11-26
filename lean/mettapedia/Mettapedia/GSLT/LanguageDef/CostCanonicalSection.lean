@@ -4126,6 +4126,71 @@ def costStaticRestorationAssignment (source : CIGSLT)
         | some typedBoundary => typedBoundary.boundary.content
         | none => .fvar name
 
+/-- A mapped lookup licenses its exact open value. The resolver chooses the
+boundary and its actual target fiber. An assignment supplies the open value
+in that fiber, for either original or replacement content. -/
+theorem costRestoration_openPatternWellSorted
+    (source : CIGSLT) (color : CostStaticColor)
+    {targetFree : WellSorted.FreeTypeContext}
+    (resolve : String → Option (TypedCostRegionBoundary source color targetFree))
+    {name : String} {type : TypeExpr} {assignment : ContextSupport.Assignment}
+    (lookup : (match decodeCostRegionSourceVariableName name with
+      | some sourceName =>
+          ((targetFree sourceName).bind (CostStaticTypeImage.decode source.theory color)).map
+            (mapTypeExpr (color.symbols source))
+      | none => (resolve name).map (fun boundary => boundary.boundary.targetType)) = some type)
+    (sourceVariable : ∀ {sourceName}, decodeCostRegionSourceVariableName name = some sourceName →
+      assignment name = .fvar sourceName)
+    (stored : ∀ {boundary}, decodeCostRegionSourceVariableName name = none →
+      resolve name = some boundary →
+      ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile
+        source.costWholeLanguage targetFree boundary.boundary.targetSupport
+        boundary.boundary.targetType (assignment name)) :
+    ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree
+      (match decodeCostRegionSourceVariableName name with
+        | some _ => []
+        | none => match resolve name with
+          | some boundary => boundary.boundary.targetSupport
+          | none => [])
+      type (assignment name) := by
+  cases decoded : decodeCostRegionSourceVariableName name with
+  | some sourceName =>
+      simp only [decoded, Option.map_eq_some_iff, Option.bind_eq_some_iff] at lookup
+      obtain ⟨sourceType, ⟨targetType, present, recovered⟩, rfl⟩ := lookup
+      have typeRead := CostStaticTypeImage.mapTypeExpr_decode source.theory color recovered
+      rw [sourceVariable decoded, typeRead]
+      have typed : WellSorted.HasType source.costWholeLanguage targetFree []
+          (.fvar sourceName) targetType := .fvar present
+      refine ⟨⟨typed, rfl, rfl, typed.isWellScopedAt⟩, ?_⟩
+      intro presentation membership
+      exact scopeSafeAt_fvar _ _ _ _
+  | none =>
+      simp only [decoded, Option.map_eq_some_iff] at lookup
+      obtain ⟨boundary, observed, rfl⟩ := lookup
+      simpa only [observed] using stored decoded observed
+
+private theorem costStaticRestoration_openPatternWellSorted
+    (source : CIGSLT) (color : CostStaticColor)
+    (targetFree : WellSorted.FreeTypeContext)
+    (boundary : TypedCostRegionBoundaryAssignment source color targetFree)
+    (regions : List CostRegionOccurrence)
+    {name : String} {type : TypeExpr}
+    (lookup : mappedCostStaticAbstractionFreeContext source color targetFree boundary
+      regions name = some type) :
+    ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree
+      (costStaticRestorationSupport source color targetFree boundary regions name)
+      type (costStaticRestorationAssignment source color targetFree boundary regions name) := by
+  refine costRestoration_openPatternWellSorted source color
+    (resolveTypedCostRegionBoundaryData boundary regions) lookup ?_ ?_
+  · intro sourceName decoded
+    simp [costStaticRestorationAssignment, decoded]
+  · intro observedBoundary decoded observed
+    simpa only [costStaticRestorationAssignment, decoded, observed,
+      CostRegionBoundaryEvidence.TypedCostRegionBoundary.openPattern_pattern] using
+      (CostRegionBoundaryEvidence.TypedCostRegionBoundary.openPattern observedBoundary).2
+
 /-- The complete restoration table is a `SupportedAssignment` in the exact
 generated Cost language.  This is the load-bearing bridge from stable raw
 boundary keys to proof-carrying substitution; no typing fact is recovered
@@ -4143,52 +4208,8 @@ def costStaticSupportedAssignment (source : CIGSLT)
         regions) where
   assignment :=
     costStaticRestorationAssignment source color targetFree boundary regions
-  typed := by
-    intro name type lookup
-    cases decodedName : decodeCostRegionSourceVariableName name with
-    | some sourceName =>
-        cases targetLookup : targetFree sourceName with
-        | none =>
-            simp [mappedCostStaticAbstractionFreeContext,
-              decodedName, targetLookup]
-              at lookup
-        | some targetType =>
-            cases decodedType :
-                CostStaticTypeImage.decode source.theory color targetType with
-            | none =>
-                simp [mappedCostStaticAbstractionFreeContext,
-                  decodedName, targetLookup, decodedType] at lookup
-            | some sourceType =>
-                have encodedType :
-                    mapTypeExpr (color.symbols source) sourceType =
-                      targetType :=
-                  CostStaticTypeImage.mapTypeExpr_decode source.theory color decodedType
-                have mappedType :
-                    mapTypeExpr (color.symbols source) sourceType = type := by
-                  simpa [mappedCostStaticAbstractionFreeContext,
-                    typedCostStaticAbstractionFreeContext,
-                    WellSorted.FreeTypeContext.map, decodedName, targetLookup,
-                    decodedType] using lookup
-                have targetTypeEquality : targetType = type :=
-                  encodedType.symm.trans mappedType
-                have targetLookup' : targetFree sourceName = some type := by
-                  simpa [targetTypeEquality] using targetLookup
-                simpa [costStaticRestorationSupport,
-                  costStaticRestorationAssignment, decodedName] using
-                    (WellSorted.HasType.fvar (bound := []) targetLookup')
-    | none =>
-        cases resolved :
-            resolveTypedCostRegionBoundaryData boundary regions name with
-        | none =>
-            simp [mappedCostStaticAbstractionFreeContext,
-              decodedName, resolved] at lookup
-        | some typedBoundary =>
-            have targetType : typedBoundary.boundary.targetType = type := by
-              simpa [mappedCostStaticAbstractionFreeContext, decodedName,
-                resolved] using lookup
-            simpa [costStaticRestorationSupport,
-              costStaticRestorationAssignment, decodedName, resolved,
-              targetType] using typedBoundary.contentTyped
+  typed lookup :=
+    (costStaticRestoration_openPatternWellSorted source color targetFree boundary regions lookup).1.1
 
 /-- The restoration table consists of genuine open object terms.  Original
 source variables map to themselves; generated boundary variables map to the
@@ -4207,66 +4228,12 @@ def costStaticSupportedOpenAssignment (source : CIGSLT)
         regions) where
   toSupportedAssignment :=
     costStaticSupportedAssignment source color targetFree boundary regions
-  canonicalBinderMetadata := by
-    intro name type lookup
-    change
-      (costStaticRestorationAssignment source color targetFree boundary regions
-        name).hasCanonicalBinderMetadata = true
-    cases decodedName : decodeCostRegionSourceVariableName name with
-    | some sourceName =>
-        simp only [costStaticRestorationAssignment, decodedName]
-        rfl
-    | none =>
-        cases resolved :
-            resolveTypedCostRegionBoundaryData boundary regions name with
-        | none =>
-            simp [mappedCostStaticAbstractionFreeContext,
-              decodedName, resolved] at lookup
-        | some typedBoundary =>
-            simpa [costStaticRestorationAssignment, decodedName, resolved]
-              using typedBoundary.contentCanonicalBinderMetadata
-  objectPattern := by
-    intro name type lookup
-    change WellSorted.isObjectPattern
-      (costStaticRestorationAssignment source color targetFree boundary regions
-        name) = true
-    cases decodedName : decodeCostRegionSourceVariableName name with
-    | some sourceName =>
-        simp only [costStaticRestorationAssignment, decodedName]
-        rfl
-    | none =>
-        cases resolved :
-            resolveTypedCostRegionBoundaryData boundary regions name with
-        | none =>
-            simp [mappedCostStaticAbstractionFreeContext,
-              decodedName, resolved] at lookup
-        | some typedBoundary =>
-            simpa [costStaticRestorationAssignment, decodedName, resolved]
-              using typedBoundary.contentObjectPattern
-  reflectiveScopeSafe := by
-    intro name type lookup
-    change ReflectiveWellSorted.ReflectiveScopeSafeAt
-      source.costWholeReflectionProfile
-      (costStaticRestorationSupport source color targetFree boundary regions
-        name).length
-      (costStaticRestorationAssignment source color targetFree boundary regions
-        name)
-    cases decodedName : decodeCostRegionSourceVariableName name with
-    | some sourceName =>
-        intro presentation membership
-        simp only [costStaticRestorationSupport,
-          costStaticRestorationAssignment, decodedName, List.length_nil]
-        exact scopeSafeAt_fvar _ _ _ _
-    | none =>
-        cases resolved :
-            resolveTypedCostRegionBoundaryData boundary regions name with
-        | none =>
-            simp [mappedCostStaticAbstractionFreeContext,
-              decodedName, resolved] at lookup
-        | some typedBoundary =>
-            simpa [costStaticRestorationSupport,
-              costStaticRestorationAssignment, decodedName, resolved]
-              using typedBoundary.contentReflectiveScopeSafe
+  canonicalBinderMetadata lookup :=
+    (costStaticRestoration_openPatternWellSorted source color targetFree boundary regions lookup).1.2.1
+  objectPattern lookup :=
+    (costStaticRestoration_openPatternWellSorted source color targetFree boundary regions lookup).1.2.2.1
+  reflectiveScopeSafe lookup :=
+    (costStaticRestoration_openPatternWellSorted source color targetFree boundary regions lookup).2
 
 /-- Reflective supported restoration of one already transported Cost
 skeleton.  Unlike raw replacement, this operation weakens each boundary

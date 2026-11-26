@@ -1,12 +1,14 @@
 import Mettapedia.GSLT.Contexts.ContextMorphism
 
 /-!
-# The constant map
+# Why a constant GSLT morphism can lose observable results
 
 Under the naive definition, a morphism of theories is a map on terms that
 preserves bisimilarity.  Every constant map is one: the image of any two
-terms is one term, which is bisimilar to itself.  So there is a morphism from
-any theory to any theory that has a term, and the category orders nothing.
+terms is one term, which is bisimilar to itself. Even a theory with a single
+term `a` and no rewrites receives such a map. If two source calls return
+distinct numbers, both results map to `a`. A decoder given only `a` cannot
+recover which number was returned.
 
 A constant map on terms defines a static map in the sense of pairs, as soon as
 every context of the source is assigned a context of the target that absorbs
@@ -28,8 +30,9 @@ def GSLT.Morphism.constant (source target : GSLT) (term : target.Term) :
   toFun := fun _ => term
   preserves_bisim := fun _ => target.bisimilar_refl term
 
-/-- **The naive category orders nothing**: there is a morphism from any
-theory to any theory that has a term. -/
+/-- **Counterexample to using morphism existence as an execution criterion.**
+A target term suffices to construct a constant map, even in a target with no
+rewrites. See `ContextMap.constant_not_hosting` for the failure of hosting. -/
 theorem GSLT.nonempty_hom (source target : GSLT) (inhabited : Nonempty target.Term) :
     Nonempty (source ⟶ target) :=
   inhabited.elim fun term => ⟨GSLT.Morphism.constant source target term⟩

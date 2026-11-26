@@ -1,3 +1,4 @@
+import Mettapedia.OSLF.NativeTypes.GeneratedLogic.TypedReadingDomain
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.PrenexSteps
 import Mettapedia.GSLT.LanguageDef.RestrictionBlocks.ReplicationObjects
 import Mettapedia.OSLF.NativeTypes.GeneratedLogic.PiCanonicalForms
@@ -81,58 +82,36 @@ theorem domain_of_typed {term : Pattern} (typed : HasType piCalc names [] term (
 theorem sort_unique {term : Pattern} {first second : String} (firstTyped : HasType piCalc names [] term (.base first))
     (secondTyped : HasType piCalc names [] term (.base second)) (object : isObjectPattern term = true) :
     first = second := by
-  cases firstTyped with
-  | bvar lookup => simp at lookup
-  | fvar lookup =>
-      cases secondTyped with
-      | fvar lookup' =>
-          simp only [names, EquationReading.nameContext, Option.some.injEq, TypeExpr.base.injEq] at lookup lookup'
-          exact lookup.symm.trans lookup'
-  | constructor member =>
-      obtain ⟨rule', member', labelIs, -, typeIs, -⟩ := hasType_apply_inversion secondTyped
-      simp only [TypeExpr.base.injEq] at typeIs
-      rw [Mettapedia.Languages.ProcessCalculi.PiCalculus.PiCalcInstance.category_of_member member, typeIs,
-        Mettapedia.Languages.ProcessCalculi.PiCalculus.PiCalcInstance.category_of_member member']
-  | subst => simp [isObjectPattern] at object
-  | collectionConstructor member =>
-      rw [Mettapedia.Languages.ProcessCalculi.PiCalculus.PiCalcInstance.category_of_member member]
-      exact ((Mettapedia.Languages.ProcessCalculi.PiCalculus.Blocks.piBlockSignature.bag_members secondTyped).2.1).symm
+  refine object_base_sort_unique ?_ ?_ firstTyped secondTyped object
+  · intro _ _ member member' _
+    exact (Mettapedia.Languages.ProcessCalculi.PiCalculus.PiCalcInstance.category_of_member member).trans (Mettapedia.Languages.ProcessCalculi.PiCalculus.PiCalcInstance.category_of_member member').symm
+  · intro _ _ _ _ _ left right
+    exact (Mettapedia.Languages.ProcessCalculi.PiCalculus.Blocks.piBlockSignature.bag_members left).2.1.trans (Mettapedia.Languages.ProcessCalculi.PiCalculus.Blocks.piBlockSignature.bag_members right).2.1.symm
+
+private theorem typedDomain : TypedReadingDomain piCalc (some "Name") "Proc"
+    (fun term => domain term = true) where
+  typed := fun {_} accepted => (typed_of_domain accepted).1
+  ofTyped := @domain_of_typed
+  sortUnique := @sort_unique
 
 /-- **A step of π's reading relates the domain only to the domain**, both ways. -/
 theorem domain_iff_of_step {relEnv : RelationEnv} {first second : Pattern}
     (step : ObjectStep relEnv piCalc reading first second) : domain first = true ↔ domain second = true := by
-  obtain ⟨-, -, type, ⟨sort, rfl⟩, firstFormed, secondFormed, -⟩ := step
-  constructor
-  · intro admitted
-    obtain ⟨typed, object⟩ := typed_of_domain admitted
-    obtain rfl := sort_unique firstFormed.typed typed object
-    exact domain_of_typed secondFormed.typed secondFormed.object
-  · intro admitted
-    obtain ⟨typed, object⟩ := typed_of_domain admitted
-    obtain rfl := sort_unique secondFormed.typed typed object
-    exact domain_of_typed firstFormed.typed firstFormed.object
+  exact typedDomain.step_iff step
 
 theorem domain_iff_of_equivalent {relEnv : RelationEnv} {first second : Pattern}
     (equivalent : ObjectEquivalent relEnv piCalc reading first second) : domain first = true ↔ domain second = true := by
-  induction equivalent with
-  | rel _ _ step => exact domain_iff_of_step step
-  | refl => exact Iff.rfl
-  | symm _ _ _ same => exact same.symm
-  | trans _ _ _ _ _ first second => exact first.trans second
+  exact typedDomain.equivalent_iff equivalent
 
 /-- **A chain of laws through object processes is an equivalence of π's reading.** -/
 theorem objectEquivalent_of_objectChain (relEnv : RelationEnv) {first second : Pattern}
     (chain : ObjectChain piCalc names [] (.base "Proc") first second) :
     ObjectEquivalent relEnv piCalc reading first second := by
-  induction chain with
-  | rel first second step =>
-      obtain ⟨step, firstObject, secondObject⟩ := step
-      exact .rel _ _ ⟨firstObject, secondObject, .base "Proc", ⟨"Proc", rfl⟩,
-        ⟨firstObject, step.firstTyped, by simp⟩, ⟨secondObject, step.secondTyped, by simp⟩,
-        disciplinedStep_raw_iff.mpr ((equationStep_iff_replication (block := piRepBlock) relEnv _).mpr step.step)⟩
-  | refl => exact .refl _
-  | symm _ _ _ recurse => exact .symm _ _ recurse
-  | trans _ _ _ _ _ left right => exact .trans _ _ _ left right
+  refine Relation.EqvGen.mono ?_ _ _ chain
+  intro _ _ edge
+  obtain ⟨step, firstObject, secondObject⟩ := edge
+  exact objectStep_of_typed_base ⟨⟨firstObject, step.firstTyped, by simp⟩, ⟨secondObject, step.secondTyped, by simp⟩,
+    disciplinedStep_raw_iff.mpr ((equationStep_iff_replication (block := piRepBlock) relEnv _).mpr step.step)⟩
 
 /-- **Equivalent object processes are equivalent in π's reading**: a chain of laws between them, read through its
 object reading, passes through object processes only. -/

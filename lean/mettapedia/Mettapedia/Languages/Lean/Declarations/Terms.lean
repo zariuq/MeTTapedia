@@ -54,11 +54,29 @@ term is an abstraction, a hypothesis or a theorem applied to arguments
 (`Quot.sound` and `propext` among the theorems), or a projection onto a proof
 field, the term is kept beside it (`proofBy`): it says which theorems the
 proposition follows from, so that a target can follow the same steps.
+
+All of the above is a set reading: it reads what the Egal interpretation
+covers.  A reading of syntax alone (`syntaxReading`), which takes Lean's terms
+back to Lean, refuses nothing the kernel accepts:
+
+* the kernel's projection `x.i` of a structure is its projection function
+  applied to `x`;
+* a proof by a constructor of a proposition (`Eq.refl`), by an eliminator at
+  a proposition (`h ▸ p`), or by a definition (`id`, `Eq.mpr`, read through
+  its body) is kept as well;
+* the quotient primitives are read at every level, with no profile check
+  (`QuotientProfile.outside` names what a set reading of the same data must
+  refuse).
 -/
 
 open Lean Meta
 
 namespace Mettapedia.Languages.Lean.Declarations
+
+/-- Whether a reading is of syntax alone (Lean back to Lean), which reads every term Lean's kernel
+accepts, rather than a set reading (the default), which reads what the Egal interpretation covers. -/
+def syntaxReading : Lean.Option Bool :=
+  { name := `mettapedia.leanSyntaxReading, defValue := false }
 
 /-- A universe level: a parameter, a numeral, a successor, a maximum, or an impredicative
 maximum (`imax a b` is `0` when `b` is `0`, else `max a b`). -/
@@ -90,6 +108,8 @@ def FLevel.of? : Level → Option FLevel
 inductive FTerm where
   | var (name : String)
   | num (n : Nat)
+  /-- A string literal, read where the data goes back to Lean (`syntaxReading`). -/
+  | str (s : String)
   | app (c : Name) (args : List FTerm)
   | apv (function : FTerm) (args : List FTerm)
   | lam (name : String) (type : FTerm) (body : FTerm)
@@ -179,6 +199,12 @@ partial def readTerm (names : Names) (e : Expr) : FReadM FTerm := do
         if e' != e && !e'.getAppFn.isProj then return ← readTerm names e'
   if e.isConstOf ``Nat.zero then return .app ``Nat.zero []
   if let some n ← natLiteral? e then return .num n
+  if let .lit (.strVal s) := e then
+    unless syntaxReading.get (← getOptions) do
+      throwThe String s!"a string literal, outside the set reading: {s.quote}"
+    unless s.all (fun c => 32 ≤ c.toNat && c.toNat < 127 && c != '"' && c != '\\') do
+      throwThe String s!"a string literal with characters its atom does not write: {s.quote}"
+    return .str s
   match e with
   | .lam binderName type body _ =>
       let typeTerm ← readTerm names type
@@ -202,8 +228,9 @@ partial def readTerm (names : Names) (e : Expr) : FReadM FTerm := do
     return .apv (.var name) (← e.getAppArgs.toList.mapM (readTerm names))
   | .lam .. => readTerm names e.headBeta
   | .const c levels =>
-    if let some reason ← QuotientProfile.refusal? c levels then
-      throwThe String reason
+    unless syntaxReading.get (← getOptions) do
+      if let some reason ← QuotientProfile.refusal? c levels then
+        throwThe String reason
     -- A constant applied to fewer arguments than it takes: a function, a
     -- constructor, or a family of propositions used as a value (`Nat.le`).
     if (← whnfD (← inferType e)).isForall then
@@ -225,6 +252,14 @@ partial def readTerm (names : Names) (e : Expr) : FReadM FTerm := do
       if args.size == own then return head
       return .apv head (← (args.extract own args.size).toList.mapM (readTerm names))
     return .app c (← e.getAppArgs.toList.mapM (readTerm names))
+  | .proj structName i x =>
+    unless syntaxReading.get (← getOptions) do
+      throwThe String s!"not a first-order application: {← ppExpr e}"
+    -- The kernel's projection, as the structure's projection function applied.
+    let some field := (getStructureInfo? (← getEnv) structName).bind (·.fieldNames[i]?)
+      | throwThe String s!"a projection without a field: {← ppExpr e}"
+    let applied ← Meta.mkProjection x field
+    readTerm names (mkAppN applied e.getAppArgs)
   | _ => throwThe String s!"not a first-order application: {← ppExpr e}"
 where
   /-- A binding of `value` in `body` (a function of the bound variable).  A
@@ -265,6 +300,28 @@ where
     | .lam .. => readProof names e.headBeta
     | .const c levels =>
       let info ← getConstInfo c
+      let syntaxOnly := syntaxReading.get (← getOptions)
+      if syntaxOnly then
+        -- A constructor of a proposition is its proof, applied to its arguments.
+        if let .ctorInfo ctor := info then
+          if ← forallTelescopeReducing ctor.type fun _ body => Meta.isProp body then
+            let args := e.getAppArgs
+            if args.size < ctor.numParams + ctor.numFields then
+              let expanded ← etaExpand e
+              unless expanded.isLambda do
+                throwThe String s!"{c} applied to fewer arguments than it takes"
+              return ← readProof names expanded
+            return .app c (← args.toList.mapM readArgument)
+        -- An eliminator at a proposition (a transport `h ▸ p`) is a proof by its arguments.
+        if let .recInfo rec := info then
+          if e.getAppNumArgs == rec.numParams + rec.numMotives + rec.numMinors + rec.numIndices + 1 ||
+              !(← whnfD (← inferType e)).isForall then
+            return .app c (← e.getAppArgs.toList.mapM readArgument)
+        -- A proof by a definition (`Eq.ndrec`, `id`) is that definition's body at its arguments.
+        if let .defnInfo defn := info then
+          if (← getProjectionFnInfo? c).isNone then
+            let value ← instantiateValueLevelParams (.defnInfo defn) levels
+            return ← readProof names (value.beta e.getAppArgs)
       let citable ← match info with
         | .thmInfo _ => pure true
         | .axiomInfo _ => pure (c == ``propext || c == ``Quot.sound)
@@ -272,10 +329,9 @@ where
       unless citable do
         throwThe String s!"a proof by {c}, which is not a theorem"
       -- As the quotient primitives: only instances at carriers in `Type`.
-      if c == ``Quot.sound then
-        for level in levels do
-          unless level.normalize matches .succ _ do
-            throwThe String s!"Quot.sound at level {level}, which is not a successor"
+      if c == ``Quot.sound && !syntaxOnly then
+        if let some reason ← QuotientProfile.soundRefusal? levels then
+          throwThe String reason
       let arity := info.type.getForallBinderNames.length
       let args := e.getAppArgs
       if args.size < arity then
@@ -471,6 +527,7 @@ def FLevel.atom : FLevel → String
 partial def FTerm.atom : FTerm → String
   | .var x => s!"(var {egalVar x})"
   | .num n => s!"(num {n})"
+  | .str s => s!"(str \"{s}\")"
   | .app c args => s!"(app {c} ({" ".intercalate (args.map FTerm.atom)}))"
   | .apv f args => s!"(apv {f.atom} ({" ".intercalate (args.map FTerm.atom)}))"
   | .lam x type body => s!"(lam {egalVar x} {type.atom} {body.atom})"
@@ -488,6 +545,7 @@ is kept for is `(by term)`, and a theorem applied to its arguments is
 partial def FTerm.atomWithProofs : FTerm → String
   | .var x => s!"(var {egalVar x})"
   | .num n => s!"(num {n})"
+  | .str s => s!"(str \"{s}\")"
   | .app c args => s!"(app {c} ({" ".intercalate (args.map FTerm.atomWithProofs)}))"
   | .apv f args => s!"(apv {f.atomWithProofs} ({" ".intercalate (args.map FTerm.atomWithProofs)}))"
   | .lam x type body => s!"(lam {egalVar x} {type.atomWithProofs} {body.atomWithProofs})"
@@ -503,7 +561,7 @@ partial def FTerm.atomWithProofs : FTerm → String
 /-- The proofs of a term in the order its atom writes them: for each, the
 term Lean records, when it was read. -/
 partial def FTerm.proofTerms : FTerm → List (Option FTerm)
-  | .var _ | .num _ | .prop | .sort _ | .level _ => []
+  | .var _ | .num _ | .str _ | .prop | .sort _ | .level _ => []
   | .app _ args | .cite _ args => args.flatMap FTerm.proofTerms
   | .apv f args => (f :: args).flatMap FTerm.proofTerms
   | .lam _ type body => type.proofTerms ++ body.proofTerms
@@ -513,7 +571,7 @@ partial def FTerm.proofTerms : FTerm → List (Option FTerm)
 
 /-- The theorems a term's proofs cite, in order of first use. -/
 partial def FTerm.cited : FTerm → List Name
-  | .var _ | .num _ | .prop | .sort _ | .proof | .level _ => []
+  | .var _ | .num _ | .str _ | .prop | .sort _ | .proof | .level _ => []
   | .app _ args => args.foldl (fun acc a => acc ++ (a.cited.filter (!acc.contains ·))) []
   | .cite c args => args.foldl (fun acc a => acc ++ (a.cited.filter (!acc.contains ·))) [c]
   | .apv f args => (f :: args).foldl (fun acc a => acc ++ (a.cited.filter (!acc.contains ·))) []
@@ -537,7 +595,7 @@ def FEquation.atom (eqn : FEquation) : String :=
 
 /-- The constants a term applies, in order of first use. -/
 partial def FTerm.constants : FTerm → List Name
-  | .var _ | .num _ | .level _ => []
+  | .var _ | .num _ | .str _ | .level _ => []
   | .app c args => args.foldl (fun acc a => acc ++ (a.constants.filter (!acc.contains ·)))
       (if c.isAnonymous then [] else [c])
   | .apv f args => (f :: args).foldl (fun acc a => acc ++ (a.constants.filter (!acc.contains ·))) []

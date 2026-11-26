@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.PeTTa.AppendAgreement
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.RuleInstantiationExecution
 import Mettapedia.OSLF.MeTTaIL.GeneralScopedMatchMachineCertified
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.RuleExecutionProgram
@@ -441,20 +442,8 @@ theorem extension_declarations_fresh :
 
 theorem base_program_agreement :
     ProgramAgreementOn baseHead RuleExecutionProgram.program program := by
-  apply appended_program_agreement
-  · intro equation member
-    have checked := List.all_eq_true.mp extension_equations_fresh equation member
-    cases result : baseHead equation.head with
-    | false => rfl
-    | true => simp [result] at checked
-
-
-  · intro name types member
-    have checked := List.all_eq_true.mp extension_declarations_fresh
-      (.expression [.symbol ":", .symbol name, .expression (.symbol "->" :: types)]) member
-    cases result : baseHead name with
-    | false => rfl
-    | true => simp [result] at checked
+  exact appended_program_agreement_of_checks _ _ _ extension_equations_fresh
+    extension_declarations_fresh (fun _ _ => rfl)
 
 
 theorem base_captured_returns {bindings : Subst} {before after : State} {code answer : Atom}

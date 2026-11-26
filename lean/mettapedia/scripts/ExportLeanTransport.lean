@@ -7,18 +7,23 @@ cite, as first-order data, so that the Egal kernel can follow them.
 
 Run from the project root:
 `lake env lean scripts/ExportLeanTransport.lean`
-imports the target's module inventory (`modules.txt`, as the terms export does),
 reads the roots, one theorem per line (rows starting with `#` are comments),
-from `artifacts/lean-declarations/transport/lemma-roots.txt` and writes
-`artifacts/lean-declarations/transport/proofs.metta`, with `needs.txt` (the families and
-functions the theorems name; those the target's roots lack are printed); `LEAN_TRANSPORT_OUT`
-selects another directory.
+from `artifacts/lean-declarations/transport/lemma-roots.txt` (`LEAN_TRANSPORT_ROOTS` selects
+another file).  The roots file's directory is the target's: its module inventory (`modules.txt`,
+as the terms export reads it) is imported, and `proofs.metta` is written there, with `needs.txt`
+(the families and functions the theorems name; those the target's roots lack are printed);
+`LEAN_TRANSPORT_OUT` selects another directory for the output.  The closure follows every
+theorem a proof cites; with `LEAN_TRANSPORT_SCOPE=sources` it stops at the inventory's `source`
+modules, and a theorem outside them is cited as Lean's own (`(TransportScope sources)`).
 
   (TransportTheorem c (binder ..) statement)   a theorem of the closure, its statement
   (TransportLevels c (l ..))                   its level parameters, in order
                                                read as a cited lemma's is
   (TransportProof c proof)                     Lean's proof of it
   (TransportRefused c reason)                  a theorem whose statement or proof is not read
+  (TransportOutsideProfile c part reason)      its statement or proof applies a quotient
+                                               primitive at a level the set readings do not
+                                               interpret (QuotientProfile); read all the same
   (TransportOrder c ..)                        the theorems, each after those its proof cites
   (EgalName c ident)                           a theorem's Egal name, and each recursor's
                                                a proof applies (F.rec: the family's recursor)
@@ -35,7 +40,9 @@ A proof is written as
                      whose value the reading erases)
   (pquot q (a ..))   a primitive of quotients (`Quot.ind`) applied to arguments
 and an argument (a ..) that is not a proof is a term, written as the terms
-export writes terms.  A definition a proof applies (`rfl`, `id`, `Eq.mpr`)
+export writes terms, with the proofs inside it (`(by p)`, so that the proofs a
+statement or a term carries go back to Lean, and their citations count in the
+closure).  A definition a proof applies (`rfl`, `id`, `Eq.mpr`)
 is read through its body.  The closure follows theorems only: what a proof
 applies otherwise is named in the proof and read by the families export.
 -/
@@ -61,14 +68,14 @@ inductive TProof where
   deriving Inhabited
 
 partial def TProof.atom : TProof → String
-  | .lam x T p => s!"(plam {egalVar x} {T.atom} {p.atom})"
+  | .lam x T p => s!"(plam {egalVar x} {T.atomWithProofs} {p.atom})"
   | .hyp h args => s!"(phyp {egalVar h} ({" ".intercalate (args.map TProof.atom)}))"
   | .cite c args => s!"(pcite {c} ({" ".intercalate (args.map TProof.atom)}))"
   | .ctor c args => s!"(pctor {c} ({" ".intercalate (args.map TProof.atom)}))"
   | .recursor r args => s!"(prec {r} ({" ".intercalate (args.map TProof.atom)}))"
   | .quot q args => s!"(pquot {q} ({" ".intercalate (args.map TProof.atom)}))"
   | .proj S i p args => s!"(pproj {S} {i} {p.atom} ({" ".intercalate (args.map TProof.atom)}))"
-  | .term t => t.atom
+  | .term t => t.atomWithProofs
   | .cut P h b => s!"(phave {P.atom} {h.atom} {b.atom})"
   | .level l => s!"(level {l.atom})"
 
@@ -91,6 +98,12 @@ def eliminationOfProof (S : Name) (i : Nat) (struct : Expr) : MetaM (Option Expr
   let recInfo ← getConstInfo (mkRecName S)
   let levels := if recInfo.levelParams.length > us.length then Level.zero :: us else us
   return some (mkAppN (mkConst (mkRecName S) levels) (params ++ #[motive, minor, struct]))
+
+/-- A binder with the proofs inside its type. -/
+def binderWithProofs : FBinder → String
+  | .term x ty => s!"(term {egalVar x} {ty.atomWithProofs})"
+  | .hyp x p => s!"(hyp {egalVar x} {p.atomWithProofs})"
+  | b => b.atom
 
 /-- Read a proof as Lean records it.  A definition met at the head is read
 through its body; `depth` bounds how many in a row. -/
@@ -240,10 +253,18 @@ partial def TProof.cited : TProof → List Name
   | .hyp _ args | .ctor _ args | .recursor _ args | .quot _ args => args.flatMap TProof.cited
   | .proj _ _ p args => p.cited ++ args.flatMap TProof.cited
   | .cut _ h b => h.cited ++ b.cited
-  | .term _ | .level _ => []
+  | .term t => t.cited
+  | .level _ => []
 
-/-- The theorems of the closure, each after the theorems its proof cites. -/
-partial def transportClosure (roots : List Name) : MetaM (Array Name) := do
+/-- A reading under a heartbeat budget of its own (`maxHeartbeats`, counted afresh), as Lean gives
+each declaration: one that runs out of it is refused, and the export goes on. -/
+def budgeted {α : Type} (x : MetaM (Except String α)) : MetaM (Except String α) :=
+  withCurrHeartbeats <| tryCatchRuntimeEx x
+    (fun ex => do pure (.error s!"resources: {← ex.toMessageData.toString}"))
+
+/-- The theorems of the closure, each after the theorems its proof cites; a cited theorem outside
+the scope is not followed. -/
+partial def transportClosure (roots : List Name) (inScope : Name → Bool) : MetaM (Array Name) := do
   let env ← getEnv
   let mut seen : NameSet := {}
   let mut order : Array Name := #[]
@@ -262,24 +283,28 @@ partial def transportClosure (roots : List Name) : MetaM (Array Name) := do
       stack := stack.push (c, true)
       -- what its proof cites as read; of a proof that is not read, what it names
       let read : MetaM (Except String TProof) :=
-        try (readTransportProof {} t.value).run catch _ => pure (.error "not readable")
+        budgeted (try (readTransportProof {} t.value).run catch _ => pure (.error "not readable"))
       let cited := match ← read with
         | .ok proof => proof.cited
         | .error _ => t.value.getUsedConstants.toList
       for d in cited do
-        if !seen.contains d then
+        if !seen.contains d && inScope d then
           if let some (.thmInfo _) := env.find? d then stack := stack.push (d, false)
     | _ => pure ()
   return order
 
+/-- The roots file; its directory is the target's. -/
+def transportRootsFile : IO System.FilePath := do
+  return ⟨(← IO.getEnv "LEAN_TRANSPORT_ROOTS").getD "artifacts/lean-declarations/transport/lemma-roots.txt"⟩
+
 def transportRoots : IO (List Name) := do
-  let rows ← IO.FS.lines "artifacts/lean-declarations/transport/lemma-roots.txt"
+  let rows ← IO.FS.lines (← transportRootsFile)
   return rows.toList.filterMap fun row =>
     if row.isEmpty || row.startsWith "#" then none else some row.toName
 
-def exportTransport : TermElabM (String × String) := do
+def exportTransport (scope : String) (inScope : Name → Bool) : TermElabM (String × String) := do
   let roots ← transportRoots
-  let order ← transportClosure roots
+  let order ← transportClosure roots inScope
   let mut out : Array String := #[]
   -- a root that is not a theorem of the target's environment is refused, with what it is
   let env ← getEnv
@@ -303,16 +328,22 @@ def exportTransport : TermElabM (String × String) := do
   for c in order do
     out := out.push s!"(EgalName {c} {egalIdent c.toString})"
     let info ← getConstInfo c
-    match ← (readLemma info.type).run with
+    match ← budgeted (try (readLemma info.type).run catch ex => do pure (.error s!"not readable: {← ex.toMessageData.toString}")) with
     | .ok (binders, statement) =>
-      out := out.push s!"(TransportTheorem {c} ({" ".intercalate (binders.map FBinder.atom)}) {statement.atom})"
+      out := out.push s!"(TransportTheorem {c} ({" ".intercalate (binders.map binderWithProofs)}) {statement.atomWithProofs})"
       out := out.push s!"(TransportLevels {c} ({" ".intercalate (info.levelParams.map (fun u => egalLevel u.toString))}))"
       named := named ++ binders.flatMap FBinder.constants ++ statement.constants
     | .error reason =>
       out := out.push s!"(TransportRefused {c} {(Json.str ("statement: " ++ reason)).compress})"
+    -- what a set reading must refuse: quotient instances outside the Type-carrier profile
+    for reason in ← withCurrHeartbeats (QuotientProfile.outside info.type) do
+      out := out.push s!"(TransportOutsideProfile {c} statement {(Json.str reason).compress})"
+    if let some value := info.value? (allowOpaque := true) then
+      for reason in ← withCurrHeartbeats (QuotientProfile.outside value) do
+        out := out.push s!"(TransportOutsideProfile {c} proof {(Json.str reason).compress})"
     if let .thmInfo t := info then
       let attempt : MetaM (Except String TProof) :=
-        try (readTransportProof {} t.value).run catch ex => do pure (.error s!"not readable: {← ex.toMessageData.toString}")
+        budgeted (try (readTransportProof {} t.value).run catch ex => do pure (.error s!"not readable: {← ex.toMessageData.toString}"))
       match ← attempt with
       | .ok proof =>
         out := out.push s!"(TransportProof {c} {proof.atom})"
@@ -335,6 +366,7 @@ def exportTransport : TermElabM (String × String) := do
       out := out.push s!"(LeanRecursor {n} {info.getMajorInduct})"
       unless recursors.contains n do out := out.push s!"(EgalName {n} {egalIdent n.toString})"
   out := out.push s!"(TransportOrder {" ".intercalate (order.toList.map toString)})"
+  out := out.push s!"(TransportScope {scope})"
   -- what the target must read: families and functions the theorems name
   let (families, functions) := transportNeeds (← getEnv) named
   let needs := "# Families and functions the transported theorems name, in their statements and in\n" ++
@@ -344,9 +376,19 @@ def exportTransport : TermElabM (String × String) := do
 
 #eval show TermElabM Unit from do
   -- the target's environment: its module inventory (modules.txt), as the terms export reads it
-  discard <| TargetEnvironment.load "artifacts/lean-declarations/transport"
-  let (text, needs) ← exportTransport
-  let dir := (← IO.getEnv "LEAN_TRANSPORT_OUT").getD "artifacts/lean-declarations/transport"
+  let target := ((← transportRootsFile).parent.getD ".").toString
+  let modules ← TargetEnvironment.load target
+  -- the closure's scope: every theorem cited (closure), or the source modules' (sources)
+  let scope := (← IO.getEnv "LEAN_TRANSPORT_SCOPE").getD "closure"
+  unless scope == "closure" || scope == "sources" do throwError "LEAN_TRANSPORT_SCOPE: closure or sources"
+  let env ← getEnv
+  let inScope : Name → Bool := fun d => scope == "closure" ||
+    match env.getModuleIdxFor? d with
+    | some i => modules.sources.contains (env.header.moduleNames[i.toNat]!)
+    | none => false
+  -- every instance read: this data goes back to Lean as well as into a set reading
+  let (text, needs) ← withOptions (syntaxReading.set · true) (exportTransport scope inScope)
+  let dir := (← IO.getEnv "LEAN_TRANSPORT_OUT").getD target
   IO.FS.createDirAll dir
   IO.FS.writeFile s!"{dir}/proofs.metta" text
   IO.FS.writeFile s!"{dir}/needs.txt" needs

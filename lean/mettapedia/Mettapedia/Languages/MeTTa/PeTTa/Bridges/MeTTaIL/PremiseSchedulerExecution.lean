@@ -1,3 +1,5 @@
+import Mettapedia.Languages.MeTTa.PeTTa.BridgeTransport
+import Mettapedia.Languages.MeTTa.PeTTa.AppendAgreement
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.RuleInstantiationExecution
 import Mettapedia.OSLF.MeTTaIL.GeneralPremiseScheduler
 
@@ -25,32 +27,10 @@ private def retainedHead (head : String) : Bool :=
   head != "eval" && head != "gslt:premise:machine-commit" && head != "gslt:premise:machine-complete"
 
 private theorem retained_closed : ProgramClosed retainedHead RuleExecutionProgram.program := by
-  constructor
-  · decide +kernel
-  · intro equation member supported
-    have checked : RuleExecutionProgram.program.equations.all (fun equation =>
-        !retainedHead equation.head || codeWithin retainedHead equation.body) = true := by decide +kernel
-    have row := List.all_eq_true.mp checked equation member
-    simpa only [supported, Bool.not_true, Bool.false_or] using row
+  exact BridgeKit.closed_of_all _ _ (by decide +kernel) (by decide +kernel)
 
 private theorem retained_agreement : ProgramAgreementOn retainedHead RuleExecutionProgram.program runtime := by
-  apply appended_program_agreement
-  · intro equation member
-    have checked : sourceProgram.equations.all (fun equation => !retainedHead equation.head) = true := by
-      decide +kernel
-    have row := List.all_eq_true.mp checked equation member
-    cases selected : retainedHead equation.head with
-    | false => rfl
-    | true => simp [selected] at row
-  · intro name types member
-    have checked : sourceProgram.declarations.all (fun declaration => match declaration with
-        | .expression [.symbol ":", .symbol head, .expression (.symbol "->" :: _)] => !retainedHead head
-        | _ => true) = true := by decide +kernel
-    have row := List.all_eq_true.mp checked
-      (.expression [.symbol ":", .symbol name, .expression (.symbol "->" :: types)]) member
-    cases selected : retainedHead name with
-    | false => rfl
-    | true => simp [selected] at row
+  exact appended_program_agreement_of_all _ _ _ (by decide +kernel) (by decide +kernel)
 
 private theorem retained_returns {caller : Subst} {state : State} {code answer : Atom}
     (supported : codeWithin retainedHead code = true)
@@ -530,14 +510,7 @@ def executionHeads (head : String) : Bool := executionHeadNames.contains head
 set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
 theorem runtime_closed : ProgramClosed executionHeads runtime := by
-  constructor
-  · decide +kernel
-  · intro equation member supported
-    have checked : runtime.equations.all (fun equation =>
-        !executionHeads equation.head || codeWithin executionHeads equation.body) = true := by
-      decide +kernel
-    have row := List.all_eq_true.mp checked equation member
-    simpa only [supported, Bool.not_true, Bool.false_or] using row
+  exact BridgeKit.closed_of_all _ _ (by decide +kernel) (by decide +kernel)
 
 theorem returns_in_extension (target : Program)
     (agreement : ProgramAgreementOn executionHeads runtime target)

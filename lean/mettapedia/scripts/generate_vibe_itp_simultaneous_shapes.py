@@ -2,8 +2,8 @@
 """Produce exact v2 schema instances using the existing restricted rule parser.
 
 This untrusted producer does not establish rule soundness. Lean must check the
-generated instance/intro lemmas and the separate specification-meaning proofs.
-The original v1 generator, schemas and generated artifact remain unchanged.
+generated instance and introduction lemmas and the specification meaning.
+The simultaneous package uses the same checked rule-instance proofs as v1.
 """
 import argparse
 from pathlib import Path
@@ -19,17 +19,9 @@ OUTPUT = OWNER / "SimultaneousRuleShapes.lean"
 def generate():
     original = (OWNER / "Rules.lean").read_text()
     addition = (OWNER / "SimultaneousRules.lean").read_text()
-    old_name = "def kernelRules : List FORule :="
-    new_name = "def rulesV2 : List FORule := kernelRules ++ simultaneousRules"
-    base.require(original.count(old_name) == 1 and addition.count(new_name) == 1,
-                 "unexpected kernel package declarations")
-    combined = original.replace(old_name, "def legacyKernelRules : List FORule :=") + "\n" + addition.replace(
-        new_name, "def kernelRules : List FORule := legacyKernelRules ++ simultaneousRules")
-    base.EXPECTED_NAMED = 128
-    inventory = base.parse_inventory(combined, (OWNER / "Syntax.lean").read_text(),
-                                     (OWNER.parent / "Spec/Basic.lean").read_text())
+    inventory = base.simultaneous_inventory(original, addition, (OWNER / "Syntax.lean").read_text(),
+                                           (OWNER.parent / "Spec/Basic.lean").read_text())
     names = inventory.groups["simultaneousRules"]
-    base.require(len(names) == 16 and len(set(names)) == 16, "expected sixteen distinct v2 rules")
     output = ["""import Mettapedia.Languages.VibeITP.Presentation.SimultaneousRules
 import Mettapedia.Languages.VibeITP.Presentation.Instances
 
@@ -53,14 +45,6 @@ open Mettapedia.GSLT.LanguageDef.FirstOrderRules
         for child in expr[1:]:
             found |= helpers(child)
         return found
-
-    def members(count):
-        if not count:
-            return "    simp only [List.not_mem_nil] at included\n"
-        result = "    simp only [List.mem_cons, List.not_mem_nil, or_false] at included\n"
-        if count == 1:
-            return result + "    rcases included with rfl\n    assumption\n"
-        return result + "    rcases included with " + " | ".join("rfl" for _ in range(count)) + " <;> assumption\n"
 
     for name in names:
         rule = inventory.rules[name]
@@ -91,30 +75,26 @@ open Mettapedia.GSLT.LanguageDef.FirstOrderRules
         if implication:
             implication += " → "
         quantifier = f"∀ {applied} : Pattern, " if variables else ""
-        premise_args = " ".join("(premises _ (by simp))" for _ in premises)
+        shape = f"inst_{name}" + (f" {applied}" if variables else "")
+        applied_sound = f"(sound {applied})" if variables else "sound"
         output.append(f"""theorem sound_{name} {{P : Pattern → Prop}}
     (sound : {quantifier}{implication}P {conclusion}) :
     ∀ args : List Pattern, args.length = {name}.vars.length →
       (∀ premise ∈ {name}.instPremises args, P premise) → P ({name}.instConclusion args) := by
   intro args length premises
   match args, length with
-  | {arguments}, _ =>
-      rw [(inst_{name} {applied}).1] at premises
-      rw [(inst_{name} {applied}).2]
-      exact sound {applied} {premise_args}
+  | {arguments}, _ => exact FORule.sound_of_shape ({shape}) {applied_sound} premises
 """)
         implicit = f"{{{applied} : Pattern}}" if variables else ""
         data = " ".join(f"(data_{v} : IsData {v})" for v in variables)
         hypotheses = " ".join(f"(premise{i} : FODerivable R {base.parenthesized(p)})"
                               for i, p in enumerate(premises))
+        data_proof = base.forall_evidence([f"data_{v}" for v in variables])
+        premise_proof = base.forall_evidence([f"premise{i}" for i in range(len(premises))])
         output.append(f"""theorem intro_{name} {{R : List FORule}} (member : {name} ∈ R) {implicit}
-    {data} {hypotheses} : FODerivable R {conclusion} := by
-  apply FODerivable.intro member {arguments} rfl
-  · intro argument included
-""" + members(len(variables)) + f"""  · exact (inst_{name} {applied}).2
-  · rw [(inst_{name} {applied}).1]
-    intro goal included
-""" + members(len(premises)))
+    {data} {hypotheses} : FODerivable R {conclusion} :=
+  FODerivable.intro_of_shape member ({shape}) rfl {data_proof} {premise_proof}
+""")
     output.append("end Mettapedia.Languages.VibeITP.Presentation.SimultaneousPresentation\n")
     return "\n".join(output)
 

@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentRigidFormersRounds
 
 /-!
@@ -56,7 +57,7 @@ section Extend
 variable [DecidableEq Head] [DecidableRel S.R.headEq]
   [∀ head, Decidable (S.R.isUniverse head)] [DecidableRel S.R.cumulative]
 variable (root : ExecutableReduction.RootEvaluator S.R)
-  (rootComplete : ∀ {n : Nat} (term : Tm Head n), root term = none → ∀ target, ¬ S.R.computation.step term target)
+  (rootComplete : SolverPremises.CompleteRootEvaluation (rules := S.R) root)
   (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R) (heads : HeadPreserving S.R)
   (base : Nat → {Θ : Context S.R} → (problem : EquationStore (TotalTerm Θ)) → Round S.levels size problem)
   (rule : Nat → {Θ : Context S.R} → (problem : EquationStore (TotalTerm Θ)) → Option (Found problem))
@@ -161,14 +162,10 @@ variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R)
   (choices : ExecutableChecking.HeadChoices S.R) (reducer : ExecutableReduction.Reducer S.R)
   (rigid : ∀ name, S.roles name = .rigid) (complete : AlgorithmicComplete S.R S.roles)
   (root : ExecutableReduction.RootEvaluator S.R)
-  (normalizes : ∀ {Θ : Context S.R} {type : TypeOver Θ} (term : Term Θ type),
-    ∃ code : Tm Head Θ.arity, ContextualDependentNormalChecking.Normal (S := S) code ∧
-      Equal S.R Θ.raw term.code code type.code)
-  (certifyNormal : ∀ {n : Nat} (term : Tm Head n),
-    Option (PLift (ContextualDependentNormalChecking.Normal (S := S) term)))
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
-  (rootComplete : ∀ {n : Nat} (term : Tm Head n), root term = none → ∀ target, ¬ S.R.computation.step term target)
+  (normalizes : SolverPremises.HasNormalForms S)
+  (certifyNormal : SolverPremises.NormalityCertifier S)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
+  (rootComplete : SolverPremises.CompleteRootEvaluation (rules := S.R) root)
 
 /-- **η-expansion of one equation**: when its right side has more leading abstractions, it is read
 from the right, so that the left side is η-expanded by the scoped reading; the rules then run on the
@@ -203,8 +200,7 @@ def etaFamily : ContextualDependentDecisiveDriver.Family S.levels where
   round fuel := etaRound facts roots heads algebra declared choices reducer rigid complete root normalizes certifyNormal
     headTypingUnique rootComplete fuel
 
-variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
-  Keeps (reducer fuel term) (reducer (fuel + 1) term))
+variable (stable : SolverPremises.StableReducer (rules := S.R) reducer)
 include stable
 
 theorem etaEquation_const {Θ : Context S.R} (equation : Equation (TotalTerm Θ)) (rest : EquationStore (TotalTerm Θ)) :

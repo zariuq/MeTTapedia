@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryPairRecursion
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryVariableLeafRoutes
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryMatchedFramesAvailableLeaf
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryPlanOccurrenceAvailability
@@ -358,29 +359,8 @@ noncomputable def sealedStoppedCollapseOfCloseSmaller
     (boundarySupport :
       state.certified.typed.boundary.targetSupport = [])
     (boundaryType : state.certified.typed.boundary.targetType = type)
-    (closeSmaller :
-      ∀ {childAvailable childOuter : List TypeExpr}
-        {leftChild rightChild : Pattern} {childType : TypeExpr},
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType leftChild →
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType rightChild →
-        canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
-              rhoReflectivePresentation)
-            leftChild =
-          canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
-              rhoReflectivePresentation)
-            rightChild →
-        sizeOf leftChild + sizeOf rightChild <
-          sizeOf leftPattern + sizeOf rightPattern →
-        rhoCanonicalRecursiveTypeDomain.Admissible childType →
-        Nonempty (CostCanonicalPairElaboration rhoCIGSLT
-          rhoHereditaryNormalizationKernel targetFree childAvailable
-          childOuter leftChild rightChild childType)) :
+    (closeSmaller : RhoPairCloseSmaller declarationColor targetFree
+      (sizeOf leftPattern + sizeOf rightPattern)) :
     RhoCollapsingLeafExposure leftView.node leftView.children right := by
   have boundaryWellSorted : ReflectiveWellSorted.OpenPatternWellSorted
       rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage

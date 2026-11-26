@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.ComputedConditions.Evaluation
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.RulesAsRows.Codes
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.Reflection.Codes
 
 /-!
 # The function in the frame's equality: matching becomes matching modulo that equality
@@ -7,7 +7,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 A frame action may contain a function's equations in its equality: a **call term** `call f t̄` is equal
 to the value of the function at its arguments (`ComputingCall.graph_equal`), substitution goes inside the
 call (`ComputingCall.apply_call`), and equal arguments give equal calls (`ComputingCall.congr`). The rule
-then tells `r ≐ call f t̄` and the solver computes (the code algebra of `RulesAsRows.Codes` is such an
+then tells `r ≐ call f t̄` and the solver computes (the code algebra of `Reflection.Codes` is such an
 equality, with instantiation as the function; the dependent frames of `Step` contain conversion).
 
 * `tell_iff_value`: **where every solution determines the arguments, the tell of the call is the tell of
@@ -125,20 +125,20 @@ theorem take_of_call_refused_syntactically {call v : T} (A : SubstitutionAction 
 
 section Instances
 
-open RulesAsRows
+open Reflection
 
 /-- **Instantiating a code at an environment**, as a call. -/
-def codeCall : Unit → List RulesAsRows.Expr → RulesAsRows.Expr
+def codeCall : Unit → List Reflection.Expr → Reflection.Expr
   | (), [c, e] => .drop c e
   | (), _ => .sym 0
 
 /-- Its value: the normal form of the instantiation. -/
-def codeValue : Unit → List RulesAsRows.Expr → Option RulesAsRows.Expr
-  | (), [c, e] => some (RulesAsRows.Expr.nf (.drop c e))
+def codeValue : Unit → List Reflection.Expr → Option Reflection.Expr
+  | (), [c, e] => some (Reflection.Expr.nf (.drop c e))
   | (), _ => none
 
 /-- **The code algebra contains the instantiation of codes in its equality.** -/
-def codeComputing : ComputingCall RulesAsRows.Expr.action codeValue where
+def codeComputing : ComputingCall Reflection.Expr.action codeValue where
   call := codeCall
   apply_call σ f ts := by
     match f, ts with
@@ -149,27 +149,27 @@ def codeComputing : ComputingCall RulesAsRows.Expr.action codeValue where
   congr f ts us same := by
     match f, ts, us, same with
     | (), [c, e], [c', e'], .cons sameC (.cons sameE .nil) =>
-        show RulesAsRows.Expr.nf (.drop c e) = RulesAsRows.Expr.nf (.drop c' e')
-        have nfC : RulesAsRows.Expr.nf c = RulesAsRows.Expr.nf c' := sameC
-        have nfE : RulesAsRows.Expr.nf e = RulesAsRows.Expr.nf e' := sameE
-        simp only [RulesAsRows.Expr.nf, nfC, nfE]
+        show Reflection.Expr.nf (.drop c e) = Reflection.Expr.nf (.drop c' e')
+        have nfC : Reflection.Expr.nf c = Reflection.Expr.nf c' := sameC
+        have nfE : Reflection.Expr.nf e = Reflection.Expr.nf e' := sameE
+        simp only [Reflection.Expr.nf, nfC, nfE]
     | (), [], [], .nil => rfl
     | (), [_], [_], .cons _ .nil => rfl
     | (), _ :: _ :: _ :: _, _ :: _ :: _ :: _, .cons _ (.cons _ (.cons _ _)) => rfl
   graph_equal f args v answers := by
     match f, args, answers with
     | (), [c, e], answers =>
-        have isValue : RulesAsRows.Expr.nf (.drop c e) = v := Option.some.inj answers
-        show RulesAsRows.Expr.nf (.drop c e) = RulesAsRows.Expr.nf v
-        rw [← isValue, RulesAsRows.Expr.nf_nf]
+        have isValue : Reflection.Expr.nf (.drop c e) = v := Option.some.inj answers
+        show Reflection.Expr.nf (.drop c e) = Reflection.Expr.nf v
+        rw [← isValue, Reflection.Expr.nf_nf]
 
 /-- A call of the code algebra: the code of the unknown `0` at the environment `[5]`. -/
-def codeCallTerm : RulesAsRows.Expr := .drop (.slot 0 0) (.cell (.sym 5) (.sym 0))
+def codeCallTerm : Reflection.Expr := .drop (.slot 0 0) (.cell (.sym 5) (.sym 0))
 
 /-- **A take of that call is admitted at the store of its value `5`.** -/
 theorem code_take_admitted :
-    (step (frames RulesAsRows.Expr.action) ℕ (ext RulesAsRows.Expr.action) {takeCall codeCallTerm}).Admits
-      (s := valueStore (.sym 5)) (takeCallFiring RulesAsRows.Expr.action codeCallTerm) :=
+    (step (frames Reflection.Expr.action) ℕ (ext Reflection.Expr.action) {takeCall codeCallTerm}).Admits
+      (s := valueStore (.sym 5)) (takeCallFiring Reflection.Expr.action codeCallTerm) :=
   take_of_call_admitted (fun _ => rfl) rfl
 
 /-- **With syntactic equality on rows with unknowns, a take of a call term is refused at a store of another

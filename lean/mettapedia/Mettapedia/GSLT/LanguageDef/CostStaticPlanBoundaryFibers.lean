@@ -1045,17 +1045,9 @@ mutual
         largeSourceType) :
       CostStaticRegionPlan.BoundaryFibersAvailabilitySuffix ambient regime small
         large := by
-    let rootExpected := mapTypeExpr (color.symbols source) smallSourceType
-    let binderFront : List TypeExpr :=
-      match pattern, smallSourceType with
-      | .lambda _ _, .arrow domain _ =>
-          [mapTypeExpr (color.symbols source) domain]
-      | .multiLambda arity _ _, .arrow (.multiBinder domain) _ =>
-          List.replicate arity (mapTypeExpr (color.symbols source) domain)
-      | _, _ => []
     subst largeTargetBound
-    cases small with
-    | @bvar _ _ _ _ _ targetIndex _ sourceIndex lookup correspondence
+    match (generalizing := true) pattern, smallSourceType, smallAvailable, small with
+    | _, _, smallAvailable, @CostStaticRegionPlan.bvar _ _ _ _ _ _ _ _ targetIndex _ sourceIndex lookup correspondence
         availableScope =>
         cases large with
         | bvar largeSourceIndex largeLookup largeCorrespondence
@@ -1071,10 +1063,10 @@ mutual
               Option.some.inj (correspondence.symm.trans largeCorrespondence)
             subst largeSourceIndex
             exact ⟨sourceTypeEq, rfl, .nil, .bvar regime sourceIndex⟩
-    | fvar lookup =>
+    | _, _, smallAvailable, .fvar lookup =>
         cases large
         exact ⟨sourceTypeEq, rfl, .nil, .sourceFVar regime _⟩
-    | boundaryApplication smallConstructor smallRendered smallOutside
+    | _, _, smallAvailable, .boundaryApplication smallConstructor smallRendered smallOutside
         smallCertified smallCertifies =>
         cases large with
         | boundaryApplication largeConstructor largeRendered largeOutside
@@ -1101,7 +1093,7 @@ mutual
                 (smallRendered.trans largeRendered.symm)
             subst largeConstructor
             exact (smallOutside largeCurrent).elim
-    | @application _ _ _ _ _ wireName arguments smallConstructor
+    | _, _, smallAvailable, @CostStaticRegionPlan.application _ _ _ _ _ _ _ _ wireName arguments smallConstructor
         smallRendered smallCurrent smallPreimage smallNotBare smallChildren =>
         cases large with
         | boundaryApplication largeConstructor largeRendered largeOutside
@@ -1180,20 +1172,20 @@ mutual
                   (CostStaticAbstractPatternAlignment.apply regime
                     smallPreimage.sourceConstructor.1.label
                     childrenSuffix.abstractPatterns)⟩
-    | @lambda _ _ _ _ _ binder body domain codomain smallBody =>
+    | _, _, smallAvailable, @CostStaticRegionPlan.lambda _ _ _ _ _ _ _ _ binder body domain codomain smallBody =>
         cases large with
         | @lambda _ _ _ _ _ _ _ largeDomain largeCodomain largeBody =>
+            let binderFront := [mapTypeExpr (color.symbols source) largeDomain]
             injection sourceTypeEq with domainEq codomainEq
-            subst_vars
+            subst largeDomain
+            subst largeCodomain
             have childResult :=
               CostStaticRegionPlan.boundaryFibersAvailabilitySuffix_of_scoped
               unique
-              (by simpa [binderFront] using
-                (CostStaticAvailabilityAt.prepend binderFront
-                  availableSuffix))
+              (CostStaticAvailabilityAt.prepend binderFront availableSuffix)
               rfl rfl
               (by simpa [WellSorted.isObjectPattern] using object)
-              (by simpa [binderFront, Pattern.isWellScopedAt, Nat.add_comm]
+              (by simpa [Pattern.isWellScopedAt, Nat.add_comm]
                 using scope)
               smallBody largeBody
             exact ⟨rfl, childResult.occurrences_eq, childResult.fibers,
@@ -1205,29 +1197,29 @@ mutual
                   (.lambda binder smallBody.abstractPattern)
                   (.lambda binder largeBody.abstractPattern)
                 exact .lambda regime binder childResult.abstractPattern⟩
-    | @multiLambda _ _ _ _ _ arity binders body domain codomain smallBody =>
+    | _, _, smallAvailable, @CostStaticRegionPlan.multiLambda _ _ _ _ _ _ _ _ arity binders body domain codomain smallBody =>
         cases large with
         | @multiLambda _ _ _ _ _ _ _ _ largeDomain largeCodomain largeBody =>
+            let binderFront := List.replicate arity (mapTypeExpr (color.symbols source) largeDomain)
             injection sourceTypeEq with multiDomainEq codomainEq
             injection multiDomainEq with domainEq
-            subst_vars
+            subst largeDomain
+            subst largeCodomain
             have childTargetBoundEq :
                 List.replicate arity
-                    (mapTypeExpr (color.symbols source) largeDomain) ++
+                    (mapTypeExpr (color.symbols source) domain) ++
                     (smallTargetBound ++ ambient) =
                   (List.replicate arity
-                      (mapTypeExpr (color.symbols source) largeDomain) ++
+                      (mapTypeExpr (color.symbols source) domain) ++
                     smallTargetBound) ++ ambient := by
               rw [List.append_assoc]
             have childResult :=
               CostStaticRegionPlan.boundaryFibersAvailabilitySuffix_of_scoped
               unique
-              (by simpa [binderFront] using
-                (CostStaticAvailabilityAt.prepend binderFront
-                  availableSuffix))
+              (CostStaticAvailabilityAt.prepend binderFront availableSuffix)
               childTargetBoundEq rfl
               (by simpa [WellSorted.isObjectPattern] using object)
-              (by simpa [binderFront, Pattern.isWellScopedAt,
+              (by simpa [Pattern.isWellScopedAt,
                   List.length_append, List.length_replicate, Nat.add_comm]
                 using scope)
               smallBody largeBody
@@ -1241,8 +1233,9 @@ mutual
                   (.multiLambda arity binders largeBody.abstractPattern)
                 exact .multiLambda regime arity binders
                   childResult.abstractPattern⟩
-    | @collection _ _ _ _ _ collectionType elements rest smallType
+    | _, _, smallAvailable, @CostStaticRegionPlan.collection _ _ _ _ _ _ _ _ collectionType elements rest smallType
         smallChoice smallSelected smallChildren =>
+        let rootExpected := mapTypeExpr (color.symbols source) smallType
         cases sourceTypeEq
         cases large with
         | @collection _ _ _ _ _ _ _ _ _ largeChoice largeSelected
@@ -1314,9 +1307,10 @@ mutual
               simpa [rootExpected] using smallSelected
             rw [largeRejectedSmall] at smallSelected'
             simp at smallSelected'
-    | @boundaryCollection _ _ _ _ _ collectionType elements rest smallType
+    | _, _, smallAvailable, @CostStaticRegionPlan.boundaryCollection _ _ _ _ _ _ _ _ collectionType elements rest smallType
         smallRejected smallOpposite smallOppositeSelected smallCertified
           smallCertifies =>
+        let rootExpected := mapTypeExpr (color.symbols source) smallType
         cases sourceTypeEq
         cases large with
         | @collection _ _ _ _ _ _ _ _ _ largeChoice largeSelected
@@ -1361,10 +1355,7 @@ mutual
               regime (0 : Fin 1) (0 : Fin 1) rfl
               (by simpa [smallCertified.targetSupport_eq,
                 largeCertified.targetSupport_eq] using availableSuffix)
-  termination_by 3 * sizeOf pattern + 2
-  decreasing_by
-    all_goals subst_vars
-    all_goals simp <;> omega
+  termination_by structural small
 
   /-- Argument-spine companion of the plan-level suffix theorem. -/
   theorem CostStaticArgumentPlan.boundaryFibersAvailabilitySuffix_of_scoped
@@ -1400,11 +1391,11 @@ mutual
         large := by
     subst largeTargetBound
     cases parametersEq
-    cases small with
-    | nil =>
+    match (generalizing := true) arguments, smallParameters, smallAvailable, small with
+    | _, _, smallAvailable, .nil =>
         cases large
         exact ⟨rfl, rfl, .nil, .nil regime⟩
-    | @cons _ _ _ _ _ _ _ argument arguments parameter parameters
+    | _, _, smallAvailable, @CostStaticArgumentPlan.cons _ _ _ _ _ _ _ _ _ _ argument arguments parameter parameters
         smallExpected smallRepresentation smallParameterType smallHead
           smallTail =>
         cases large with
@@ -1449,10 +1440,7 @@ mutual
                 TypedCostRegionBoundaryTable.entries_append
                   largeHead.boundaryTable largeTail.boundaryTable]
               exact .cons regime headAbstract tailAbstract
-  termination_by 3 * sizeOf arguments + 1
-  decreasing_by
-    all_goals subst_vars
-    all_goals simp <;> omega
+  termination_by structural small
 
   /-- Homogeneous-element companion of the plan-level suffix theorem. -/
   theorem CostStaticElementPlan.boundaryFibersAvailabilitySuffix_of_scoped
@@ -1488,11 +1476,11 @@ mutual
         large := by
     subst largeTargetBound
     cases sourceElementTypeEq
-    cases small with
-    | nil =>
+    match (generalizing := true) elements, smallSourceElementType, smallAvailable, small with
+    | _, _, smallAvailable, .nil =>
         cases large
         exact ⟨rfl, rfl, .nil, .nil regime⟩
-    | @cons _ _ _ _ _ _ _ element elements _ _ smallHead smallTail =>
+    | _, _, smallAvailable, @CostStaticElementPlan.cons _ _ _ _ _ _ _ _ _ _ element elements _ _ smallHead smallTail =>
         cases large with
         | cons largeHead largeTail =>
             simp only [WellSorted.isObjectPatternList, Bool.and_eq_true]
@@ -1531,10 +1519,7 @@ mutual
                 TypedCostRegionBoundaryTable.entries_append
                   largeHead.boundaryTable largeTail.boundaryTable]
               exact .cons regime headAbstract tailAbstract
-  termination_by 3 * sizeOf elements + 1
-  decreasing_by
-    all_goals subst_vars
-    all_goals simp <;> omega
+  termination_by structural small
 
 end
 

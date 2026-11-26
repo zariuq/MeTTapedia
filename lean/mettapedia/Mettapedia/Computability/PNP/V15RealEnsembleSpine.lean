@@ -8082,57 +8082,56 @@ theorem realM4_conditionalClash_from_noTargetRowsCDENF_lowerMachine_finiteCNFVar
     (boundaryMixing :
       BoundaryMixingBound
         (@v13RealLinearNoTargetRowsTargetBit m i₀) pivotSummary epsMix) :
+    let mechanicalInterface :=
+      RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
+        (HistoryAtom := HistoryAtom) (Observer := Observer)
+        (Output := Output)
+        i₀ coordinate law transcript observerBit phaseA semantics
+        observerEvidence pivotSummary epsMix safeCost safeBudget
+        gaugeIncidence gaugeBound gaugePredicateTotal
     UpperLowerClash
       ((RealM4EndgameMechanicalData.ofComponentsWithLowerMachine
-          (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
-            (HistoryAtom := HistoryAtom) (Observer := Observer)
-            (Output := Output)
-            i₀ coordinate law transcript observerBit phaseA semantics
-            observerEvidence pivotSummary epsMix safeCost safeBudget
-            gaugeIncidence gaugeBound gaugePredicateTotal)
+          mechanicalInterface
           fixedGapBudget phaseABudget epsSmall lowerMachine).interfaceWithAnalyticFrontier
         safeQSSM boundedGaugeIncidence boundaryMixing)
       ((RealM4EndgameMechanicalData.ofComponentsWithLowerMachine
-          (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
-            (HistoryAtom := HistoryAtom) (Observer := Observer)
-            (Output := Output)
-            i₀ coordinate law transcript observerBit phaseA semantics
-            observerEvidence pivotSummary epsMix safeCost safeBudget
-            gaugeIncidence gaugeBound gaugePredicateTotal)
+          mechanicalInterface
           fixedGapBudget phaseABudget epsSmall lowerMachine).parameterRecordExplicitPNP
         (RealM4SelfReductionUpperExplicitPNPDischarge.ofCoverageDataAndRigidity
           (D := D) (F := lowerMachine.lowerFramework)
           defaultMessage coverageData lockedMessageRigidity
           finiteVariables.uniformSupport pnpDeciderFamily
           constantDecoderRegime)
-        starSWHardness safeQSSM boundedGaugeIncidence boundaryMixing) :=
-  realM4_conditionalClash_from_lowerMachine_finiteCNFVariables_coverageDataAndRigidity_explicitPNP
-    (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
-      (HistoryAtom := HistoryAtom) (Observer := Observer) (Output := Output)
-      i₀ coordinate law transcript observerBit phaseA semantics
-      observerEvidence pivotSummary epsMix safeCost safeBudget gaugeIncidence
-      gaugeBound gaugePredicateTotal)
-    fixedGapBudget
-    (by
-      simpa [RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-        RealM4MechanicalInterfaceData.ofCDENFComponents] using
-        phaseABudget)
-    (by
-      simpa [RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-        RealM4MechanicalInterfaceData.ofCDENFComponents] using epsSmall)
-    lowerMachine defaultMessage coverageData lockedMessageRigidity
-    finiteVariables pnpDeciderFamily constantDecoderRegime starSWHardness
-    (by
-      simpa [RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-        RealM4MechanicalInterfaceData.ofCDENFComponents] using safeQSSM)
-    (by
-      simpa [RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-        RealM4MechanicalInterfaceData.ofCDENFComponents] using
-        boundedGaugeIncidence)
-    (by
-      simpa [RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-        RealM4MechanicalInterfaceData.ofCDENFComponents] using
-        boundaryMixing)
+        starSWHardness safeQSSM boundedGaugeIncidence boundaryMixing) := by
+  intro mechanicalInterface
+  exact realM4_conditionalClash_from_lowerMachine_finiteCNFVariables_coverageDataAndRigidity_explicitPNP
+      (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
+        (HistoryAtom := HistoryAtom) (Observer := Observer) (Output := Output)
+        i₀ coordinate law transcript observerBit phaseA semantics
+        observerEvidence pivotSummary epsMix safeCost safeBudget gaugeIncidence
+        gaugeBound gaugePredicateTotal)
+      fixedGapBudget
+      (by
+        simpa [mechanicalInterface, RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
+          RealM4MechanicalInterfaceData.ofCDENFComponents] using
+          phaseABudget)
+      (by
+        simpa [mechanicalInterface, RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
+          RealM4MechanicalInterfaceData.ofCDENFComponents] using epsSmall)
+      lowerMachine defaultMessage coverageData lockedMessageRigidity
+      finiteVariables pnpDeciderFamily constantDecoderRegime starSWHardness
+      (by
+        simpa [mechanicalInterface, RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
+          RealM4MechanicalInterfaceData.ofCDENFComponents] using safeQSSM)
+      (by
+        simpa [mechanicalInterface, RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
+          RealM4MechanicalInterfaceData.ofCDENFComponents] using
+          boundedGaugeIncidence)
+      (by
+        simpa [mechanicalInterface, RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
+          RealM4MechanicalInterfaceData.ofCDENFComponents] using
+          boundaryMixing)
+
 
 /--
 Canonical-gap no-target-rows conditional staging theorem.  Compared with
@@ -8203,78 +8202,33 @@ theorem realM4_conditionalClash_from_noTargetRowsCDENF_lowerMachine_finiteCNFVar
     (boundaryMixing :
       BoundaryMixingBound
         (@v13RealLinearNoTargetRowsTargetBit m i₀) pivotSummary epsMix) :
+    let mechanicalInterface :=
+      RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
+        (HistoryAtom := HistoryAtom) (Observer := Observer)
+        (Output := Output)
+        i₀ coordinate law transcript observerBit phaseA semantics
+        observerEvidence pivotSummary epsMix safeCost safeBudget
+        gaugeIncidence gaugeBound gaugePredicateTotal
+    let endgame :=
+      RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap
+        mechanicalInterface epsSmall lowerMachine
     UpperLowerClash
-      ((RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap
-          (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
-            (HistoryAtom := HistoryAtom) (Observer := Observer)
-            (Output := Output)
-            i₀ coordinate law transcript observerBit phaseA semantics
-            observerEvidence pivotSummary epsMix safeCost safeBudget
-            gaugeIncidence gaugeBound gaugePredicateTotal)
-          (by
-            simpa [RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-              RealM4MechanicalInterfaceData.ofCDENFComponents] using
-              epsSmall)
-          lowerMachine).interfaceWithAnalyticFrontier
-        (by
-          simpa [RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-            RealM4MechanicalInterfaceData.ofCDENFComponents,
-            RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-            RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-            RealM4EndgameMechanicalData.ofComponents] using safeQSSM)
-        (by
-          simpa [RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-            RealM4MechanicalInterfaceData.ofCDENFComponents,
-            RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-            RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-            RealM4EndgameMechanicalData.ofComponents] using
-            boundedGaugeIncidence)
-        (by
-          simpa [RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-            RealM4MechanicalInterfaceData.ofCDENFComponents,
-            RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-            RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-            RealM4EndgameMechanicalData.ofComponents] using
-            boundaryMixing))
-      ((RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap
-          (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
-            (HistoryAtom := HistoryAtom) (Observer := Observer)
-            (Output := Output)
-            i₀ coordinate law transcript observerBit phaseA semantics
-            observerEvidence pivotSummary epsMix safeCost safeBudget
-            gaugeIncidence gaugeBound gaugePredicateTotal)
-          (by
-            simpa [RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-              RealM4MechanicalInterfaceData.ofCDENFComponents] using
-              epsSmall)
-          lowerMachine).parameterRecordExplicitPNP
+      (endgame.interfaceWithAnalyticFrontier
+        safeQSSM
+        boundedGaugeIncidence
+        boundaryMixing)
+      (endgame.parameterRecordExplicitPNP
         (RealM4SelfReductionUpperExplicitPNPDischarge.ofCoverageDataAndRigidity
           (D := D) (F := lowerMachine.lowerFramework)
           defaultMessage coverageData lockedMessageRigidity
           finiteVariables.uniformSupport pnpDeciderFamily
           constantDecoderRegime)
         starSWHardness
-        (by
-          simpa [RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-            RealM4MechanicalInterfaceData.ofCDENFComponents,
-            RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-            RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-            RealM4EndgameMechanicalData.ofComponents] using safeQSSM)
-        (by
-          simpa [RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-            RealM4MechanicalInterfaceData.ofCDENFComponents,
-            RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-            RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-            RealM4EndgameMechanicalData.ofComponents] using
-            boundedGaugeIncidence)
-        (by
-          simpa [RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-            RealM4MechanicalInterfaceData.ofCDENFComponents,
-            RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-            RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-            RealM4EndgameMechanicalData.ofComponents] using
-            boundaryMixing)) := by
-  simpa [RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
+        safeQSSM
+        boundedGaugeIncidence
+        boundaryMixing) := by
+  intro mechanicalInterface endgame
+  simpa [endgame, mechanicalInterface, RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
     RealM4MechanicalInterfaceData.ofCDENFComponents,
     RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
     RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
@@ -8286,19 +8240,19 @@ theorem realM4_conditionalClash_from_noTargetRowsCDENF_lowerMachine_finiteCNFVar
         observerEvidence pivotSummary epsMix safeCost safeBudget gaugeIncidence
         gaugeBound gaugePredicateTotal)
       (by
-        simpa [RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
+        simpa [endgame, mechanicalInterface, RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
           RealM4MechanicalInterfaceData.ofCDENFComponents] using epsSmall)
       lowerMachine defaultMessage coverageData lockedMessageRigidity
       finiteVariables pnpDeciderFamily constantDecoderRegime starSWHardness
       (by
-        simpa [RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
+        simpa [endgame, mechanicalInterface, RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
           RealM4MechanicalInterfaceData.ofCDENFComponents] using safeQSSM)
       (by
-        simpa [RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
+        simpa [endgame, mechanicalInterface, RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
           RealM4MechanicalInterfaceData.ofCDENFComponents] using
           boundedGaugeIncidence)
       (by
-        simpa [RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
+        simpa [endgame, mechanicalInterface, RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
           RealM4MechanicalInterfaceData.ofCDENFComponents] using
           boundaryMixing))
 
@@ -8385,24 +8339,21 @@ theorem realM4_conditionalClash_from_noTargetRowsCDENF_lowerMachine_finiteCNFVar
           i₀ coordinate law transcript observerBit phaseA semantics
           observerEvidence pivotSummary epsMix safeCost safeBudget
           gaugeIncidence gaugeBound gaugePredicateTotal)) :
+    let mechanicalInterface :=
+      RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
+        (HistoryAtom := HistoryAtom) (Observer := Observer)
+        (Output := Output)
+        i₀ coordinate law transcript observerBit phaseA semantics
+        observerEvidence pivotSummary epsMix safeCost safeBudget
+        gaugeIncidence gaugeBound gaugePredicateTotal
     UpperLowerClash
       ((RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap
-          (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
-            (HistoryAtom := HistoryAtom) (Observer := Observer)
-            (Output := Output)
-            i₀ coordinate law transcript observerBit phaseA semantics
-            observerEvidence pivotSummary epsMix safeCost safeBudget
-            gaugeIncidence gaugeBound gaugePredicateTotal)
+          mechanicalInterface
           boundaryMixing.epsSmall lowerMachine).interfaceWithAnalyticFrontier
         safeQSSM.safeQSSM boundedGaugeIncidence.boundedGaugeIncidence
         boundaryMixing.boundaryMixing)
       ((RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap
-          (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
-            (HistoryAtom := HistoryAtom) (Observer := Observer)
-            (Output := Output)
-            i₀ coordinate law transcript observerBit phaseA semantics
-            observerEvidence pivotSummary epsMix safeCost safeBudget
-            gaugeIncidence gaugeBound gaugePredicateTotal)
+          mechanicalInterface
           boundaryMixing.epsSmall lowerMachine).parameterRecordExplicitPNP
         (RealM4SelfReductionUpperExplicitPNPDischarge.ofCoverageDataAndRigidity
           (D := D) (F := lowerMachine.lowerFramework)
@@ -8411,16 +8362,18 @@ theorem realM4_conditionalClash_from_noTargetRowsCDENF_lowerMachine_finiteCNFVar
           constantDecoderRegime)
         starSWHardness safeQSSM.safeQSSM
         boundedGaugeIncidence.boundedGaugeIncidence
-        boundaryMixing.boundaryMixing) :=
-  realM4_conditionalClash_from_lowerMachine_finiteCNFVariables_coverageDataAndRigidity_canonicalGap_realFrontier_explicitPNP
-    (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
-      (HistoryAtom := HistoryAtom) (Observer := Observer) (Output := Output)
-      i₀ coordinate law transcript observerBit phaseA semantics
-      observerEvidence pivotSummary epsMix safeCost safeBudget gaugeIncidence
-      gaugeBound gaugePredicateTotal)
-    lowerMachine defaultMessage coverageData lockedMessageRigidity
-    finiteVariables pnpDeciderFamily constantDecoderRegime starSWHardness
-    safeQSSM boundedGaugeIncidence boundaryMixing
+        boundaryMixing.boundaryMixing) := by
+  intro mechanicalInterface
+  exact realM4_conditionalClash_from_lowerMachine_finiteCNFVariables_coverageDataAndRigidity_canonicalGap_realFrontier_explicitPNP
+      (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
+        (HistoryAtom := HistoryAtom) (Observer := Observer) (Output := Output)
+        i₀ coordinate law transcript observerBit phaseA semantics
+        observerEvidence pivotSummary epsMix safeCost safeBudget gaugeIncidence
+        gaugeBound gaugePredicateTotal)
+      lowerMachine defaultMessage coverageData lockedMessageRigidity
+      finiteVariables pnpDeciderFamily constantDecoderRegime starSWHardness
+      safeQSSM boundedGaugeIncidence boundaryMixing
+
 
 /--
 No-target-rows real-frontier staging with the CNF variable cover extracted
@@ -8503,24 +8456,21 @@ theorem realM4_conditionalClash_from_noTargetRowsCDENF_lowerMachine_formulaSuppo
           i₀ coordinate law transcript observerBit phaseA semantics
           observerEvidence pivotSummary epsMix safeCost safeBudget
           gaugeIncidence gaugeBound gaugePredicateTotal)) :
+    let mechanicalInterface :=
+      RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
+        (HistoryAtom := HistoryAtom) (Observer := Observer)
+        (Output := Output)
+        i₀ coordinate law transcript observerBit phaseA semantics
+        observerEvidence pivotSummary epsMix safeCost safeBudget
+        gaugeIncidence gaugeBound gaugePredicateTotal
     UpperLowerClash
       ((RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap
-          (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
-            (HistoryAtom := HistoryAtom) (Observer := Observer)
-            (Output := Output)
-            i₀ coordinate law transcript observerBit phaseA semantics
-            observerEvidence pivotSummary epsMix safeCost safeBudget
-            gaugeIncidence gaugeBound gaugePredicateTotal)
+          mechanicalInterface
           boundaryMixing.epsSmall lowerMachine).interfaceWithAnalyticFrontier
         safeQSSM.safeQSSM boundedGaugeIncidence.boundedGaugeIncidence
         boundaryMixing.boundaryMixing)
       ((RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap
-          (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
-            (HistoryAtom := HistoryAtom) (Observer := Observer)
-            (Output := Output)
-            i₀ coordinate law transcript observerBit phaseA semantics
-            observerEvidence pivotSummary epsMix safeCost safeBudget
-            gaugeIncidence gaugeBound gaugePredicateTotal)
+          mechanicalInterface
           boundaryMixing.epsSmall lowerMachine).parameterRecordExplicitPNP
         (RealM4SelfReductionUpperExplicitPNPDischarge.ofCoverageDataAndRigidity
           (D := D) (F := lowerMachine.lowerFramework)
@@ -8529,16 +8479,18 @@ theorem realM4_conditionalClash_from_noTargetRowsCDENF_lowerMachine_formulaSuppo
           pnpDeciderFamily constantDecoderRegime)
         starSWHardness safeQSSM.safeQSSM
         boundedGaugeIncidence.boundedGaugeIncidence
-        boundaryMixing.boundaryMixing) :=
-  realM4_conditionalClash_from_lowerMachine_formulaSupport_coverageDataAndRigidity_canonicalGap_realFrontier_explicitPNP
-    (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
-      (HistoryAtom := HistoryAtom) (Observer := Observer) (Output := Output)
-      i₀ coordinate law transcript observerBit phaseA semantics
-      observerEvidence pivotSummary epsMix safeCost safeBudget gaugeIncidence
-      gaugeBound gaugePredicateTotal)
-    lowerMachine defaultMessage coverageData lockedMessageRigidity
-    varDecidable pnpDeciderFamily constantDecoderRegime starSWHardness
-    safeQSSM boundedGaugeIncidence boundaryMixing
+        boundaryMixing.boundaryMixing) := by
+  intro mechanicalInterface
+  exact realM4_conditionalClash_from_lowerMachine_formulaSupport_coverageDataAndRigidity_canonicalGap_realFrontier_explicitPNP
+      (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
+        (HistoryAtom := HistoryAtom) (Observer := Observer) (Output := Output)
+        i₀ coordinate law transcript observerBit phaseA semantics
+        observerEvidence pivotSummary epsMix safeCost safeBudget gaugeIncidence
+        gaugeBound gaugePredicateTotal)
+      lowerMachine defaultMessage coverageData lockedMessageRigidity
+      varDecidable pnpDeciderFamily constantDecoderRegime starSWHardness
+      safeQSSM boundedGaugeIncidence boundaryMixing
+
 
 /--
 No-target-rows real-frontier staging from real CNF variable address syntax.
@@ -8623,24 +8575,21 @@ theorem realM4_conditionalClash_from_noTargetRowsCDENF_lowerMachine_addressSynta
           i₀ coordinate law transcript observerBit phaseA semantics
           observerEvidence pivotSummary epsMix safeCost safeBudget
           gaugeIncidence gaugeBound gaugePredicateTotal)) :
+    let mechanicalInterface :=
+      RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
+        (HistoryAtom := HistoryAtom) (Observer := Observer)
+        (Output := Output)
+        i₀ coordinate law transcript observerBit phaseA semantics
+        observerEvidence pivotSummary epsMix safeCost safeBudget
+        gaugeIncidence gaugeBound gaugePredicateTotal
     UpperLowerClash
       ((RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap
-          (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
-            (HistoryAtom := HistoryAtom) (Observer := Observer)
-            (Output := Output)
-            i₀ coordinate law transcript observerBit phaseA semantics
-            observerEvidence pivotSummary epsMix safeCost safeBudget
-            gaugeIncidence gaugeBound gaugePredicateTotal)
+          mechanicalInterface
           boundaryMixing.epsSmall lowerMachine).interfaceWithAnalyticFrontier
         safeQSSM.safeQSSM boundedGaugeIncidence.boundedGaugeIncidence
         boundaryMixing.boundaryMixing)
       ((RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap
-          (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
-            (HistoryAtom := HistoryAtom) (Observer := Observer)
-            (Output := Output)
-            i₀ coordinate law transcript observerBit phaseA semantics
-            observerEvidence pivotSummary epsMix safeCost safeBudget
-            gaugeIncidence gaugeBound gaugePredicateTotal)
+          mechanicalInterface
           boundaryMixing.epsSmall lowerMachine).parameterRecordExplicitPNP
         (RealM4SelfReductionUpperExplicitPNPDischarge.ofCoverageDataAndRigidity
           (D := D) (F := lowerMachine.lowerFramework)
@@ -8650,16 +8599,18 @@ theorem realM4_conditionalClash_from_noTargetRowsCDENF_lowerMachine_addressSynta
           pnpDeciderFamily constantDecoderRegime)
         starSWHardness safeQSSM.safeQSSM
         boundedGaugeIncidence.boundedGaugeIncidence
-        boundaryMixing.boundaryMixing) :=
-  realM4_conditionalClash_from_lowerMachine_addressSyntax_coverageDataAndRigidity_canonicalGap_realFrontier_explicitPNP
-    (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
-      (HistoryAtom := HistoryAtom) (Observer := Observer) (Output := Output)
-      i₀ coordinate law transcript observerBit phaseA semantics
-      observerEvidence pivotSummary epsMix safeCost safeBudget gaugeIncidence
-      gaugeBound gaugePredicateTotal)
-    lowerMachine defaultMessage coverageData lockedMessageRigidity
-    variableAddressSyntax pnpDeciderFamily constantDecoderRegime
-    starSWHardness safeQSSM boundedGaugeIncidence boundaryMixing
+        boundaryMixing.boundaryMixing) := by
+  intro mechanicalInterface
+  exact realM4_conditionalClash_from_lowerMachine_addressSyntax_coverageDataAndRigidity_canonicalGap_realFrontier_explicitPNP
+      (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
+        (HistoryAtom := HistoryAtom) (Observer := Observer) (Output := Output)
+        i₀ coordinate law transcript observerBit phaseA semantics
+        observerEvidence pivotSummary epsMix safeCost safeBudget gaugeIncidence
+        gaugeBound gaugePredicateTotal)
+      lowerMachine defaultMessage coverageData lockedMessageRigidity
+      variableAddressSyntax pnpDeciderFamily constantDecoderRegime
+      starSWHardness safeQSSM boundedGaugeIncidence boundaryMixing
+
 
 /--
 No-target-rows real-frontier staging from address syntax and explicit
@@ -8741,24 +8692,21 @@ theorem realM4_conditionalClash_from_noTargetRowsCDENF_lowerMachine_addressSynta
           i₀ coordinate law transcript observerBit phaseA semantics
           observerEvidence pivotSummary epsMix safeCost safeBudget
           gaugeIncidence gaugeBound gaugePredicateTotal)) :
+    let mechanicalInterface :=
+      RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
+        (HistoryAtom := HistoryAtom) (Observer := Observer)
+        (Output := Output)
+        i₀ coordinate law transcript observerBit phaseA semantics
+        observerEvidence pivotSummary epsMix safeCost safeBudget
+        gaugeIncidence gaugeBound gaugePredicateTotal
     UpperLowerClash
       ((RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap
-          (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
-            (HistoryAtom := HistoryAtom) (Observer := Observer)
-            (Output := Output)
-            i₀ coordinate law transcript observerBit phaseA semantics
-            observerEvidence pivotSummary epsMix safeCost safeBudget
-            gaugeIncidence gaugeBound gaugePredicateTotal)
+          mechanicalInterface
           boundaryMixing.epsSmall lowerMachine).interfaceWithAnalyticFrontier
         safeQSSM.safeQSSM boundedGaugeIncidence.boundedGaugeIncidence
         boundaryMixing.boundaryMixing)
       ((RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap
-          (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
-            (HistoryAtom := HistoryAtom) (Observer := Observer)
-            (Output := Output)
-            i₀ coordinate law transcript observerBit phaseA semantics
-            observerEvidence pivotSummary epsMix safeCost safeBudget
-            gaugeIncidence gaugeBound gaugePredicateTotal)
+          mechanicalInterface
           boundaryMixing.epsSmall lowerMachine).parameterRecordExplicitPNP
         (RealM4SelfReductionUpperExplicitPNPDischarge.ofCoverageDataAndLockedMessageData
           (D := D) (F := lowerMachine.lowerFramework)
@@ -8768,16 +8716,18 @@ theorem realM4_conditionalClash_from_noTargetRowsCDENF_lowerMachine_addressSynta
           pnpDeciderFamily constantDecoderRegime)
         starSWHardness safeQSSM.safeQSSM
         boundedGaugeIncidence.boundedGaugeIncidence
-        boundaryMixing.boundaryMixing) :=
-  realM4_conditionalClash_from_lowerMachine_addressSyntax_coverageDataAndLockedMessageData_canonicalGap_realFrontier_explicitPNP
-    (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
-      (HistoryAtom := HistoryAtom) (Observer := Observer) (Output := Output)
-      i₀ coordinate law transcript observerBit phaseA semantics
-      observerEvidence pivotSummary epsMix safeCost safeBudget gaugeIncidence
-      gaugeBound gaugePredicateTotal)
-    lowerMachine coverageData lockedMessageData variableAddressSyntax
-    pnpDeciderFamily constantDecoderRegime starSWHardness safeQSSM
-    boundedGaugeIncidence boundaryMixing
+        boundaryMixing.boundaryMixing) := by
+  intro mechanicalInterface
+  exact realM4_conditionalClash_from_lowerMachine_addressSyntax_coverageDataAndLockedMessageData_canonicalGap_realFrontier_explicitPNP
+      (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
+        (HistoryAtom := HistoryAtom) (Observer := Observer) (Output := Output)
+        i₀ coordinate law transcript observerBit phaseA semantics
+        observerEvidence pivotSummary epsMix safeCost safeBudget gaugeIncidence
+        gaugeBound gaugePredicateTotal)
+      lowerMachine coverageData lockedMessageData variableAddressSyntax
+      pnpDeciderFamily constantDecoderRegime starSWHardness safeQSSM
+      boundedGaugeIncidence boundaryMixing
+
 
 /--
 No-target-rows locked-message/address-syntax real-frontier staging with the
@@ -8870,24 +8820,21 @@ theorem realM4_conditionalClash_from_noTargetRowsCDENF_lowerMachine_addressSynta
           i₀ coordinate law transcript observerBit phaseA semantics
           observerEvidence pivotSummary epsMix safeCost safeBudget
           gaugeIncidence gaugeBound gaugePredicateTotal)) :
+    let mechanicalInterface :=
+      RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
+        (HistoryAtom := HistoryAtom) (Observer := Observer)
+        (Output := Output)
+        i₀ coordinate law transcript observerBit phaseA semantics
+        observerEvidence pivotSummary epsMix safeCost safeBudget
+        gaugeIncidence gaugeBound gaugePredicateTotal
     UpperLowerClash
       ((RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap
-          (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
-            (HistoryAtom := HistoryAtom) (Observer := Observer)
-            (Output := Output)
-            i₀ coordinate law transcript observerBit phaseA semantics
-            observerEvidence pivotSummary epsMix safeCost safeBudget
-            gaugeIncidence gaugeBound gaugePredicateTotal)
+          mechanicalInterface
           boundaryMixing.epsSmall lowerMachine).interfaceWithAnalyticFrontier
         safeQSSM.safeQSSM boundedGaugeIncidence.boundedGaugeIncidence
         boundaryMixing.boundaryMixing)
       ((RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap
-          (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
-            (HistoryAtom := HistoryAtom) (Observer := Observer)
-            (Output := Output)
-            i₀ coordinate law transcript observerBit phaseA semantics
-            observerEvidence pivotSummary epsMix safeCost safeBudget
-            gaugeIncidence gaugeBound gaugePredicateTotal)
+          mechanicalInterface
           boundaryMixing.epsSmall lowerMachine).parameterRecordExplicitPNP
         (RealM4SelfReductionUpperExplicitPNPDischarge.ofCoverageDataLockedMessageDataAndLargeTargetKpolyCompatibility
           (D := D) (F := lowerMachine.lowerFramework)
@@ -8898,17 +8845,19 @@ theorem realM4_conditionalClash_from_noTargetRowsCDENF_lowerMachine_addressSynta
           targetBlocks_gt_decoder)
         starSWHardness safeQSSM.safeQSSM
         boundedGaugeIncidence.boundedGaugeIncidence
-        boundaryMixing.boundaryMixing) :=
-  realM4_conditionalClash_from_lowerMachine_addressSyntax_coverageDataAndLockedMessageData_canonicalGap_realFrontier_largeTargetKpolyCompatibility_explicitPNP
-    (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
-      (HistoryAtom := HistoryAtom) (Observer := Observer) (Output := Output)
-      i₀ coordinate law transcript observerBit phaseA semantics
-      observerEvidence pivotSummary epsMix safeCost safeBudget gaugeIncidence
-      gaugeBound gaugePredicateTotal)
-    lowerMachine coverageData lockedMessageData variableAddressSyntax
-    pnpDeciderFamily eta eta_pos kpolyAt_eq etaTimes_eq
-    targetBlocks_gt_decoder starSWHardness safeQSSM boundedGaugeIncidence
-    boundaryMixing
+        boundaryMixing.boundaryMixing) := by
+  intro mechanicalInterface
+  exact realM4_conditionalClash_from_lowerMachine_addressSyntax_coverageDataAndLockedMessageData_canonicalGap_realFrontier_largeTargetKpolyCompatibility_explicitPNP
+      (RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents
+        (HistoryAtom := HistoryAtom) (Observer := Observer) (Output := Output)
+        i₀ coordinate law transcript observerBit phaseA semantics
+        observerEvidence pivotSummary epsMix safeCost safeBudget gaugeIncidence
+        gaugeBound gaugePredicateTotal)
+      lowerMachine coverageData lockedMessageData variableAddressSyntax
+      pnpDeciderFamily eta eta_pos kpolyAt_eq etaTimes_eq
+      targetBlocks_gt_decoder starSWHardness safeQSSM boundedGaugeIncidence
+      boundaryMixing
+
 
 /--
 Cook-style official endpoint for the no-target-rows canonical-gap real-frontier
@@ -8997,48 +8946,9 @@ theorem realM4_officialSeparation_from_noTargetRowsCDENF_lowerMachine_canonicalG
   let M :=
     RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap
       interfaceData boundaryMixing.epsSmall lowerMachine
-  have hStar : CompressionStarSWHardness M.lowerFramework := by
-    simpa [M, RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents] using starSWHardness
-  have hSafe :
-      ∀ q : Safe, 0 ≤ M.interfaceData.safeCost q ∧
-        M.interfaceData.safeCost q ≤ M.interfaceData.safeBudget := by
-    simpa [M, interfaceData,
-      RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents,
-      RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-      RealM4MechanicalInterfaceData.ofCDENFComponents] using
-      safeQSSM.safeQSSM
-  have hBounded :
-      ∀ gamma : Gauge,
-        M.interfaceData.gaugeIncidence gamma ≤ M.interfaceData.gaugeBound := by
-    simpa [M, interfaceData,
-      RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents,
-      RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-      RealM4MechanicalInterfaceData.ofCDENFComponents] using
-      boundedGaugeIncidence.boundedGaugeIncidence
-  have hBoundary :
-      BoundaryMixingBound M.interfaceData.target M.interfaceData.pivotSummary
-        M.interfaceData.epsMix := by
-    simpa [M, interfaceData,
-      RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents,
-      RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-      RealM4MechanicalInterfaceData.ofCDENFComponents] using
-      boundaryMixing.boundaryMixing
-  have hBridge :
-      RealM4OfficialPToDeciderUpperBridgeData D M.lowerFramework C := by
-    simpa [M, RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents] using bridge
-  exact
-    realM4_officialSeparation_from_endgameMechanicalData_pMembershipDeciderBridge
-      M hStar hSafe hBounded hBoundary hBridge
+  exact realM4_officialSeparation_from_endgameMechanicalData_pMembershipDeciderBridge
+    M starSWHardness safeQSSM.safeQSSM boundedGaugeIncidence.boundedGaugeIncidence
+    boundaryMixing.boundaryMixing bridge
 
 /--
 Existential Cook-style endpoint for the same no-target-rows canonical-gap
@@ -9124,48 +9034,9 @@ theorem realM4_exists_np_not_p_from_noTargetRowsCDENF_lowerMachine_canonicalGap_
   let M :=
     RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap
       interfaceData boundaryMixing.epsSmall lowerMachine
-  have hStar : CompressionStarSWHardness M.lowerFramework := by
-    simpa [M, RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents] using starSWHardness
-  have hSafe :
-      ∀ q : Safe, 0 ≤ M.interfaceData.safeCost q ∧
-        M.interfaceData.safeCost q ≤ M.interfaceData.safeBudget := by
-    simpa [M, interfaceData,
-      RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents,
-      RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-      RealM4MechanicalInterfaceData.ofCDENFComponents] using
-      safeQSSM.safeQSSM
-  have hBounded :
-      ∀ gamma : Gauge,
-        M.interfaceData.gaugeIncidence gamma ≤ M.interfaceData.gaugeBound := by
-    simpa [M, interfaceData,
-      RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents,
-      RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-      RealM4MechanicalInterfaceData.ofCDENFComponents] using
-      boundedGaugeIncidence.boundedGaugeIncidence
-  have hBoundary :
-      BoundaryMixingBound M.interfaceData.target M.interfaceData.pivotSummary
-        M.interfaceData.epsMix := by
-    simpa [M, interfaceData,
-      RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents,
-      RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-      RealM4MechanicalInterfaceData.ofCDENFComponents] using
-      boundaryMixing.boundaryMixing
-  have hBridge :
-      RealM4OfficialPToDeciderUpperBridgeData D M.lowerFramework C := by
-    simpa [M, RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents] using bridge
-  exact
-    realM4_exists_np_not_p_from_endgameMechanicalData_pMembershipDeciderBridge
-      M hStar hSafe hBounded hBoundary hBridge
+  exact realM4_exists_np_not_p_from_endgameMechanicalData_pMembershipDeciderBridge
+    M starSWHardness safeQSSM.safeQSSM boundedGaugeIncidence.boundedGaugeIncidence
+    boundaryMixing.boundaryMixing bridge
 
 /--
 No-target-rows official endpoint from separated support and language bridge
@@ -9984,49 +9855,9 @@ theorem realM4_officialSeparation_from_noTargetRowsCDENF_lowerMachine_canonicalG
   let M :=
     RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap
       interfaceData boundaryMixing.epsSmall lowerMachine
-  have hStar : CompressionStarSWHardness M.lowerFramework := by
-    simpa [M, RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents] using starSWHardness
-  have hSafe :
-      ∀ q : Safe, 0 ≤ M.interfaceData.safeCost q ∧
-        M.interfaceData.safeCost q ≤ M.interfaceData.safeBudget := by
-    simpa [M, interfaceData,
-      RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents,
-      RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-      RealM4MechanicalInterfaceData.ofCDENFComponents] using
-      safeQSSM.safeQSSM
-  have hBounded :
-      ∀ gamma : Gauge,
-        M.interfaceData.gaugeIncidence gamma ≤ M.interfaceData.gaugeBound := by
-    simpa [M, interfaceData,
-      RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents,
-      RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-      RealM4MechanicalInterfaceData.ofCDENFComponents] using
-      boundedGaugeIncidence.boundedGaugeIncidence
-  have hBoundary :
-      BoundaryMixingBound M.interfaceData.target M.interfaceData.pivotSummary
-        M.interfaceData.epsMix := by
-    simpa [M, interfaceData,
-      RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents,
-      RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-      RealM4MechanicalInterfaceData.ofCDENFComponents] using
-      boundaryMixing.boundaryMixing
-  have hBridge :
-      RealM4OfficialPToDeciderLockedMessageUpperBridgeData
-        D M.lowerFramework C := by
-    simpa [M, RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents] using bridge
-  exact
-    realM4_officialSeparation_from_endgameMechanicalData_pMembershipDeciderLockedMessageBridge
-      M hStar hSafe hBounded hBoundary hBridge
+  exact realM4_officialSeparation_from_endgameMechanicalData_pMembershipDeciderLockedMessageBridge
+    M starSWHardness safeQSSM.safeQSSM boundedGaugeIncidence.boundedGaugeIncidence
+    boundaryMixing.boundaryMixing bridge
 
 /--
 Named-language non-membership endpoint for the no-target-rows canonical-gap
@@ -10112,50 +9943,9 @@ theorem realM4_namedLanguage_not_inP_from_noTargetRowsCDENF_lowerMachine_canonic
   let M :=
     RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap
       interfaceData boundaryMixing.epsSmall lowerMachine
-  have hStar : CompressionStarSWHardness M.lowerFramework := by
-    simpa [M, RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents] using starSWHardness
-  have hSafe :
-      ∀ q : Safe, 0 ≤ M.interfaceData.safeCost q ∧
-        M.interfaceData.safeCost q ≤ M.interfaceData.safeBudget := by
-    simpa [M, interfaceData,
-      RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents,
-      RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-      RealM4MechanicalInterfaceData.ofCDENFComponents] using
-      safeQSSM.safeQSSM
-  have hBounded :
-      ∀ gamma : Gauge,
-        M.interfaceData.gaugeIncidence gamma ≤ M.interfaceData.gaugeBound := by
-    simpa [M, interfaceData,
-      RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents,
-      RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-      RealM4MechanicalInterfaceData.ofCDENFComponents] using
-      boundedGaugeIncidence.boundedGaugeIncidence
-  have hBoundary :
-      BoundaryMixingBound M.interfaceData.target M.interfaceData.pivotSummary
-        M.interfaceData.epsMix := by
-    simpa [M, interfaceData,
-      RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents,
-      RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-      RealM4MechanicalInterfaceData.ofCDENFComponents] using
-      boundaryMixing.boundaryMixing
-  let hBridge :
-      RealM4OfficialPToDeciderLockedMessageUpperBridgeData
-        D M.lowerFramework C := by
-    simpa [M, RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents] using bridge
-  change ¬ C.inP hBridge.separatedLanguage
-  exact
-    realM4_namedLanguage_not_inP_from_endgameMechanicalData_pMembershipDeciderLockedMessageBridge
-      M hStar hSafe hBounded hBoundary hBridge
+  exact realM4_namedLanguage_not_inP_from_endgameMechanicalData_pMembershipDeciderLockedMessageBridge
+    M starSWHardness safeQSSM.safeQSSM boundedGaugeIncidence.boundedGaugeIncidence
+    boundaryMixing.boundaryMixing bridge
 
 /--
 Existential Cook-style endpoint for the no-target-rows canonical-gap route
@@ -10240,49 +10030,9 @@ theorem realM4_exists_np_not_p_from_noTargetRowsCDENF_lowerMachine_canonicalGap_
   let M :=
     RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap
       interfaceData boundaryMixing.epsSmall lowerMachine
-  have hStar : CompressionStarSWHardness M.lowerFramework := by
-    simpa [M, RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents] using starSWHardness
-  have hSafe :
-      ∀ q : Safe, 0 ≤ M.interfaceData.safeCost q ∧
-        M.interfaceData.safeCost q ≤ M.interfaceData.safeBudget := by
-    simpa [M, interfaceData,
-      RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents,
-      RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-      RealM4MechanicalInterfaceData.ofCDENFComponents] using
-      safeQSSM.safeQSSM
-  have hBounded :
-      ∀ gamma : Gauge,
-        M.interfaceData.gaugeIncidence gamma ≤ M.interfaceData.gaugeBound := by
-    simpa [M, interfaceData,
-      RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents,
-      RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-      RealM4MechanicalInterfaceData.ofCDENFComponents] using
-      boundedGaugeIncidence.boundedGaugeIncidence
-  have hBoundary :
-      BoundaryMixingBound M.interfaceData.target M.interfaceData.pivotSummary
-        M.interfaceData.epsMix := by
-    simpa [M, interfaceData,
-      RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents,
-      RealM4MechanicalInterfaceData.ofNoTargetRowsPublicCoordinateCDENFComponents,
-      RealM4MechanicalInterfaceData.ofCDENFComponents] using
-      boundaryMixing.boundaryMixing
-  have hBridge :
-      RealM4OfficialPToDeciderLockedMessageUpperBridgeData
-        D M.lowerFramework C := by
-    simpa [M, RealM4EndgameMechanicalData.ofComponentsWithLowerMachineCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponentsWithCanonicalGap,
-      RealM4EndgameMechanicalData.ofComponents] using bridge
-  exact
-    realM4_exists_np_not_p_from_endgameMechanicalData_pMembershipDeciderLockedMessageBridge
-      M hStar hSafe hBounded hBoundary hBridge
+  exact realM4_exists_np_not_p_from_endgameMechanicalData_pMembershipDeciderLockedMessageBridge
+    M starSWHardness safeQSSM.safeQSSM boundedGaugeIncidence.boundedGaugeIncidence
+    boundaryMixing.boundaryMixing bridge
 
 /--
 Cook-style class inequality for the no-target-rows canonical-gap route through

@@ -1,5 +1,6 @@
 import Mathlib
 import Mettapedia.TypeTheory.UniverseLevel.Offsets
+import Mettapedia.TypeTheory.UniverseLevel.Syntax
 
 /-!
 # Successor/maximum universe-level algebra
@@ -20,18 +21,6 @@ algebra.
 namespace Mettapedia.TypeTheory.UniverseLevel
 
 open LevelOrder
-
-/-! ## Level expressions (the data tier, well-formed core) -/
-
-/-- Level expressions over the levels `L`: the kernel's admitted level language.
-`param i` is a level *variable* — needed for universe polymorphism
-(schema-level rules quantify over levels); `const c` a closed level. -/
-inductive LevelExpr (L : Type) where
-  | const : L → LevelExpr L
-  | param : Nat → LevelExpr L
-  | succ : LevelExpr L → LevelExpr L
-  | max : LevelExpr L → LevelExpr L → LevelExpr L
-  deriving DecidableEq, Repr
 
 variable {L : Type}
 

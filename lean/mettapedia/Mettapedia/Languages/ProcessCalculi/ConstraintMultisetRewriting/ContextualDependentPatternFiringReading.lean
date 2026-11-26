@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentPatternFiringRigid
 
 /-!
@@ -126,9 +127,7 @@ section Refutation
 variable {Head L : Type} [UniverseLevel.LevelOrder L] {S : Setting Head L}
 variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R) (heads : HeadPreserving S.R)
 variable (rigid : ∀ name, S.roles name = .rigid) (complete : AlgorithmicComplete S.R S.roles)
-variable (normalizes : ∀ {Θ : Context S.R} {type : TypeOver Θ} (term : Term Θ type),
-  ∃ code : Tm Head Θ.arity, ContextualDependentNormalChecking.Normal (S := S) code ∧
-    Equal S.R Θ.raw term.code code type.code)
+variable (normalizes : SolverPremises.HasNormalForms S)
 
 include facts roots heads rigid complete normalizes in
 /-- **A rigid out-of-scope local refutes a scoped equation**: the left code is a metavariable applied to
@@ -193,8 +192,7 @@ theorem reading_refuted {Γ : Context S.R} {scopeType : TypeOver Γ} (scope : Sp
       ((scope.reindex normalSolution).localIndex_injective sameIndex)
     exact notArgument (samePosition ▸ inArguments)
 
-variable (certifyNormal : ∀ {n : Nat} (term : Tm Head n),
-  Option (PLift (ContextualDependentNormalChecking.Normal (S := S) term)))
+variable (certifyNormal : SolverPremises.NormalityCertifier S)
 
 /-- A local of the rigid support of a code outside a list of arguments. -/
 def outsideLocal {Γ : Context S.R} {scopeType : TypeOver Γ} (scope : Spine scopeType)

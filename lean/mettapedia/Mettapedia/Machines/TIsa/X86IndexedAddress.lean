@@ -418,7 +418,8 @@ private theorem compares_extent (other : OtherOpcodeHandlers) (extra : OtherTwoB
     point.advance kept (by decide) (X86FuelPrefix.pointer_rip _ _) flags flagKnown,
     X86P1LoadBounds.above_sense ending length flags calculated.carry calculated.zero⟩
 
-private theorem forms_address (other : OtherOpcodeHandlers) (extra : OtherTwoByteHandlers)
+/-- Form the address after a separate range check on the unscaled index. -/
+theorem forms_address (other : OtherOpcodeHandlers) (extra : OtherTwoByteHandlers)
     (vector : VectorOpcodeHandlers) {image : NativeImage.View} {state : State}
     {base : BitVec 48} {start : Nat} (point : At image state base start) (inside : start + 4 ≤ image.size)
     (destination : Fin 16) (index : Index) (scale : Fin 4) (baseRegister : Base)

@@ -64,6 +64,38 @@ let X Y f. assume Hf. let a. assume Ha.
 exact ap_Pi X Y f a Hf Ha.
 Qed.
 
+(** A function into propositions gives a proposition at every argument: outside
+    its domain its value is 0, which is False. **)
+Theorem LeanPropFamily_ap_In : forall X, forall f :e (Pi_ x :e X, LeanProp), forall a, f a :e LeanProp.
+let X f. assume Hf: f :e Pi_ x :e X, LeanProp. let a.
+apply xm (a :e X).
+- assume Ha: a :e X. exact ap_Pi X (fun x => LeanProp) f a Hf Ha.
+- assume Ha: a /:e X.
+  claim L: f a = 0.
+  { apply Empty_eq (f a).
+    let z. assume Hz: z :e f a.
+    apply PiE X (fun x => LeanProp) f Hf.
+    assume Hp: forall u :e f, pair_p u /\ u 0 :e X. assume Hv: forall x :e X, f x :e LeanProp.
+    apply Hp (setsum a z) (apE f a z Hz).
+    assume H1: pair_p (setsum a z). assume H0: (setsum a z) 0 :e X.
+    apply Ha. rewrite <- pair_ap_0 a z. exact H0. }
+  rewrite L. exact LeanProp_false.
+Qed.
+
+(** Control: this is special to LeanProp, which holds 0: outside its domain a function
+    into {1} does not give 1. **)
+Theorem control_family_ap_needs_zero :
+  ~ (forall X Y, forall f :e (Pi_ x :e X, Y), forall a, f a :e Y).
+assume H: forall X Y, forall f :e (Pi_ x :e X, Y), forall a, f a :e Y.
+claim L: (fun x :e 0 => 1) 0 :e {1}.
+{ exact H 0 {1} (fun x :e 0 => 1) (lam_Pi 0 (fun x => {1}) (fun x => 1) (fun x Hx => SingI 1)) 0. }
+claim L0: (fun x :e 0 => 1) 0 = 0.
+{ exact beta0 0 (fun x => 1) 0 (EmptyE 0). }
+apply neq_0_1.
+rewrite <- L0 at 1.
+exact SingE 1 ((fun x :e 0 => 1) 0) L.
+Qed.
+
 Theorem LeanLam : forall X, forall Y:set -> set, forall F:set -> set,
   (forall x :e X, F x :e Y x) -> (fun x :e X => F x) :e (Pi_ x :e X, Y x).
 exact lam_Pi.

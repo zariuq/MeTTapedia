@@ -275,6 +275,18 @@ theorem insertionSort' : CodeComputable fun patterns : List Pattern => patterns.
       show Encodable.encode (sortCode (patterns.map patternCode)) = _
       rw [sortCode_patternCode]; rfl⟩
 
+/-- **The parts of a pattern, each with its parameter adjusted by the binders above it, are computable on codes.** -/
+theorem underCalls_codeComputable {under : ℕ → ℕ → ℕ} (hUnder : Computable₂ under) :
+    CodeComputable₂ (underCalls under) :=
+  ⟨fun n => Encodable.encode (underCallsCode under n.unpair.1 n.unpair.2),
+    Primrec.encode.to_comp.comp (Computable.comp (f := fun pair : ℕ × ℕ => underCallsCode under pair.1 pair.2)
+      (g := fun n : ℕ => (n.unpair.1, n.unpair.2)) (underCallsCode_computable hUnder)
+      (Computable.pair (Primrec.fst.to_comp.comp Primrec.unpair.to_comp)
+        (Primrec.snd.to_comp.comp Primrec.unpair.to_comp))),
+    fun pair => by
+      simp only [code_pair, code_pattern, Nat.unpair_pair, underCallsCode_patternCode, code_list]
+      rfl⟩
+
 theorem patternEq : CodeComputable₂ fun left right : Pattern => decide (left = right) :=
   beq_of_injective patternCode_injective'
 

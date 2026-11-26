@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.UnificationWithLevels.TreeFibre.GlbGroupsInitial
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.UnificationWithLevels.TreeFibre.FlexRigidGlb
 
@@ -179,8 +180,7 @@ variable (choices : ExecutableChecking.HeadChoices S.R) (glb : Head → Head →
 variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R) (heads : HeadPreserving S.R)
   (algebra : CumulativeAlgebra S.R) (rigid : ∀ name, S.roles name = .rigid)
   (complete : AlgorithmicComplete S.R S.roles)
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
 
 /-- **Every progress of the round is an in-place step.** -/
 theorem flexRigidGlbRound_inPlace {Γ Θ : Context S.R} {σ : Θ ⟶ Γ} {problem : EquationStore (TotalTerm Θ)}

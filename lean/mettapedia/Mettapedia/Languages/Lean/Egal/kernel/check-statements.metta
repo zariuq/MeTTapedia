@@ -20,12 +20,12 @@
 
 (= (statement-of $i)
    (let* (($t (comp-term $i)) ($T (comp-type $i)) ($v (readback (answer-of $i) $T)))
-     (lean:eq (wire $t ()) (wire $v ()))))
+     (egal:eq (wire $t ()) (wire $v ()))))
 (= (crossed-statement $i $j)
    (let* (($t (comp-term $i)) ($T (comp-type $j)) ($v (readback (answer-of $j) $T)))
-     (lean:eq (wire $t ()) (wire $v ()))))
+     (egal:eq (wire $t ()) (wire $v ()))))
 (= (convertible-with-test $built $i)
-   (case (mg:try-convertible-bounded (lean:theory) (mg:empty-context) $built (lean:proposition (test-name $i)) 100000000)
+   (case (mg:try-convertible-bounded (egal:theory) (mg:empty-context) $built (egal:proposition (test-name $i)) 100000000)
      (((Error $call $why) False)
       ($answer $answer))))
 (= (count-true $xs) (if (== $xs ()) 0 (+ (if (== (car-atom $xs) True) 1 0) (count-true (cdr-atom $xs)))))
@@ -36,7 +36,7 @@
        (cons-atom (convertible-with-test (statement-of (car-atom $ids)) (car-atom $ids)) (same-all (cdr-atom $ids)))))
 (= (written-all $ids)
    (if (== $ids ()) ()
-       (cons-atom (== (statement-of (car-atom $ids)) (lean:proposition (test-name (car-atom $ids)))) (written-all (cdr-atom $ids)))))
+       (cons-atom (== (statement-of (car-atom $ids)) (egal:proposition (test-name (car-atom $ids)))) (written-all (cdr-atom $ids)))))
 
 ; The crossed pairs: each test with the next one of its type and another answer.
 (= (next-other $i $ids)
@@ -55,7 +55,7 @@
          (cons-atom (not (convertible-with-test (crossed-statement $i $j) $i)) (refused-all (cdr-atom $pairs))))))
 
 (= (restated $prefix $statement $i)
-   (format-args "Theorem {}_{} : {}.\nexact {}.\nQed.\n" ($prefix (test-name $i) (lean:text $statement) (test-name $i))))
+   (format-args "Theorem {}_{} : {}.\nexact {}.\nQed.\n" ($prefix (test-name $i) (egal:text $statement) (test-name $i))))
 (= (restated-all $ids)
    (if (== $ids ()) ()
        (cons-atom (restated "bridged" (statement-of (car-atom $ids)) (car-atom $ids)) (restated-all (cdr-atom $ids)))))

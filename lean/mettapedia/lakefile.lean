@@ -680,6 +680,22 @@ lean_lib GSLTIndexedAppendSourceQuotation where
   roots := #[`Mettapedia.GSLT.LanguageDef.IndexedInductiveAppendSource]
   needs := #[`@/gsltIndexedNatVecAppendModule]
 
+input_file gsltIndexedVectorTreeModule where
+  path := "../../metta/gslt/module/IndexedVectorTreeFold.module"
+  text := false
+
+lean_lib GSLTIndexedVectorTreeQuotation where
+  roots := #[`Mettapedia.GSLT.LanguageDef.PositiveInductiveVectorTreeElaboration]
+  needs := #[`@/gsltIndexedVectorTreeModule]
+
+input_file gsltIndexedSearchTreeModule where
+  path := "../../metta/gslt/module/IndexedSearchTreeFold.module"
+  text := false
+
+lean_lib GSLTIndexedSearchTreeQuotation where
+  roots := #[`Mettapedia.GSLT.LanguageDef.PositiveInductiveSearchTreeElaboration]
+  needs := #[`@/gsltIndexedSearchTreeModule]
+
 lean_lib GSLTInductiveAppendQuotation where
   roots := #[`Mettapedia.Languages.MeTTa.PeTTa.Bridges.IndexedInductiveAppend,
     `Mettapedia.Languages.MeTTa.PeTTa.Bridges.IndexedInductiveAppendControls]

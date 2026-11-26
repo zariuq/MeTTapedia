@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.UnificationWithLevels.TreeFibre.ArrowSolver
 
 /-!
@@ -98,8 +99,7 @@ variable (choices : ExecutableChecking.HeadChoices S.R)
 variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R) (heads : HeadPreserving S.R)
   (algebra : CumulativeAlgebra S.R) (rigid : ∀ name, S.roles name = .rigid)
   (complete : AlgorithmicComplete S.R S.roles)
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
 
 /-- **The round of the solver**: read the first equation, then step. -/
 def arrowRound : {Γ : Context S.R} → (problem : EquationStore (TotalTerm Γ)) → Round S.levels arrowRank problem

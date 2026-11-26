@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.UnificationWithLevels.TreeFibre.WideMiller
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.UnificationWithLevels.TreeFibre.OneSolver
 
@@ -274,12 +275,9 @@ variable [DecidableEq Head] [∀ head, Decidable (S.R.isUniverse head)] [Decidab
 variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R) (heads : HeadPreserving S.R)
   (algebra : CumulativeAlgebra S.R) (rigid : ∀ name, S.roles name = .rigid)
   (complete : AlgorithmicComplete S.R S.roles)
-  (normalizes : ∀ {Θ : Context S.R} {type : TypeOver Θ} (term : Term Θ type),
-    ∃ code : Tm Head Θ.arity, ContextualDependentNormalChecking.Normal (S := S) code ∧
-      Equal S.R Θ.raw term.code code type.code)
+  (normalizes : SolverPremises.HasNormalForms S)
   (inh : Inhabitants S.R)
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
   (join : Head → Head → Option Head)
   (joinSound : ∀ {u v w : Head}, join u v = some w → S.R.isUniverse w ∧ IsLub S.R w u v)
   (glb : Head → Head → Option Head) (spec : ∀ {a b g : Head}, glb a b = some g → IsGlb S.R g a b)

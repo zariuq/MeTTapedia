@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.UnificationWithLevels.TreeFibre.DependentNarrowing
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.UnificationWithLevels.TreeFibre.ThroughPhases
 
@@ -153,8 +154,7 @@ section Heads
 
 variable {S : Setting Head L} [DecidableRel S.R.cumulative]
 variable (choices : ExecutableChecking.HeadChoices S.R)
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
 
 /-- Whether every head is typed, by the choice of heads, by a universe below `u`. -/
 def headsFitB (u : Head) (hs : List Head) : Bool :=
@@ -214,8 +214,7 @@ variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R) (heads : H
   (algebra : CumulativeAlgebra S.R) (rigid : ∀ name, S.roles name = .rigid)
   (complete : AlgorithmicComplete S.R S.roles)
   (glb : Head → Head → Option Head) (spec : ∀ {a b g : Head}, glb a b = some g → IsGlb S.R g a b)
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
   (declared : DeclaredTypesFormed S.R)
   (total : ∀ {a b : Head}, S.R.isUniverse a → S.R.isUniverse b → ∃ g, glb a b = some g)
 

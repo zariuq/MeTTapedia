@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentRankParts
 
 /-!
@@ -69,7 +70,7 @@ theorem storeWeight_map {Θ Θ' : Context S.R} (f : TotalTerm Θ → TotalTerm �
       rw [storeWeight_map f keeps rest]
 
 variable (root : ExecutableReduction.RootEvaluator S.R)
-  (rootComplete : ∀ {n : Nat} (term : Tm Head n), root term = none → ∀ target, ¬ S.R.computation.step term target)
+  (rootComplete : SolverPremises.CompleteRootEvaluation (rules := S.R) root)
 
 include facts roots heads algebra complete in
 /-- Normalizing the context's declarations keeps the normal weight. -/

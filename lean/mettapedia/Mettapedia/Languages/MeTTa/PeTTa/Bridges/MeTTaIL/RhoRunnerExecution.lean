@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.PeTTa.BridgeTransport
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.GeneralProgramResumptionExecution
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.RhoLexCanonicalExecution
 import Mettapedia.OSLF.MeTTaIL.GeneralRhoTotality
@@ -2389,13 +2390,7 @@ private def localHeads : List String :=
 private def resumptionHeads (head : String) : Bool := !localHeads.contains head
 
 private theorem resumption_closed : ProgramClosed resumptionHeads GeneralProgramResumptionExecution.runtime := by
-  constructor
-  · decide +kernel
-  · intro equation member supported
-    have checked : GeneralProgramResumptionExecution.runtime.equations.all (fun equation =>
-        !resumptionHeads equation.head || codeWithin resumptionHeads equation.body) = true := by decide +kernel
-    have row := List.all_eq_true.mp checked equation member
-    simpa only [supported, Bool.not_true, Bool.false_or] using row
+  exact BridgeKit.closed_of_all _ _ (by decide +kernel) (by decide +kernel)
 
 private theorem resumption_agreement :
     ProgramAgreementOn resumptionHeads GeneralProgramResumptionExecution.runtime runtime := by
@@ -2436,13 +2431,7 @@ private def lexVocabulary : List String :=
 private def lexHeads (head : String) : Bool := lexVocabulary.contains head
 
 private theorem lex_closed : ProgramClosed lexHeads RhoLexCanonicalExecution.runtime := by
-  constructor
-  · decide +kernel
-  · intro equation member supported
-    have checked : RhoLexCanonicalExecution.runtime.equations.all (fun equation =>
-        !lexHeads equation.head || codeWithin lexHeads equation.body) = true := by decide +kernel
-    have row := List.all_eq_true.mp checked equation member
-    simpa only [supported, Bool.not_true, Bool.false_or] using row
+  exact BridgeKit.closed_of_all _ _ (by decide +kernel) (by decide +kernel)
 
 private theorem lex_agreement : ProgramAgreementOn lexHeads RhoLexCanonicalExecution.runtime runtime := by
   apply programAgreementOn_of_retained_rows

@@ -8,6 +8,7 @@ import Mettapedia.Languages.Metamath.SourceStateNativeTypes
 import Mettapedia.Languages.ProcessCalculi.MORK.AuthoredContextBridge
 import Mettapedia.Languages.ProcessCalculi.MORK.ComputablePatternFactorOrigin
 import Mettapedia.Languages.ProcessCalculi.MORK.InvertibleHead
+import Mettapedia.Languages.ProcessCalculi.MORK.MatchReadback
 import Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveSinkObservation
 import Mettapedia.Languages.ProcessCalculi.MORK.PatternMatchTrace
 import Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveGSLTNativeTypes
@@ -10065,60 +10066,6 @@ private theorem matchAtom_tagged_row_payload
               cases nilMatch
               exact ⟨_, rfl, lookup⟩
 
-/-- Matching the dispatch reloader's executable shell recovers its opaque
-input and output byte expressions without requiring those captured values to
-be structurally ground. -/
-private theorem matchAtom_dispatch_reload_shell
-    {result : Subst} {atom : Atom}
-    (matched : matchAtom [] normalDispatchReloadSelfTemplate atom =
-      some result) :
-    ∃ input output,
-      atom = .expression
-        [.symbol "exec", normalDispatchReloadLocation, input, output] ∧
-        result.lookup "reload-self-input" = some input ∧
-        result.lookup "reload-self-output" = some output := by
-  have relational := matchAtom_sound matched
-  cases relational with
-  | expr_cons execMatch tail1 =>
-      cases execMatch
-      cases tail1 with
-      | expr_cons locationMatch tail2 =>
-          cases locationMatch with
-          | expr_cons locationHead locationTail =>
-              cases locationHead
-              cases locationTail with
-              | expr_cons locationName locationNil =>
-                  cases locationName
-                  cases locationNil
-                  cases tail2 with
-                  | expr_cons inputMatch tail3 =>
-                      cases inputMatch with
-                      | var_fresh _ =>
-                          cases tail3 with
-                          | expr_cons outputMatch nilMatch =>
-                              cases outputMatch with
-                              | var_fresh _ =>
-                                  cases nilMatch
-                                  refine ⟨_, _, rfl, ?_, ?_⟩
-                                  · simp [Subst.lookup]
-                                  · simp [Subst.lookup]
-                              | var_bound outputLookup =>
-                                  cases nilMatch
-                                  exact ⟨_, _, rfl, by simp [Subst.lookup],
-                                    outputLookup⟩
-                      | var_bound inputLookup =>
-                          cases tail3 with
-                          | expr_cons outputMatch nilMatch =>
-                              cases outputMatch with
-                              | var_fresh _ =>
-                                  cases nilMatch
-                                  exact ⟨_, _, rfl, inputLookup,
-                                    by simp [Subst.lookup]⟩
-                              | var_bound outputLookup =>
-                                  cases nilMatch
-                                  exact ⟨_, _, rfl, inputLookup,
-                                    outputLookup⟩
-
 /-- Reinstalling the dispatch reloader preserves any ambient executable
 inventory that already contains both the live space and the selected shell. -/
 theorem normalDispatchReload_captured_self_raw_within
@@ -10139,63 +10086,11 @@ theorem normalDispatchReload_captured_self_raw_within
           normalDispatchReloadSelfTemplate = some captured)
     (extracts : extractRawExecFact captured = some raw) :
     raw ∈ allowed := by
-  have rowMember' : substitution ∈
-      (Conformance.Computable.cmatchInputSpec []
-        (normalDispatchReloadDirective.atom ::
-          space.erase normalDispatchReloadDirective.atom)
-        (.compat (mkPattern
-          [normalDispatchReloadSelfTemplate,
-           normalDispatchReloadTriggerTemplate,
-           normalDispatchReloadRuleTemplate]))).map Prod.fst := by
-    simpa [normalDispatchReloadDirective, normalDispatchReloadPatternAtoms]
-      using rowMember
-  obtain ⟨afterFirst, afterSecond, firstAtom, secondAtom, thirdAtom,
-      firstMember, _secondMember, _thirdMember,
-      firstMatched, secondMatched, thirdMatched⟩ :=
-    cmatchInputSpec_three_match_chain rowMember'
-  rw [Conformance.cmatchAtom_eq_matchAtom] at firstMatched secondMatched
-  rw [Conformance.cmatchAtom_eq_matchAtom] at thirdMatched
-  obtain ⟨input, output, firstEq, inputLookup, outputLookup⟩ :=
-    matchAtom_dispatch_reload_shell firstMatched
-  have finalExtends : substitution.lookupExtends afterFirst :=
-    Subst.lookupExtends_trans
-      (matchAtom_lookupExtends secondMatched)
-      (matchAtom_lookupExtends thirdMatched)
-  have finalInputLookup : substitution.lookup "reload-self-input" =
-      some input :=
-    finalExtends "reload-self-input" input inputLookup
-  have finalOutputLookup : substitution.lookup "reload-self-output" =
-      some output :=
-    finalExtends "reload-self-output" output outputLookup
-  have instantiationFacts :
-      templateCovered substitution normalDispatchReloadSelfTemplate = true ∧
-        applySubst substitution normalDispatchReloadSelfTemplate = captured := by
-    simpa [instantiateTemplateAtom?] using instantiates
-  have appliedEq :
-      applySubst substitution normalDispatchReloadSelfTemplate = captured :=
-    instantiationFacts.2
-  have appliedFirst :
-      applySubst substitution normalDispatchReloadSelfTemplate = firstAtom := by
-    rw [firstEq]
-    change Atom.expression
-      [.symbol "exec", normalDispatchReloadLocation,
-        (substitution.lookup "reload-self-input").getD
-          (.var "reload-self-input"),
-        (substitution.lookup "reload-self-output").getD
-          (.var "reload-self-output")] =
-      Atom.expression
-        [.symbol "exec", normalDispatchReloadLocation, input, output]
-    rw [finalInputLookup, finalOutputLookup]
-    rfl
-  have capturedEq : captured = firstAtom := by
-    exact appliedEq.symm.trans appliedFirst
-  rw [capturedEq] at extracts
-  rcases List.mem_cons.mp firstMember with selected | prior
-  · rw [selected] at extracts
-    exact selectedWithin raw extracts
-  · apply rawWithin raw
-    exact List.mem_filterMap.mpr
-      ⟨firstAtom, List.mem_of_mem_erase prior, extracts⟩
+  have present := compat_factor_instantiated_mem _ (mkPattern normalDispatchReloadPatternAtoms)
+    List.mem_cons_self rowMember instantiates
+  rcases List.mem_cons.mp present with selected | prior
+  · exact selectedWithin raw (by rwa [← selected])
+  · exact rawWithin raw (List.mem_filterMap.mpr ⟨captured, List.mem_of_mem_erase prior, extracts⟩)
 
 /-- Normal-only code origin is the exact-inventory instance of the ambient
 self-shell theorem. -/

@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryPairRecursion
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryProviderLeftCollapsing
 
 /-!
@@ -351,27 +352,8 @@ theorem RhoStaticPlanStopSourceAligned.of_nonBoundaryRemainder
         canonicalize
           (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
             rhoReflectivePresentation) right)
-    (closeSmaller :
-      ∀ {childAvailable childOuter : List TypeExpr}
-        {leftChild rightChild : Pattern} {childType : TypeExpr},
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType leftChild →
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType rightChild →
-        canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
-              rhoReflectivePresentation) leftChild =
-          canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
-              rhoReflectivePresentation) rightChild →
-        sizeOf leftChild + sizeOf rightChild <
-          sizeOf leftView.node.term.1 + sizeOf rightView.node.term.1 →
-        rhoCanonicalRecursiveTypeDomain.Admissible childType →
-        Nonempty (CostCanonicalPairElaboration rhoCIGSLT
-          rhoHereditaryNormalizationKernel targetFree childAvailable
-          childOuter leftChild rightChild childType))
+    (closeSmaller : RhoPairCloseSmaller declarationColor targetFree
+      (sizeOf leftView.node.term.1 + sizeOf rightView.node.term.1))
     (remaining : RhoStaticNonBoundaryPlanStopSourceAligned leftView rightView
       declarationColor rawStop) :
     RhoStaticPlanStopSourceAligned leftView rightView declarationColor

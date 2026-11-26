@@ -41,15 +41,15 @@
 ; With (TypTrace on) in the space, each goal that is not proved is printed,
 ; the innermost first.
 
-(= (typ:member $t $T) (Tm.app (Tm.app (Tm.named (lean:id "In")) $t) $T))
+(= (typ:member $t $T) (Tm.app (Tm.app (Tm.named (egal:id "In")) $t) $T))
 ; (Member T TYPE) for a membership, Other for anything else.
 (= (typ:parts $p)
    (case $p
-     (((Tm.app (Tm.app (Tm.named $in) $t) $T) (if (== $in (lean:id "In")) (Member $t $T) Other))
+     (((Tm.app (Tm.app (Tm.named $in) $t) $T) (if (== $in (egal:id "In")) (Member $t $T) Other))
       ($other Other))))
 (= (typ:pi-parts $T)
    (case $T
-     (((Tm.app (Tm.app (Tm.named $pi) $X) $Y) (if (== $pi (lean:id "Pi")) (PiOf $X $Y) Other))
+     (((Tm.app (Tm.app (Tm.named $pi) $X) $Y) (if (== $pi (egal:id "Pi")) (PiOf $X $Y) Other))
       ($other Other))))
 ; The key a lemma or a goal is filed under: the head of the typed term, or
 ; for another predicate the predicate with the head of its first argument.
@@ -57,7 +57,7 @@
 ; head of P.
 (= (typ:key $p)
    (case (typ:parts $p)
-     (((Member $t $T) (if (== $t (Tm.named (lean:id "Empty"))) (KeyOf truth (mgt:head $T)) (mgt:head $t)))
+     (((Member $t $T) (if (== $t (Tm.named (egal:id "Empty"))) (KeyOf truth (mgt:head $T)) (mgt:head $t)))
       ($other (case $p
                 (((Tm.app $f $x) (KeyOf (mgt:head $f) (mgt:head $x)))
                  ($atom (KeyOf $atom None))))))))
@@ -68,7 +68,7 @@
 ; The key the lemma is kept under, or Refused when its conclusion is not
 ; about a named head (such a lemma gives no direction to a search).
 (= (typ:declare $name)
-   (let* (($statement (mg:proposition (mg:known (lean:theory) $name)))
+   (let* (($statement (mg:proposition (mg:known (egal:theory) $name)))
           ($shape (rule:conclusion $statement 0)))
      (case $shape
        (((Concludes $n $conclusion)
@@ -86,7 +86,7 @@
 (= (typ:note-decision $name $conclusion)
    (case (typ:parts $conclusion)
      (((Member $call (Tm.app (Tm.named $family) $R))
-       (if (== $family (lean:id "Lean_Decidable"))
+       (if (== $family (egal:id "Lean_Decidable"))
            (case (mgt:head $R)
              (((Tm.named $head) (add-atom &self (TypDecision (Tm.named $head) $name)))
               ($other none)))
@@ -145,31 +145,31 @@
 (= (typ:negative $E $ctx $path $q)
    (case $q
      (((Tm.imp $premise $rest)
-       (if (== $rest (Tm.named (lean:id "False")))
+       (if (== $rest (Tm.named (egal:id "False")))
            (case (typ:parts $premise)
              (((Member $z $A)
-               (if (== $z (Tm.named (lean:id "Empty"))) (typ:not-true $E $ctx $path $A $q) None))
+               (if (== $z (Tm.named (egal:id "Empty"))) (typ:not-true $E $ctx $path $A $q) None))
               ($other None)))
            None))
       ($other None))))
 (= (typ:not-true $E $ctx $path $A $q)
-   (let* (($zero (Tm.named (lean:id "Empty")))
-          ($not (Tm.app (Tm.app (Tm.named (lean:id "Pi")) $A) (Tm.lam (Tp.base 0) (Tm.named (lean:id "Lean_False_Prop")))))
+   (let* (($zero (Tm.named (egal:id "Empty")))
+          ($not (Tm.app (Tm.app (Tm.named (egal:id "Pi")) $A) (Tm.lam (Tp.base 0) (Tm.named (egal:id "Lean_False_Prop")))))
           ($refutation (typ:prove $E $ctx $path (typ:member $zero $not))))
      (if (== $refutation None) None
-         (let $prop (typ:prove $E $ctx $path (typ:member $A (Tm.named (lean:id "LeanProp"))))
+         (let $prop (typ:prove $E $ctx $path (typ:member $A (Tm.named (egal:id "LeanProp"))))
            (if (== $prop None) None
-               (case (mg:try-proof-app (mg:term-app (mg:known-in (eq:theory $E) $ctx (lean:id "Lean_refutation_0")) $A) $prop)
+               (case (mg:try-proof-app (mg:term-app (mg:known-in (eq:theory $E) $ctx (egal:id "Lean_refutation_0")) $A) $prop)
                  (((Error $c1 $w1) None)
                   ($for-A
                    (case (mg:try-proof-app (mg:term-app $for-A $zero) $refutation)
                      (((Error $c2 $w2) None)
                       ($both (typ:left-of $E $ctx $q $both
-                                          (Tm.app (Tm.app (Tm.named (lean:id "nIn")) $zero) $A)
+                                          (Tm.app (Tm.app (Tm.named (egal:id "nIn")) $zero) $A)
                                           (eq:of $E $zero $zero)))))))))))))
 ; The left part of a proved conjunction, as the goal states it.
 (= (typ:left-of $E $ctx $q $both $left $right)
-   (case (mg:try-proof-app (mg:term-app (mg:term-app (mg:known-in (eq:theory $E) $ctx (lean:id "andEL")) $left) $right) $both)
+   (case (mg:try-proof-app (mg:term-app (mg:term-app (mg:known-in (eq:theory $E) $ctx (egal:id "andEL")) $left) $right) $both)
      (((Error $c3 $w3) None)
       ($proved
        (let $checked (collapse (mg:exact (eq:theory $E) $ctx $q $proved))
@@ -199,7 +199,7 @@
    (case (typ:parts $premise)
      (((Member $x (Tm.app (Tm.named $sort) $level))
        (if (== $level (Tm.db $d))
-           (if (or (== $sort (lean:id "LeanSort")) (== $sort (lean:id "LeanUniv")))
+           (if (or (== $sort (egal:id "LeanSort")) (== $sort (egal:id "LeanUniv")))
                (typ:level-of $E $ctx $sort (typ:witness-subject $x $k $binds $d))
                None)
            None))
@@ -224,22 +224,22 @@
 (= (typ:level-from $sort $type)
    (case $type
      (((Tm.app (Tm.named $u) $level)
-       (if (== $u (lean:id "LeanUniv"))
-           (if (== $sort (lean:id "LeanUniv")) $level (Tm.app (Tm.named (lean:id "ordsucc")) $level))
-           (if (== $u (lean:id "LeanSort"))
-               (if (== $sort (lean:id "LeanSort")) $level
-                   (case $level (((Tm.app (Tm.named $s) $below) (if (== $s (lean:id "ordsucc")) $below None)) ($zero None))))
+       (if (== $u (egal:id "LeanUniv"))
+           (if (== $sort (egal:id "LeanUniv")) $level (Tm.app (Tm.named (egal:id "ordsucc")) $level))
+           (if (== $u (egal:id "LeanSort"))
+               (if (== $sort (egal:id "LeanSort")) $level
+                   (case $level (((Tm.app (Tm.named $s) $below) (if (== $s (egal:id "ordsucc")) $below None)) ($zero None))))
                None)))
       ((Tm.named $prop)
-       (if (== $prop (lean:id "LeanProp")) (if (== $sort (lean:id "LeanSort")) (wire:literal 0) None) None))
+       (if (== $prop (egal:id "LeanProp")) (if (== $sort (egal:id "LeanSort")) (wire:literal 0) None) None))
       ($other None))))
 ; Whether a proposition is refuted here: its negation is proved (x /:e T for
 ; a membership, P -> False otherwise).  An open goal that is refuted is not
 ; open: it is decided, the other way.
 (= (typ:refuted $E $ctx $p)
    (let $negation (case (typ:parts $p)
-                    (((Member $x $T) (Tm.app (Tm.app (Tm.named (lean:id "nIn")) $x) $T))
-                     ($other (Tm.imp $p (Tm.named (lean:id "False"))))))
+                    (((Member $x $T) (Tm.app (Tm.app (Tm.named (egal:id "nIn")) $x) $T))
+                     ($other (Tm.imp $p (Tm.named (egal:id "False"))))))
      (not (== (typ:prove $E $ctx () $negation) None))))
 ; A fact proved once is kept: the same goal in the same context is one
 ; lookup.  (So what a step established, a later step can use: the proof of a
@@ -331,7 +331,7 @@
 ; (A fact a step of a rule established, its companion at the step's
 ; arguments, is read first.)
 (= (typ:direct-searched $E $ctx $path $q)
-   (if (== $q (Tm.named (lean:id "False"))) (typ:contradiction $E $ctx (mg:hypotheses $ctx) 0)
+   (if (== $q (Tm.named (egal:id "False"))) (typ:contradiction $E $ctx (mg:hypotheses $ctx) 0)
        (let $order (num:order $E $ctx $q)
          (if (== $order None)
              (let $field (typ:proof-field $E $ctx $path $q)
@@ -347,7 +347,7 @@
 (= (typ:proof-in-hand $E $ctx $path $q)
    (case (typ:parts $q)
      (((Member $z $P)
-       (if (== $z (Tm.named (lean:id "Empty")))
+       (if (== $z (Tm.named (egal:id "Empty")))
            (typ:proof-from $E $ctx $path $P (mg:hypotheses $ctx) 0)
            None))
       ($other None))))
@@ -356,7 +356,7 @@
        (case (typ:parts (car-atom $hyps))
          (((Member $h $P2)
            (if (== $P2 $P)
-               (let $is-prop (typ:prove $E $ctx $path (typ:member $P (Tm.named (lean:id "LeanProp"))))
+               (let $is-prop (typ:prove $E $ctx $path (typ:member $P (Tm.named (egal:id "LeanProp"))))
                  (if (== $is-prop None) (typ:proof-from $E $ctx $path $P (cdr-atom $hyps) (+ $index 1))
                      (typ:proof-is-zero $E $ctx $P $is-prop $h (mg:hyp (eq:theory $E) $ctx $index))))
                (typ:proof-from $E $ctx $path $P (cdr-atom $hyps) (+ $index 1))))
@@ -373,7 +373,7 @@
 (= (typ:proof-is-zero-lemma $E)
    (case (mg:try-known (eq:theory $E) "Lean_proof_is_zero")
      (((Error $call $why)
-       (let* (($in (Tm.named (lean:id "In"))) ($zero (Tm.named (lean:id "Empty"))) ($prop (Tm.named (lean:id "LeanProp")))
+       (let* (($in (Tm.named (egal:id "In"))) ($zero (Tm.named (egal:id "Empty"))) ($prop (Tm.named (egal:id "LeanProp")))
               ($claim (Tm.all (Tp.base 0) (Tm.imp (Tm.app (Tm.app $in (Tm.db 0)) $prop)
                         (Tm.all (Tp.base 0) (Tm.imp (Tm.app (Tm.app $in (Tm.db 0)) (Tm.db 1))
                                                     (Tm.app (Tm.app $in $zero) (Tm.db 1))))))))
@@ -384,16 +384,16 @@
 (= (conv:witness-with (Prover.proof-is-zero) $E $ctx $body $k $binds) None)
 ; in hand: p (variable 1), p :e LeanProp (hypothesis 1), h (variable 0), h :e p (hypothesis 0)
 (= (conv:prove-with (Prover.proof-is-zero) $E $ctx $goal)
-   (let* (($th (eq:theory $E)) ($p (Tm.db 1)) ($h (Tm.db 0)) ($zero (Tm.named (lean:id "Empty")))
-          ($one (Tm.app (Tm.named (lean:id "ordsucc")) $zero))
-          ($sub (mg:try-proof-app (mg:term-app (mg:term-app (mg:known-in $th $ctx (lean:id "PowerE")) $one) $p) (mg:hyp $th $ctx 1))))
+   (let* (($th (eq:theory $E)) ($p (Tm.db 1)) ($h (Tm.db 0)) ($zero (Tm.named (egal:id "Empty")))
+          ($one (Tm.app (Tm.named (egal:id "ordsucc")) $zero))
+          ($sub (mg:try-proof-app (mg:term-app (mg:term-app (mg:known-in $th $ctx (egal:id "PowerE")) $one) $p) (mg:hyp $th $ctx 1))))
      (case $sub
        (((Error $c1 $w1) (empty))
         ($subset
          (case (mg:try-proof-app (mg:term-app $subset $h) (mg:hyp $th $ctx 0))
            (((Error $c2 $w2) (empty))
             ($in-one
-             (case (mg:try-proof-app (mg:term-app (mg:known-in $th $ctx (lean:id "In_1_eq_0")) $h) $in-one)
+             (case (mg:try-proof-app (mg:term-app (mg:known-in $th $ctx (egal:id "In_1_eq_0")) $h) $in-one)
                (((Error $c3 $w3) (empty))
                 ($h-is-zero
                  (eq:mp $E $ctx (Tm.lam (Tp.base 0) (typ:member (Tm.db 0) (Tm.db 2))) $zero $h
@@ -403,7 +403,7 @@
 (= (typ:proof-field $E $ctx $path $q)
    (case (typ:parts $q)
      (((Member $z (Tm.app (Tm.app (Tm.named $sep) $one) (Tm.lam $A $body)))
-       (if (and (== $sep (lean:id "Sep")) (== $z (Tm.named (lean:id "Empty"))))
+       (if (and (== $sep (egal:id "Sep")) (== $z (Tm.named (egal:id "Empty"))))
            (case (typ:parts $body)
              (((Member $inner-subject $P1)
                (if (and (== $inner-subject (Tm.db 0)) (not (mgt:mentions $P1 0)))
@@ -411,7 +411,7 @@
                           ($holds (typ:prove $E $ctx $path (typ:member $z $P))))
                      (if (== $holds None) None
                          (case (mg:try-proof-app
-                                 (mg:term-app (mg:known-in (eq:theory $E) $ctx (lean:id "Lean_ProofField_intro")) $P) $holds)
+                                 (mg:term-app (mg:known-in (eq:theory $E) $ctx (egal:id "Lean_ProofField_intro")) $P) $holds)
                            (((Error $call $why) None)
                             ($thm (let $checked (collapse (mg:exact (eq:theory $E) $ctx $q $thm))
                                     (if (== $checked ()) None (car-atom $checked))))))))
@@ -447,17 +447,17 @@
 (= (typ:direct-lemma $E $ctx $path $q)
    (case (typ:parts $q)
      (((Member (Tm.app (Tm.app (Tm.named $ap) $f) $x) $T)
-       (if (== $ap (lean:id "ap")) (typ:applied $E $ctx $path $f $x $q)
+       (if (== $ap (egal:id "ap")) (typ:applied $E $ctx $path $f $x $q)
            (typ:try $E $ctx $path (typ:declared (typ:key $q)) $q)))
       ((Member $zero $T)
-       (if (== $zero (Tm.named (lean:id "Empty")))
+       (if (== $zero (Tm.named (egal:id "Empty")))
            (let $declared (typ:declared (typ:key $q))
              (if (== $declared ()) (typ:by-definition $E $ctx $path $zero $T $q) (typ:try $E $ctx $path $declared $q)))
            (typ:try $E $ctx $path (typ:declared (typ:key $q)) $q)))
       ($other
        (case $q
          (((Tm.app (Tm.named $pred) $n)
-           (if (== $pred (lean:id "nat_p")) (typ:natural $E $ctx $path $n $q)
+           (if (== $pred (egal:id "nat_p")) (typ:natural $E $ctx $path $n $q)
                (typ:try $E $ctx $path (typ:declared (typ:key $q)) $q)))
           ($else (typ:try $E $ctx $path (typ:declared (typ:key $q)) $q))))))))
 
@@ -491,10 +491,10 @@
 ;   or, for 0 in a proposition, a fact a step kept (a rule's companion)
 ;   whose type has the same value as the wanted one: the two are one set.
 (= (typ:by-step-value $E $ctx $t $T)
-   (if (== $t (Tm.named (lean:id "Empty")))
+   (if (== $t (Tm.named (egal:id "Empty")))
        (let $facts (conv:known-facts $E $ctx)
          (if (== $facts ()) None
-             (let $wanted (conv:run $E $ctx (Cv.strong (lean:evaluator)) $T)
+             (let $wanted (conv:run $E $ctx (Cv.strong (egal:evaluator)) $T)
                (typ:step-value-in $E $ctx $t $T $wanted (conv:result $T $wanted) $facts))))
        None))
 (= (typ:step-value-in $E $ctx $t $T $wanted $value $facts)
@@ -504,7 +504,7 @@
                        (case (typ:parts $p)
                          (((Member $s $X)
                            (if (== $s $t)
-                               (let $kept (conv:run $E $ctx (Cv.strong (lean:evaluator)) $X)
+                               (let $kept (conv:run $E $ctx (Cv.strong (egal:evaluator)) $X)
                                  (if (== (conv:result $X $kept) $value)
                                      (typ:from-value $E $ctx $t $T $wanted (typ:to-value $E $ctx $t $X $kept $theorem))
                                      None))
@@ -516,7 +516,7 @@
 ;   computed (a proposition about closed terms becomes one a constructor
 ;   proves: the length of the first half = 4 becomes 4 = 4).
 (= (typ:at-value $E $ctx $path $t $T)
-   (let $answer (conv:run $E $ctx (Cv.strong (lean:evaluator)) $T)
+   (let $answer (conv:run $E $ctx (Cv.strong (egal:evaluator)) $T)
      (case $answer
        ((Same None)
         ((Conv $value $equation)
@@ -534,7 +534,7 @@
 ;
 ; (typ:decision-of E CTX P): the terms F a .. that decide P.
 (= (typ:has-decision $E $ctx $t $T)
-   (if (== $t (Tm.named (lean:id "Empty"))) (not (== (typ:decision-of $E $ctx $T) ())) False))
+   (if (== $t (Tm.named (egal:id "Empty"))) (not (== (typ:decision-of $E $ctx $T) ())) False))
 (= (typ:decision-of $E $ctx $P)
    (if (typ:about-a-variable $ctx $P) ()
        (typ:decisions-from $E $ctx $P (typ:decisions (mgt:head $P)))))
@@ -570,7 +570,7 @@
 (= (typ:settled-before $E $ctx $path $q)
    (case (typ:parts $q)
      (((Member $z $P)
-       (if (== $z (Tm.named (lean:id "Empty")))
+       (if (== $z (Tm.named (egal:id "Empty")))
            (let $decisions (typ:decision-of $E $ctx $P)
              (if (== $decisions ()) None
                  (let $kept (typ:read-settled $E $ctx $q)
@@ -582,7 +582,7 @@
       ($other None))))
 ; The same, and where no decision has come to a value yet one is run.
 (= (typ:settle $E $ctx $path $P)
-   (let* (($q (typ:member (Tm.named (lean:id "Empty")) $P))
+   (let* (($q (typ:member (Tm.named (egal:id "Empty")) $P))
           ($before (typ:settled-before $E $ctx $path $q)))
      (if (== $before None)
          (let* (($decisions (typ:decision-of $E $ctx $P))
@@ -609,7 +609,7 @@
             ($other None))))))
 (= (typ:read-decisions $E $ctx $path $P $decisions)
    (if (== $decisions ()) None
-       (let $kept (conv:kept $E $ctx (lean:evaluator) (car-atom $decisions))
+       (let $kept (conv:kept $E $ctx (egal:evaluator) (car-atom $decisions))
          (if (== $kept ()) (typ:read-decisions $E $ctx $path $P (cdr-atom $decisions))
              (let $said (typ:decision-says $E $ctx $path $P (car-atom $kept))
                (if (== $said None) (typ:read-decisions $E $ctx $path $P (cdr-atom $decisions)) $said))))))
@@ -623,9 +623,9 @@
 (= (typ:decision-says $E $ctx $path $P $answer)
    (case $answer
      (((Conv $node $equation)
-       (if (== (mgt:head $node) (Tm.named (lean:id "Lean_Decidable_isTrue_node")))
-           (typ:invert-node $E $ctx $path (Tm.named (lean:id "Empty")) $P $node)
-           (if (== (mgt:head $node) (Tm.named (lean:id "Lean_Decidable_isFalse_node"))) Refuted None)))
+       (if (== (mgt:head $node) (Tm.named (egal:id "Lean_Decidable_isTrue_node")))
+           (typ:invert-node $E $ctx $path (Tm.named (egal:id "Empty")) $P $node)
+           (if (== (mgt:head $node) (Tm.named (egal:id "Lean_Decidable_isFalse_node"))) Refuted None)))
       ($other None))))
 ; A decision is run.  It may be the very one whose computation asked (a rule
 ; on the way has "P holds" as its premise).  A decision that is being
@@ -640,7 +640,7 @@
           ($running (collapse (match (typ:evidence) (TypDeciding $key $decision) running))))
      (if (== $running ())
          (let* (($mark (add-atom (typ:evidence) (TypDeciding $key $decision)))
-                ($answer (conv:run $E $ctx (lean:evaluator) $decision))
+                ($answer (conv:run $E $ctx (egal:evaluator) $decision))
                 ($unmark (remove-atom (typ:evidence) (TypDeciding $key $decision))))
            (typ:decision-says $E $ctx $path $P $answer))
          None)))
@@ -686,8 +686,8 @@
       ($other None))))
 (= (typ:retype $E $ctx $t $T1 $T $thm) (typ:retype-by-values $E $ctx $t $T1 $T $thm))
 (= (typ:retype-by-values $E $ctx $t $T1 $T $thm)
-   (let* (($a1 (conv:run $E $ctx (lean:evaluator) $T1))
-          ($a2 (conv:run $E $ctx (lean:evaluator) $T))
+   (let* (($a1 (conv:run $E $ctx (egal:evaluator) $T1))
+          ($a2 (conv:run $E $ctx (egal:evaluator) $T))
           ($epoch1 (typ:learned $E $ctx needed $T1 $a1))
           ($epoch2 (typ:learned $E $ctx needed $T $a2)))
      (if (== (conv:result $T1 $a1) (conv:result $T $a2))
@@ -696,8 +696,8 @@
 ; The two types as values also inside their binders (a proposition that
 ; quantifies, a function type): equal there, they are the same type.
 (= (typ:retype-inside $E $ctx $t $T1 $T $thm)
-   (let* (($s1 (conv:run $E $ctx (Cv.strong (lean:evaluator)) $T1))
-          ($s2 (conv:run $E $ctx (Cv.strong (lean:evaluator)) $T)))
+   (let* (($s1 (conv:run $E $ctx (Cv.strong (egal:evaluator)) $T1))
+          ($s2 (conv:run $E $ctx (Cv.strong (egal:evaluator)) $T)))
      (if (== (conv:result $T1 $s1) (conv:result $T $s2))
          (typ:from-value $E $ctx $t $T $s2 (typ:to-value $E $ctx $t $T1 $s1 $thm))
          (let $checked (collapse (mg:exact (eq:theory $E) $ctx (typ:member $t $T) $thm))
@@ -726,10 +726,10 @@
 (= (typ:natural $E $ctx $path $n $q)
    (case $n
      (((Tm.app (Tm.named $s) $m)
-       (if (== $s (lean:id "ordsucc"))
-           (let $inner (typ:prove $E $ctx $path (Tm.app (Tm.named (lean:id "nat_p")) $m))
+       (if (== $s (egal:id "ordsucc"))
+           (let $inner (typ:prove $E $ctx $path (Tm.app (Tm.named (egal:id "nat_p")) $m))
              (if (== $inner None) None
-                 (case (mg:try-proof-app (mg:term-app (mg:known-in (eq:theory $E) $ctx (lean:id "nat_ordsucc")) $m) $inner)
+                 (case (mg:try-proof-app (mg:term-app (mg:known-in (eq:theory $E) $ctx (egal:id "nat_ordsucc")) $m) $inner)
                    (((Error $call $why) None) ($thm $thm)))))
            (typ:try $E $ctx $path (typ:declared (typ:key $q)) $q)))
       ($other (typ:try $E $ctx $path (typ:declared (typ:key $q)) $q)))))
@@ -789,7 +789,7 @@
          (((PiOf $X $Y)
            (let $thm-x (typ:prove $E $ctx $path (typ:member $x $X))
              (if (== $thm-x None) None
-                 (let $ap-pi (mg:known-in (eq:theory $E) $ctx (lean:id "ap_Pi"))
+                 (let $ap-pi (mg:known-in (eq:theory $E) $ctx (egal:id "ap_Pi"))
                    (case (mg:try-proof-app
                            (mg:term-app (mg:term-app (mg:term-app (mg:term-app $ap-pi $X) $Y) $f) $x) $thm-f)
                      (((Error $call $why) None)
@@ -807,8 +807,8 @@
 (= (typ:infer-structural $E $ctx $path $t)
    (case $t
      (((Tm.app (Tm.app (Tm.named $ap) $f) $x)
-       (if (== $ap (lean:id "ap")) (typ:apply-typed $E $ctx $path $f $x)
-           (if (== $ap (lean:id "Sigma")) (typ:infer-function $E $ctx $f $x)
+       (if (== $ap (egal:id "ap")) (typ:apply-typed $E $ctx $path $f $x)
+           (if (== $ap (egal:id "Sigma")) (typ:infer-function $E $ctx $f $x)
                (typ:infer-head $E $ctx $path (typ:declared (mgt:head $t)) $t))))
       ($other (typ:infer-head $E $ctx $path (typ:declared (mgt:head $t)) $t)))))
 ; A function lam X F (written with Sigma, which lam is): its body, typed at a
@@ -834,10 +834,10 @@
          (((Error $c4 $w4) None)
           ($closed
            (let* (($Y (Tm.lam (Tp.base 0) $Tb))
-                  ($lemma (mg:known-in (eq:theory $E) $ctx (lean:id "lam_Pi"))))
+                  ($lemma (mg:known-in (eq:theory $E) $ctx (egal:id "lam_Pi"))))
              (case (mg:try-proof-app (mg:term-app (mg:term-app (mg:term-app $lemma $X) $Y) $F) $closed)
                (((Error $c5 $w5) None)
-                ($typed (Typed (Tm.app (Tm.app (Tm.named (lean:id "Pi")) $X) $Y) $typed))))))))))))
+                ($typed (Typed (Tm.app (Tm.app (Tm.named (egal:id "Pi")) $X) $Y) $typed))))))))))))
 (= (typ:infer-variable $E $ctx $t $hyps $index)
    (if (== $hyps ()) None
        (case (typ:parts (car-atom $hyps))
@@ -872,7 +872,7 @@
             ($other None))))))))
 (= (typ:atomic-traced $E $ctx $path $q)
    (let $r (typ:atomic $E $ctx $path $q)
-     (if (== $r None) (let $shown (println! (unproved (lean:text $q))) None) $r)))
+     (if (== $r None) (let $shown (println! (unproved (egal:text $q))) None) $r)))
 
 ; A proposition named by a definition that no lemma speaks of is looked at
 ; as the definition's body: the two are one set, and the kernel converts
@@ -887,7 +887,7 @@
 (= (typ:unfold-head $T)
    (case (mgt:head $T)
      (((Tm.named $d)
-       (let $found (collapse (mg:declaration (lean:theory) $d))
+       (let $found (collapse (mg:declaration (egal:theory) $d))
          (if (== $found ()) None
              (let $decl (car-atom $found)
                (if (== (car-atom $decl) Megalodon.definition)

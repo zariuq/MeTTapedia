@@ -1,7 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.Representation.Effective
 
 /-!
-# Three senses in which the one-match step hosts a transition system
+# Bare operational correspondence and two notions of hosting on the one-match step
 
 `OperationalCorrespondence source target` (in `Mettapedia.GSLT.Core.OperationalReadback`) relates the states of
 two systems: a target step is read back as no source step or one, and a source step is realized by a finite
@@ -71,14 +71,18 @@ theorem reflTransGen_of_multiStep {S : GSLT} {a b : S.Term} (path : S.MultiStep 
 
 /-! ## The total relation -/
 
-/-- **The total relation is an operational correspondence**, between every two systems. -/
+/-- **A vacuous witness of bare operational correspondence.** For every source
+step, `forward` takes zero target steps. Even a target with enabled rules
+admits this witness: `readStep` treats every target firing as silent. -/
 def total (source : GSLT.{uS}) (target : GSLT.{uT}) : OperationalCorrespondence source target where
   related _ _ := True
   readStep := fun _ _ => Or.inl trivial
   forward := fun {_ _ current} _ _ => ⟨current, ⟨.refl current⟩, trivial⟩
 
-/-- **Every system on the naturals corresponds to the step of the empty program**, through the total
-relation. -/
+/-- **The empty program passes the bare correspondence test.** This is a
+counterexample to interpreting that test as evidence of execution. A sound
+observation that distinguishes two source results excludes this witness
+(`total_not_sound`). -/
 theorem every_system_corresponds (R : ℕ → ℕ → Prop) :
     Nonempty (OperationalCorrespondence (equalityGSLT ℕ R) (stepSystem ℕ [])) :=
   ⟨total _ _⟩

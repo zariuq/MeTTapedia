@@ -20,6 +20,7 @@ open Mettapedia.GSLT.LanguageDef.DerivationCheckMachine
 open Mettapedia.GSLT.LanguageDef.DerivationWordMachineLanguageDef
 open Mettapedia.GSLT.LanguageDef.DerivationWordMachineRelationEnv
 open Mettapedia.GSLT.LanguageDef.DerivationWordMachineSimulation
+open Mettapedia.GSLT.LanguageDef.DerivationWordMachineFinishGuards
 open Mettapedia.GSLT.LanguageDef.DerivationWordMachineInputSimulation
 open Mettapedia.GSLT.LanguageDef.DerivationWordMachineInferSimulation
 
@@ -356,72 +357,9 @@ theorem finish_shape_rules_on_nonfinish_record_root_none_empty
       (fun _ => []) (liftRewrite sourceRule unannotated)
       (run (recordsCons (wordsPattern record) (recordsPattern remainingRecords))
         nodes nextId DerivationCheckMachineLanguageDef.rootNone serviceState) =
-      [] := by
-  change matchPattern (.apply "dcm:finish" []) actualInstruction = [] at notFinish
-  simp only [List.mem_cons, List.mem_nil_iff, or_false] at membership
-  rcases membership with rfl | rfl
-  · cases remainingRecords with
-    | nil =>
-        simp [applyRuleUsing, liftRewrite, sourceInstruction?, liftLeft,
-          liftPattern,
-          DerivationCheckMachineLanguageDef.finishTrailingTransition,
-          DerivationCheckMachineLanguageDef.run,
-          DerivationCheckMachineLanguageDef.instructionsCons,
-          DerivationCheckMachineLanguageDef.a,
-          DerivationCheckMachineLanguageDef.v,
-          run, recordsCons, recordsPattern,
-          DerivationWordMachineLanguageDef.a,
-          DerivationWordMachineRelationEnv.a, matchPattern, matchArgs,
-          mergeBindings]
-    | cons nextRecord trailingRecords =>
-        simp [applyRuleUsing, premisesUsing, premiseStepUsing,
-          engineBasePremises, liftRewrite, sourceInstruction?, liftLeft,
-          liftPattern,
-          DerivationCheckMachineLanguageDef.finishTrailingTransition,
-          DerivationCheckMachineLanguageDef.run,
-          DerivationCheckMachineLanguageDef.instructionsCons,
-          DerivationCheckMachineLanguageDef.a,
-          DerivationCheckMachineLanguageDef.v,
-          query, v, run, recordsCons, recordsPattern, decoded,
-          DerivationWordMachineLanguageDef.a,
-          DerivationWordMachineRelationEnv.a, relationEnv, relationTuples,
-          recordDecoded, premiseStepWithEnv, relationQueryStep,
-          builtinRelationTuples, matchRelationArgs, matchRelationArgument,
-          matchPattern, matchArgs, mergeBindings, applyBindings,
-          Bindings.lookup, notFinish]
-  · cases remainingRecords with
-    | nil =>
-        simp [applyRuleUsing, premisesUsing, premiseStepUsing,
-          engineBasePremises, liftRewrite, sourceInstruction?, liftLeft,
-          liftPattern,
-          DerivationCheckMachineLanguageDef.finishMissingRootTransition,
-          DerivationCheckMachineLanguageDef.run,
-          DerivationCheckMachineLanguageDef.instructionsCons,
-          DerivationCheckMachineLanguageDef.instructionsNil,
-          DerivationCheckMachineLanguageDef.rootNone,
-          DerivationCheckMachineLanguageDef.a,
-          DerivationCheckMachineLanguageDef.v,
-          query, v, run, recordsCons, recordsNil, recordsPattern, decoded,
-          DerivationWordMachineLanguageDef.a,
-          DerivationWordMachineRelationEnv.a, relationEnv, relationTuples,
-          recordDecoded, premiseStepWithEnv, relationQueryStep,
-          builtinRelationTuples, matchRelationArgs, matchRelationArgument,
-          matchPattern, matchArgs, mergeBindings, applyBindings,
-          Bindings.lookup, notFinish]
-    | cons nextRecord trailingRecords =>
-        simp [applyRuleUsing, liftRewrite, sourceInstruction?, liftLeft,
-          liftPattern,
-          DerivationCheckMachineLanguageDef.finishMissingRootTransition,
-          DerivationCheckMachineLanguageDef.run,
-          DerivationCheckMachineLanguageDef.instructionsCons,
-          DerivationCheckMachineLanguageDef.instructionsNil,
-          DerivationCheckMachineLanguageDef.rootNone,
-          DerivationCheckMachineLanguageDef.a,
-          DerivationCheckMachineLanguageDef.v,
-          run, recordsCons, recordsNil, recordsPattern,
-          DerivationWordMachineLanguageDef.a,
-          DerivationWordMachineRelationEnv.a, matchPattern, matchArgs,
-          mergeBindings]
+      [] :=
+  finish_shape_rules_reject_nonfinish_root_none host sourceRule record remainingRecords nodes nextId serviceState
+    actualInstruction membership recordDecoded notFinish unannotated
 
 #print axioms finish_shape_rules_on_nonfinish_record_root_none_empty
 
@@ -530,72 +468,9 @@ theorem finish_shape_rules_on_nonfinish_record_root_some_empty
         nodes nextId
         (DerivationCheckMachineLanguageDef.rootSome priorId priorFormula
           priorObligation)
-        serviceState) = [] := by
-  change matchPattern (.apply "dcm:finish" []) actualInstruction = [] at notFinish
-  simp only [List.mem_cons, List.mem_nil_iff, or_false] at membership
-  rcases membership with rfl | rfl
-  · cases remainingRecords with
-    | nil =>
-        simp [applyRuleUsing, liftRewrite, sourceInstruction?, liftLeft,
-          liftPattern,
-          DerivationCheckMachineLanguageDef.finishTrailingTransition,
-          DerivationCheckMachineLanguageDef.run,
-          DerivationCheckMachineLanguageDef.instructionsCons,
-          DerivationCheckMachineLanguageDef.rootSome,
-          DerivationCheckMachineLanguageDef.a,
-          DerivationCheckMachineLanguageDef.v,
-          run, recordsCons, recordsPattern,
-          DerivationWordMachineLanguageDef.a,
-          DerivationWordMachineRelationEnv.a, matchPattern, matchArgs,
-          mergeBindings]
-    | cons nextRecord trailingRecords =>
-        simp [applyRuleUsing, premisesUsing, premiseStepUsing,
-          engineBasePremises, liftRewrite, sourceInstruction?, liftLeft,
-          liftPattern,
-          DerivationCheckMachineLanguageDef.finishTrailingTransition,
-          DerivationCheckMachineLanguageDef.run,
-          DerivationCheckMachineLanguageDef.instructionsCons,
-          DerivationCheckMachineLanguageDef.rootSome,
-          DerivationCheckMachineLanguageDef.a,
-          DerivationCheckMachineLanguageDef.v,
-          query, v, run, recordsCons, recordsPattern, decoded,
-          DerivationWordMachineLanguageDef.a,
-          DerivationWordMachineRelationEnv.a, relationEnv, relationTuples,
-          recordDecoded, premiseStepWithEnv, relationQueryStep,
-          builtinRelationTuples, matchRelationArgs, matchRelationArgument,
-          matchPattern, matchArgs, mergeBindings, applyBindings,
-          Bindings.lookup, notFinish]
-  · cases remainingRecords with
-    | nil =>
-        simp [applyRuleUsing, liftRewrite, sourceInstruction?, liftLeft,
-          liftPattern,
-          DerivationCheckMachineLanguageDef.finishMissingRootTransition,
-          DerivationCheckMachineLanguageDef.run,
-          DerivationCheckMachineLanguageDef.instructionsCons,
-          DerivationCheckMachineLanguageDef.instructionsNil,
-          DerivationCheckMachineLanguageDef.rootNone,
-          DerivationCheckMachineLanguageDef.rootSome,
-          DerivationCheckMachineLanguageDef.a,
-          DerivationCheckMachineLanguageDef.v,
-          run, recordsCons, recordsNil, recordsPattern,
-          DerivationWordMachineLanguageDef.a,
-          DerivationWordMachineRelationEnv.a, matchPattern, matchArgs,
-          mergeBindings]
-    | cons nextRecord trailingRecords =>
-        simp [applyRuleUsing, liftRewrite, sourceInstruction?, liftLeft,
-          liftPattern,
-          DerivationCheckMachineLanguageDef.finishMissingRootTransition,
-          DerivationCheckMachineLanguageDef.run,
-          DerivationCheckMachineLanguageDef.instructionsCons,
-          DerivationCheckMachineLanguageDef.instructionsNil,
-          DerivationCheckMachineLanguageDef.rootNone,
-          DerivationCheckMachineLanguageDef.rootSome,
-          DerivationCheckMachineLanguageDef.a,
-          DerivationCheckMachineLanguageDef.v,
-          run, recordsCons, recordsNil, recordsPattern,
-          DerivationWordMachineLanguageDef.a,
-          DerivationWordMachineRelationEnv.a, matchPattern, matchArgs,
-          mergeBindings]
+        serviceState) = [] :=
+  finish_shape_rules_reject_nonfinish_root_some host sourceRule record remainingRecords nodes nextId serviceState priorId priorFormula priorObligation
+    actualInstruction membership recordDecoded notFinish unannotated
 
 #print axioms finish_shape_rules_on_nonfinish_record_root_some_empty
 
@@ -682,50 +557,9 @@ theorem finish_root_some_rules_on_nonfinish_record_root_some_empty
         nodes nextId
         (DerivationCheckMachineLanguageDef.rootSome priorId priorFormula
           priorObligation)
-        serviceState) = [] := by
-  change matchPattern (.apply "dcm:finish" []) actualInstruction = [] at notFinish
-  simp only [List.mem_cons, List.mem_nil_iff, or_false] at membership
-  rcases membership with rfl | rfl | rfl
-  all_goals
-    cases remainingRecords with
-    | nil =>
-        simp [applyRuleUsing, premisesUsing, premiseStepUsing,
-          engineBasePremises, liftRewrite, sourceInstruction?, liftLeft,
-          liftPattern, liftPremise,
-          DerivationCheckMachineLanguageDef.finishRelevanceFaultTransition,
-          DerivationCheckMachineLanguageDef.finishRootFaultTransition,
-          DerivationCheckMachineLanguageDef.finishVerifiedTransition,
-          DerivationCheckMachineLanguageDef.run,
-          DerivationCheckMachineLanguageDef.instructionsCons,
-          DerivationCheckMachineLanguageDef.instructionsNil,
-          DerivationCheckMachineLanguageDef.rootSome,
-          DerivationCheckMachineLanguageDef.a,
-          DerivationCheckMachineLanguageDef.v,
-          DerivationCheckMachineLanguageDef.query,
-          query, v, run, recordsCons, recordsNil, recordsPattern, decoded,
-          DerivationWordMachineLanguageDef.a,
-          DerivationWordMachineRelationEnv.a, relationEnv, relationTuples,
-          recordDecoded, premiseStepWithEnv, relationQueryStep,
-          builtinRelationTuples, matchRelationArgs, matchRelationArgument,
-          matchPattern, matchArgs, mergeBindings, applyBindings,
-          Bindings.lookup, notFinish]
-    | cons nextRecord trailingRecords =>
-        apply applyRuleUsing_empty_of_no_left_match
-        rw [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule_eq_syntactic]
-        simp [liftRewrite, sourceInstruction?, liftLeft, liftPattern,
-          DerivationCheckMachineLanguageDef.finishRelevanceFaultTransition,
-          DerivationCheckMachineLanguageDef.finishRootFaultTransition,
-          DerivationCheckMachineLanguageDef.finishVerifiedTransition,
-          DerivationCheckMachineLanguageDef.run,
-          DerivationCheckMachineLanguageDef.instructionsCons,
-          DerivationCheckMachineLanguageDef.instructionsNil,
-          DerivationCheckMachineLanguageDef.rootSome,
-          DerivationCheckMachineLanguageDef.a,
-          DerivationCheckMachineLanguageDef.v,
-          run, recordsCons, recordsNil, recordsPattern,
-          DerivationWordMachineLanguageDef.a,
-          DerivationWordMachineRelationEnv.a, v, matchPattern, matchArgs,
-          mergeBindings]
+        serviceState) = [] :=
+  finish_root_some_rules_reject_nonfinish_root_some host sourceRule record remainingRecords nodes nextId serviceState priorId priorFormula priorObligation
+    actualInstruction membership recordDecoded notFinish unannotated
 
 #print axioms finish_root_some_rules_on_nonfinish_record_root_some_empty
 

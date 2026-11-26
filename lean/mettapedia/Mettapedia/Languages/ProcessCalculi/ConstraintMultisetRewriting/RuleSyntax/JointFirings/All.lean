@@ -6,6 +6,8 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.JointFirings.Every
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.JointFirings.EveryControls
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.JointFirings.Maximal
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.JointFirings.MaximalOneExtension
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.JointFirings.GuardDependencies
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.JointFirings.Clashes
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.JointFirings.Exec
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.JointFirings.Independent
@@ -17,6 +19,11 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSynta
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.JointFirings.Collect
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.JointFirings.EmptyBag
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.JointFirings.Tensor
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.JointFirings.AllocatedOpenings
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.JointFirings.AdmissionProfiles
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.JointFirings.AtomicPublication
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.JointFirings.OccurrenceRenaming
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.JointFirings.Election
 
 /-!
 # What one step commits: a bag of matches
@@ -45,6 +52,7 @@ state, and compares the ways of choosing the bag.
   `EveryControls` (`every_not_box_one`, `every_not_dia_one`), `AllAtOnce` (`spendAll_made_rows`),
   `Collect` (what completeness asks, and what a collect query can say).
 * **A maximal bag**: `Maximal` (`Bag.admitsMaximal_iff`, `MaximalControls.lone_not_maximal`).
+  `MaximalOneExtension` relates hereditary admission to member-local guards and gives the one-key test.
 * **Unique**: `Unique` (`Bag.AdmitsUnique`; `Neighbour`: a private neighbour switches `every`, `unique` and
   maximal bags off and leaves the one-match firing admitted).
 * **The bag without members**: `EmptyBag`.
@@ -57,6 +65,8 @@ state, and compares the ways of choosing the bag.
 * `Knowledge` (`stopped_and_fires`: with guards at the joint information, a bag is admitted that no
   member can begin), `SynchronousUpdate` (`Synchronous.no_run_reaches`: absence judged at the entry state;
   `Between`: a neighbour sees the state between two members).
+* `GuardDependencies` characterizes admissible populations in a tell-free dependency graph.
+  Rotations give unbounded minimal firing sizes and defeat every fixed maximality lookahead.
 * `OneActiveRow`: on the machine of the partial recursive functions, whose states have one row, the bag
   step is the step of the program (`Partrec.bag_halts_iff`).
 

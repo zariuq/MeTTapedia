@@ -177,20 +177,21 @@ theorem applyEquations {bindings : TreeSubstitution}
 
 end TreeSubstitution.BooleanAliasSafe
 
-/-- A deterministic tree MGU stores only alias-safe replacements when both
-input trees are alias-safe. -/
-theorem TreeMgu.binding_booleanAliasSafe
-    {left right : Tree} {binding : TreeSubstitution}
-    (derivation : TreeMgu left right binding)
-    (leftSafe : NoRuntimeBooleanAliases left)
-    (rightSafe : NoRuntimeBooleanAliases right) :
-    TreeSubstitution.BooleanAliasSafe binding := by
-  exact TreeMgu.rec
-    (motive_1 := fun left right binding _ =>
+private theorem treeAndForest_binding_booleanAliasSafe :
+    (∀ {left right binding}, TreeMgu left right binding →
+      NoRuntimeBooleanAliases left →
+        NoRuntimeBooleanAliases right →
+        TreeSubstitution.BooleanAliasSafe binding) ∧
+    (∀ {left right binding}, TreesMgu left right binding →
+      NoRuntimeBooleanAliasesList left →
+        NoRuntimeBooleanAliasesList right →
+        TreeSubstitution.BooleanAliasSafe binding) :=
+  TreeMgu.inductBoth
+    (tree := fun left right binding =>
       NoRuntimeBooleanAliases left →
         NoRuntimeBooleanAliases right →
         TreeSubstitution.BooleanAliasSafe binding)
-    (motive_2 := fun left right binding _ =>
+    (forest := fun left right binding =>
       NoRuntimeBooleanAliasesList left →
         NoRuntimeBooleanAliasesList right →
         TreeSubstitution.BooleanAliasSafe binding)
@@ -216,7 +217,16 @@ theorem TreeMgu.binding_booleanAliasSafe
           (baseSafe.applyTrees _ leftChildren.2)
           (baseSafe.applyTrees _ rightChildren.2)
       exact extensionSafe.append baseSafe)
-    derivation leftSafe rightSafe
+
+/-- A deterministic tree MGU stores only alias-safe replacements when both
+input trees are alias-safe. -/
+theorem TreeMgu.binding_booleanAliasSafe
+    {left right : Tree} {binding : TreeSubstitution}
+    (derivation : TreeMgu left right binding)
+    (leftSafe : NoRuntimeBooleanAliases left)
+    (rightSafe : NoRuntimeBooleanAliases right) :
+    TreeSubstitution.BooleanAliasSafe binding :=
+  treeAndForest_binding_booleanAliasSafe.1 derivation leftSafe rightSafe
 
 /-- Ordered child unification preserves alias safety while threading each
 head MGU through the remaining children. -/
@@ -225,39 +235,8 @@ theorem TreesMgu.binding_booleanAliasSafe
     (derivation : TreesMgu left right binding)
     (leftSafe : NoRuntimeBooleanAliasesList left)
     (rightSafe : NoRuntimeBooleanAliasesList right) :
-    TreeSubstitution.BooleanAliasSafe binding := by
-  exact TreesMgu.rec
-    (motive_1 := fun left right binding _ =>
-      NoRuntimeBooleanAliases left →
-        NoRuntimeBooleanAliases right →
-        TreeSubstitution.BooleanAliasSafe binding)
-    (motive_2 := fun left right binding _ =>
-      NoRuntimeBooleanAliasesList left →
-        NoRuntimeBooleanAliasesList right →
-        TreeSubstitution.BooleanAliasSafe binding)
-    (fun _ _ _ => TreeSubstitution.BooleanAliasSafe.nil)
-    (fun _ _ _ _ _ valueSafe =>
-      TreeSubstitution.BooleanAliasSafe.cons valueSafe
-        TreeSubstitution.BooleanAliasSafe.nil)
-    (fun _ _ _ _ valueSafe _ =>
-      TreeSubstitution.BooleanAliasSafe.cons valueSafe
-        TreeSubstitution.BooleanAliasSafe.nil)
-    (fun _ _ _ _ _ childrenInduction leftNode rightNode => by
-      simp only [NoRuntimeBooleanAliases] at leftNode rightNode
-      exact childrenInduction leftNode.2.2 rightNode.2.2)
-    (fun _ _ => TreeSubstitution.BooleanAliasSafe.nil)
-    (fun _ _ _ _ base extension _ _ headInduction tailInduction
-        leftChildren rightChildren => by
-      simp only [NoRuntimeBooleanAliasesList]
-        at leftChildren rightChildren
-      have baseSafe :=
-        headInduction leftChildren.1 rightChildren.1
-      have extensionSafe :=
-        tailInduction
-          (baseSafe.applyTrees _ leftChildren.2)
-          (baseSafe.applyTrees _ rightChildren.2)
-      exact extensionSafe.append baseSafe)
-    derivation leftSafe rightSafe
+    TreeSubstitution.BooleanAliasSafe binding :=
+  treeAndForest_binding_booleanAliasSafe.2 derivation leftSafe rightSafe
 
 /-- The deterministic ordered equation MGU cannot introduce a reserved
 Boolean spelling into an alias-safe worklist. -/

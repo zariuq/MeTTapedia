@@ -741,21 +741,8 @@ theorem if_bodies_every_run (dispatch : GroundedDispatch)
       emitted.map (fun r => r.1.erase) = L :=
     fun emitted run => determined _ _ _ _ (complete_source run)
   have shape := settlesIf_shape settles
-  have exists_ : ∃ heAnswers : List Result,
-      Relation.ReflTransGen (HEStep dispatch Completed.scopedLookup policy)
-        (load (Space.ofList atoms) c Atom.undefinedType) (final (Space.ofList atoms) heAnswers) := by
-    obtain ⟨space, emitted, path⟩ := IfAtFrames.Fine.exists_final fine
-    have same : space = Space.ofList atoms := space_fixed path
-    subst same
-    exact ⟨emitted, path⟩
-  have inOrder : FinishesInOrder dispatch Completed.scopedLookup policy (Space.ofList atoms) c L := by
-    refine ⟨fine.acc, fun y path => ?_⟩
-    rcases (fine.reaches path).progress with moves | ⟨space, emitted, rfl⟩
-    · exact Or.inl moves
-    · have same : space = Space.ofList atoms := space_fixed path
-      subst same
-      exact Or.inr ⟨emitted, rfl, every emitted path⟩
-  exact ⟨PublishesInOrder.bag ⟨exists_, every⟩, inOrder.bag,
+  have finishes := FinishesInOrder.of_fine fine every
+  exact ⟨finishes.publishes.bag, finishes.bag,
     petta_complete shape.2.ground shape.1 (settlesIf_petta settles)⟩
 
 /-! ## Controls -/

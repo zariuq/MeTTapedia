@@ -1,4 +1,4 @@
-import Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.DeclarationSemantics
+import Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.DeclarationFrontierAtScope
 
 namespace Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.DeclarationSpec
 
@@ -888,66 +888,35 @@ theorem SignatureWellFormed.toDeclEnvWellFormed {specs : List DeclSpec}
 
 abbrev DeclSpecStarPreservationPackage
     (specs : List DeclSpec) : Prop :=
-  ∀ {n : Nat} {Γ : Ctx n} {t u A : ScopedTerm n},
-    HasTypeDecl (envOfSpecs specs) Γ t A →
-    RedStarDecl (envOfSpecs specs) t u →
-    HasTypeDecl (envOfSpecs specs) Γ u A
+  DeclStarPreservationPackage (envOfSpecs specs)
 
 abbrev DeclSpecStarConfluencePackage
     (specs : List DeclSpec) : Prop :=
-  ∀ {n : Nat} {s t₁ t₂ : ScopedTerm n},
-    RedStarDecl (envOfSpecs specs) s t₁ →
-    RedStarDecl (envOfSpecs specs) s t₂ →
-    ∃ u,
-      RedStarDecl (envOfSpecs specs) t₁ u ∧
-      RedStarDecl (envOfSpecs specs) t₂ u
+  DeclStarConfluencePackage (envOfSpecs specs)
 
 abbrev DeclSpecPiInjectivityPackage
     (specs : List DeclSpec) : Prop :=
-  ∀ {n : Nat} {A A' : ScopedTerm n} {B B' : ScopedTerm (n + 1)},
-    ConvDecl (envOfSpecs specs) (.pi A B) (.pi A' B') →
-      ConvDecl (envOfSpecs specs) A A' ∧
-      ConvDecl (envOfSpecs specs) B B'
+  DeclPiInjectivityPackage (envOfSpecs specs)
 
 abbrev DeclSpecSigmaInjectivityPackage
     (specs : List DeclSpec) : Prop :=
-  ∀ {n : Nat} {A A' : ScopedTerm n} {B B' : ScopedTerm (n + 1)},
-    ConvDecl (envOfSpecs specs) (.sigma A B) (.sigma A' B') →
-      ConvDecl (envOfSpecs specs) A A' ∧
-      ConvDecl (envOfSpecs specs) B B'
+  DeclSigmaInjectivityPackage (envOfSpecs specs)
 
 abbrev DeclSpecChurchRosserPackage
     (specs : List DeclSpec) : Prop :=
-  DeclEnvWellFormed (envOfSpecs specs) ∧
-    DeclSpecStarPreservationPackage specs ∧
-    DeclSpecStarConfluencePackage specs ∧
-    Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.DeclarationSemantics.DeclChurchRosser
-      (envOfSpecs specs) ∧
-    DeclSpecPiInjectivityPackage specs ∧
-    DeclSpecSigmaInjectivityPackage specs
+  DeclChurchRosserFrontierPackage (envOfSpecs specs)
 
 abbrev DeclSpecNoValuesNormalizationPackage
     (specs : List DeclSpec)
     (hNone : ∀ s ∈ specs, s.value? = none) : Prop :=
-  (∀ {n : Nat} {A B : ScopedTerm n}
-      {w : DeclarationSemantics.DefEqDeclWitness (envOfSpecs specs) A B},
-      DeclarationSemantics.defEqByNormalizationDeclOfNoValues?
-          (envOfSpecs specs)
-          (valueOf_envOfSpecs_eq_none_of_all_none specs hNone)
-          A B = some w →
-        ConvDecl (envOfSpecs specs) A B) ∧
-    (∀ {n : Nat} {A B : ScopedTerm n},
-      DeclarationSemantics.defEqByNormalizationDeclOfNoValues?
-          (envOfSpecs specs)
-          (valueOf_envOfSpecs_eq_none_of_all_none specs hNone)
-          A B ≠ none →
-        ConvDecl (envOfSpecs specs) A B)
+  DeclNoValuesNormalizationPackage (envOfSpecs specs)
+    (valueOf_envOfSpecs_eq_none_of_all_none specs hNone)
 
 abbrev DeclSpecAndNoValuesPackage
     (specs : List DeclSpec)
     (hNone : ∀ s ∈ specs, s.value? = none) : Prop :=
-  DeclSpecChurchRosserPackage specs ∧
-    DeclSpecNoValuesNormalizationPackage specs hNone
+  DeclNoValuesFrontierPackage (envOfSpecs specs)
+    (valueOf_envOfSpecs_eq_none_of_all_none specs hNone)
 
 theorem DeclSpecChurchRosserPackage.wellFormed
     {specs : List DeclSpec}
@@ -1467,33 +1436,9 @@ theorem DeclSpecObligations.decl_sound_confluent_and_injectivity_of_church_rosse
     (hCR :
       Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.DeclarationSemantics.DeclChurchRosser
         (envOfSpecs specs)) :
-    (∀ {Γ : Ctx n} {t u A : ScopedTerm n},
-      HasTypeDecl (envOfSpecs specs) Γ t A →
-      RedStarDecl (envOfSpecs specs) t u →
-      HasTypeDecl (envOfSpecs specs) Γ u A) ∧
-    (∀ {s t₁ t₂ : ScopedTerm n},
-      RedStarDecl (envOfSpecs specs) s t₁ →
-      RedStarDecl (envOfSpecs specs) s t₂ →
-      ∃ u,
-        RedStarDecl (envOfSpecs specs) t₁ u ∧
-        RedStarDecl (envOfSpecs specs) t₂ u) ∧
-    (∀ {s t : ScopedTerm n},
-      ConvDecl (envOfSpecs specs) s t →
-      ∃ u,
-        RedStarDecl (envOfSpecs specs) s u ∧
-        RedStarDecl (envOfSpecs specs) t u) ∧
-    (∀ {A A' : ScopedTerm n} {B B' : ScopedTerm (n + 1)},
-      ConvDecl (envOfSpecs specs) (.pi A B) (.pi A' B') →
-        ConvDecl (envOfSpecs specs) A A' ∧
-        ConvDecl (envOfSpecs specs) B B') ∧
-    (∀ {A A' : ScopedTerm n} {B B' : ScopedTerm (n + 1)},
-      ConvDecl (envOfSpecs specs) (.sigma A B) (.sigma A' B') →
-        ConvDecl (envOfSpecs specs) A A' ∧
-        ConvDecl (envOfSpecs specs) B B') := by
-  exact Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.DeclarationSemantics.decl_sound_confluent_and_injectivity_of_church_rosser
-      (E := envOfSpecs specs)
-      hCR
-      (envOfSpecs_wellFormed_of_specObligations specs hObligations)
+    DeclChurchRosserReadoutAt (envOfSpecs specs) n :=
+  (DeclarationSemantics.decl_sound_confluent_and_injectivity_of_church_rosser_package hCR
+    (envOfSpecs_wellFormed_of_specObligations specs hObligations)).atScope n
 
 /-- Ordered checked-signature consequences of declaration-aware Church-Rosser.
 This is the current generic boundary for value-bearing declaration environments,
@@ -1504,30 +1449,8 @@ theorem SignatureWellFormed.decl_sound_confluent_and_injectivity_of_church_rosse
     (hCR :
       Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.DeclarationSemantics.DeclChurchRosser
         (envOfSpecs specs)) :
-    (∀ {Γ : Ctx n} {t u A : ScopedTerm n},
-      HasTypeDecl (envOfSpecs specs) Γ t A →
-      RedStarDecl (envOfSpecs specs) t u →
-      HasTypeDecl (envOfSpecs specs) Γ u A) ∧
-    (∀ {s t₁ t₂ : ScopedTerm n},
-      RedStarDecl (envOfSpecs specs) s t₁ →
-      RedStarDecl (envOfSpecs specs) s t₂ →
-      ∃ u,
-        RedStarDecl (envOfSpecs specs) t₁ u ∧
-        RedStarDecl (envOfSpecs specs) t₂ u) ∧
-    (∀ {s t : ScopedTerm n},
-      ConvDecl (envOfSpecs specs) s t →
-      ∃ u,
-        RedStarDecl (envOfSpecs specs) s u ∧
-        RedStarDecl (envOfSpecs specs) t u) ∧
-    (∀ {A A' : ScopedTerm n} {B B' : ScopedTerm (n + 1)},
-      ConvDecl (envOfSpecs specs) (.pi A B) (.pi A' B') →
-        ConvDecl (envOfSpecs specs) A A' ∧
-        ConvDecl (envOfSpecs specs) B B') ∧
-    (∀ {A A' : ScopedTerm n} {B B' : ScopedTerm (n + 1)},
-      ConvDecl (envOfSpecs specs) (.sigma A B) (.sigma A' B') →
-        ConvDecl (envOfSpecs specs) A A' ∧
-        ConvDecl (envOfSpecs specs) B B') := by
-  exact hSig.obligations.decl_sound_confluent_and_injectivity_of_church_rosser hCR
+    DeclChurchRosserReadoutAt (envOfSpecs specs) n :=
+  hSig.obligations.decl_sound_confluent_and_injectivity_of_church_rosser hCR
 
 theorem DeclSpecObligations.declSpecChurchRosserPackage_of_church_rosser
     {specs : List DeclSpec}
@@ -1689,115 +1612,28 @@ theorem DeclSpecObligations.decl_sound_confluent_and_conversion_of_all_none
     {specs : List DeclSpec}
     (hObligations : DeclSpecObligations specs)
     (hNone : ∀ s ∈ specs, s.value? = none) :
-    (∀ {Γ : Ctx n} {t u A : ScopedTerm n},
-      HasTypeDecl (envOfSpecs specs) Γ t A →
-      RedStarDecl (envOfSpecs specs) t u →
-      HasTypeDecl (envOfSpecs specs) Γ u A) ∧
-    (∀ {s t₁ t₂ : ScopedTerm n},
-      RedStarDecl (envOfSpecs specs) s t₁ →
-      RedStarDecl (envOfSpecs specs) s t₂ →
-      ∃ u,
-        RedStarDecl (envOfSpecs specs) t₁ u ∧
-        RedStarDecl (envOfSpecs specs) t₂ u) ∧
-    (∀ {s t : ScopedTerm n},
-      ConvDecl (envOfSpecs specs) s t →
-      ∃ u,
-        RedStarDecl (envOfSpecs specs) s u ∧
-        RedStarDecl (envOfSpecs specs) t u) ∧
-    (∀ {A A' : ScopedTerm n} {B B' : ScopedTerm (n + 1)},
-      ConvDecl (envOfSpecs specs) (.pi A B) (.pi A' B') →
-        ConvDecl (envOfSpecs specs) A A' ∧ ConvDecl (envOfSpecs specs) B B') ∧
-    (∀ {A A' : ScopedTerm n} {B B' : ScopedTerm (n + 1)},
-      ConvDecl (envOfSpecs specs) (.sigma A B) (.sigma A' B') →
-        ConvDecl (envOfSpecs specs) A A' ∧ ConvDecl (envOfSpecs specs) B B') ∧
-    (∀ {A B : ScopedTerm n} {w : DefEqDeclWitness (envOfSpecs specs) A B},
-      defEqByNormalizationDeclOfAllNone? specs hObligations hNone A B = some w →
-      ConvDecl (envOfSpecs specs) A B) ∧
-    (∀ {A B : ScopedTerm n},
-      defEqByNormalizationDeclOfAllNone? specs hObligations hNone A B ≠ none →
-      ConvDecl (envOfSpecs specs) A B) := by
-  rcases
-      Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.DeclarationSemantics.decl_sound_confluent_and_conversion_of_no_values
-        (E := envOfSpecs specs)
-        (hNone := valueOf_envOfSpecs_eq_none_of_all_none specs hNone)
-        (hWf := envOfSpecs_wellFormed_of_specObligations specs hObligations)
-    with ⟨hPres, hConfl, hCR, hPi, hSigma, _hDefEqSound, _hDefEqNeNone⟩
-  refine ⟨hPres, hConfl, hCR, hPi, hSigma, ?_, ?_⟩
-  · intro A B w hSome
-    exact hObligations.defEqByNormalizationDeclOfAllNone?_sound
-      (hNone := hNone)
-      hSome
-  · intro A B hNeNone
-    exact hObligations.defEqByNormalizationDeclOfAllNone?_ne_none_implies_conv
-      (hNone := hNone)
-      hNeNone
+    DeclNoValuesReadoutAt (envOfSpecs specs)
+      (valueOf_envOfSpecs_eq_none_of_all_none specs hNone) n :=
+  (DeclarationSemantics.decl_sound_confluent_and_conversion_of_no_values_package
+    (valueOf_envOfSpecs_eq_none_of_all_none specs hNone)
+    (envOfSpecs_wellFormed_of_specObligations specs hObligations)).atScope n
 
 theorem SignatureWellFormed.decl_sound_confluent_and_conversion_of_all_none
     {specs : List DeclSpec}
     (hSig : SignatureWellFormed specs)
     (hNone : ∀ s ∈ specs, s.value? = none) :
-    (∀ {Γ : Ctx n} {t u A : ScopedTerm n},
-      HasTypeDecl (envOfSpecs specs) Γ t A →
-      RedStarDecl (envOfSpecs specs) t u →
-      HasTypeDecl (envOfSpecs specs) Γ u A) ∧
-    (∀ {s t₁ t₂ : ScopedTerm n},
-      RedStarDecl (envOfSpecs specs) s t₁ →
-      RedStarDecl (envOfSpecs specs) s t₂ →
-      ∃ u,
-        RedStarDecl (envOfSpecs specs) t₁ u ∧
-        RedStarDecl (envOfSpecs specs) t₂ u) ∧
-    (∀ {s t : ScopedTerm n},
-      ConvDecl (envOfSpecs specs) s t →
-      ∃ u,
-        RedStarDecl (envOfSpecs specs) s u ∧
-        RedStarDecl (envOfSpecs specs) t u) ∧
-    (∀ {A A' : ScopedTerm n} {B B' : ScopedTerm (n + 1)},
-      ConvDecl (envOfSpecs specs) (.pi A B) (.pi A' B') →
-        ConvDecl (envOfSpecs specs) A A' ∧ ConvDecl (envOfSpecs specs) B B') ∧
-    (∀ {A A' : ScopedTerm n} {B B' : ScopedTerm (n + 1)},
-      ConvDecl (envOfSpecs specs) (.sigma A B) (.sigma A' B') →
-        ConvDecl (envOfSpecs specs) A A' ∧ ConvDecl (envOfSpecs specs) B B') ∧
-    (∀ {A B : ScopedTerm n} {w : DefEqDeclWitness (envOfSpecs specs) A B},
-      hSig.defEqByNormalizationDeclOfAllNone? hNone A B = some w →
-      ConvDecl (envOfSpecs specs) A B) ∧
-    (∀ {A B : ScopedTerm n},
-      hSig.defEqByNormalizationDeclOfAllNone? hNone A B ≠ none →
-      ConvDecl (envOfSpecs specs) A B) := by
-  exact hSig.obligations.decl_sound_confluent_and_conversion_of_all_none
-    (hNone := hNone)
+    DeclNoValuesReadoutAt (envOfSpecs specs)
+      (valueOf_envOfSpecs_eq_none_of_all_none specs hNone) n :=
+  hSig.obligations.decl_sound_confluent_and_conversion_of_all_none hNone
 
 theorem DeclSpecObligations.declSpecAndNoValuesPackage_of_all_none
     {specs : List DeclSpec}
     (hObligations : DeclSpecObligations specs)
     (hNone : ∀ s ∈ specs, s.value? = none) :
-    DeclSpecAndNoValuesPackage specs hNone := by
-  have hCR :
-      Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.DeclarationSemantics.DeclChurchRosser
-        (envOfSpecs specs) := by
-    intro n s t hConv
-    exact
-      hObligations.church_rosser_convDecl_of_all_none
-        (hNone := hNone)
-        hConv
-  have hChurch : DeclSpecChurchRosserPackage specs :=
-    hObligations.declSpecChurchRosserPackage_of_church_rosser hCR
-  have hNorm :
-      DeclSpecNoValuesNormalizationPackage specs hNone := by
-    refine ⟨?_, ?_⟩
-    · intro n A B w hSome
-      exact
-        Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.DeclarationSemantics.defEqByNormalizationDeclOfNoValues?_sound
-          (E := envOfSpecs specs)
-          (hNone := valueOf_envOfSpecs_eq_none_of_all_none specs hNone)
-          (w := w)
-          hSome
-    · intro n A B hNeNone
-      exact
-        Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.DeclarationSemantics.defEqByNormalizationDeclOfNoValues?_ne_none_implies_conv
-          (E := envOfSpecs specs)
-          (hNone := valueOf_envOfSpecs_eq_none_of_all_none specs hNone)
-          hNeNone
-  exact ⟨hChurch, hNorm⟩
+    DeclSpecAndNoValuesPackage specs hNone :=
+  DeclarationSemantics.decl_sound_confluent_and_conversion_of_no_values_package
+    (valueOf_envOfSpecs_eq_none_of_all_none specs hNone)
+    (envOfSpecs_wellFormed_of_specObligations specs hObligations)
 
 theorem SignatureWellFormed.declSpecAndNoValuesPackage_of_all_none
     {specs : List DeclSpec}

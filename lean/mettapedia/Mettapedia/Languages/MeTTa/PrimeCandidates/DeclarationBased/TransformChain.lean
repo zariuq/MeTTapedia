@@ -1,7 +1,7 @@
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.RelationComposition
+import Mettapedia.GSLT.LanguageDef.InferenceRelationComposition
 import Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.MILNativeMaterializationExamples
 
-/-! # Checking proof occurrences delivered by a two-read transform -/
+/-! # The checked family chain as a Transform composition -/
 
 set_option autoImplicit false
 
@@ -9,7 +9,7 @@ namespace Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.TransformC
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef
-open InferenceChecker
+open InferenceChecker InferenceRelationComposition
 open Mettapedia.Logic.MetaInterpretiveLearning.CumulativeTheory
 open MILCheckedChain MILCheckedNativePrograms
 open Mettapedia.Machines.Specialization
@@ -22,9 +22,13 @@ structure Receipt where
 
 abbrev Premise := Row Pattern Receipt
 
+def familySchema (Name : Type) : CompositionSchema Name Pattern where
+  judgment _ := relates
+  instanceAt _ _ source middle target := ⟨chainRule.id, [source, middle, target]⟩
+
 def tree (first second : Premise) : RawProof :=
-  .node ⟨chainRule.id, [first.source, first.target, second.target]⟩
-    [first.evidence.proof, second.evidence.proof]
+  (familySchema String).node (.base "mother") (.base "father") first.source first.target
+    second.target first.evidence.proof second.evidence.proof
 
 def Valid (r : Premise) : Prop :=
   argumentValidAt 0 r.source = true ∧ argumentValidAt 0 r.target = true ∧
@@ -39,6 +43,12 @@ private theorem instance_exact (x m z : Pattern) (hx : argumentValidAt 0 x = tru
   simp [chainRule, argumentsValidAt, hx, hm, hz, RuleSchema.sideConditionsHold, relates,
     instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?]
 
+theorem family_applies {Name : Type} (left right : Expr Name) (x m z : Pattern)
+    (hx : argumentValidAt 0 x = true) (hm : argumentValidAt 0 m = true)
+    (hz : argumentValidAt 0 z = true) :
+    (familySchema Name).Applies learned.target left right x m z :=
+  instantiateRule?_eq_some_iff_application.mp (instance_exact x m z hx hm hz)
+
 /-- Entry and exit are the requested endpoints. The selected left occurrence
 supplies the intermediate term and the selected right proof must start there. -/
 theorem every_answer_checks (tables : PathJoin.Tables Pattern Premise) (left right : List Premise)
@@ -50,7 +60,12 @@ theorem every_answer_checks (tables : PathJoin.Tables Pattern Premise) (left rig
   obtain ⟨hx, hm, hleft⟩ := leftValid first hl
   obtain ⟨_, hz, hright⟩ := rightValid second hr
   rw [middle] at hright
-  simp [tree, checkRaw, instance_exact _ _ _ hx hm hz, checkRawChildren, hleft, hright]
+  change checkRaw learned.target
+    ((familySchema String).judgment (.chain (.base "mother") (.base "father")) first.source second.target)
+    (tree first second) = true
+  rw [tree, (familySchema String).check_node learned.target
+    (family_applies (.base "mother") (.base "father") _ _ _ hx hm hz)]
+  exact congrArg₂ (· && ·) hleft hright
 
 def erase (source target : Pattern) : RelationComposition.Proof Pattern Receipt → RawProof
   | .leaf receipt => receipt.proof
@@ -68,7 +83,12 @@ private theorem checked_firing {Name : Type} {bank : Name → List Premise}
     obtain ⟨hx, hm, hl⟩ := lhs
     obtain ⟨_, hz, hr⟩ := rhs
     rw [middle] at hr
-    exact ⟨hx, hz, by simp [link, erase, checkRaw, instance_exact _ _ _ hx hm hz, checkRawChildren, hl, hr]⟩
+    refine ⟨hx, hz, ?_⟩
+    change checkRaw learned.target ((familySchema Name).judgment (.chain a b) l.source r.target)
+      ((familySchema Name).node a b l.source l.target r.target
+        (erase l.source l.target l.evidence) (erase l.target r.target r.evidence)) = true
+    rw [(familySchema Name).check_node learned.target (family_applies a b _ _ _ hx hm hz)]
+    exact congrArg₂ (· && ·) hl hr
 
 theorem indexed_program_checks {Name : Type} (bank : Name → List Premise)
     (valid : ∀ name row, row ∈ bank name → Valid row) (expr : Expr Name) (tables) {row}
@@ -110,5 +130,17 @@ theorem family_native_terms :
   change [("l1", "r1", MILNativeMaterialization.materialize? FormedQuotationCanary.quotation alice carol grandparentProof),
     ("l2", "r1", MILNativeMaterialization.materialize? FormedQuotationCanary.quotation alice carol grandparentProof)] = _
   rw [MILNativeMaterialization.Examples.grandparent_materialized]
+
+theorem family_wrong_middle_rejected :
+    MILNativeMaterialization.materialize? FormedQuotationCanary.quotation alice carol
+      ((familySchema String).node (.base "mother") (.base "father") alice alice carol
+        motherProof fatherProof) = none := by
+  rw [MILNativeMaterialization.materialize_eq_none_iff]
+  change checkRaw learned.target
+    ((familySchema String).judgment (.chain (.base "mother") (.base "father")) alice carol) _ = false
+  exact (familySchema String).changed_middle_rejected learned.target
+    (family_applies (.base "mother") (.base "father") alice alice carol
+      (by decide +kernel) (by decide +kernel) (by decide +kernel))
+    (middle := bob) fatherProof (by decide +kernel) (by decide +kernel)
 
 end Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.TransformChain

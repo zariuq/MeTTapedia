@@ -74,7 +74,7 @@ theorem childConditions_of_source
     rw [Soundness.denote_rename, Soundness.renameVal_weaken_extend]
   simp only [RecursiveSpacePredicate.Contextual.childConditions, HenkinModel.denote, PreModel.denote, shifted]
   intro nativeSlot _
-  simp only [PreModel.extend, recursiveSignature,
+  simp only [PreModel.extend, recursiveSignature, IndexedContainerInventory.recursiveSignature,
     IndexedConstructorGuards.PositionPrograms.contextual]
   let slot := realization.numbers.symm nativeSlot
   have slot_exact : realization.numbers slot = nativeSlot := realization.numbers.apply_symm_apply nativeSlot

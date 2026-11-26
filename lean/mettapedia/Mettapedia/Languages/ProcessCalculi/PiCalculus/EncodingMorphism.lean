@@ -370,14 +370,19 @@ theorem forward_replicate_case_derived {N : Finset String}
   · simpa [body, tgt, encode, rhoPar, rhoInput, rhoReplicate, piNameToRhoName] using
       (WeakRestrictedBisim.refl N tgt)
 
-/-- Non-RF single-step forward case for `.replicate`, measured in derived weak bisimilarity. -/
-theorem forward_single_step_replicate_derived {N : Finset String}
-    (x y : Name) (P : Process) (n v : String) :
+/-- Reachability of a replication unfold and its restricted observation. -/
+abbrev ReplicationUnfoldOutcome (N : Finset String)
+    (x y : Name) (P : Process) (n v : String) : Prop :=
     ∃ T, Nonempty ((encode (.replicate x y P) n v) ⇝ᵈ* T) ∧
       T ≈ᵈ{N}
         (rhoPar
           (rhoInput (piNameToRhoName x) y (encode P (n ++ "_rep") v))
-          (encode (.replicate x y P) n v)) := by
+          (encode (.replicate x y P) n v))
+
+/-- Non-RF single-step forward case for `.replicate`, measured in derived weak bisimilarity. -/
+theorem forward_single_step_replicate_derived {N : Finset String}
+    (x y : Name) (P : Process) (n v : String) :
+    ReplicationUnfoldOutcome N x y P n v := by
   let body : Pattern := rhoInput (piNameToRhoName x) y (encode P (n ++ "_rep") v)
   let tgt : Pattern := .collection .hashBag [body, .apply "PReplicate" [body]] none
   refine ⟨tgt, ?_, ?_⟩
@@ -545,9 +550,7 @@ theorem fullEncode_nu_admin_progress_derived {N : Finset String}
   · simpa using
       (forward_single_step_nameServer_listener_derived
         (N := N) "ns_x" "ns_z" "v_init" "ns_seed" seedListenerBody)
-  · simpa using
-      (forward_single_step_replicate_derived
-        (N := N) "ns_x" "_drop" .nil "n_init" "v_init")
+  · exact forward_single_step_replicate_derived (N := N) "ns_x" "_drop" .nil "n_init" "v_init"
 
 /-- Freshness-threaded wrapper for packaged non-RF administrative ν progress. -/
 theorem fullEncode_nu_admin_progress_derived_fresh {N : Finset String}
@@ -580,11 +583,11 @@ theorem fullEncode_nu_admin_progress_derived_fresh {N : Finset String}
   exact fullEncode_nu_admin_progress_derived
     (N := N) x P nuListenerBody seedListenerBody
 
-/-- Combined non-RF administrative closure:
-ν-listener, seed-listener, and replicate-unfold endpoints composed into one
-derived multi-step trace over a single 3-component source bag. -/
-theorem fullEncode_nu_admin_progress_combined_derived {N : Finset String}
-    (x : Name) (P : Process) (nuListenerBody seedListenerBody : Pattern) :
+/-- Combined ν, seed and replicated-server progress under derived rho
+semantics. The same three endpoints occur in the bag trace and in the
+per-component observations. -/
+abbrev NuAdminOutcome (N : Finset String)
+    (x : Name) (P : Process) (nuListenerBody seedListenerBody : Pattern) : Prop :=
     ∃ Tnu Tseed Trep,
       fullEncode (.nu x P) =
         rhoPar (encode (.nu x P) "n_init" "v_init")
@@ -611,7 +614,14 @@ theorem fullEncode_nu_admin_progress_combined_derived {N : Finset String}
       WeakRestrictedBisimD N Trep
         (rhoPar
           (rhoInput (piNameToRhoName "ns_x") "_drop" (encode .nil ("n_init" ++ "_rep") "v_init"))
-          (encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init")) := by
+          (encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"))
+
+/-- Combined non-RF administrative closure:
+ν-listener, seed-listener, and replicate-unfold endpoints composed into one
+derived multi-step trace over a single 3-component source bag. -/
+theorem fullEncode_nu_admin_progress_combined_derived {N : Finset String}
+    (x : Name) (P : Process) (nuListenerBody seedListenerBody : Pattern) :
+    NuAdminOutcome N x P nuListenerBody seedListenerBody := by
   obtain ⟨Tnu, hnuStep, hnuBisim⟩ :=
     forward_single_step_nu_listener_derived
       (N := N) x P "n_init" "v_init" nuListenerBody
@@ -662,85 +672,17 @@ combines generic replication-unfold and full-encode ν administrative closure. -
 theorem full_nonRF_forward_correspondence_derived {N : Finset String}
     (x : Name) (P : Process) (nuListenerBody seedListenerBody : Pattern)
     (xr yr : Name) (Pr : Process) (n v : String) :
-    (∃ Trep, Nonempty ((encode (.replicate xr yr Pr) n v) ⇝ᵈ* Trep) ∧
-      Trep ≈ᵈ{N}
-        (rhoPar
-          (rhoInput (piNameToRhoName xr) yr (encode Pr (n ++ "_rep") v))
-          (encode (.replicate xr yr Pr) n v))) ∧
-    (∃ Tnu Tseed TrepNu,
-      fullEncode (.nu x P) =
-        rhoPar (encode (.nu x P) "n_init" "v_init")
-          (nameServer "ns_x" "ns_z" "v_init" "ns_seed") ∧
-      Nonempty
-        ((.collection .hashBag
-          [rhoPar (encode (.nu x P) "n_init" "v_init")
-             (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody]),
-           rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-             (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody]),
-           encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"] none) ⇝ᵈ*
-          (.collection .hashBag [Tnu, Tseed, TrepNu] none)) ∧
-      (.collection .hashBag [Tnu, Tseed] none ≡
-        .collection .hashBag [Tseed, Tnu] none) ∧
-      WeakRestrictedBisimD N Tnu
-        (.collection .hashBag
-          [semanticCommSubst nuListenerBody (.fvar "n_init"),
-           rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
-      WeakRestrictedBisimD N Tseed
-        (.collection .hashBag
-          [semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
-           rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
-           dropOperation "ns_x"] none) ∧
-      WeakRestrictedBisimD N TrepNu
-        (rhoPar
-          (rhoInput (piNameToRhoName "ns_x") "_drop" (encode .nil ("n_init" ++ "_rep") "v_init"))
-          (encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"))) := by
-  refine ⟨?_, ?_⟩
-  · simpa using
-      (forward_single_step_replicate_derived
-        (N := N) xr yr Pr n v)
-  · simpa using
-      (fullEncode_nu_admin_progress_combined_derived
-        (N := N) x P nuListenerBody seedListenerBody)
+    ReplicationUnfoldOutcome N xr yr Pr n v ∧ NuAdminOutcome N x P nuListenerBody seedListenerBody :=
+  ⟨forward_single_step_replicate_derived (N := N) xr yr Pr n v,
+    fullEncode_nu_admin_progress_combined_derived (N := N) x P nuListenerBody seedListenerBody⟩
 
 /-- Freshness-threaded full non-RF forward correspondence wrapper. -/
 theorem full_nonRF_forward_correspondence_derived_fresh {N : Finset String}
     (x : Name) (P : Process) (nuListenerBody seedListenerBody : Pattern)
     (xr yr : Name) (Pr : Process) (n v : String)
     (_hfresh : EncodingFresh P) :
-    (∃ Trep, Nonempty ((encode (.replicate xr yr Pr) n v) ⇝ᵈ* Trep) ∧
-      Trep ≈ᵈ{N}
-        (rhoPar
-          (rhoInput (piNameToRhoName xr) yr (encode Pr (n ++ "_rep") v))
-          (encode (.replicate xr yr Pr) n v))) ∧
-    (∃ Tnu Tseed TrepNu,
-      fullEncode (.nu x P) =
-        rhoPar (encode (.nu x P) "n_init" "v_init")
-          (nameServer "ns_x" "ns_z" "v_init" "ns_seed") ∧
-      Nonempty
-        ((.collection .hashBag
-          [rhoPar (encode (.nu x P) "n_init" "v_init")
-             (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody]),
-           rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-             (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody]),
-           encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"] none) ⇝ᵈ*
-          (.collection .hashBag [Tnu, Tseed, TrepNu] none)) ∧
-      (.collection .hashBag [Tnu, Tseed] none ≡
-        .collection .hashBag [Tseed, Tnu] none) ∧
-      WeakRestrictedBisimD N Tnu
-        (.collection .hashBag
-          [semanticCommSubst nuListenerBody (.fvar "n_init"),
-           rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
-      WeakRestrictedBisimD N Tseed
-        (.collection .hashBag
-          [semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
-           rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
-           dropOperation "ns_x"] none) ∧
-      WeakRestrictedBisimD N TrepNu
-        (rhoPar
-          (rhoInput (piNameToRhoName "ns_x") "_drop" (encode .nil ("n_init" ++ "_rep") "v_init"))
-          (encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"))) := by
-  exact full_nonRF_forward_correspondence_derived
-    (N := N) x P nuListenerBody seedListenerBody xr yr Pr n v
+    ReplicationUnfoldOutcome N xr yr Pr n v ∧ NuAdminOutcome N x P nuListenerBody seedListenerBody :=
+  full_nonRF_forward_correspondence_derived (N := N) x P nuListenerBody seedListenerBody xr yr Pr n v
 
 /-- Concrete canary for packaged full-encode ν administrative progress. -/
 theorem fullEncode_nu_admin_progress_derived_canary :
@@ -801,9 +743,8 @@ theorem fullEncode_nu_admin_progress_combined_derived_canary :
         (rhoPar
           (rhoInput (piNameToRhoName "ns_x") "_drop" (encode .nil ("n_init" ++ "_rep") "v_init"))
           (encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init")) := by
-  simpa using
-    (fullEncode_nu_admin_progress_combined_derived
-      (N := (∅ : Finset String)) "x" .nil rhoNil rhoNil)
+  exact fullEncode_nu_admin_progress_combined_derived
+    (N := (∅ : Finset String)) "x" .nil rhoNil rhoNil
 
 /-- Nontrivial canary: combined closure with concrete non-`rhoNil` listener bodies. -/
 theorem fullEncode_nu_admin_progress_combined_derived_canary_nontrivial :
@@ -857,10 +798,9 @@ theorem fullEncode_nu_admin_progress_combined_derived_canary_nontrivial_full :
         (rhoPar
           (rhoInput (piNameToRhoName "ns_x") "_drop" (encode .nil ("n_init" ++ "_rep") "v_init"))
           (encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init")) := by
-  simpa using
-    (fullEncode_nu_admin_progress_combined_derived
-      (N := (∅ : Finset String)) "x" .nil
-      (.apply "PDrop" [.fvar "k"]) (.apply "NQuote" [.fvar "m"]))
+  exact fullEncode_nu_admin_progress_combined_derived
+    (N := (∅ : Finset String)) "x" .nil
+    (.apply "PDrop" [.fvar "k"]) (.apply "NQuote" [.fvar "m"])
 
 /-- Regression endpoint: replicate-unfold specialized to `dropOperation "ns_x"`. -/
 theorem forward_single_step_replicate_dropOperation_nsx_derived :
@@ -870,7 +810,7 @@ theorem forward_single_step_replicate_dropOperation_nsx_derived :
         (rhoPar
           (rhoInput (piNameToRhoName "ns_x") "_drop" rhoNil)
           (dropOperation "ns_x")) := by
-  simpa [dropOperation, encode, rhoInput, rhoReplicate, piNameToRhoName] using
+  simpa [ReplicationUnfoldOutcome, dropOperation, encode, rhoInput, rhoReplicate, piNameToRhoName] using
     (forward_single_step_replicate_derived
       (N := (∅ : Finset String)) "ns_x" "_drop" .nil "n_init" "v_init")
 

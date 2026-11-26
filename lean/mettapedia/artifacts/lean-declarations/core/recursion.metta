@@ -3793,22 +3793,14 @@
                       (lam
                         v_f
                         (app
-                          Nat.rec
-                          ((lam v_t (app Nat ()) (sort (lvl 1)))
-                            (app PUnit ())
-                            (lam
+                          Nat.below
+                          ((lam
                               v_x7
                               (app Nat ())
-                              (lam
-                                v_n_ih
-                                (sort (lvl 1))
-                                (app
-                                  PProd
-                                  ((pi
-                                      v_x9
-                                      (app Nat ())
-                                      (arrow (app Nat.le ((app Nat.succ ((var v_x9))) (var v_x7))) (app Nat ())))
-                                    (var v_n_ih)))))
+                              (pi
+                                v_x8
+                                (app Nat ())
+                                (arrow (app Nat.le ((app Nat.succ ((var v_x8))) (var v_x7))) (app Nat ()))))
                             (var v_fuel)))
                         (lam
                           v_x8
@@ -4284,22 +4276,14 @@
                       (lam
                         v_f
                         (app
-                          Nat.rec
-                          ((lam v_t (app Nat ()) (sort (lvl 1)))
-                            (app PUnit ())
-                            (lam
+                          Nat.below
+                          ((lam
                               v_x7
                               (app Nat ())
-                              (lam
-                                v_n_ih
-                                (sort (lvl 1))
-                                (app
-                                  PProd
-                                  ((pi
-                                      v_x9
-                                      (app Nat ())
-                                      (arrow (app Nat.le ((app Nat.succ ((var v_x9))) (var v_x7))) (app Nat ())))
-                                    (var v_n_ih)))))
+                              (pi
+                                v_x8
+                                (app Nat ())
+                                (arrow (app Nat.le ((app Nat.succ ((var v_x8))) (var v_x7))) (app Nat ()))))
                             (var v_fuel)))
                         (lam
                           v_x8
@@ -14472,10 +14456,10 @@
   (SourceType
     (pi
       v_u945
-      (sort (lvl l_u))
+      (sort (lsucc (lvl l_u)))
       (pi
         v_u946
-        (sort (lvl l_v))
+        (sort (lsucc (lvl l_v)))
         (pi
           v_r
           (arrow (var v_u945) (arrow (var v_u945) (prop)))
@@ -14498,10 +14482,10 @@
   (Body
     (lam
       v_u945
-      (sort (lvl l_u))
+      (sort (lsucc (lvl l_u)))
       (lam
         v_u946
-        (sort (lvl l_v))
+        (sort (lsucc (lvl l_v)))
         (lam
           v_r
           (arrow (var v_u945) (arrow (var v_u945) (prop)))
@@ -14529,10 +14513,10 @@
         (Proposition
           (lam
             v_u945
-            (sort (lvl l_u))
+            (sort (lsucc (lvl l_u)))
             (lam
               v_u946
-              (sort (lvl l_v))
+              (sort (lsucc (lvl l_v)))
               (lam
                 v_r
                 (arrow (var v_u945) (arrow (var v_u945) (prop)))

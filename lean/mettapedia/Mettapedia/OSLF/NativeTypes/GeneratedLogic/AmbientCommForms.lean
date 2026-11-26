@@ -1,3 +1,4 @@
+import Mettapedia.OSLF.NativeTypes.GeneratedLogic.TypedReadingDomain
 import Mettapedia.Languages.ProcessCalculi.Ambient.ReadComm
 import Mettapedia.OSLF.NativeTypes.GeneratedLogic.CanonicalRegions
 import Mettapedia.OSLF.NativeTypes.GeneratedLogic.Certificates
@@ -92,77 +93,47 @@ theorem sort_unique {term : Pattern} {first second : String}
     (firstTyped : HasType ambientCommCalc names [] term (.base first))
     (secondTyped : HasType ambientCommCalc names [] term (.base second)) (object : isObjectPattern term = true) :
     first = second := by
-  have firstCore := core_typed firstTyped
-  have secondCore := core_typed secondTyped
-  have firstCopy := firstCore
-  cases firstCore with
-  | bvar lookup => simp at lookup
-  | fvar lookup =>
-      cases secondCore with
-      | fvar lookup' =>
-          simp only [names, EquationReading.nameContext, Option.some.injEq, TypeExpr.base.injEq] at lookup lookup'
-          exact lookup.symm.trans lookup'
-  | constructor member =>
-      obtain ⟨rule', member', labelIs, -, typeIs, -⟩ := hasType_apply_inversion secondCore
-      simp only [TypeExpr.base.injEq] at typeIs
-      rw [typeIs, coreSignature.rule_eq_of_label member member' labelIs]
-  | subst => simp [isObjectPattern] at object
-  | collectionConstructor =>
-      exact (coreSignature.bag_members firstCopy).2.1.trans (coreSignature.bag_members secondCore).2.1.symm
+  refine object_base_sort_unique ?_ ?_ (core_typed firstTyped) (core_typed secondTyped) object
+  · intro _ _ member member' label
+    exact congrArg GrammarRule.category (coreSignature.rule_eq_of_label member member' label)
+  · intro _ _ _ _ _ left right
+    exact (coreSignature.bag_members left).2.1.trans (coreSignature.bag_members right).2.1.symm
+
+private theorem typedDomain : TypedReadingDomain ambientCommCalc (some "Name") "Proc"
+    (fun term => domain term = true) where
+  typed := fun {_} accepted => (typed_of_domain accepted).1
+  ofTyped := @domain_of_typed
+  sortUnique := @sort_unique
 
 /-- **A step of the reading relates the domain only to the domain**, both ways. -/
 theorem domain_iff_of_step {relEnv : RelationEnv} {first second : Pattern}
     (step : ObjectStep relEnv ambientCommCalc reading first second) : domain first = true ↔ domain second = true := by
-  obtain ⟨-, -, type, ⟨sort, rfl⟩, firstFormed, secondFormed, -⟩ := step
-  constructor
-  · intro admitted
-    obtain ⟨typed, object⟩ := typed_of_domain admitted
-    obtain rfl := sort_unique firstFormed.typed typed object
-    exact domain_of_typed secondFormed.typed secondFormed.object
-  · intro admitted
-    obtain ⟨typed, object⟩ := typed_of_domain admitted
-    obtain rfl := sort_unique secondFormed.typed typed object
-    exact domain_of_typed firstFormed.typed firstFormed.object
+  exact typedDomain.step_iff step
 
 theorem domain_iff_of_equivalent {relEnv : RelationEnv} {first second : Pattern}
     (equivalent : ObjectEquivalent relEnv ambientCommCalc reading first second) :
     domain first = true ↔ domain second = true := by
-  induction equivalent with
-  | rel _ _ step => exact domain_iff_of_step step
-  | refl => exact Iff.rfl
-  | symm _ _ _ same => exact same.symm
-  | trans _ _ _ _ _ first second => exact first.trans second
+  exact typedDomain.equivalent_iff equivalent
 
 /-- **An equivalence of the reading from a process of the domain is a chain of laws through processes.** -/
 theorem objectChain_of_objectEquivalent {relEnv : RelationEnv} {first second : Pattern}
     (equivalent : ObjectEquivalent relEnv ambientCommCalc reading first second) (admitted : domain first = true) :
     ObjectChain ambientCommCalc names [] (.base "Proc") first second := by
-  induction equivalent with
-  | rel first second step =>
-      obtain ⟨-, -, type, ⟨sort, rfl⟩, firstFormed, secondFormed, disciplined⟩ := step
-      obtain ⟨typed, object⟩ := typed_of_domain admitted
-      obtain rfl := sort_unique firstFormed.typed typed object
-      exact .rel _ _ ⟨⟨(equationStep_iff_of_plain comm_plain relEnv _).mp (disciplinedStep_raw_iff.mp disciplined),
-        firstFormed.typed, secondFormed.typed⟩, firstFormed.object, secondFormed.object⟩
-  | refl => exact .refl _
-  | symm _ _ inner recurse =>
-      exact .symm _ _ (recurse ((domain_iff_of_equivalent inner).mpr admitted))
-  | trans _ _ _ firstPart _ firstRecurse secondRecurse =>
-      exact .trans _ _ _ (firstRecurse admitted) (secondRecurse ((domain_iff_of_equivalent firstPart).mp admitted))
+  refine typedDomain.map_equivalent ?_ equivalent admitted
+  intro _ _ typed
+  obtain ⟨firstFormed, secondFormed, disciplined⟩ := typed
+  exact ⟨⟨(equationStep_iff_of_plain comm_plain relEnv _).mp (disciplinedStep_raw_iff.mp disciplined),
+    firstFormed.typed, secondFormed.typed⟩, firstFormed.object, secondFormed.object⟩
 
 /-- **A chain of laws through object processes is an equivalence of the reading.** -/
 theorem objectEquivalent_of_objectChain (relEnv : RelationEnv) {first second : Pattern}
     (chain : ObjectChain ambientCommCalc names [] (.base "Proc") first second) :
     ObjectEquivalent relEnv ambientCommCalc reading first second := by
-  induction chain with
-  | rel first second step =>
-      obtain ⟨step, firstObject, secondObject⟩ := step
-      exact .rel _ _ ⟨firstObject, secondObject, .base "Proc", ⟨"Proc", rfl⟩,
-        ⟨firstObject, step.firstTyped, by simp⟩, ⟨secondObject, step.secondTyped, by simp⟩,
-        disciplinedStep_raw_iff.mpr ((equationStep_iff_of_plain comm_plain relEnv _).mpr step.step)⟩
-  | refl => exact .refl _
-  | symm _ _ _ recurse => exact .symm _ _ recurse
-  | trans _ _ _ _ _ left right => exact .trans _ _ _ left right
+  refine Relation.EqvGen.mono ?_ _ _ chain
+  intro _ _ edge
+  obtain ⟨step, firstObject, secondObject⟩ := edge
+  exact objectStep_of_typed_base ⟨⟨firstObject, step.firstTyped, by simp⟩, ⟨secondObject, step.secondTyped, by simp⟩,
+    disciplinedStep_raw_iff.mpr ((equationStep_iff_of_plain comm_plain relEnv _).mpr step.step)⟩
 
 /-- **The canonical form of a process of the domain**: the located canonical form of its path normal form at a root
 location, read back, in the canonical form of the restriction and replication laws. -/

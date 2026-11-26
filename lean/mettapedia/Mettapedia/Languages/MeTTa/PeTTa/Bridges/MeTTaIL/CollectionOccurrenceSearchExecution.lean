@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.PeTTa.BridgeTransport
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.StandardWire
 import Mettapedia.OSLF.MeTTaIL.GeneralTypedSitesFocus
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CollectionOccurrenceSearchSource
@@ -55,13 +56,7 @@ private def fillSupport (head : String) : Bool :=
     head != "gslt:rule:job-finish-root" && head != "gslt:rule:site-replacement-represented"
 
 private theorem fill_closed : ProgramClosed fillSupport RuleExecutionProgram.program := by
-  constructor
-  · decide +kernel
-  · intro equation member supported
-    have checked : RuleExecutionProgram.program.equations.all (fun equation =>
-        !fillSupport equation.head || codeWithin fillSupport equation.body) = true := by decide +kernel
-    have row := List.all_eq_true.mp checked equation member
-    simpa only [supported, Bool.not_true, Bool.false_or] using row
+  exact BridgeKit.closed_of_all _ _ (by decide +kernel) (by decide +kernel)
 
 private theorem fill_job_agreement :
     ProgramAgreementOn fillSupport RuleExecutionProgram.program ScopedRuleJobReadoutExecution.runtime := by

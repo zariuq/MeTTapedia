@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.UnificationWithLevels.TreeFibre.ArrowRules
 
 /-!
@@ -344,8 +345,7 @@ variable (choices : ExecutableChecking.HeadChoices S.R)
 variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R) (heads : HeadPreserving S.R)
   (algebra : CumulativeAlgebra S.R) (rigid : ∀ name, S.roles name = .rigid)
   (complete : AlgorithmicComplete S.R S.roles)
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
 
 /-- The view of an equation whose left side is an unknown declared at a universe. -/
 def flexLeft {Θ : Context S.R} {e : Equation (TotalTerm Θ)} (w : ArrowEq e) {X : Fin Θ.arity} {u : Head}

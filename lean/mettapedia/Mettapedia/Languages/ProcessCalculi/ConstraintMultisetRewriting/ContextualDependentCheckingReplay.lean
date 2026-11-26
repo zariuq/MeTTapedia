@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSubtypeReplay
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentStrengthening
 
@@ -23,8 +24,7 @@ open ContextualDependentNormalChecking ContextualDependentTypedInversion
 
 variable {Head L : Type} [UniverseLevel.LevelOrder L] {S : Setting Head L}
 variable (facts : FormFacts S.R S.roles) (algebra : CumulativeAlgebra S.R)
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
   (complete : AlgorithmicComplete S.R S.roles)
 
 include facts algebra headTypingUnique complete in

@@ -78,12 +78,7 @@ structure CastsAt (atoms : List Atom) (E : Atom) (d : Atom) : Prop where
 activation, continuation stack and publication prefix. -/
 def HERunsAt (dispatch : GroundedDispatch) (policy : Policy) (atoms : List Atom) (E : Atom)
     (v : Entry.Value) (L : List Atom) : Prop :=
-  ∀ (live : List Atom) (scope : List String) (activation : Frame) (stack : List Continuation)
-    (emitted : List Result),
-    ∃ results : List Result, results.map (fun result => result.1.erase) = L ∧
-      Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
-        ⟨Space.ofList atoms, .work (.atom live scope v E activation), stack, emitted⟩
-        ⟨Space.ofList atoms, .returning results, stack, emitted⟩
+  HENested.ArgumentRuns (Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)) atoms E v L
 
 /-- **HE's machine evaluates every marked presentation of `t` under `E` to `L`.** -/
 def HEEvaluatesAt (dispatch : GroundedDispatch) (policy : Policy) (atoms : List Atom) (E : Atom)
@@ -93,13 +88,7 @@ def HEEvaluatesAt (dispatch : GroundedDispatch) (policy : Policy) (atoms : List 
 /-- **HE's equation query of `(f vals)` under `E` returns `A`**, on every call value. -/
 def HEQueryAt (dispatch : GroundedDispatch) (policy : Policy) (atoms : List Atom) (E : Atom)
     (f : String) (vals : List Atom) (A : List Atom) : Prop :=
-  ∀ (live : List Atom) (scope : List String) (activation : Frame) (value : Entry.Value),
-    value.erase = .expression (.symbol f :: vals) → ∀ (stack : List Continuation)
-      (emitted : List Result),
-      ∃ results : List Result, results.map (fun result => result.1.erase) = A ∧
-        Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
-          ⟨Space.ofList atoms, .work (.call live scope value E activation), stack, emitted⟩
-          ⟨Space.ofList atoms, .returning results, stack, emitted⟩
+  HENested.QueryRuns (Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)) atoms E f vals A
 
 /-- **Every derivation of HE's completed relation for `v` under `E` returns the atoms `L`.** -/
 def RunsDeterminedAt (dispatch : GroundedDispatch) (policy : Policy) (atoms : List Atom) (E : Atom)
@@ -169,22 +158,10 @@ theorem calls_loop_at (atoms : List Atom) {E : Atom} {live : List Atom} {scope :
         R.map (fun r => r.1.erase) = rows.flatMap (fun r => Q (HENested.argsOf r.1.erase)) ∧
         Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy)
           ⟨Space.ofList atoms, .work (.calls live scope E rows), stack, emitted⟩
-          ⟨Space.ofList atoms, .returning R, stack, emitted⟩
-  | [], _, stack, emitted => ⟨[], rfl, .single (.internal .callsNil)⟩
-  | r :: rs, queries, stack, emitted => by
-      obtain ⟨vals, erased, query⟩ := queries r List.mem_cons_self
-      obtain ⟨Qr, eraseQr, pathQr⟩ := query live scope r.2 r.1 erased
-        (.append (.calls live scope E rs) :: stack) emitted
-      obtain ⟨Rs, eraseRs, pathRs⟩ := calls_loop_at atoms Q rs
-        (fun x member => queries x (List.mem_cons_of_mem _ member)) (.prepend Qr :: stack) emitted
-      refine ⟨Qr ++ Rs, ?_, ?_⟩
-      · rw [List.map_append, eraseQr, eraseRs, List.flatMap_cons, erased]
-        rfl
-      · refine .head (.internal .callsCons) ?_
-        refine .trans pathQr ?_
-        refine .head (.internal .append) ?_
-        refine .trans pathRs ?_
-        exact .single (.internal .prepend)
+          ⟨Space.ofList atoms, .returning R, stack, emitted⟩ :=
+  HENested.calls_loop_of_steps (dispatch := dispatch) (lookup := Completed.rawLookup)
+    (policy := policy) (path := Relation.ReflTransGen (HEStep dispatch Completed.rawLookup policy))
+    Relation.ReflTransGen.trans Relation.ReflTransGen.single atoms E Q
 
 /-- **HE evaluates a marked call it interprets under `E`**: the argument product under
 `%Undefined%`, then the query of `f` on each combination under `E`, then the publication. -/

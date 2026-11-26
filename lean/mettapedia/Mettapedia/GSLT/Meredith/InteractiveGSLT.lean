@@ -2452,127 +2452,60 @@ theorem rhoIntrinsicDirectSpentTrace_semantics_rewritePathAppend
               · exact hticks
               · exact hticksLen
 
-theorem rhoIntrinsicSemanticBridge_rewritePathAppend_steps
-    {t u v : Pattern}
-    (left : rhoGSLT.Step t u)
-    (right : rhoGSLT.Step u v) :
-    let path :=
-      rewritePathAppend
-        (oneStepPath (S := rhoGSLT) left)
-        (oneStepPath (S := rhoGSLT) right)
-    let stack := rhoIntrinsicDirectSpentStack path
-    stack.toLedger = totalAction rhoIntrinsicLedgerAction path ∧
-      rhoLedgerShadow stack.toLedger = totalCost rhoIntrinsicCostMap path ∧
-      stack.depth = path.length ∧
-      rhoSpentSyntaxAccount stack.toPattern = totalCost rhoIntrinsicCostMap path ∧
-      rhoSpentSyntaxTicks stack.toPattern = path.length ∧
-      stack =
-        RhoDirectStack.append
-          (rhoIntrinsicDirectSpentStack (oneStepPath (S := rhoGSLT) left))
-          (rhoIntrinsicDirectSpentStack (oneStepPath (S := rhoGSLT) right)) ∧
-      stack =
-        RhoDirectStack.append
-          (rhoIntrinsicDirectStepSpent left)
-          (rhoIntrinsicDirectStepSpent right) ∧
-      rhoIntrinsicDirectSpentTrace path =
-        RhoDirectStack.append
-          (rhoIntrinsicDirectStepSpent left)
-          (rhoIntrinsicDirectStepSpent right) ∧
-      rhoSpentSyntaxAccount
-        (rhoLedgerToSpentSyntax (totalAction rhoIntrinsicLedgerAction path)) =
-          rhoSpentSyntaxAccount
-            (rhoLedgerToSpentSyntax
-              (totalAction rhoIntrinsicLedgerAction
-                (oneStepPath (S := rhoGSLT) left))) +
-          rhoSpentSyntaxAccount
-            (rhoLedgerToSpentSyntax
-              (totalAction rhoIntrinsicLedgerAction
-                (oneStepPath (S := rhoGSLT) right))) ∧
-      rhoSpentSyntaxWidth
-        (rhoLedgerToSpentSyntax (totalAction rhoIntrinsicLedgerAction path)) =
-          rhoSpentSyntaxWidth
-            (rhoLedgerToSpentSyntax
-              (totalAction rhoIntrinsicLedgerAction
-                (oneStepPath (S := rhoGSLT) left))) +
-          rhoSpentSyntaxWidth
-            (rhoLedgerToSpentSyntax
-              (totalAction rhoIntrinsicLedgerAction
-                (oneStepPath (S := rhoGSLT) right))) ∧
-      rhoSpentSyntaxTicks
-        (rhoLedgerToSpentSyntax (totalAction rhoIntrinsicLedgerAction path)) =
-          rhoSpentSyntaxTicks
-            (rhoLedgerToSpentSyntax
-              (totalAction rhoIntrinsicLedgerAction
-                (oneStepPath (S := rhoGSLT) left))) +
-          rhoSpentSyntaxTicks
-            (rhoLedgerToSpentSyntax
-              (totalAction rhoIntrinsicLedgerAction
-                (oneStepPath (S := rhoGSLT) right))) ∧
-      rhoSpentSyntaxAccount
-        (rhoIntrinsicDirectSpentTrace path).toPattern =
-          rhoSpentSyntaxAccount
-            (rhoIntrinsicDirectSpentTrace
-              (oneStepPath (S := rhoGSLT) left)).toPattern +
-          rhoSpentSyntaxAccount
-            (rhoIntrinsicDirectSpentTrace
-              (oneStepPath (S := rhoGSLT) right)).toPattern ∧
-      rhoSpentSyntaxWidth
-        (rhoIntrinsicDirectSpentTrace path).toPattern =
-          rhoSpentSyntaxWidth
-            (rhoIntrinsicDirectSpentTrace
-              (oneStepPath (S := rhoGSLT) left)).toPattern +
-          rhoSpentSyntaxWidth
-            (rhoIntrinsicDirectSpentTrace
-              (oneStepPath (S := rhoGSLT) right)).toPattern ∧
-      rhoSpentSyntaxTicks
-        (rhoIntrinsicDirectSpentTrace path).toPattern =
-          rhoSpentSyntaxTicks
-            (rhoIntrinsicDirectSpentTrace
-              (oneStepPath (S := rhoGSLT) left)).toPattern +
-          rhoSpentSyntaxTicks
-            (rhoIntrinsicDirectSpentTrace
-              (oneStepPath (S := rhoGSLT) right)).toPattern ∧
-      RhoLedger.TraceCoherent ((rhoIntrinsicDirectSpentTrace path).toLedger) := by
-  dsimp
+/-- The two-step append observation relates the ordered stack to the ledger
+and the public and direct readouts to their two component paths. -/
+abbrev RhoStepAppendSemantics {p q r : Pattern}
+    (left : rhoGSLT.Step p q) (right : rhoGSLT.Step q r) : Prop :=
+  let leftPath := oneStepPath (S := rhoGSLT) left
+  let rightPath := oneStepPath (S := rhoGSLT) right
+  let path := rewritePathAppend leftPath rightPath
+  let stack := rhoIntrinsicDirectSpentStack path
+  let direct := rhoIntrinsicDirectSpentTrace path
+  let ledger := totalAction rhoIntrinsicLedgerAction path
+  let cost := totalCost rhoIntrinsicCostMap path
+  let publicSpent := rhoLedgerToSpentSyntax ledger
+  let publicLeft := rhoLedgerToSpentSyntax (totalAction rhoIntrinsicLedgerAction leftPath)
+  let publicRight := rhoLedgerToSpentSyntax (totalAction rhoIntrinsicLedgerAction rightPath)
+  let directLeft := (rhoIntrinsicDirectSpentTrace leftPath).toPattern
+  let directRight := (rhoIntrinsicDirectSpentTrace rightPath).toPattern
+  stack.toLedger = ledger ∧
+    rhoLedgerShadow stack.toLedger = cost ∧
+    stack.depth = path.length ∧
+    rhoSpentSyntaxAccount stack.toPattern = cost ∧
+    rhoSpentSyntaxTicks stack.toPattern = path.length ∧
+    stack = RhoDirectStack.append (rhoIntrinsicDirectSpentStack leftPath)
+      (rhoIntrinsicDirectSpentStack rightPath) ∧
+    stack = RhoDirectStack.append (rhoIntrinsicDirectStepSpent left)
+      (rhoIntrinsicDirectStepSpent right) ∧
+    direct = RhoDirectStack.append (rhoIntrinsicDirectStepSpent left)
+      (rhoIntrinsicDirectStepSpent right) ∧
+    rhoSpentSyntaxAccount publicSpent = rhoSpentSyntaxAccount publicLeft +
+      rhoSpentSyntaxAccount publicRight ∧
+    rhoSpentSyntaxWidth publicSpent = rhoSpentSyntaxWidth publicLeft +
+      rhoSpentSyntaxWidth publicRight ∧
+    rhoSpentSyntaxTicks publicSpent = rhoSpentSyntaxTicks publicLeft +
+      rhoSpentSyntaxTicks publicRight ∧
+    rhoSpentSyntaxAccount direct.toPattern = rhoSpentSyntaxAccount directLeft +
+      rhoSpentSyntaxAccount directRight ∧
+    rhoSpentSyntaxWidth direct.toPattern = rhoSpentSyntaxWidth directLeft +
+      rhoSpentSyntaxWidth directRight ∧
+    rhoSpentSyntaxTicks direct.toPattern = rhoSpentSyntaxTicks directLeft +
+      rhoSpentSyntaxTicks directRight ∧
+    RhoLedger.TraceCoherent direct.toLedger
+
+theorem rhoIntrinsicSemanticBridge_rewritePathAppend_steps {t u v : Pattern}
+    (left : rhoGSLT.Step t u) (right : rhoGSLT.Step u v) :
+    RhoStepAppendSemantics left right := by
   rcases rhoIntrinsicDirectSpentStack_semantics_rewritePathAppend_steps left right with
-    ⟨hLedger, hShadow, hDepth, hAccCost, hTicksLen, hAppendStack, hAppendStep, hTraceAppend⟩
+    ⟨ledger, shadow, depth, account, ticks, appendStacks, appendSteps, appendTrace⟩
   rcases rhoIntrinsicLedgerPublicSpentSyntax_semantics_rewritePathAppend
-      (oneStepPath (S := rhoGSLT) left)
-      (oneStepPath (S := rhoGSLT) right) with
-    ⟨hPublicAcc, hPublicWidth, hPublicTicks, _, _⟩
+      (oneStepPath (S := rhoGSLT) left) (oneStepPath (S := rhoGSLT) right) with
+    ⟨publicAccount, publicWidth, publicTicks, _, _⟩
   rcases rhoIntrinsicDirectSpentTrace_semantics_rewritePathAppend
-      (oneStepPath (S := rhoGSLT) left)
-      (oneStepPath (S := rhoGSLT) right) with
-    ⟨_, _, _, hTraceCoherent, hDirectAcc, hDirectWidth, hDirectTicks, _⟩
-  constructor
-  · exact hLedger
-  · constructor
-    · exact hShadow
-    · constructor
-      · exact hDepth
-      · constructor
-        · exact hAccCost
-        · constructor
-          · exact hTicksLen
-          · constructor
-            · exact hAppendStack
-            · constructor
-              · exact hAppendStep
-              · constructor
-                · exact hTraceAppend
-                · constructor
-                  · exact hPublicAcc
-                  · constructor
-                    · exact hPublicWidth
-                    · constructor
-                      · exact hPublicTicks
-                      · constructor
-                        · exact hDirectAcc
-                        · constructor
-                          · exact hDirectWidth
-                          · constructor
-                            · exact hDirectTicks
-                            · exact hTraceCoherent
+      (oneStepPath (S := rhoGSLT) left) (oneStepPath (S := rhoGSLT) right) with
+    ⟨_, _, _, coherent, directAccount, directWidth, directTicks, _⟩
+  exact ⟨ledger, shadow, depth, account, ticks, appendStacks, appendSteps, appendTrace,
+    publicAccount, publicWidth, publicTicks, directAccount, directWidth, directTicks, coherent⟩
 
 noncomputable def rhoRewritePathOfReducesN
     {n : Nat} {p q : Pattern} (h : ReducesN n p q) : rhoGSLT.RewritePath p q :=

@@ -1,3 +1,4 @@
+import Mettapedia.GSLT.LanguageDef.BaseSortDeclarations
 import Mettapedia.GSLT.LanguageDef.RewriteValidationNameTraversal
 import Mettapedia.GSLT.LanguageDef.TptpFofNnfShiftLanguageDef
 import Mettapedia.GSLT.LanguageDef.TptpFofPrenexLanguageDef
@@ -43,26 +44,15 @@ def v (name : String) : Pattern := .fvar name
 
 def typed (entries : List (String × String)) :
     List (String × TypeExpr) :=
-  entries.map fun entry => (entry.1, .base entry.2)
+  BaseSortDeclarations.context entries
 
 def ctor (label category : String) (parameters : List (String × String))
-    (policy : Option TermEvalPolicy := none) : GrammarRule := {
-  label
-  category
-  params := parameters.map fun parameter =>
-    .simple parameter.1 (.base parameter.2)
-  syntaxPattern := [.terminal label]
-  evalPolicy? := policy
-}
+    (policy : Option TermEvalPolicy := none) : GrammarRule :=
+  BaseSortDeclarations.constructor label category parameters policy
 
 def mkRule (name : String) (context : List (String × String))
-    (premises : List Premise) (left right : Pattern) : RewriteRule := {
-  name
-  typeContext := typed context
-  premises
-  left
-  right
-}
+    (premises : List Premise) (left right : Pattern) : RewriteRule :=
+  BaseSortDeclarations.rule name (typed context) premises left right
 
 def congruence (source target : Pattern) : Premise :=
   .congruence source target

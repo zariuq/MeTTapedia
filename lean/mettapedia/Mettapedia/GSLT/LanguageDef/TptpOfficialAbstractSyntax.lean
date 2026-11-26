@@ -1,3 +1,5 @@
+import Mettapedia.Data.List.LabelChunkProof
+import Mettapedia.GSLT.LanguageDef.RewriteFreeLanguage
 import Mettapedia.GSLT.LanguageDef.IndexedConstructorSignature
 import Mettapedia.GSLT.LanguageDef.CarrierWellSorted
 import Mettapedia.OSLF.MeTTaIL.ContextualStep
@@ -650,8 +652,6 @@ private def constructorsChunk0 : List (IndexedConstructorSignature.Constructor t
     constructor "tptp92-ast:atomic-word:alt-1" sort_Tptp92Ast_atomic_word [parameter "lower-word" sort_Tptp92AstToken_lower_word]
   ]
 
-private def constructorsPrefix0 : List (IndexedConstructorSignature.Constructor types) := constructorsChunk0
-
 private def constructorsChunk1 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:atomic-word:alt-2" sort_Tptp92Ast_atomic_word [parameter "single-quoted" sort_Tptp92AstToken_single_quoted],
     constructor "tptp92-ast:atomic-word:alt-3" sort_Tptp92Ast_atomic_word [parameter "back-quoted" sort_Tptp92AstToken_back_quoted],
@@ -670,8 +670,6 @@ private def constructorsChunk1 : List (IndexedConstructorSignature.Constructor t
     constructor "tptp92-ast:comma-parent-info:alt-1" sort_Tptp92Ast_comma_parent_info [parameter "parent-info" sort_Tptp92Ast_parent_info],
     constructor "tptp92-ast:comma-tff-term:alt-1" sort_Tptp92Ast_comma_tff_term [parameter "tff-term" sort_Tptp92Ast_tff_term]
   ]
-
-private def constructorsPrefix1 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix0 ++ constructorsChunk1
 
 private def constructorsChunk2 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:comma-thf-logic-formula:alt-1" sort_Tptp92Ast_comma_thf_logic_formula [parameter "thf-logic-formula" sort_Tptp92Ast_thf_logic_formula],
@@ -692,8 +690,6 @@ private def constructorsChunk2 : List (IndexedConstructorSignature.Constructor t
     constructor "tptp92-ast:external-source:alt-2" sort_Tptp92Ast_external_source [parameter "theory" sort_Tptp92Ast_theory]
   ]
 
-private def constructorsPrefix2 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix1 ++ constructorsChunk2
-
 private def constructorsChunk3 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:external-source:alt-3" sort_Tptp92Ast_external_source [parameter "creator-source" sort_Tptp92Ast_creator_source],
     constructor "tptp92-ast:file-info:alt-1" sort_Tptp92Ast_file_info [parameter "name" sort_Tptp92Ast_name],
@@ -712,8 +708,6 @@ private def constructorsChunk3 : List (IndexedConstructorSignature.Constructor t
     constructor "tptp92-ast:fof-binary-assoc:alt-2" sort_Tptp92Ast_fof_binary_assoc [parameter "fof-and-formula" sort_Tptp92Ast_fof_and_formula],
     constructor "tptp92-ast:fof-binary-formula:alt-1" sort_Tptp92Ast_fof_binary_formula [parameter "fof-binary-nonassoc" sort_Tptp92Ast_fof_binary_nonassoc]
   ]
-
-private def constructorsPrefix3 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix2 ++ constructorsChunk3
 
 private def constructorsChunk4 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:fof-binary-formula:alt-2" sort_Tptp92Ast_fof_binary_formula [parameter "fof-binary-assoc" sort_Tptp92Ast_fof_binary_assoc],
@@ -734,8 +728,6 @@ private def constructorsChunk4 : List (IndexedConstructorSignature.Constructor t
     constructor "tptp92-ast:fof-formula:alt-2" sort_Tptp92Ast_fof_formula [parameter "fof-sequent" sort_Tptp92Ast_fof_sequent]
   ]
 
-private def constructorsPrefix4 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix3 ++ constructorsChunk4
-
 private def constructorsChunk5 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:fof-function-term:alt-1" sort_Tptp92Ast_fof_function_term [parameter "fof-plain-term" sort_Tptp92Ast_fof_plain_term],
     constructor "tptp92-ast:fof-function-term:alt-2" sort_Tptp92Ast_fof_function_term [parameter "fof-defined-term" sort_Tptp92Ast_fof_defined_term],
@@ -754,8 +746,6 @@ private def constructorsChunk5 : List (IndexedConstructorSignature.Constructor t
     constructor "tptp92-ast:fof-quantifier:alt-2" sort_Tptp92Ast_fof_quantifier [],
     constructor "tptp92-ast:fof-sequent:alt-1" sort_Tptp92Ast_fof_sequent [parameter "fof-formula-tuple-1" sort_Tptp92Ast_fof_formula_tuple, parameter "gentzen-arrow" sort_Tptp92Ast_gentzen_arrow, parameter "fof-formula-tuple-2" sort_Tptp92Ast_fof_formula_tuple]
   ]
-
-private def constructorsPrefix5 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix4 ++ constructorsChunk5
 
 private def constructorsChunk6 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:fof-sequent:alt-2" sort_Tptp92Ast_fof_sequent [parameter "fof-sequent" sort_Tptp92Ast_fof_sequent],
@@ -776,8 +766,6 @@ private def constructorsChunk6 : List (IndexedConstructorSignature.Constructor t
     constructor "tptp92-ast:formula-data:alt-1" sort_Tptp92Ast_formula_data [parameter "thf-formula" sort_Tptp92Ast_thf_formula]
   ]
 
-private def constructorsPrefix6 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix5 ++ constructorsChunk6
-
 private def constructorsChunk7 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:formula-data:alt-2" sort_Tptp92Ast_formula_data [parameter "tff-formula" sort_Tptp92Ast_tff_formula],
     constructor "tptp92-ast:formula-data:alt-3" sort_Tptp92Ast_formula_data [parameter "fof-formula" sort_Tptp92Ast_fof_formula],
@@ -796,8 +784,6 @@ private def constructorsChunk7 : List (IndexedConstructorSignature.Constructor t
     constructor "tptp92-ast:general-data:alt-6" sort_Tptp92Ast_general_data [parameter "formula-data" sort_Tptp92Ast_formula_data],
     constructor "tptp92-ast:general-function:alt-1" sort_Tptp92Ast_general_function [parameter "atomic-word" sort_Tptp92Ast_atomic_word, parameter "general-terms" sort_Tptp92Ast_general_terms]
   ]
-
-private def constructorsPrefix7 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix6 ++ constructorsChunk7
 
 private def constructorsChunk8 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:general-list:alt-1" sort_Tptp92Ast_general_list [],
@@ -818,8 +804,6 @@ private def constructorsChunk8 : List (IndexedConstructorSignature.Constructor t
     constructor "tptp92-ast:infix-inequality:alt-1" sort_Tptp92Ast_infix_inequality []
   ]
 
-private def constructorsPrefix8 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix7 ++ constructorsChunk8
-
 private def constructorsChunk9 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:internal-source:alt-1" sort_Tptp92Ast_internal_source [parameter "intro-type" sort_Tptp92Ast_intro_type, parameter "useful-info" sort_Tptp92Ast_useful_info, parameter "parents" sort_Tptp92Ast_parents],
     constructor "tptp92-ast:intro-type:alt-1" sort_Tptp92Ast_intro_type [parameter "atomic-word" sort_Tptp92Ast_atomic_word],
@@ -838,8 +822,6 @@ private def constructorsChunk9 : List (IndexedConstructorSignature.Constructor t
     constructor "tptp92-ast:name-list:alt-1" sort_Tptp92Ast_name_list [parameter "name" sort_Tptp92Ast_name],
     constructor "tptp92-ast:name-list:alt-2" sort_Tptp92Ast_name_list [parameter "name" sort_Tptp92Ast_name, parameter "name-list" sort_Tptp92Ast_name_list]
   ]
-
-private def constructorsPrefix9 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix8 ++ constructorsChunk9
 
 private def constructorsChunk10 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:name:alt-1" sort_Tptp92Ast_name [parameter "atomic-word" sort_Tptp92Ast_atomic_word],
@@ -860,8 +842,6 @@ private def constructorsChunk10 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp92-ast:nothing:alt-1" sort_Tptp92Ast_nothing []
   ]
 
-private def constructorsPrefix10 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix9 ++ constructorsChunk10
-
 private def constructorsChunk11 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:ntf-connective-name:alt-1" sort_Tptp92Ast_ntf_connective_name [parameter "def-or-sys-constant" sort_Tptp92Ast_def_or_sys_constant],
     constructor "tptp92-ast:ntf-index:alt-1" sort_Tptp92Ast_ntf_index [parameter "tff-unitary-term" sort_Tptp92Ast_tff_unitary_term],
@@ -880,8 +860,6 @@ private def constructorsChunk11 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp92-ast:nxf-parameter-list:alt-2" sort_Tptp92Ast_nxf_parameter_list [parameter "nxf-parameter" sort_Tptp92Ast_nxf_parameter, parameter "nxf-parameter-list" sort_Tptp92Ast_nxf_parameter_list],
     constructor "tptp92-ast:nxf-parameter:alt-1" sort_Tptp92Ast_nxf_parameter [parameter "ntf-index" sort_Tptp92Ast_ntf_index]
   ]
-
-private def constructorsPrefix11 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix10 ++ constructorsChunk11
 
 private def constructorsChunk12 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:nxf-parameter:alt-2" sort_Tptp92Ast_nxf_parameter [parameter "nxf-key-pair" sort_Tptp92Ast_nxf_key_pair],
@@ -902,8 +880,6 @@ private def constructorsChunk12 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp92-ast:sources:alt-1" sort_Tptp92Ast_sources [parameter "source" sort_Tptp92Ast_source]
   ]
 
-private def constructorsPrefix12 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix11 ++ constructorsChunk12
-
 private def constructorsChunk13 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:sources:alt-2" sort_Tptp92Ast_sources [parameter "source" sort_Tptp92Ast_source, parameter "sources" sort_Tptp92Ast_sources],
     constructor "tptp92-ast:space-name:alt-1" sort_Tptp92Ast_space_name [parameter "name" sort_Tptp92Ast_name],
@@ -922,8 +898,6 @@ private def constructorsChunk13 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp92-ast:tff-annotated:alt-1" sort_Tptp92Ast_tff_annotated [parameter "name" sort_Tptp92Ast_name, parameter "formula-role" sort_Tptp92Ast_formula_role, parameter "tff-formula" sort_Tptp92Ast_tff_formula, parameter "annotations" sort_Tptp92Ast_annotations],
     constructor "tptp92-ast:tff-arguments:alt-1" sort_Tptp92Ast_tff_arguments [parameter "tff-term" sort_Tptp92Ast_tff_term, parameter "comma-tff-term" sort_Tptp92AstList_tptp92ast_comma_tff_term]
   ]
-
-private def constructorsPrefix13 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix12 ++ constructorsChunk13
 
 private def constructorsChunk14 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:tff-atom-typing-list:alt-1" sort_Tptp92Ast_tff_atom_typing_list [parameter "tff-atom-typing" sort_Tptp92Ast_tff_atom_typing],
@@ -944,8 +918,6 @@ private def constructorsChunk14 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp92-ast:tff-binary-formula:alt-1" sort_Tptp92Ast_tff_binary_formula [parameter "tff-binary-nonassoc" sort_Tptp92Ast_tff_binary_nonassoc]
   ]
 
-private def constructorsPrefix14 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix13 ++ constructorsChunk14
-
 private def constructorsChunk15 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:tff-binary-formula:alt-2" sort_Tptp92Ast_tff_binary_formula [parameter "tff-binary-assoc" sort_Tptp92Ast_tff_binary_assoc],
     constructor "tptp92-ast:tff-binary-nonassoc:alt-1" sort_Tptp92Ast_tff_binary_nonassoc [parameter "tff-unit-formula-1" sort_Tptp92Ast_tff_unit_formula, parameter "nonassoc-connective" sort_Tptp92Ast_nonassoc_connective, parameter "tff-unit-formula-2" sort_Tptp92Ast_tff_unit_formula],
@@ -964,8 +936,6 @@ private def constructorsChunk15 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp92-ast:tff-logic-formula:alt-3" sort_Tptp92Ast_tff_logic_formula [parameter "tff-binary-formula" sort_Tptp92Ast_tff_binary_formula],
     constructor "tptp92-ast:tff-logic-formula:alt-4" sort_Tptp92Ast_tff_logic_formula [parameter "tff-defined-infix" sort_Tptp92Ast_tff_defined_infix]
   ]
-
-private def constructorsPrefix15 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix14 ++ constructorsChunk15
 
 private def constructorsChunk16 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:tff-logic-formula:alt-5" sort_Tptp92Ast_tff_logic_formula [parameter "txf-definition" sort_Tptp92Ast_txf_definition],
@@ -986,8 +956,6 @@ private def constructorsChunk16 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp92-ast:tff-preunit-formula:alt-2" sort_Tptp92Ast_tff_preunit_formula [parameter "tff-prefix-unary" sort_Tptp92Ast_tff_prefix_unary]
   ]
 
-private def constructorsPrefix16 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix15 ++ constructorsChunk16
-
 private def constructorsChunk17 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:tff-quantified-formula:alt-1" sort_Tptp92Ast_tff_quantified_formula [parameter "tff-quantifier" sort_Tptp92Ast_tff_quantifier, parameter "tff-variable-list" sort_Tptp92Ast_tff_variable_list, parameter "tff-unit-formula" sort_Tptp92Ast_tff_unit_formula],
     constructor "tptp92-ast:tff-quantifier:alt-1" sort_Tptp92Ast_tff_quantifier [parameter "fof-quantifier" sort_Tptp92Ast_fof_quantifier],
@@ -1006,8 +974,6 @@ private def constructorsChunk17 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp92-ast:tff-type-list:alt-2" sort_Tptp92Ast_tff_type_list [parameter "tff-top-level-type" sort_Tptp92Ast_tff_top_level_type, parameter "tff-type-list" sort_Tptp92Ast_tff_type_list],
     constructor "tptp92-ast:tff-typed-variable:alt-1" sort_Tptp92Ast_tff_typed_variable [parameter "variable" sort_Tptp92Ast_variable, parameter "tff-atomic-type" sort_Tptp92Ast_tff_atomic_type]
   ]
-
-private def constructorsPrefix17 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix16 ++ constructorsChunk17
 
 private def constructorsChunk18 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:tff-unary-connective:alt-1" sort_Tptp92Ast_tff_unary_connective [parameter "unary-connective" sort_Tptp92Ast_unary_connective],
@@ -1028,8 +994,6 @@ private def constructorsChunk18 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp92-ast:tff-unitary-term:alt-5" sort_Tptp92Ast_tff_unitary_term [parameter "tff-logic-formula" sort_Tptp92Ast_tff_logic_formula]
   ]
 
-private def constructorsPrefix18 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix17 ++ constructorsChunk18
-
 private def constructorsChunk19 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:tff-unitary-type:alt-1" sort_Tptp92Ast_tff_unitary_type [parameter "tff-atomic-type" sort_Tptp92Ast_tff_atomic_type],
     constructor "tptp92-ast:tff-unitary-type:alt-2" sort_Tptp92Ast_tff_unitary_type [parameter "tff-xprod-type" sort_Tptp92Ast_tff_xprod_type],
@@ -1048,8 +1012,6 @@ private def constructorsChunk19 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp92-ast:th1-defined-term:alt-4" sort_Tptp92Ast_th1_defined_term [],
     constructor "tptp92-ast:th1-defined-term:alt-5" sort_Tptp92Ast_th1_defined_term []
   ]
-
-private def constructorsPrefix19 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix18 ++ constructorsChunk19
 
 private def constructorsChunk20 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:theory-name:alt-1" sort_Tptp92Ast_theory_name [parameter "atomic-word" sort_Tptp92Ast_atomic_word],
@@ -1070,8 +1032,6 @@ private def constructorsChunk20 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp92-ast:thf-atomic-formula:alt-3" sort_Tptp92Ast_thf_atomic_formula [parameter "thf-system-atomic" sort_Tptp92Ast_thf_system_atomic]
   ]
 
-private def constructorsPrefix20 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix19 ++ constructorsChunk20
-
 private def constructorsChunk21 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:thf-atomic-formula:alt-4" sort_Tptp92Ast_thf_atomic_formula [parameter "thf-fof-function" sort_Tptp92Ast_thf_fof_function],
     constructor "tptp92-ast:thf-binary-assoc:alt-1" sort_Tptp92Ast_thf_binary_assoc [parameter "thf-or-formula" sort_Tptp92Ast_thf_or_formula],
@@ -1090,8 +1050,6 @@ private def constructorsChunk21 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp92-ast:thf-conn-term:alt-4" sort_Tptp92Ast_thf_conn_term [parameter "infix-inequality" sort_Tptp92Ast_infix_inequality],
     constructor "tptp92-ast:thf-conn-term:alt-5" sort_Tptp92Ast_thf_conn_term [parameter "thf-unary-connective" sort_Tptp92Ast_thf_unary_connective]
   ]
-
-private def constructorsPrefix21 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix20 ++ constructorsChunk21
 
 private def constructorsChunk22 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:thf-defined-atomic:alt-1" sort_Tptp92Ast_thf_defined_atomic [parameter "defined-constant" sort_Tptp92Ast_defined_constant],
@@ -1112,8 +1070,6 @@ private def constructorsChunk22 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp92-ast:thf-formula:alt-3" sort_Tptp92Ast_thf_formula [parameter "thf-subtype" sort_Tptp92Ast_thf_subtype]
   ]
 
-private def constructorsPrefix22 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix21 ++ constructorsChunk22
-
 private def constructorsChunk23 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:thf-infix-unary:alt-1" sort_Tptp92Ast_thf_infix_unary [parameter "thf-unitary-term-1" sort_Tptp92Ast_thf_unitary_term, parameter "infix-inequality" sort_Tptp92Ast_infix_inequality, parameter "thf-unitary-term-2" sort_Tptp92Ast_thf_unitary_term],
     constructor "tptp92-ast:thf-let-defn-list:alt-1" sort_Tptp92Ast_thf_let_defn_list [parameter "thf-let-defn" sort_Tptp92Ast_thf_let_defn],
@@ -1132,8 +1088,6 @@ private def constructorsChunk23 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp92-ast:thf-logic-formula:alt-6" sort_Tptp92Ast_thf_logic_formula [parameter "thf-sequent" sort_Tptp92Ast_thf_sequent],
     constructor "tptp92-ast:thf-mapping-type:alt-1" sort_Tptp92Ast_thf_mapping_type [parameter "thf-unitary-type-1" sort_Tptp92Ast_thf_unitary_type, parameter "thf-unitary-type-2" sort_Tptp92Ast_thf_unitary_type]
   ]
-
-private def constructorsPrefix23 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix22 ++ constructorsChunk23
 
 private def constructorsChunk24 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:thf-mapping-type:alt-2" sort_Tptp92Ast_thf_mapping_type [parameter "thf-unitary-type" sort_Tptp92Ast_thf_unitary_type, parameter "thf-mapping-type" sort_Tptp92Ast_thf_mapping_type],
@@ -1154,8 +1108,6 @@ private def constructorsChunk24 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp92-ast:thf-system-atomic:alt-1" sort_Tptp92Ast_thf_system_atomic [parameter "system-constant" sort_Tptp92Ast_system_constant]
   ]
 
-private def constructorsPrefix24 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix23 ++ constructorsChunk24
-
 private def constructorsChunk25 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:thf-top-level-type:alt-1" sort_Tptp92Ast_thf_top_level_type [parameter "thf-unitary-type" sort_Tptp92Ast_thf_unitary_type],
     constructor "tptp92-ast:thf-top-level-type:alt-2" sort_Tptp92Ast_thf_top_level_type [parameter "thf-mapping-type" sort_Tptp92Ast_thf_mapping_type],
@@ -1174,8 +1126,6 @@ private def constructorsChunk25 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp92-ast:thf-unit-formula:alt-3" sort_Tptp92Ast_thf_unit_formula [parameter "thf-defined-infix" sort_Tptp92Ast_thf_defined_infix],
     constructor "tptp92-ast:thf-unitary-formula:alt-1" sort_Tptp92Ast_thf_unitary_formula [parameter "thf-quantified-formula" sort_Tptp92Ast_thf_quantified_formula]
   ]
-
-private def constructorsPrefix25 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix24 ++ constructorsChunk25
 
 private def constructorsChunk26 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:thf-unitary-formula:alt-2" sort_Tptp92Ast_thf_unitary_formula [parameter "thf-atomic-formula" sort_Tptp92Ast_thf_atomic_formula],
@@ -1196,8 +1146,6 @@ private def constructorsChunk26 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp92-ast:token:integer" sort_Tptp92AstToken_integer [parameter "lexeme" sort_String]
   ]
 
-private def constructorsPrefix26 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix25 ++ constructorsChunk26
-
 private def constructorsChunk27 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:token:lower-word" sort_Tptp92AstToken_lower_word [parameter "lexeme" sort_String],
     constructor "tptp92-ast:token:rational" sort_Tptp92AstToken_rational [parameter "lexeme" sort_String],
@@ -1216,8 +1164,6 @@ private def constructorsChunk27 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp92-ast:txf-let-defns:alt-1" sort_Tptp92Ast_txf_let_defns [parameter "txf-let-defn" sort_Tptp92Ast_txf_let_defn],
     constructor "tptp92-ast:txf-let-defns:alt-2" sort_Tptp92Ast_txf_let_defns [parameter "txf-let-defn-list" sort_Tptp92Ast_txf_let_defn_list]
   ]
-
-private def constructorsPrefix27 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix26 ++ constructorsChunk27
 
 private def constructorsChunk28 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:txf-let-lhs:alt-1" sort_Tptp92Ast_txf_let_lhs [parameter "tff-plain-atomic" sort_Tptp92Ast_tff_plain_atomic],
@@ -1238,17 +1184,25 @@ private def constructorsChunk28 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp92-ast:untyped-atom:alt-1" sort_Tptp92Ast_untyped_atom [parameter "constant" sort_Tptp92Ast_constant]
   ]
 
-private def constructorsPrefix28 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix27 ++ constructorsChunk28
-
 private def constructorsChunk29 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp92-ast:untyped-atom:alt-2" sort_Tptp92Ast_untyped_atom [parameter "system-constant" sort_Tptp92Ast_system_constant],
     constructor "tptp92-ast:useful-info:alt-1" sort_Tptp92Ast_useful_info [parameter "general-list" sort_Tptp92Ast_general_list],
     constructor "tptp92-ast:variable:alt-1" sort_Tptp92Ast_variable [parameter "upper-word" sort_Tptp92AstToken_upper_word]
   ]
 
-private def constructorsPrefix29 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix28 ++ constructorsChunk29
+certified_label_chunks constructorChunks as constructorLabelOrder
+  via (fun row : IndexedConstructorSignature.Constructor types => row.label) from [
+  constructorsChunk0, constructorsChunk1, constructorsChunk2, constructorsChunk3,
+  constructorsChunk4, constructorsChunk5, constructorsChunk6, constructorsChunk7,
+  constructorsChunk8, constructorsChunk9, constructorsChunk10, constructorsChunk11,
+  constructorsChunk12, constructorsChunk13, constructorsChunk14, constructorsChunk15,
+  constructorsChunk16, constructorsChunk17, constructorsChunk18, constructorsChunk19,
+  constructorsChunk20, constructorsChunk21, constructorsChunk22, constructorsChunk23,
+  constructorsChunk24, constructorsChunk25, constructorsChunk26, constructorsChunk27,
+  constructorsChunk28, constructorsChunk29
+]
 
-def constructors : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix29
+def constructors : List (IndexedConstructorSignature.Constructor types) := constructorChunks.flatten
 
 def language : LanguageDef :=
   IndexedConstructorSignature.language
@@ -1508,6 +1462,7 @@ theorem includeInputRule_mem_language :
 private theorem typesNamesIncreasing :
     List.IsChain (fun first second : String => first < second)
       (types.map (·.name)) := by
+  apply Mettapedia.Data.List.isChain_of_checkAdjacent
   decide +kernel
 
 private theorem typesNodup :
@@ -1520,7 +1475,8 @@ private theorem typesNodup :
 private theorem constructorsNamesIncreasing :
     List.IsChain (fun first second : String => first < second)
       (constructors.map (·.label)) := by
-  decide +kernel
+  rw [constructors, List.map_flatten]
+  exact constructorLabelOrder
 
 private theorem constructorsNodup :
     (constructors.map (·.label)).Nodup := by
@@ -1601,16 +1557,9 @@ def theory : Mettapedia.GSLT.GSLT :=
     (ReductionRespectsEquations.of_equation_free rfl)
 
 theorem theory_no_step (source target : Pattern) :
-    ¬ theory.Step source target := by
-  intro reduction
-  unfold theory at reduction
-  rw [languageGSLT_step] at reduction
-  unfold langReducesUsing at reduction
-  rcases reduction with ⟨_, step⟩
-  cases step with
-  | rule ruleMember =>
-      change _ ∈ ([] : List RewriteRule) at ruleMember
-      simp at ruleMember
+    ¬ theory.Step source target :=
+  languageGSLT_no_step_of_no_rewrites (language := language)
+    (laws := ReductionRespectsEquations.of_equation_free rfl) rfl
 
 def stepDecision : EffectiveStructure.StepDecision theory where
   decideStep _ _ := false

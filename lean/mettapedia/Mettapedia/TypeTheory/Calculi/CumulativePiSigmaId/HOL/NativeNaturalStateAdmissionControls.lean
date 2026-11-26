@@ -63,8 +63,15 @@ theorem formed_pair_not_read :
     (readState? operations profile [] .nil (.pair (.const zeroName) (.const zeroName))
       (.sigma (.const natName) (.const natName)) .nil JudgmentReplay.Controls.pair).isNone = true := by
   refine ⟨JudgmentReplay.Controls.pair_checked, ?_⟩
-  simp [readState?, JudgmentReplay.checkContext, Checking.checkContext,
-    AnnotatedReading.read?, AnnotatedPredicateReading.Reader.read?]
+  have emptyContext : JudgmentReplay.checkContext profile .nil .nil = true := rfl
+  have rejected : AnnotatedReading.read? operations [] (.pair (.const zeroName) (.const zeroName)) = none := by
+    cases AnnotatedReading.read? operations [] (.pair (.const zeroName) (.const zeroName)) with
+    | none => rfl
+    | some result =>
+        obtain ⟨⟨carrier, code⟩, reading⟩ := result
+        cases reading
+  simp only [readState?, emptyContext, dite_true, rejected]
+  rfl
 
 theorem open_row_state_has_certificates :
     ∃ (contextCertificate : JudgmentReplay.ContextCertificate profile operations.parameters.length)

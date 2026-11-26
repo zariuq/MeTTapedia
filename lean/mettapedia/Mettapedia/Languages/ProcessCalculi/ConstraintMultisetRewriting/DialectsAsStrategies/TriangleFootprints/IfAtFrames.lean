@@ -539,12 +539,8 @@ theorem Fine.exists_final {lookup : CastLookup} {x : HEConfig}
     (fine : Fine dispatch lookup policy x) :
     ∃ (space : Space) (emitted : List Result),
       Relation.ReflTransGen (HEStep dispatch lookup policy) x ⟨space, .returning [], [], emitted⟩ := by
-  induction fine with
-  | final => exact ⟨_, _, .refl⟩
-  | step moves _ ih =>
-      obtain ⟨y, step⟩ := moves
-      obtain ⟨space, emitted, path⟩ := ih y step
-      exact ⟨space, emitted, .head step path⟩
+  obtain ⟨emitted, path⟩ := fine.reaches_final_in_space
+  exact ⟨x.space, emitted, path⟩
 
 /-! ## Controls -/
 

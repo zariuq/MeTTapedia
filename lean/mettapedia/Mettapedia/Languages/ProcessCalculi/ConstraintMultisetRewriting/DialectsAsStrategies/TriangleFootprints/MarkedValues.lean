@@ -278,13 +278,7 @@ theorem Marked.held_value {atoms : List Atom} {children : List Entry.Value}
 machine returns a batch whose atoms are `L`, under the same stack. -/
 def HERunsTo (dispatch : GroundedDispatch) (lookup : CastLookup) (policy : Policy)
     (atoms : List Atom) (v : Entry.Value) (L : List Atom) : Prop :=
-  ∀ (live : List Atom) (scope : List String) (activation : Frame) (stack : List Continuation)
-    (emitted : List Result),
-    ∃ results : List Result, results.map (fun result => result.1.erase) = L ∧
-      Relation.ReflTransGen (HEStep dispatch lookup policy)
-        ⟨Space.ofList atoms, .work (.atom live scope v Atom.undefinedType activation), stack,
-          emitted⟩
-        ⟨Space.ofList atoms, .returning results, stack, emitted⟩
+  HENested.ArgumentRuns (Relation.ReflTransGen (HEStep dispatch lookup policy)) atoms Atom.undefinedType v L
 
 /-- **HE's machine evaluates every marked presentation of `t` to `L`.** -/
 def HEEvaluatesM (dispatch : GroundedDispatch) (lookup : CastLookup) (policy : Policy)
@@ -320,80 +314,9 @@ theorem tuple_product_M (atoms : List Atom) :
           (∀ r ∈ R, ∃ children, r.1 = .expression .active children) ∧
           Relation.ReflTransGen (HEStep dispatch lookup policy)
             ⟨Space.ofList atoms, .work (.tuple live scope vs activation), stack, emitted⟩
-            ⟨Space.ofList atoms, .returning R, stack, emitted⟩
-  | [], _, nonempty, _ => absurd rfl nonempty
-  | [v], Ls, _, related => by
-      intro live scope activation stack emitted
-      cases related with
-      | cons here rest =>
-          rename_i L Ls'
-          cases rest
-          obtain ⟨R, eraseR, path⟩ := here.1 live scope activation (.singleton :: stack) emitted
-          have clean := HENested.clean_of_erase eraseR here.2
-          have singled : ∀ r ∈ R, Completed.tupleSingleton r = (.expression .active [r.1], r.2) := by
-            intro r member
-            unfold Completed.tupleSingleton
-            rw [HENested.emptyOrError_false (clean r member)]
-            rfl
-          refine ⟨R.map Completed.tupleSingleton, ?_, ?_, ?_⟩
-          · rw [List.map_map]
-            have mapped : R.map ((fun r : Result => r.1.erase) ∘ Completed.tupleSingleton) =
-                (R.map fun r => r.1.erase).map fun a => Atom.expression [a] := by
-              rw [List.map_map]
-              apply List.map_congr_left
-              intro r member
-              simp only [Function.comp_apply, singled r member, Entry.Value.erase, List.map_cons,
-                List.map_nil]
-            rw [mapped, eraseR, combos_singleton, List.map_map]
-            rfl
-          · intro r member
-            obtain ⟨r', member', rfl⟩ := List.mem_map.mp member
-            exact ⟨_, by rw [singled r' member']⟩
-          · refine .head (.internal .tupleSingleton) ?_
-            refine .trans path ?_
-            exact .single (.internal .singleton)
-  | v :: v2 :: rest, Ls, _, related => by
-      intro live scope activation stack emitted
-      cases related with
-      | cons here later =>
-          rename_i L Ls'
-          obtain ⟨R, eraseR, path⟩ := here.1 _ scope activation
-            (.branches live scope (v2 :: rest) :: stack) emitted
-          have clean := HENested.clean_of_erase eraseR here.2
-          have tailRuns := tuple_product_M atoms (v2 :: rest) Ls' (List.cons_ne_nil _ _) later
-          have tailClean : ∀ c ∈ combos Ls', ∃ c0 cs, c = c0 :: cs ∧ Answerable c0 := by
-            intro c member
-            have lengths := combos_length member
-            have positive : Ls'.length = (v2 :: rest).length := (List.Forall₂.length_eq later).symm
-            obtain ⟨c0, cs, rfl⟩ : ∃ c0 cs, c = c0 :: cs := by
-              cases c with
-              | nil =>
-                  simp only [List.length_nil] at lengths
-                  simp only [List.length_cons] at positive
-                  omega
-              | cons c0 cs => exact ⟨c0, cs, rfl⟩
-            refine ⟨c0, cs, rfl, ?_⟩
-            have allClean : ∀ L' ∈ Ls', ∀ a ∈ L', Answerable a := by
-              intro L' member' a inside
-              obtain ⟨t', both⟩ := forall₂_right_exists later L' member'
-              exact both.2 a inside
-            exact combos_answerable allClean _ member c0 List.mem_cons_self
-          obtain ⟨R', eraseR', shapeR', loop⟩ := HENested.branches_loop atoms (live := live)
-            (fun live' activation' stack' emitted' => tailRuns live' scope activation' stack' emitted')
-            tailClean R clean stack emitted
-          refine ⟨R', ?_, shapeR', ?_⟩
-          · rw [eraseR']
-            have flat : R.flatMap (fun h => (combos Ls').map fun c => Atom.expression (h.1.erase :: c)) =
-                (R.map fun h => h.1.erase).flatMap
-                  (fun a => (combos Ls').map fun c => Atom.expression (a :: c)) := by
-              rw [List.flatMap_map]
-            rw [flat, eraseR]
-            simp only [combos, List.map_flatMap, List.map_map]
-            rfl
-          · refine .head (.internal .tupleCons) ?_
-            refine .trans path ?_
-            refine .head (.internal .branches) ?_
-            exact loop
+            ⟨Space.ofList atoms, .returning R, stack, emitted⟩ :=
+  HENested.tuple_product_of_steps (dispatch := dispatch) (lookup := lookup) (policy := policy)
+    (path := Relation.ReflTransGen (HEStep dispatch lookup policy)) Relation.ReflTransGen.trans Relation.ReflTransGen.single atoms
 
 theorem call_not_stopped {f : String} {ts : List Atom} (head : DataAtom (.symbol f)) :
     ¬ IsEmptyOrErrorRel (.expression (.symbol f :: ts)) := by
@@ -409,10 +332,12 @@ theorem undefined_not_raw :
       Atom.expressionType = Atom.variableType) := by
   decide +kernel
 
-/-- **HE evaluates a marked call whose root it interprets**: the type-directed entry, the whole
-argument product over the marked arguments, the query of `f` on each combination in turn, and the
-publication. -/
-theorem he_nested_M (answers : AnswersUndefined lookup) {atoms : List Atom} {f : String}
+/-- A marked call uses the same tuple, call, and publication continuations in any evaluator
+supporting the contextual steps. Each argument and query supplies its own complete run. -/
+theorem he_nested_of_steps {path : HEOnTheStep.HEConfig → HEOnTheStep.HEConfig → Prop}
+    (compose : ∀ {a b c : HEOnTheStep.HEConfig}, path a b → path b c → path a c)
+    (advance : ∀ {a b : HEOnTheStep.HEConfig}, HEStep dispatch lookup policy a b → path a b)
+     {atoms : List Atom} {f : String}
     {ts : List Atom} {Ls : List (List Atom)} (head : DataAtom (.symbol f))
     (untyped : (Space.ofList atoms).atoms.filter (typeRegion (.symbol f)) = [])
     (closed : ∀ name,
@@ -420,12 +345,13 @@ theorem he_nested_M (answers : AnswersUndefined lookup) {atoms : List Atom} {f :
     {readiness : Entry.Status} {vs : List Entry.Value}
     (interpreted : policy.reentry = .reinterpret ∨ readiness = .active)
     (erased : vs.map Entry.Value.erase = ts)
-    (args : List.Forall₂ (fun v L => HERunsTo dispatch lookup policy atoms v L ∧
+    (args : List.Forall₂ (fun v L => HENested.ArgumentRuns path atoms Atom.undefinedType v L ∧
       ∀ a ∈ L, Answerable a) vs Ls)
     (Q : List Atom → List Atom)
-    (apps : ∀ vals ∈ combos Ls, HEQuery dispatch lookup policy atoms f vals (Q vals) ∧
-      ∀ a ∈ Q vals, Answerable a) :
-    HERunsTo dispatch lookup policy atoms (.expression readiness (.symbol f :: vs))
+    (apps : ∀ vals ∈ combos Ls, HENested.QueryRuns path atoms Atom.undefinedType f vals (Q vals) ∧
+      ∀ a ∈ Q vals, Answerable a)
+    (headRuns : HENested.ArgumentRuns path atoms Atom.undefinedType (.symbol f) [.symbol f]) :
+    HENested.ArgumentRuns path atoms Atom.undefinedType (.expression readiness (.symbol f :: vs))
       ((combos Ls).flatMap Q) := by
   intro live scope activation stack emitted
   have eraseV : (Entry.Value.expression readiness (.symbol f :: vs)).erase =
@@ -445,17 +371,15 @@ theorem he_nested_M (answers : AnswersUndefined lookup) {atoms : List Atom} {f :
       {Atom.undefinedType} := by
     simp only [Entry.Value.erase]
     exact untyped_occurrences untyped
-  have step := LocalStepWith.atomTuple (admission := .historical) (space := Space.ofList atoms)
+  have enterTuple := LocalStepWith.atomTuple (admission := .historical) (space := Space.ofList atoms)
     (dispatch := dispatch) (lookup := lookup) (live := live) (scope := scope) (stack := stack)
     entry readV occurrences
   have published : (activation.read policy (.expression readiness (.symbol f :: vs))).erase =
       .expression (.symbol f :: ts) := by
     rw [readV, eraseV]
-  rw [published] at step
-  have headRuns : HERunsTo dispatch lookup policy atoms (.symbol f) [.symbol f] :=
-    he_data_M answers atoms head (.symbol f) (by simp only [Entry.Value.erase]) (.symbol f)
-  obtain ⟨T, eraseT, _, pathT⟩ := tuple_product_M (dispatch := dispatch) (lookup := lookup)
-    (policy := policy) atoms (.symbol f :: vs) ([.symbol f] :: Ls) (List.cons_ne_nil _ _)
+  rw [published] at enterTuple
+  obtain ⟨T, eraseT, _, pathT⟩ := HENested.tuple_product_of_steps (dispatch := dispatch) (lookup := lookup) (policy := policy)
+    (path := path) compose advance atoms (.symbol f :: vs) ([.symbol f] :: Ls) (List.cons_ne_nil _ _)
     (.cons ⟨headRuns, fun a member => by
       rw [List.mem_singleton] at member
       subst member
@@ -464,7 +388,7 @@ theorem he_nested_M (answers : AnswersUndefined lookup) {atoms : List Atom} {f :
     emitted
   rw [combos_head] at eraseT
   have rows : ∀ r ∈ T, ∃ vals, r.1.erase = .expression (.symbol f :: vals) ∧
-      HEQuery dispatch lookup policy atoms f vals (Q vals) := by
+      HENested.QueryRuns path atoms Atom.undefinedType f vals (Q vals) := by
     intro r member
     have inRows : r.1.erase ∈ ((combos Ls).map (Atom.symbol f :: ·)).map Atom.expression := by
       rw [← eraseT]
@@ -472,8 +396,8 @@ theorem he_nested_M (answers : AnswersUndefined lookup) {atoms : List Atom} {f :
     rw [List.map_map] at inRows
     obtain ⟨vals, valsMem, valsEq⟩ := List.mem_map.mp inRows
     exact ⟨vals, valsEq.symm, (apps vals valsMem).1⟩
-  obtain ⟨R, eraseR, pathR⟩ := HENested.calls_loop (dispatch := dispatch) (lookup := lookup)
-    (policy := policy) atoms (live := live) (scope := scope) Q T rows
+  obtain ⟨R, eraseR, pathR⟩ := HENested.calls_loop_of_steps (dispatch := dispatch) (lookup := lookup) (policy := policy)
+    (path := path) compose advance atoms Atom.undefinedType (live := live) (scope := scope) Q T rows
     (.publish (.expression (.symbol f :: ts)) :: stack) emitted
   have totals : T.flatMap (fun r => Q (HENested.argsOf r.1.erase)) = (combos Ls).flatMap Q := by
     have viaAtoms : T.flatMap (fun r => Q (HENested.argsOf r.1.erase)) =
@@ -487,14 +411,36 @@ theorem he_nested_M (answers : AnswersUndefined lookup) {atoms : List Atom} {f :
     intro a member
     obtain ⟨vals, valsMem, inner⟩ := List.mem_flatMap.mp member
     exact (apps vals valsMem).2 a inner
-  obtain ⟨final, eraseFinal, pathFinal⟩ := HENested.publish_step (dispatch := dispatch)
-    (lookup := lookup) (policy := policy) (atoms := atoms) (.expression (.symbol f :: ts)) R clean
+  obtain ⟨final, eraseFinal, pathFinal⟩ := HENested.publish_step_of_steps (dispatch := dispatch) (lookup := lookup) (policy := policy)
+    (path := path) advance (atoms := atoms) (.expression (.symbol f :: ts)) R clean
     stack emitted
   refine ⟨final, by rw [eraseFinal, eraseR], ?_⟩
-  refine .head (.internal step) ?_
-  refine .trans pathT ?_
-  refine .head (.internal .calls) ?_
-  exact pathR.trans pathFinal
+  refine compose (advance (.internal enterTuple)) ?_
+  refine compose pathT ?_
+  refine compose (advance (.internal .calls)) ?_
+  exact compose pathR pathFinal
+
+/-- **HE evaluates a marked call whose root it interprets**: the type-directed entry, the whole
+argument product over the marked arguments, the query of `f` on each combination in turn, and the
+publication. -/
+theorem he_nested_M (answers : AnswersUndefined lookup) {atoms : List Atom} {f : String}
+    {ts : List Atom} {Ls : List (List Atom)} (head : DataAtom (.symbol f))
+    (untyped : (Space.ofList atoms).atoms.filter (typeRegion (.symbol f)) = [])
+    (closed : ∀ name,
+      ¬ Mettapedia.Languages.MeTTa.HE.Spec.Match.Merge.AtomOccurs (.expression (.symbol f :: ts)) name)
+    {readiness : Entry.Status} {vs : List Entry.Value}
+    (interpreted : policy.reentry = .reinterpret ∨ readiness = .active)
+    (erased : vs.map Entry.Value.erase = ts)
+    (args : List.Forall₂ (fun v L => HERunsTo dispatch lookup policy atoms v L ∧
+      ∀ a ∈ L, Answerable a) vs Ls)
+    (Q : List Atom → List Atom)
+    (apps : ∀ vals ∈ combos Ls, HEQuery dispatch lookup policy atoms f vals (Q vals) ∧
+      ∀ a ∈ Q vals, Answerable a) :
+    HERunsTo dispatch lookup policy atoms (.expression readiness (.symbol f :: vs))
+      ((combos Ls).flatMap Q) :=
+  he_nested_of_steps (dispatch := dispatch) (lookup := lookup) (policy := policy) (path := Relation.ReflTransGen (HEStep dispatch lookup policy))
+    Relation.ReflTransGen.trans Relation.ReflTransGen.single head untyped closed interpreted erased args Q apps
+    (he_data_M answers atoms head (.symbol f) (by simp only [Entry.Value.erase]) (.symbol f))
 
 /-- **A held expression under the reuse policy is delivered as it is.** -/
 theorem he_held (atoms : List Atom) {children : List Entry.Value}

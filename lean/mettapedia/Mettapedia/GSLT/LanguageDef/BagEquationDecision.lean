@@ -31,42 +31,18 @@ namespace Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations
 open Mettapedia.OSLF.MeTTaIL.Syntax Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.GSLT.LanguageDef.WellSorted Mettapedia.GSLT.LanguageDef.EquationSemantics
 
-mutual
-  private theorem grammar_hasType {source target : LanguageDef}
-      (same : target.terms = source.terms) {free : FreeTypeContext} {bound : List TypeExpr}
-      {pattern : Pattern} {type : TypeExpr} (typed : HasType source free bound pattern type) :
-      HasType target free bound pattern type := by
-    cases typed with
-    | bvar lookup => exact .bvar lookup
-    | fvar lookup => exact .fvar lookup
-    | constructor member ordinary arguments =>
-        exact .constructor (same ▸ member) ordinary (grammar_arguments same arguments)
-    | lambda body => exact .lambda (grammar_hasType same body)
-    | multiLambda body => exact .multiLambda (grammar_hasType same body)
-    | subst body replacement => exact .subst (grammar_hasType same body) (grammar_hasType same replacement)
-    | collection elements => exact .collection (grammar_elements same elements)
-    | collectionConstructor member shape elements =>
-        exact .collectionConstructor (same ▸ member) shape (grammar_elements same elements)
+private theorem grammar_hasType {source target : LanguageDef}
+    (same : target.terms = source.terms) {free : FreeTypeContext} {bound : List TypeExpr}
+    {pattern : Pattern} {type : TypeExpr} (typed : HasType source free bound pattern type) :
+    HasType target free bound pattern type :=
+  HasType.of_terms_subset (by intro _ member; exact same ▸ member) typed
 
-  private theorem grammar_arguments {source target : LanguageDef}
-      (same : target.terms = source.terms) {free : FreeTypeContext} {bound : List TypeExpr}
-      {patterns : List Pattern} {parameters : List TermParam}
-      (typed : ArgumentsHaveTypes source free bound patterns parameters) :
-      ArgumentsHaveTypes target free bound patterns parameters := by
-    cases typed with
-    | nil => exact .nil
-    | cons represented type first rest =>
-        exact .cons represented type (grammar_hasType same first) (grammar_arguments same rest)
-
-  private theorem grammar_elements {source target : LanguageDef}
-      (same : target.terms = source.terms) {free : FreeTypeContext} {bound : List TypeExpr}
-      {patterns : List Pattern} {type : TypeExpr}
-      (typed : ElementsHaveType source free bound patterns type) :
-      ElementsHaveType target free bound patterns type := by
-    cases typed with
-    | nil bound type => exact .nil bound type
-    | cons first rest => exact .cons (grammar_hasType same first) (grammar_elements same rest)
-end
+private theorem grammar_elements {source target : LanguageDef}
+    (same : target.terms = source.terms) {free : FreeTypeContext} {bound : List TypeExpr}
+    {patterns : List Pattern} {type : TypeExpr}
+    (typed : ElementsHaveType source free bound patterns type) :
+    ElementsHaveType target free bound patterns type :=
+  ElementsHaveType.of_terms_subset (by intro _ member; exact same ▸ member) typed
 
 private theorem grammar_admissible {source target : LanguageDef}
     (same : target.terms = source.terms) {free : FreeTypeContext} {bound : List TypeExpr}
@@ -99,9 +75,8 @@ private theorem grammar_collectionTyped {source target : LanguageDef}
     (same : target.terms = source.terms) {rule : GrammarRule} {kind : CollType}
     {elements : List Pattern}
     (typed : Mettapedia.GSLT.LanguageDef.WellSorted.CollectionTypedAt source rule kind elements) :
-    Mettapedia.GSLT.LanguageDef.WellSorted.CollectionTypedAt target rule kind elements := by
-  obtain ⟨parameter,member,elementType,occurs,free,bound,body⟩ := typed
-  exact ⟨parameter,member,elementType,occurs,free,bound,grammar_hasType same body⟩
+    Mettapedia.GSLT.LanguageDef.WellSorted.CollectionTypedAt target rule kind elements :=
+  typed.of_terms_subset (by intro _ member; exact same ▸ member)
 
 private theorem grammar_derived {source target : LanguageDef}
     (same : target.terms = source.terms) {first second : Pattern}
@@ -383,14 +358,6 @@ theorem source_fibre_equiv_iff_normalForm_eq {language : LanguageDef} {bag : Gra
         normalizeSource laws base free bound type collectionless right := Subtype.ext same
     exact .trans _ _ _ (certified.sound left) (sameNormal ▸ (certified.sound right).symm)
 
-#print axioms source_equiv_normalForm
-#print axioms matchBag_reconstruct
-#print axioms match_normalForm
-#print axioms equationInstance_normalForm
-#print axioms source_step_normalForm
-#print axioms normalized_admissible
-#print axioms sourceNormalizer
-#print axioms source_fibre_equiv_iff_normalForm_eq
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations
 
 namespace Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations
@@ -715,16 +682,7 @@ theorem source_equationEquiv_iff_normalForm_eq {language : LanguageDef} {bag : G
     exact .trans _ _ _ (source_equiv_normalForm laws base leftGood collectionless)
       (same ▸ (source_equiv_normalForm laws base rightGood collectionless).symm)
 
-#print axioms erase_applyBindings_row
-#print axioms match_tailInvariant
-#print axioms equationInstance_tailInvariant
-#print axioms source_normalForm_eq_of_equationEquiv
-#print axioms source_equationEquiv_iff_normalForm_eq
 
-#print axioms eraseTails_object
-#print axioms typed_eraseTails
-#print axioms derived_eraseTails
-#print axioms eraseTails_fill
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations
 
 namespace Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus
@@ -942,19 +900,6 @@ theorem component_origin_in_context {unitLabel : String} {focus component : Patt
   rw [← fills, ← OneHoleContext.fill_comp]
   exact Selects.of_fill _ _
 
-#print axioms collapse_contents
-#print axioms component_admissible
-#print axioms normalForm_bag_contents
-#print axioms source_bag_element
-#print axioms view_admissible
-#print axioms residual_admissible
-#print axioms view_equivalent
-#print axioms normalized_view_equivalent
-#print axioms component_origin
-#print axioms match_view_single_rest
-#print axioms recover_representative
-#print axioms stepModulo_of_view_step
-#print axioms component_origin_in_context
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus
 
@@ -1031,35 +976,48 @@ theorem sourceOccurrences_nonbag {unitLabel : String} {source : Pattern}
   | _ => simp only [sourceOccurrences]
 
 
+/-- Eliminate a closed bag through its members. Every other term is an opaque
+leaf for this occurrence traversal, including a bag with a rest binder. -/
+private theorem closedBag_induction {motive : Pattern → Prop}
+    (closed : ∀ elements, (∀ member ∈ elements, motive member) →
+      motive (.collection .hashBag elements none))
+    (leaf : ∀ source, ¬ IsBagNode source → motive source) :
+    ∀ source, motive source := by
+  intro source
+  induction source using Pattern.inductionOn with
+  | hcollection kind elements rest children =>
+    cases kind <;> cases rest <;>
+      first | exact closed elements children | exact leaf _ (by simp [IsBagNode])
+  | _ => exact leaf _ (by simp [IsBagNode])
+
 /-- Traversal distinguishes physical addresses before any value sorting or
 unit filtering, even when several source leaves have the same value. -/
 theorem sourceOccurrences_distinct (unitLabel : String) :
     ∀ source, (sourceOccurrences unitLabel source).Pairwise
-      (fun first second => first.address ≠ second.address)
-  | source => by
-    by_cases isBag : IsBagNode source
-    · obtain ⟨elements, rfl⟩ := isBag
-      rw [sourceOccurrences_bag, List.pairwise_flatMap]
-      constructor
-      · intro pair selected
-        apply List.pairwise_map.mpr
-        have inside := List.mem_of_getElem? (List.mk_mem_zipIdx_iff_getElem?.mp selected)
-        exact (sourceOccurrences_distinct unitLabel pair.1).imp
-          (fun {_ _} different same => different (List.cons.inj same).2)
-      · have distinct : (elements.zipIdx).Pairwise
-            (fun first second => first.2 ≠ second.2) := by
-          apply List.pairwise_map.mp
-          change (elements.zipIdx.map Prod.snd).Nodup
-          rw [List.zipIdx_map_snd]
-          exact List.nodup_range'
-        apply distinct.imp
-        intro first second different left leftMember right rightMember same
-        obtain ⟨firstTag, _, rfl⟩ := List.mem_map.mp leftMember
-        obtain ⟨secondTag, _, rfl⟩ := List.mem_map.mp rightMember
-        exact different (List.cons.inj same).1
-    · rw [sourceOccurrences_nonbag isBag]
-      simp
-termination_by source => sizeOf source
+      (fun first second => first.address ≠ second.address) := by
+  apply closedBag_induction
+  · intro elements children
+    rw [sourceOccurrences_bag, List.pairwise_flatMap]
+    constructor
+    · intro pair selected
+      apply List.pairwise_map.mpr
+      have inside := List.mem_of_getElem? (List.mk_mem_zipIdx_iff_getElem?.mp selected)
+      exact (children pair.1 inside).imp
+        (fun {_ _} different same => different (List.cons.inj same).2)
+    · have distinct : (elements.zipIdx).Pairwise
+          (fun first second => first.2 ≠ second.2) := by
+        apply List.pairwise_map.mp
+        change (elements.zipIdx.map Prod.snd).Nodup
+        rw [List.zipIdx_map_snd]
+        exact List.nodup_range'
+      apply distinct.imp
+      intro first second different left leftMember right rightMember same
+      obtain ⟨firstTag, _, rfl⟩ := List.mem_map.mp leftMember
+      obtain ⟨secondTag, _, rfl⟩ := List.mem_map.mp rightMember
+      exact different (List.cons.inj same).1
+  · intro source isBag
+    rw [sourceOccurrences_nonbag isBag]
+    simp
 
 /-- Every enumerated record carries its real original typed subterm and
 source zipper, with no change to the local free or bound typing context. -/
@@ -1075,54 +1033,47 @@ private theorem sourceOccurrences_qualified {language : LanguageDef} {bag : Gram
           TypedAt language free occurrence.original occurrence.context bound (.base bag.category)
             bound (.base bag.category) ∧
           ∀ replacement, HasType language free bound replacement (.base bag.category) →
-            HasType language free bound (occurrence.context.fill replacement) (.base bag.category)
-  | source, good, occurrence, member => by
-    by_cases isBag : IsBagNode source
-    · obtain ⟨elements, rfl⟩ := isBag
-      rw [sourceOccurrences_bag] at member
-      obtain ⟨⟨element, index⟩, selected, mapped⟩ := List.mem_flatMap.mp member
-      obtain ⟨inner, inInner, rfl⟩ := List.mem_map.mp mapped
-      have atIndex := List.mk_mem_zipIdx_iff_getElem?.mp selected
-      have within := (List.getElem?_eq_some_iff.mp atIndex).1
-      have elementGood := source_bag_element laws good (List.mem_of_getElem? atIndex)
-      obtain ⟨originalGood, fills, image, address, typedAt, rebuild⟩ :=
-        sourceOccurrences_qualified laws element elementGood inner inInner
-      have split : elements.take index ++ element :: elements.drop (index + 1) = elements := by
-        rw [← (List.getElem?_eq_some_iff.mp atIndex).2, List.getElem_cons_drop within]
-        exact List.take_append_drop index elements
-      refine ⟨originalGood, ?_, image, ?_, ?_, ?_⟩
-      · simp only [SourceOccurrence.wrap, OneHoleContext.fill, fills, split]
-      · simp only [SourceOccurrence.wrap, contextAddress, address, List.length_take,
-          Nat.min_eq_left (Nat.le_of_lt within)]
-      · have comparisonGood := grammar_admissible (source := language)
-          (target := {language with equations := []}) rfl good
-        have elementsTyped := (bag_typing laws.toBareBagPresentation comparisonGood.typed rfl).2.2
-        obtain ⟨parameterName, shape⟩ := laws.bareShape
-        apply TypedAt.collectionConstructor (language := language) laws.bagAuthored shape ?_ typedAt
-        rw [fills, split]
-        exact grammar_elements (source := {language with equations := []}) (target := language) rfl elementsTyped
-      · intro replacement replacementTyped
-        apply grammar_hasType (source := {language with equations := []}) (target := language) rfl
-        apply bag_hasType laws.toBareBagPresentation
-        apply grammar_elements (source := language) (target := {language with equations := []}) rfl
-        apply elementsHaveType_iff.mpr
-        intro item itemMember
-        simp only [List.mem_append, List.mem_cons] at itemMember
-        rcases itemMember with earlier | replaced | later
-        · exact (source_bag_element laws good (List.mem_of_mem_take earlier)).typed
-        · subst item
-          exact rebuild replacement replacementTyped
-        · exact (source_bag_element laws good (List.mem_of_mem_drop later)).typed
-    · rw [sourceOccurrences_nonbag isBag] at member
-      obtain rfl := List.mem_singleton.mp member
-      exact ⟨good, rfl, rfl, rfl, .here good.typed, fun _ typed => typed⟩
-termination_by source => sizeOf source
-decreasing_by
-  all_goals
-    subst_vars
-    have smaller := List.sizeOf_lt_of_mem (List.mem_of_getElem? atIndex)
-    simp_all
-    omega
+            HasType language free bound (occurrence.context.fill replacement) (.base bag.category) := by
+  apply closedBag_induction
+  · intro elements children good occurrence member
+    rw [sourceOccurrences_bag] at member
+    obtain ⟨⟨element, index⟩, selected, mapped⟩ := List.mem_flatMap.mp member
+    obtain ⟨inner, inInner, rfl⟩ := List.mem_map.mp mapped
+    have atIndex := List.mk_mem_zipIdx_iff_getElem?.mp selected
+    have within := (List.getElem?_eq_some_iff.mp atIndex).1
+    have elementGood := source_bag_element laws good (List.mem_of_getElem? atIndex)
+    obtain ⟨originalGood, fills, image, address, typedAt, rebuild⟩ :=
+      children element (List.mem_of_getElem? atIndex) elementGood inner inInner
+    have split : elements.take index ++ element :: elements.drop (index + 1) = elements := by
+      rw [← (List.getElem?_eq_some_iff.mp atIndex).2, List.getElem_cons_drop within]
+      exact List.take_append_drop index elements
+    refine ⟨originalGood, ?_, image, ?_, ?_, ?_⟩
+    · simp only [SourceOccurrence.wrap, OneHoleContext.fill, fills, split]
+    · simp only [SourceOccurrence.wrap, contextAddress, address, List.length_take,
+        Nat.min_eq_left (Nat.le_of_lt within)]
+    · have comparisonGood := grammar_admissible (source := language)
+        (target := {language with equations := []}) rfl good
+      have elementsTyped := (bag_typing laws.toBareBagPresentation comparisonGood.typed rfl).2.2
+      obtain ⟨parameterName, shape⟩ := laws.bareShape
+      apply TypedAt.collectionConstructor (language := language) laws.bagAuthored shape ?_ typedAt
+      rw [fills, split]
+      exact grammar_elements (source := {language with equations := []}) (target := language) rfl elementsTyped
+    · intro replacement replacementTyped
+      apply grammar_hasType (source := {language with equations := []}) (target := language) rfl
+      apply bag_hasType laws.toBareBagPresentation
+      apply grammar_elements (source := language) (target := {language with equations := []}) rfl
+      apply elementsHaveType_iff.mpr
+      intro item itemMember
+      simp only [List.mem_append, List.mem_cons] at itemMember
+      rcases itemMember with earlier | replaced | later
+      · exact (source_bag_element laws good (List.mem_of_mem_take earlier)).typed
+      · subst item
+        exact rebuild replacement replacementTyped
+      · exact (source_bag_element laws good (List.mem_of_mem_drop later)).typed
+  · intro source isBag good occurrence member
+    rw [sourceOccurrences_nonbag isBag] at member
+    obtain rfl := List.mem_singleton.mp member
+    exact ⟨good, rfl, rfl, rfl, .here good.typed, fun _ typed => typed⟩
 
 theorem sourceOccurrences_sound {language : LanguageDef} {bag : GrammarRule} {unitLabel : String}
     (laws : BareBagTheory {language with equations := []} bag (some unitLabel))
@@ -1204,31 +1155,30 @@ private theorem normalForm_nonbag {unitLabel : String} {source : Pattern}
 components. Flattening is not allowed to erase duplicate source occurrences. -/
 theorem componentOccurrences_values (unitLabel : String) :
     ∀ source, ((componentOccurrences unitLabel source).map SourceOccurrence.value).Perm
-      (bagContents unitLabel [normalForm (some unitLabel) source])
-  | source => by
-    by_cases isBag : IsBagNode source
-    · obtain ⟨elements, rfl⟩ := isBag
-      rw [componentOccurrences_bag, List.map_flatMap, normalForm_bag_contents]
-      have transformed := List.Perm.flatMap_left elements.zipIdx
-        (f := fun pair => ((componentOccurrences unitLabel pair.1).map
-          (SourceOccurrence.wrap elements pair.2)).map SourceOccurrence.value)
-        (g := fun pair => bagContents unitLabel [normalForm (some unitLabel) pair.1])
-        (fun pair selected => by
-          have inside := List.mem_of_getElem? (List.mk_mem_zipIdx_iff_getElem?.mp selected)
-          simpa only [List.map_map, SourceOccurrence.wrap, Function.comp_def] using
-            componentOccurrences_values unitLabel pair.1)
-      apply transformed.trans
-      rw [flatMap_zipIdx_fst elements (fun element =>
-        bagContents unitLabel [normalForm (some unitLabel) element]), bagContents_flatMap]
-      exact (sortPatterns_perm _).symm
-    · have normalizedNotBag := normalForm_nonbag (unitLabel := unitLabel) isBag
-      rw [componentOccurrences, sourceOccurrences_nonbag isBag]
-      rw [bagContents]
-      simp only [List.flatMap_cons, List.flatMap_nil, List.append_nil]
-      rw [splice_of_not_bag normalizedNotBag]
-      simp only [SourceOccurrence.leaf, List.filter_cons, List.filter_nil]
-      split <;> simp_all
-termination_by source => sizeOf source
+      (bagContents unitLabel [normalForm (some unitLabel) source]) := by
+  apply closedBag_induction
+  · intro elements children
+    rw [componentOccurrences_bag, List.map_flatMap, normalForm_bag_contents]
+    have transformed := List.Perm.flatMap_left elements.zipIdx
+      (f := fun pair => ((componentOccurrences unitLabel pair.1).map
+        (SourceOccurrence.wrap elements pair.2)).map SourceOccurrence.value)
+      (g := fun pair => bagContents unitLabel [normalForm (some unitLabel) pair.1])
+      (fun pair selected => by
+        have inside := List.mem_of_getElem? (List.mk_mem_zipIdx_iff_getElem?.mp selected)
+        simpa only [List.map_map, SourceOccurrence.wrap, Function.comp_def] using
+          children pair.1 inside)
+    apply transformed.trans
+    rw [flatMap_zipIdx_fst elements (fun element =>
+      bagContents unitLabel [normalForm (some unitLabel) element]), bagContents_flatMap]
+    exact (sortPatterns_perm _).symm
+  · intro source isBag
+    have normalizedNotBag := normalForm_nonbag (unitLabel := unitLabel) isBag
+    rw [componentOccurrences, sourceOccurrences_nonbag isBag]
+    rw [bagContents]
+    simp only [List.flatMap_cons, List.flatMap_nil, List.append_nil]
+    rw [splice_of_not_bag normalizedNotBag]
+    simp only [SourceOccurrence.leaf, List.filter_cons, List.filter_nil]
+    split <;> simp_all
 
 /-- Sorting complete tags yields the exact existing canonical component
 list, with multiplicity; it is not a second value normalizer. -/
@@ -1363,19 +1313,18 @@ theorem occurrence_account_length (unitLabel : String) (source : Pattern) :
 read from that original syntax by the existing normalizer. -/
 theorem sourceOccurrences_leaf_value (unitLabel : String) :
     ∀ source occurrence, occurrence ∈ sourceOccurrences unitLabel source →
-      ¬ IsBagNode occurrence.original ∧ occurrence.value = normalForm (some unitLabel) occurrence.original
-  | source, occurrence, member => by
-    by_cases isBag : IsBagNode source
-    · obtain ⟨elements, rfl⟩ := isBag
-      rw [sourceOccurrences_bag] at member
-      obtain ⟨⟨element,index⟩, selected, mapped⟩ := List.mem_flatMap.mp member
-      obtain ⟨inner, inside, rfl⟩ := List.mem_map.mp mapped
-      have elementMember := List.mem_of_getElem? (List.mk_mem_zipIdx_iff_getElem?.mp selected)
-      exact sourceOccurrences_leaf_value unitLabel element inner inside
-    · rw [sourceOccurrences_nonbag isBag] at member
-      obtain rfl := List.mem_singleton.mp member
-      exact ⟨isBag,rfl⟩
-termination_by source => sizeOf source
+      ¬ IsBagNode occurrence.original ∧ occurrence.value = normalForm (some unitLabel) occurrence.original := by
+  apply closedBag_induction
+  · intro elements children occurrence member
+    rw [sourceOccurrences_bag] at member
+    obtain ⟨⟨element,index⟩, selected, mapped⟩ := List.mem_flatMap.mp member
+    obtain ⟨inner, inside, rfl⟩ := List.mem_map.mp mapped
+    have elementMember := List.mem_of_getElem? (List.mk_mem_zipIdx_iff_getElem?.mp selected)
+    exact children element elementMember inner inside
+  · intro source isBag occurrence member
+    rw [sourceOccurrences_nonbag isBag] at member
+    obtain rfl := List.mem_singleton.mp member
+    exact ⟨isBag,rfl⟩
 
 private theorem original_unit_of_nonbag {unitLabel : String} {source : Pattern}
     (notBag : ¬ IsBagNode source)
@@ -1442,32 +1391,6 @@ theorem constructor_occurrence_boundary (unitLabel constructorLabel : String) (a
       [SourceOccurrence.leaf unitLabel (.apply constructorLabel arguments)] :=
   sourceOccurrences_nonbag (by simp [IsBagNode])
 
-#print axioms component_source_origin
-#print axioms sourceOccurrences_distinct
-#print axioms sourceOccurrences_sound
-#print axioms sourceOccurrences_bag
-#print axioms sourceOccurrences_nonbag
-#print axioms sortOccurrences_perm
-#print axioms sortOccurrences_values
-#print axioms sortOccurrences_addresses
-#print axioms componentOccurrences_bag
-#print axioms componentOccurrences_values
-#print axioms normalizedOccurrences_values
-#print axioms normalizedOccurrences_distinct
-#print axioms occurrence_account
-#print axioms normalizedOccurrences_index_injective
-#print axioms normalizedOccurrences_counts
-#print axioms unitOccurrences_value
-#print axioms normalizedOccurrences_nonunit
-#print axioms normalizedOccurrences_sound
-#print axioms occurrence_account_length
-#print axioms duplicate_occurrence_control
-#print axioms reordered_occurrence_control
-#print axioms nested_duplicate_unit_control
-#print axioms empty_unit_origin_separator
-#print axioms constructor_occurrence_boundary
-#print axioms sourceOccurrences_leaf_value
-#print axioms unitOccurrences_original
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus
 
@@ -1520,8 +1443,6 @@ theorem reference_equivalent_iff_normalForm_eq {language : LanguageDef} {bag : G
     (source_equationEquiv_iff_normalForm_eq laws rows (engineBasePremises relEnv)
       leftGood rightGood collectionless)
 
-#print axioms reference_sourceNormalizer
-#print axioms reference_equivalent_iff_normalForm_eq
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations
 
@@ -1629,10 +1550,6 @@ theorem stepModulo_of_reference_view_rule {language : LanguageDef} {bag : Gramma
   exact ⟨⟨_,target,converted,⟨.rule index initial witnesses,fired⟩,.refl _⟩,
     _,converted,fired⟩
 
-#print axioms recover_reference_presentation
-#print axioms normalizedOccurrence_reference_source
-#print axioms tagged_reference_presentation
-#print axioms stepModulo_of_reference_view_rule
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus
 
@@ -1741,11 +1658,6 @@ theorem zero_component_reference_presentation {language : LanguageDef} {bag : Gr
     contents_data_admissible laws (normalized_admissible laws (engineBasePremises relEnv) good rfl),
     (normalizedOccurrences_values unitLabel source).symm⟩
 
-#print axioms declared_unit_admissible
-#print axioms contents_data_admissible
-#print axioms unitExpansion_admissible
-#print axioms unitExpansion_equivalent
-#print axioms zero_component_reference_presentation
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus
 
@@ -1903,12 +1815,6 @@ theorem grouped_occurrence_origins {language : LanguageDef} {bag : GrammarRule} 
     have original := normalizedOccurrences_sound laws good (account.mem_iff.mp member)
     exact ⟨original.1,original.2.1,original.2.2.1,original.2.2.2.1.symm,original.2.2.2.2.1⟩
 
-#print axioms mem_occurrenceSplits
-#print axioms mem_groupedOccurrences
-#print axioms split_occurrences_of_values
-#print axioms component_row_admissible
-#print axioms collapsed_row_admissible
-#print axioms grouped_occurrence_origins
 
 
 
@@ -2083,11 +1989,6 @@ theorem grouped_occurrence_account {unitLabel : String} {source : Pattern} {coun
   (((mem_groupedOccurrences count).mp allocation).2.append_right _).trans
     (occurrence_account unitLabel source)
 
-#print axioms groupedView_contents
-#print axioms groupedView_admissible
-#print axioms groupedView_equivalent
-#print axioms grouped_reference_presentation
-#print axioms grouped_occurrence_account
 
 
 
@@ -2241,11 +2142,6 @@ theorem source_selection_covered {language : LanguageDef} {bag : GrammarRule} {u
   exact ⟨selected,residual,allocation,first,last,selectedValue,
     selectedValue ▸ split_group_nodes_le allocation⟩
 
-#print axioms collapse_nodes_le
-#print axioms collapse_nodes_lt
-#print axioms split_group_nodes_le
-#print axioms split_group_nodes_lt
-#print axioms source_selection_covered
 
 
 
@@ -2352,8 +2248,6 @@ theorem source_capture_covered {language : LanguageDef} {bag : GrammarRule} {uni
       sourceGood grouped (single_group_capture_match unitLabel selectedName restName different selected residual)
   · exact (groupedView_admissible laws (engineBasePremises relEnv) sourceGood grouped).2
 
-#print axioms single_group_capture_match
-#print axioms source_capture_covered
 
 
 
@@ -2385,7 +2279,6 @@ theorem stepModulo_of_grouped_rule {language : LanguageDef} {bag : GrammarRule} 
     (groupedView_admissible laws (engineBasePremises relEnv) good allocation).1,
     converted,fired,grouped_occurrence_account allocation⟩
 
-#print axioms stepModulo_of_grouped_rule
 
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus
@@ -2557,13 +2450,6 @@ theorem sourceHead_readback {language : LanguageDef} {bag : GrammarRule} {unitLa
     exact .trans _ _ _ (source_equiv_normalForm laws base good collectionless)
       (image ▸ (source_equiv_normalForm laws base original.1 collectionless).symm)
 
-#print axioms underContext_account
-#print axioms underContext_distinct
-#print axioms sourceOccurrences_typedAt
-#print axioms normalizedOccurrences_typedAt
-#print axioms normalizedOccurrence_under_typed_context
-#print axioms normalizedOccurrences_sound_at
-#print axioms sourceHead_readback
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus
 
@@ -2731,11 +2617,6 @@ theorem sourceHead_multiLambda {language : LanguageDef} {bag : GrammarRule} {uni
       rw [spine] at object
       simpa only [isObjectPattern] using object
 
-#print axioms sourceHead_isSome_of_scalar
-#print axioms sourceHead_nonbag
-#print axioms sourceHead_constructor
-#print axioms sourceHead_lambda
-#print axioms sourceHead_multiLambda
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus
 
@@ -2807,8 +2688,6 @@ theorem bag_selected_values {schemas targets : List Pattern} {rest : Option Stri
       · intro name restEq
         exact mergeBindings_subsumed_right merged (restRead name restEq)
 
-#print axioms grouped_occurrences_of_values
-#print axioms bag_selected_values
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus
 
@@ -2878,7 +2757,6 @@ theorem source_groups_covered {language : LanguageDef} {bag : GrammarRule} {unit
   exact ⟨groups,residual,selected,originalResidual,realAllocation,selectedMatches,values,residualValues,
     noRest,restRead,grouped_occurrence_account realAllocation⟩
 
-#print axioms source_groups_covered
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus
 
@@ -3049,13 +2927,6 @@ theorem intrinsic_canonical_matching_positive :
     CanonicalBags.matches_canon all_spines_increasing (by decide +kernel)
       scoped_matching_separator.1
 
-#print axioms increasing_spine_order_separator
-#print axioms all_spines_increasing
-#print axioms source_roles
-#print axioms binding_metadata_admitted
-#print axioms recovering_after_normalization_disagrees
-#print axioms scoped_matching_separator
-#print axioms intrinsic_canonical_matching_positive
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RecursiveView.ScopeBoundary
 
@@ -3170,11 +3041,7 @@ theorem assignWith_normal_wrong_header {unitLabel : String}
       simp [ambientDifferent]
     simp only [rejected, Bool.and_false, Bool.false_and, Bool.false_eq_true, ite_false]
 
-#print axioms assignWith_normal_wrong_header
-#print axioms assignWith_normal_repeat_iff_source
-#print axioms captureWith_normal_repeat_iff_source
 
-#print axioms normalBodyComparison_iff_source
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RecursiveView
 
@@ -3238,8 +3105,6 @@ theorem captureWith_normal_typed_repeat_iff_source
     captureWith_normal_repeat_iff_source laws rows aligned relEnv declared atSite recovery stored
       priorGood good.2.2 collectionless
 
-#print axioms recoverValue?_admissible_from_success
-#print axioms captureWith_normal_typed_repeat_iff_source
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RecursiveView
 
@@ -3297,8 +3162,6 @@ theorem wrong_dependency_sort_separator :
     cases typed with
     | bvar lookup => simp [other, proc] at lookup
 
-#print axioms two_dependency_partial_recovery_admissible
-#print axioms wrong_dependency_sort_separator
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RecursiveView.ScopeBoundary
 
@@ -3585,12 +3448,7 @@ theorem source_equivalent_instantiated_values
   exact (reference_equivalent_iff_normalForm_eq laws rows aligned relEnv
     firstTargetGood secondTargetGood collectionless).mpr targetsEqual
 
-#print axioms occurrence_substitution_admissible
-#print axioms source_equivalent_instantiated_values
 
-#print axioms normalForm_flatten
-#print axioms normalForm_substitute_normalForm
-#print axioms normalForm_substitute_congr
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations
 
@@ -3702,9 +3560,6 @@ theorem wrong_sort_forward_separator :
   cases typed with
   | bvar lookup => simp [proc, other] at lookup
 
-#print axioms typed_rebased_unit_results
-#print axioms escaped_argument_rejected
-#print axioms wrong_sort_forward_separator
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.ForwardScopeControls
 
@@ -3871,11 +3726,7 @@ theorem captureWith_normal_typed_data_repeat_iff_source
   simpa only [good.1, good.2.1] using
     assignWith_normal_data_repeat_iff_source laws rows aligned relEnv stored priorGood good.2.2
 
-#print axioms assignWith_normal_data_repeat_iff_source
-#print axioms captureWith_normal_typed_data_repeat_iff_source
 
-#print axioms reference_equivalent_iff_normalForm_eq_data
-#print axioms normalBodyComparison_iff_source_data
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations
 
@@ -4012,10 +3863,6 @@ theorem data_variable_keeps_its_role :
   cases typed with
   | fvar lookup => simp [dataFree, dataType, proc] at lookup
 
-#print axioms rest_has_data_role
-#print axioms repeated_rest_source_control
-#print axioms normal_form_is_not_data_readback
-#print axioms data_variable_keeps_its_role
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.DataRestControls
 
@@ -4069,7 +3916,6 @@ theorem source_equivalent_instantiated_data_values
   exact (reference_equivalent_iff_normalForm_eq_data laws rows aligned relEnv
     firstTargetGood secondTargetGood).mpr targetsEqual
 
-#print axioms source_equivalent_instantiated_data_values
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations
 
@@ -4154,7 +4000,6 @@ theorem captureWith_normal_repeat_source_presentation
   exact ⟨presentation, presentationGood, .symm _ _ equivalent, recoveredPrior, literalCapture,
     .capture literalCapture⟩
 
-#print axioms captureWith_normal_repeat_source_presentation
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RecursiveView
 
@@ -4285,11 +4130,6 @@ theorem concrete_data_positive :
   exact ⟨⟨checkHasType_sound (by decide +kernel), by decide +kernel, by decide +kernel⟩,
     by decide +kernel⟩
 
-#print axioms checked_rule_and_endpoints
-#print axioms bare_profile_excludes_extension
-#print axioms different_sorting_context
-#print axioms opaque_data_step_modulo
-#print axioms concrete_data_positive
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RecursiveView.OpaqueDataBoundary
 
@@ -4368,7 +4208,6 @@ theorem normalized_capture_recovers_source_presentation (relEnv : Engine.Relatio
   rw [explicit_normal_forms.2.1]
   decide +kernel
 
-#print axioms normalized_capture_recovers_source_presentation
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RecursiveView.ScopeBoundary
 
@@ -4445,8 +4284,6 @@ theorem reference_equivalent_data_bag_shape
       exact ⟨firstElements, rfl⟩
   | subst body replacement => simp only [isObjectPattern, Bool.false_eq_true] at object
 
-#print axioms partial_spine_arguments_admissible
-#print axioms reference_equivalent_data_bag_shape
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations
 
@@ -4502,7 +4339,6 @@ theorem captureRestWith_normal_repeat_source_presentation
   subst presentation
   exact ⟨presentedElements, good, equivalent, recovered, captured, .rest captured⟩
 
-#print axioms captureRestWith_normal_repeat_source_presentation
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RecursiveView
 
@@ -4532,7 +4368,6 @@ theorem typed_rest_source_readback (relEnv : Engine.RelationEnv) :
     (by decide +kernel) (by decide +kernel) (by decide +kernel) spine unitGood
     (by decide +kernel) emptyGood (secondCapture relEnv)
 
-#print axioms typed_rest_source_readback
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.DataRestControls
 
@@ -4638,7 +4473,6 @@ theorem normalForm_isWellScopedAt (unit : Option String) (depth : Nat) (pattern 
       · simp only [normalForm, closedBag, if_false, Pattern.isWellScopedAt]
         exact scoped_normalized_list unit depth elements (fun child member => recurse child member depth)
 
-#print axioms normalForm_isWellScopedAt
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations
 
@@ -4717,7 +4551,25 @@ theorem recoverValue?_source_transport
     firstRecovered.2.1.trans secondRecovered.2.1.symm, secondRecovered.2.2, bodiesEquivalent,
     fun _ => beq_iff_eq.mpr bodiesNormal⟩
 
-#print axioms recoverValue?_source_transport
+
+/-- The ordered source observation retains declaration names, binder
+dependencies, ambient contexts, and reference-equivalent bodies. -/
+private abbrev AssignmentSourceRel (relEnv : Engine.RelationEnv) (language : LanguageDef)
+    (first second : ScopedRuleMatching.Assignment) : Prop :=
+  List.Forall₂ (fun (old current : String × ContextualValue) =>
+    old.1 = current.1 ∧ old.2.dependencies = current.2.dependencies ∧
+      old.2.ambient = current.2.ambient ∧
+      ReferenceStep.Equivalent relEnv language old.2.body current.2.body) first second
+
+example (relEnv : Engine.RelationEnv) (language : LanguageDef) (value : ContextualValue) :
+    AssignmentSourceRel relEnv language [("F", value), ("F", value)] [("F", value), ("F", value)] :=
+  .cons ⟨rfl, rfl, rfl, .refl _⟩ (.cons ⟨rfl, rfl, rfl, .refl _⟩ .nil)
+
+example (relEnv : Engine.RelationEnv) (language : LanguageDef) (value : ContextualValue) :
+    ¬ AssignmentSourceRel relEnv language [("F", value), ("G", value)] [("G", value), ("F", value)] := by
+  intro related
+  cases related with
+  | cons head _ => exact (by decide : "F" ≠ "G") head.1
 
 /-- Every ordinary source capture is covered on a typed equivalent view by
 the recovered-body comparison. Fresh captures may retain different raw
@@ -4747,10 +4599,7 @@ theorem capture?_source_transport
     ∃ secondFinal,
       captureWith? (normalBodyComparison unit) rule spec ambient.length locals.length site path
         initial identifier second = some secondFinal ∧
-      List.Forall₂ (fun (old current : String × ContextualValue) =>
-        old.1 = current.1 ∧ old.2.dependencies = current.2.dependencies ∧
-          old.2.ambient = current.2.ambient ∧
-            ReferenceStep.Equivalent relEnv language old.2.body current.2.body)
+      AssignmentSourceRel relEnv language
         firstFinal secondFinal := by
   simp only [capture?, declared, atSite, Option.bind_eq_bind,
     Option.bind_some, Option.bind_eq_some_iff] at captured
@@ -4758,10 +4607,7 @@ theorem capture?_source_transport
   obtain ⟨secondValue, secondFound, dependenciesSame, ambientSame, _, bodiesEquivalent, compared⟩ :=
     recoverValue?_source_transport laws rows aligned relEnv spineCheck spine firstGood secondGood role equivalent firstFound
   have diagonal : ∀ values : ScopedRuleMatching.Assignment,
-      List.Forall₂ (fun (old current : String × ContextualValue) =>
-        old.1 = current.1 ∧ old.2.dependencies = current.2.dependencies ∧
-          old.2.ambient = current.2.ambient ∧
-            ReferenceStep.Equivalent relEnv language old.2.body current.2.body)
+      AssignmentSourceRel relEnv language
       values values := by
     intro values
     induction values with
@@ -4785,7 +4631,6 @@ theorem capture?_source_transport
           beq_self_eq_true, Bool.true_and, compared identifier, if_true]
       · simp [assign, stored, same] at firstAssigned
 
-#print axioms capture?_source_transport
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RecursiveView
 
@@ -4803,10 +4648,7 @@ theorem fresh_normal_view_capture_covered (relEnv : Engine.RelationEnv) :
       captureWith? (normalBodyComparison "PZero") rule specification 0 3 .left [1, 0, 0, 0]
         [] "F" (normalForm (some "PZero") deep) = some [("F", reversedValue)] ∧
       value ≠ reversedValue ∧
-      List.Forall₂ (fun (old current : String × ContextualValue) =>
-        old.1 = current.1 ∧ old.2.dependencies = current.2.dependencies ∧
-          old.2.ambient = current.2.ambient ∧
-            ReferenceStep.Equivalent relEnv sourceLanguage old.2.body current.2.body)
+      AssignmentSourceRel relEnv sourceLanguage
         [("F", value)] [("F", reversedValue)] := by
   have targetGood : Admissible sourceLanguage free ([proc, proc, proc] ++ []) proc
       (normalForm (some "PZero") deep) := by
@@ -4847,7 +4689,6 @@ theorem fresh_normal_view_capture_covered (relEnv : Engine.RelationEnv) :
   subst final
   exact ⟨all_spines_increasing, ordinary, viewed, by decide +kernel, account⟩
 
-#print axioms fresh_normal_view_capture_covered
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RecursiveView.ScopeBoundary
 
@@ -5092,15 +4933,6 @@ theorem publication_sound (count steps : Nat) (occurrences : List SourceOccurren
     (groups,residual) ∈ groupedOccurrences count occurrences :=
   (mem_groupedOccurrences count).mpr ((run_valid (start_valid count occurrences) steps).2 _ member)
 
-#print axioms tick_answers_prefix
-#print axioms tick_publication_bound
-#print axioms start_pending
-#print axioms expand_account
-#print axioms finished_account
-#print axioms start_valid
-#print axioms tick_valid
-#print axioms run_valid
-#print axioms publication_sound
 
 
 /-- The remaining source allocation problem after a prefix of one bucket
@@ -5156,7 +4988,6 @@ theorem start_pending_iff (count : Nat) (occurrences : List SourceOccurrence)
         exact ⟨first,later,rfl,by simpa using lengths,
           by simpa only [List.flatten_cons,List.append_assoc] using account⟩
 
-#print axioms start_pending_iff
 
 abbrev Rank := Nat × Nat × Nat × Nat
 
@@ -5221,7 +5052,6 @@ theorem expand_decreases {work branch : Work} (member : branch ∈ expand work) 
         apply Prod.Lex.right
         omega
 
-#print axioms expand_decreases
 
 def workCost (work : Work) : Nat :=
   1 + ((expand work).attach.map fun child => workCost child.val).sum
@@ -5295,12 +5125,6 @@ theorem finiteDrain (state : State) : ∃ steps, (run steps state).agenda = [] :
 termination_by agendaCost state.agenda
 decreasing_by have decreased := tick_cost state finished; omega
 
-#print axioms workCost
-#print axioms workCost_eq
-#print axioms tick_cost
-#print axioms run_add
-#print axioms run_idle
-#print axioms finiteDrain
 
 private theorem select_head {head : SourceOccurrence} {tail remaining : List SourceOccurrence}
     (account : (head :: tail).Perm remaining) :
@@ -5311,6 +5135,61 @@ private theorem select_head {head : SourceOccurrence} {tail remaining : List Sou
   have located := List.getElem_cons_eraseIdx_perm within
   rw [same] at located
   exact ⟨index,found,(account.trans located.symm).cons_inv⟩
+
+/-- An admissible physical index is either the current index or a later one.
+The acceptance predicate can inspect the index as well as the selected value. -/
+private theorem selectedOrLater {α : Type} (items : List α) (cursor : Nat)
+    (accept : Nat → α → Prop) :
+    (∃ index item, cursor ≤ index ∧ items[index]? = some item ∧ accept index item) ↔
+      match items[cursor]? with
+      | none => False
+      | some item => accept cursor item ∨
+          ∃ index later, cursor + 1 ≤ index ∧ items[index]? = some later ∧ accept index later := by
+  cases found : items[cursor]? with
+  | none =>
+      refine ⟨?_, False.elim⟩
+      rintro ⟨index, item, lower, hit, _⟩
+      have within := (List.getElem?_eq_some_iff.mp hit).1
+      have here : cursor < items.length := lt_of_le_of_lt lower within
+      have current : items[cursor]? = some (items[cursor]'here) :=
+        List.getElem?_eq_some_iff.mpr ⟨here, rfl⟩
+      rw [found] at current
+      cases current
+  | some first =>
+      constructor
+      · rintro ⟨index, item, lower, hit, accepted⟩
+        rcases eq_or_lt_of_le lower with rfl | later
+        · obtain rfl := Option.some.inj (found.symm.trans hit)
+          exact Or.inl accepted
+        · exact Or.inr ⟨index, item, later, hit, accepted⟩
+      · rintro (here | ⟨index, item, lower, hit, accepted⟩)
+        · exact ⟨cursor, first, le_rfl, found, here⟩
+        · exact ⟨index, item, by omega, hit, accepted⟩
+
+/-- The group cursor visits exactly one pending index or delegates the remaining
+indices to the next cursor, while preserving the full group obligation. -/
+theorem selectGroup_pending_iff (slots : Nat) (closed : List (List SourceOccurrence))
+    (selected remaining : List SourceOccurrence) (cursor : Nat)
+    (groups : List (List SourceOccurrence)) (residual : List SourceOccurrence) :
+    (Work.selectGroup slots closed selected remaining cursor).pending groups residual ↔
+      ∃ branch ∈ expand (.selectGroup slots closed selected remaining cursor),
+        branch.pending groups residual := by
+  have split := selectedOrLater remaining cursor fun index occurrence =>
+    groupPending slots closed (occurrence :: selected) (remaining.eraseIdx index) groups residual
+  cases found : remaining[cursor]? <;>
+    simpa [found, Work.pending, expand, or_and_right, exists_or] using split
+
+/-- The residual cursor uses the same exact selected-index argument. -/
+theorem selectResidual_pending_iff (closed : List (List SourceOccurrence))
+    (selected remaining : List SourceOccurrence) (cursor : Nat)
+    (groups : List (List SourceOccurrence)) (residual : List SourceOccurrence) :
+    (Work.selectResidual closed selected remaining cursor).pending groups residual ↔
+      ∃ branch ∈ expand (.selectResidual closed selected remaining cursor),
+        branch.pending groups residual := by
+  have split := selectedOrLater remaining cursor fun index occurrence =>
+    residualPending closed (occurrence :: selected) (remaining.eraseIdx index) groups residual
+  cases found : remaining[cursor]? <;>
+    simpa [found, Work.pending, expand, or_and_right, exists_or] using split
 
 /-- Pending denotation survives one real cursor transition, or becomes its
 actual publication. No execution function is used to define denotation. -/
@@ -5351,20 +5230,7 @@ theorem expand_covers {work : Work} {groups : List (List SourceOccurrence)}
         · simp [expand]
         · simpa only [List.reverse_cons,List.append_assoc,List.singleton_append] using shape
   | selectGroup slots closed selected remaining cursor =>
-    obtain ⟨index,occurrence,after,found,meaning⟩ := pending
-    have existsCurrent : cursor < remaining.length := by
-      have selectedWithin := (List.getElem?_eq_some_iff.mp found).1
-      omega
-    have currentFound : remaining[cursor]? = some (remaining[cursor]'existsCurrent) :=
-      List.getElem?_eq_some_iff.mpr ⟨existsCurrent,rfl⟩
-    right
-    by_cases now : cursor = index
-    · subst index
-      exact ⟨.groups slots closed (occurrence :: selected) (remaining.eraseIdx cursor),
-        by simp [expand,found],meaning⟩
-    · exact ⟨.selectGroup slots closed selected remaining (cursor + 1),
-        by simp [expand,currentFound],
-        index,occurrence,by omega,found,meaning⟩
+    exact Or.inr ((selectGroup_pending_iff slots closed selected remaining cursor groups residual).mp pending)
   | residual closed selected remaining =>
     obtain ⟨same,suffix,shape,account⟩ := pending
     cases suffix with
@@ -5388,22 +5254,8 @@ theorem expand_covers {work : Work} {groups : List (List SourceOccurrence)}
         | cons first rest => simp only [expand,List.mem_singleton]
       · simpa only [List.reverse_cons,List.append_assoc,List.singleton_append] using shape
   | selectResidual closed selected remaining cursor =>
-    obtain ⟨index,occurrence,after,found,meaning⟩ := pending
-    have existsCurrent : cursor < remaining.length := by
-      have selectedWithin := (List.getElem?_eq_some_iff.mp found).1
-      omega
-    have currentFound : remaining[cursor]? = some (remaining[cursor]'existsCurrent) :=
-      List.getElem?_eq_some_iff.mpr ⟨existsCurrent,rfl⟩
-    right
-    by_cases now : cursor = index
-    · subst index
-      exact ⟨.residual closed (occurrence :: selected) (remaining.eraseIdx cursor),
-        by simp [expand,found],meaning⟩
-    · exact ⟨.selectResidual closed selected remaining (cursor + 1),
-        by simp [expand,currentFound],
-        index,occurrence,by omega,found,meaning⟩
+    exact Or.inr ((selectResidual_pending_iff closed selected remaining cursor groups residual).mp pending)
 
-#print axioms expand_covers
 
 def Accepts (state : State) (groups : List (List SourceOccurrence))
     (residual : List SourceOccurrence) : Prop :=
@@ -5474,6 +5326,38 @@ theorem completed_membership_iff (count steps : Nat) (occurrences : List SourceO
   ⟨publication_sound count steps occurrences,
     publication_complete_of_drained count steps occurrences drained⟩
 
+/-- A drained cursor realizes exactly the ordered groups and residual whose
+flattened values have the original normalized multiset. The reverse direction
+produces an allocation of actual source occurrences. -/
+theorem completed_value_membership_iff (count steps : Nat) (unitLabel : String) (source : Pattern)
+    (drained : (run steps (start count (normalizedOccurrences unitLabel source))).agenda = [])
+    (groups : List (List Pattern)) (residual : List Pattern) :
+    (∃ physicalGroups physicalResidual,
+      (physicalGroups, physicalResidual) ∈
+        (run steps (start count (normalizedOccurrences unitLabel source))).answers ∧
+      physicalGroups.map (List.map SourceOccurrence.value) = groups ∧
+      physicalResidual.map SourceOccurrence.value = residual) ↔
+    groups.length = count ∧ (↑(groups.flatten ++ residual) : Multiset Pattern) =
+      componentMultiset unitLabel source := by
+  constructor
+  · rintro ⟨physicalGroups, physicalResidual, published, groupValues, residualValues⟩
+    obtain ⟨lengths, account⟩ := (mem_groupedOccurrences count).mp (publication_sound count steps _ published)
+    refine ⟨by simpa only [← groupValues, List.length_map] using lengths, ?_⟩
+    calc
+      (↑(groups.flatten ++ residual) : Multiset Pattern) =
+          ↑((physicalGroups.flatten ++ physicalResidual).map SourceOccurrence.value) := by
+        rw [List.map_append, List.map_flatten, groupValues, residualValues]
+      _ = ↑((normalizedOccurrences unitLabel source).map SourceOccurrence.value) :=
+        Multiset.coe_eq_coe.mpr (account.map SourceOccurrence.value)
+      _ = componentMultiset unitLabel source := normalizedOccurrences_componentMultiset unitLabel source
+  · rintro ⟨lengths, account⟩
+    have valuePerm := Multiset.coe_eq_coe.mp (account.trans
+      (normalizedOccurrences_componentMultiset unitLabel source).symm)
+    obtain ⟨physicalGroups, physicalResidual, allocated, groupValues, residualValues⟩ :=
+      grouped_occurrences_of_values SourceOccurrence.value groups residual valuePerm
+    exact ⟨physicalGroups, physicalResidual, publication_complete_of_drained count steps _ drained
+      (by simpa only [lengths] using allocated), groupValues, residualValues⟩
+
 theorem completes_with_exact_allocations (count : Nat) (occurrences : List SourceOccurrence) :
     ∃ steps,complete (run steps (start count occurrences)) = true ∧
       ∀ groups residual,(groups,residual) ∈ (run steps (start count occurrences)).answers ↔
@@ -5506,14 +5390,6 @@ theorem run_answers_prefix (steps : Nat) (state : State) :
   | zero => exact List.prefix_refl _
   | succ steps ih => exact (tick_answers_prefix state).trans (ih (tick state))
 
-#print axioms tick_covers
-#print axioms run_covers
-#print axioms publication_complete_of_drained
-#print axioms completed_membership_iff
-#print axioms completes_with_exact_allocations
-#print axioms every_allocation_published
-#print axioms interrupted_publication_complete
-#print axioms run_answers_prefix
 
 theorem publication_source_account (count steps : Nat) (unitLabel : String) (source : Pattern)
     {groups : List (List SourceOccurrence)} {residual : List SourceOccurrence}
@@ -5596,18 +5472,9 @@ theorem fabricated_duplicate_origin_refused :
     (normalizedOccurrences_distinct "unit" source)
   simp at unique
 
-#print axioms nested_equal_values_keep_physical_origins
-#print axioms initialization_does_not_publish
-#print axioms all_six_physical_allocations
-#print axioms zero_groups_and_virtual_empty_group
-#print axioms exact_split_resume
-#print axioms completed_resume_does_not_republish
-#print axioms fabricated_duplicate_origin_refused
 
 end Controls
 
-#print axioms publication_source_account
-#print axioms publication_origins
 
 end GroupedCursor
 
@@ -5705,7 +5572,6 @@ theorem assignWith_normal_source_transport
           ambientSame, bodiesSame, beq_self_eq_true, Bool.true_and, if_true]
     · simp [assign, firstStored, priorIsValue] at assigned
 
-#print axioms assignWith_normal_source_transport
 
 /-- Source capture coverage threads two genuinely different incoming raw
 assignments. Both the actual comparison readout and the independent source
@@ -5732,10 +5598,7 @@ theorem capture?_source_transport_assignments
     (equivalent : ReferenceStep.Equivalent relEnv language first second)
     (initialNormal : mapAssignment (normalForm (some unit)) firstInitial =
       mapAssignment (normalForm (some unit)) secondInitial)
-    (initialSource : List.Forall₂ (fun (old current : String × ContextualValue) =>
-      old.1 = current.1 ∧ old.2.dependencies = current.2.dependencies ∧
-        old.2.ambient = current.2.ambient ∧
-          ReferenceStep.Equivalent relEnv language old.2.body current.2.body)
+    (initialSource : AssignmentSourceRel relEnv language
       firstInitial secondInitial)
     (captured : capture? rule spec ambient.length locals.length site path
       firstInitial identifier first = some firstFinal) :
@@ -5744,10 +5607,7 @@ theorem capture?_source_transport_assignments
         secondInitial identifier second = some secondFinal ∧
       mapAssignment (normalForm (some unit)) firstFinal =
         mapAssignment (normalForm (some unit)) secondFinal ∧
-      List.Forall₂ (fun (old current : String × ContextualValue) =>
-        old.1 = current.1 ∧ old.2.dependencies = current.2.dependencies ∧
-          old.2.ambient = current.2.ambient ∧
-            ReferenceStep.Equivalent relEnv language old.2.body current.2.body)
+      AssignmentSourceRel relEnv language
         firstFinal secondFinal := by
   simp only [capture?, declared, atSite, Option.bind_eq_bind,
     Option.bind_some, Option.bind_eq_some_iff] at captured
@@ -5763,7 +5623,6 @@ theorem capture?_source_transport_assignments
   simp only [captureWith?, declared, atSite, Option.bind_eq_bind, Option.bind_some,
     secondFound, secondAssigned]
 
-#print axioms capture?_source_transport_assignments
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RecursiveView
 
@@ -5806,7 +5665,6 @@ theorem scoped_bag_selected_values
         simp only [List.length_cons]
         omega
 
-#print axioms scoped_bag_selected_values
 
 /-- Actual scoped source matches, at every schema arity, recover finite
 physical groups with their complete recursive matching and rest witnesses.
@@ -5917,7 +5775,6 @@ theorem scoped_source_groups_covered
   exact ⟨groups, residual, selected, originalResidual, middle, realAllocation, selectedMatches,
     restRead, values, residualValues, typedSourcePairs, residualGood, grouped_occurrence_account realAllocation⟩
 
-#print axioms scoped_source_groups_covered
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus
 
@@ -5941,10 +5798,7 @@ theorem different_raw_assignments_thread (relEnv : Engine.RelationEnv) :
         [("F", reversedValue)] "F" shallow = some [("F", reversedValue)] ∧
       mapAssignment (normalForm (some "PZero")) [("F", value)] =
         mapAssignment (normalForm (some "PZero")) [("F", reversedValue)] ∧
-      List.Forall₂ (fun (old current : String × ContextualValue) =>
-        old.1 = current.1 ∧ old.2.dependencies = current.2.dependencies ∧
-          old.2.ambient = current.2.ambient ∧
-            ReferenceStep.Equivalent relEnv sourceLanguage old.2.body current.2.body)
+      AssignmentSourceRel relEnv sourceLanguage
         [("F", value)] [("F", reversedValue)] := by
   obtain ⟨increasing, _, _, different, account⟩ := fresh_normal_view_capture_covered relEnv
   have normalBodies : normalForm (some "PZero") value.body =
@@ -5992,7 +5846,6 @@ theorem different_raw_assignments_thread (relEnv : Engine.RelationEnv) :
   subst final
   exact ⟨increasing, different, ordinary, by decide +kernel, viewed, finalNormal, finalSource⟩
 
-#print axioms different_raw_assignments_thread
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RecursiveView.ScopeBoundary
 
@@ -6022,11 +5875,11 @@ theorem schema_checked_of_source_match
     {site : RulePatternSite} {path : List Nat} {initial final : ScopedRuleMatching.Assignment}
     (matched : GeneralScopedMatch.Matches rule spec ambient site path depth initial schema target final)
     (object : isObjectPattern target = true) :
-    RestAwareTyping.checkSchemaHasType language schemaFree bound schema expected = true := by
-  cases typed with
-  | bvar lookup => simpa only [RestAwareTyping.checkSchemaHasType, beq_iff_eq] using lookup
-  | fvar lookup => simpa only [RestAwareTyping.checkSchemaHasType, beq_iff_eq] using lookup
-  | @constructor bound declaration schemas declared ordinary argumentsTyped =>
+    RestAwareTyping.checkSchemaHasType language schemaFree bound schema expected = true :=
+  match typed with
+  | .bvar lookup => by simpa only [RestAwareTyping.checkSchemaHasType, beq_iff_eq] using lookup
+  | .fvar lookup => by simpa only [RestAwareTyping.checkSchemaHasType, beq_iff_eq] using lookup
+  | @RestAwareTyping.HasType.constructor _ _ bound declaration schemas declared ordinary argumentsTyped => by
     cases matched with
     | constructor arguments =>
       have notBare : usesBareCollection? declaration = false := by
@@ -6036,20 +5889,20 @@ theorem schema_checked_of_source_match
       have checked := schemaArguments_checked_of_source_match argumentsTyped arguments object
       simp only [RestAwareTyping.checkSchemaHasType, List.any_eq_true]
       exact ⟨declaration, declared, by simp [notBare, checked]⟩
-  | lambda bodyTyped =>
+  | .lambda bodyTyped => by
     cases matched with
     | binder body =>
       have checked := schema_checked_of_source_match bodyTyped body object
       exact checked
-  | multiLambda bodyTyped =>
+  | .multiLambda bodyTyped => by
     cases matched with
     | binders body =>
       have checked := schema_checked_of_source_match bodyTyped body object
       exact checked
-  | subst bodyTyped replacementTyped =>
+  | .subst bodyTyped replacementTyped => by
     cases matched with
     | substitution body replacement => simp only [isObjectPattern, Bool.false_eq_true] at object
-  | @collection bound kind elements rest elementType elementsTyped restTyped =>
+  | @RestAwareTyping.HasType.collection _ _ bound kind elements rest elementType elementsTyped restTyped => by
     have checkedElements : RestAwareTyping.checkSchemaElements language schemaFree bound elements elementType = true := by
       cases matched with
       | bag notVector bagMatch =>
@@ -6067,8 +5920,8 @@ theorem schema_checked_of_source_match
       | some identifier => simpa only [RestAwareTyping.RestHasType,
           RestAwareTyping.checkRestHasType, beq_iff_eq] using restTyped
     simp [RestAwareTyping.checkSchemaHasType, checkedElements, checkedRest]
-  | @collectionConstructor bound declaration parameterName kind elements rest elementType
-      declared shape elementsTyped restTyped =>
+  | @RestAwareTyping.HasType.collectionConstructor _ _ bound declaration parameterName kind elements rest elementType
+      declared shape elementsTyped restTyped => by
     have checkedElements : RestAwareTyping.checkSchemaElements language schemaFree bound elements elementType = true := by
       cases matched with
       | bag notVector bagMatch =>
@@ -6096,8 +5949,7 @@ theorem schema_checked_of_source_match
         RestAwareTyping.checkRestHasType schemaFree kind elementType rest) = true
       rw [checkedElements, checkedRest]
       rfl⟩)
-termination_by sizeOf schema
-decreasing_by all_goals sizeOf_pattern_dec
+termination_by structural typed
 
 theorem schemaArguments_checked_of_source_match
     {language : LanguageDef} {schemaFree : FreeTypeContext} {bound : List TypeExpr}
@@ -6107,10 +5959,10 @@ theorem schemaArguments_checked_of_source_match
     {site : RulePatternSite} {path : List Nat} {initial final : ScopedRuleMatching.Assignment}
     (matched : GeneralScopedMatch.Arguments rule spec ambient site path depth initial index schemas targets final)
     (objects : isObjectPatternList targets = true) :
-    RestAwareTyping.checkSchemaArguments language schemaFree bound schemas parameters = true := by
-  cases typed with
-  | nil => rfl
-  | cons represented parameterType firstTyped restTyped =>
+    RestAwareTyping.checkSchemaArguments language schemaFree bound schemas parameters = true :=
+  match typed with
+  | .nil => by rfl
+  | .cons represented parameterType firstTyped restTyped => by
     cases matched with
     | cons first rest =>
       simp only [isObjectPatternList, Bool.and_eq_true] at objects
@@ -6118,8 +5970,7 @@ theorem schemaArguments_checked_of_source_match
       exact ⟨⟨(matchesParameterRepresentation?_eq_true_iff _ _).mpr represented,
         schema_checked_of_source_match firstTyped first objects.1⟩,
         schemaArguments_checked_of_source_match restTyped rest objects.2⟩
-termination_by sizeOf schemas
-decreasing_by all_goals sizeOf_pattern_dec
+termination_by structural typed
 
 theorem schemaElements_checked_of_source_arguments
     {language : LanguageDef} {schemaFree : FreeTypeContext} {bound : List TypeExpr}
@@ -6129,18 +5980,17 @@ theorem schemaElements_checked_of_source_arguments
     {site : RulePatternSite} {path : List Nat} {initial final : ScopedRuleMatching.Assignment}
     (matched : GeneralScopedMatch.Arguments rule spec ambient site path depth initial index schemas targets final)
     (objects : isObjectPatternList targets = true) :
-    RestAwareTyping.checkSchemaElements language schemaFree bound schemas elementType = true := by
-  cases typed with
-  | nil => rfl
-  | cons firstTyped restTyped =>
+    RestAwareTyping.checkSchemaElements language schemaFree bound schemas elementType = true :=
+  match typed with
+  | .nil _ _ => by rfl
+  | .cons firstTyped restTyped => by
     cases matched with
     | cons first rest =>
       simp only [isObjectPatternList, Bool.and_eq_true] at objects
       simp only [RestAwareTyping.checkSchemaElements, Bool.and_eq_true]
       exact ⟨schema_checked_of_source_match firstTyped first objects.1,
         schemaElements_checked_of_source_arguments restTyped rest objects.2⟩
-termination_by sizeOf schemas
-decreasing_by all_goals sizeOf_pattern_dec
+termination_by structural typed
 
 theorem schemaElements_checked_of_source_bag
     {language : LanguageDef} {schemaFree : FreeTypeContext} {bound : List TypeExpr}
@@ -6151,10 +6001,10 @@ theorem schemaElements_checked_of_source_bag
     {rest : Option String} {kind : CollType}
     (matched : GeneralScopedMatch.Bag rule spec ambient site path depth initial index schemas rest kind targets final)
     (objects : isObjectPatternList targets = true) :
-    RestAwareTyping.checkSchemaElements language schemaFree bound schemas elementType = true := by
-  cases typed with
-  | nil => rfl
-  | cons firstTyped restTyped =>
+    RestAwareTyping.checkSchemaElements language schemaFree bound schemas elementType = true :=
+  match typed with
+  | .nil _ _ => by rfl
+  | .cons firstTyped restTyped => by
     cases matched with
     | cons selected within first rest =>
       have each := isObjectPatternList_iff.mp objects
@@ -6162,14 +6012,9 @@ theorem schemaElements_checked_of_source_bag
       exact ⟨schema_checked_of_source_match firstTyped first (each _ (List.getElem_mem within)),
         schemaElements_checked_of_source_bag restTyped rest
           (isObjectPatternList_iff.mpr fun target member => each target (List.mem_of_mem_eraseIdx member))⟩
-termination_by sizeOf schemas
-decreasing_by all_goals sizeOf_pattern_dec
+termination_by structural typed
 end
 
-#print axioms schema_checked_of_source_match
-#print axioms schemaArguments_checked_of_source_match
-#print axioms schemaElements_checked_of_source_arguments
-#print axioms schemaElements_checked_of_source_bag
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RecursiveView
 
@@ -6190,10 +6035,7 @@ theorem capture_normal_on_source
     {firstInitial secondInitial firstFinal : ScopedRuleMatching.Assignment}
     (initialNormal : mapAssignment (normalForm (some unit)) firstInitial =
       mapAssignment (normalForm (some unit)) secondInitial)
-    (initialSource : List.Forall₂ (fun (old current : String × ContextualValue) =>
-        old.1 = current.1 ∧ old.2.dependencies = current.2.dependencies ∧
-          old.2.ambient = current.2.ambient ∧
-            ReferenceStep.Equivalent relEnv language old.2.body current.2.body)
+    (initialSource : AssignmentSourceRel relEnv language
       firstInitial secondInitial)
     (captured : capture? rule spec ambient depth site path firstInitial identifier target = some firstFinal) :
     ∃ secondFinal,
@@ -6201,10 +6043,7 @@ theorem capture_normal_on_source
         secondInitial identifier target = some secondFinal ∧
       mapAssignment (normalForm (some unit)) firstFinal =
         mapAssignment (normalForm (some unit)) secondFinal ∧
-      List.Forall₂ (fun (old current : String × ContextualValue) =>
-        old.1 = current.1 ∧ old.2.dependencies = current.2.dependencies ∧
-          old.2.ambient = current.2.ambient ∧
-            ReferenceStep.Equivalent relEnv language old.2.body current.2.body)
+      AssignmentSourceRel relEnv language
         firstFinal secondFinal := by
   simp only [capture?, Option.bind_eq_bind, Option.bind_eq_some_iff] at captured
   obtain ⟨dependencies, declared, arguments, atSite, value, recovered, assigned⟩ := captured
@@ -6215,7 +6054,6 @@ theorem capture_normal_on_source
   simp only [captureWith?, declared, atSite, Option.bind_eq_bind, Option.bind_some,
     recovered, secondAssigned]
 
-#print axioms capture_normal_on_source
 
 mutual
 /-- Full recursive ordinary matching transports different incoming assignments on the same presentation. The target is not silently replaced by an algebra normal form. -/
@@ -6227,41 +6065,35 @@ theorem matching_normal_on_source
     {schema target : Pattern}
     (initialNormal : mapAssignment (normalForm (some unit)) firstInitial =
       mapAssignment (normalForm (some unit)) secondInitial)
-    (initialSource : List.Forall₂ (fun (old current : String × ContextualValue) =>
-        old.1 = current.1 ∧ old.2.dependencies = current.2.dependencies ∧
-          old.2.ambient = current.2.ambient ∧
-            ReferenceStep.Equivalent relEnv language old.2.body current.2.body)
+    (initialSource : AssignmentSourceRel relEnv language
       firstInitial secondInitial)
     (matched : GeneralScopedMatch.Matches rule spec ambient site path depth firstInitial schema target firstFinal) :
     ∃ secondFinal,
       secondFinal ∈ matchAtWith (normalBodyComparison unit) rule spec ambient site path depth secondInitial schema target ∧
       mapAssignment (normalForm (some unit)) firstFinal =
         mapAssignment (normalForm (some unit)) secondFinal ∧
-      List.Forall₂ (fun (old current : String × ContextualValue) =>
-        old.1 = current.1 ∧ old.2.dependencies = current.2.dependencies ∧
-          old.2.ambient = current.2.ambient ∧
-            ReferenceStep.Equivalent relEnv language old.2.body current.2.body)
-        firstFinal secondFinal := by
-  cases matched with
-  | capture captured =>
+      AssignmentSourceRel relEnv language
+        firstFinal secondFinal :=
+  match matched with
+  | .capture captured => by
     obtain ⟨secondFinal, secondCaptured, normal, source⟩ :=
       capture_normal_on_source relEnv unit initialNormal initialSource captured
     exact ⟨secondFinal, by simpa only [matchAtWith, Option.mem_toList] using secondCaptured, normal, source⟩
-  | bound =>
+  | .bound => by
     exact ⟨secondInitial, by simp only [matchAtWith, beq_self_eq_true, if_true, List.mem_singleton], initialNormal, initialSource⟩
-  | constructor arguments =>
+  | .constructor arguments => by
     obtain ⟨secondFinal, member, normal, source⟩ :=
       matchingArguments_normal_on_source relEnv unit initialNormal initialSource arguments
     exact ⟨secondFinal, by simpa only [matchAtWith, beq_self_eq_true, if_true] using member, normal, source⟩
-  | binder body =>
+  | .binder body => by
     obtain ⟨secondFinal, member, normal, source⟩ :=
       matching_normal_on_source relEnv unit initialNormal initialSource body
     exact ⟨secondFinal, by simpa only [matchAtWith] using member, normal, source⟩
-  | binders body =>
+  | .binders body => by
     obtain ⟨secondFinal, member, normal, source⟩ :=
       matching_normal_on_source relEnv unit initialNormal initialSource body
     exact ⟨secondFinal, by simpa only [matchAtWith, beq_self_eq_true, if_true] using member, normal, source⟩
-  | substitution body replacement =>
+  | .substitution body replacement => by
     obtain ⟨secondMiddle, bodyMember, middleNormal, middleSource⟩ :=
       matching_normal_on_source relEnv unit initialNormal initialSource body
     obtain ⟨secondFinal, replacementMember, finalNormal, finalSource⟩ :=
@@ -6269,20 +6101,20 @@ theorem matching_normal_on_source
     exact ⟨secondFinal, by
       simp only [matchAtWith, List.mem_flatMap]
       exact ⟨secondMiddle, bodyMember, replacementMember⟩, finalNormal, finalSource⟩
-  | bag notVector bagMatch =>
+  | .bag notVector bagMatch => by
     obtain ⟨secondFinal, member, normal, source⟩ :=
       matchingBag_normal_on_source relEnv unit initialNormal initialSource bagMatch
     exact ⟨secondFinal, by
       unfold matchAtWith
       simpa only [beq_self_eq_true, Option.isNone_none, Bool.and_self,
         beq_iff_eq, notVector, if_false, if_true] using member, normal, source⟩
-  | vector arguments =>
+  | .vector arguments => by
     obtain ⟨secondFinal, member, normal, source⟩ :=
       matchingArguments_normal_on_source relEnv unit initialNormal initialSource arguments
     exact ⟨secondFinal, by
       simpa only [matchAtWith, beq_self_eq_true, Option.isNone_none, Bool.and_self,
         if_true] using member, normal, source⟩
-  | vectorRest arguments captured =>
+  | .vectorRest arguments captured => by
     obtain ⟨secondMiddle, member, middleNormal, middleSource⟩ :=
       matchingArguments_normal_on_source relEnv unit initialNormal initialSource arguments
     obtain ⟨secondFinal, secondCaptured, finalNormal, finalSource⟩ :=
@@ -6291,7 +6123,7 @@ theorem matching_normal_on_source
       simp only [matchAtWith, beq_self_eq_true, Option.isNone_none, Bool.and_self,
         if_true, List.mem_filterMap]
       exact ⟨secondMiddle, member, secondCaptured⟩, finalNormal, finalSource⟩
-termination_by sizeOf schema
+termination_by structural matched
 
 /-- Ordered arguments thread every captured body and complete contextual header through the shared compared traversal. -/
 theorem matchingArguments_normal_on_source
@@ -6302,24 +6134,18 @@ theorem matchingArguments_normal_on_source
     {index : Nat} {schemas targets : List Pattern}
     (initialNormal : mapAssignment (normalForm (some unit)) firstInitial =
       mapAssignment (normalForm (some unit)) secondInitial)
-    (initialSource : List.Forall₂ (fun (old current : String × ContextualValue) =>
-        old.1 = current.1 ∧ old.2.dependencies = current.2.dependencies ∧
-          old.2.ambient = current.2.ambient ∧
-            ReferenceStep.Equivalent relEnv language old.2.body current.2.body)
+    (initialSource : AssignmentSourceRel relEnv language
       firstInitial secondInitial)
     (matched : GeneralScopedMatch.Arguments rule spec ambient site path depth firstInitial index schemas targets firstFinal) :
     ∃ secondFinal,
       secondFinal ∈ matchArgsAtWith (normalBodyComparison unit) rule spec ambient site path depth secondInitial index schemas targets ∧
       mapAssignment (normalForm (some unit)) firstFinal =
         mapAssignment (normalForm (some unit)) secondFinal ∧
-      List.Forall₂ (fun (old current : String × ContextualValue) =>
-        old.1 = current.1 ∧ old.2.dependencies = current.2.dependencies ∧
-          old.2.ambient = current.2.ambient ∧
-            ReferenceStep.Equivalent relEnv language old.2.body current.2.body)
-        firstFinal secondFinal := by
-  cases matched with
-  | nil => exact ⟨secondInitial, by simp only [matchArgsAtWith, List.mem_singleton], initialNormal, initialSource⟩
-  | cons head tail =>
+      AssignmentSourceRel relEnv language
+        firstFinal secondFinal :=
+  match matched with
+  | .nil => by exact ⟨secondInitial, by simp only [matchArgsAtWith, List.mem_singleton], initialNormal, initialSource⟩
+  | .cons head tail => by
     obtain ⟨secondMiddle, headMember, middleNormal, middleSource⟩ :=
       matching_normal_on_source relEnv unit initialNormal initialSource head
     obtain ⟨secondFinal, tailMember, finalNormal, finalSource⟩ :=
@@ -6327,7 +6153,7 @@ theorem matchingArguments_normal_on_source
     exact ⟨secondFinal, by
       simp only [matchArgsAtWith, List.mem_flatMap]
       exact ⟨secondMiddle, headMember, tailMember⟩, finalNormal, finalSource⟩
-termination_by sizeOf schemas
+termination_by structural matched
 
 /-- The actual bag/set position and erased residual are preserved at each source selection. This result grants no virtual representative or extra origin. -/
 theorem matchingBag_normal_on_source
@@ -6339,28 +6165,22 @@ theorem matchingBag_normal_on_source
     {rest : Option String} {kind : CollType}
     (initialNormal : mapAssignment (normalForm (some unit)) firstInitial =
       mapAssignment (normalForm (some unit)) secondInitial)
-    (initialSource : List.Forall₂ (fun (old current : String × ContextualValue) =>
-        old.1 = current.1 ∧ old.2.dependencies = current.2.dependencies ∧
-          old.2.ambient = current.2.ambient ∧
-            ReferenceStep.Equivalent relEnv language old.2.body current.2.body)
+    (initialSource : AssignmentSourceRel relEnv language
       firstInitial secondInitial)
     (matched : GeneralScopedMatch.Bag rule spec ambient site path depth firstInitial index schemas rest kind targets firstFinal) :
     ∃ secondFinal,
       secondFinal ∈ matchBagAtWith (normalBodyComparison unit) rule spec ambient site path depth secondInitial index schemas rest kind targets ∧
       mapAssignment (normalForm (some unit)) firstFinal =
         mapAssignment (normalForm (some unit)) secondFinal ∧
-      List.Forall₂ (fun (old current : String × ContextualValue) =>
-        old.1 = current.1 ∧ old.2.dependencies = current.2.dependencies ∧
-          old.2.ambient = current.2.ambient ∧
-            ReferenceStep.Equivalent relEnv language old.2.body current.2.body)
-        firstFinal secondFinal := by
-  cases matched with
-  | nil => exact ⟨secondInitial, by simp only [matchBagAtWith, List.isEmpty_nil, if_true, List.mem_singleton], initialNormal, initialSource⟩
-  | rest captured =>
+      AssignmentSourceRel relEnv language
+        firstFinal secondFinal :=
+  match matched with
+  | .nil => by exact ⟨secondInitial, by simp only [matchBagAtWith, List.isEmpty_nil, if_true, List.mem_singleton], initialNormal, initialSource⟩
+  | .rest captured => by
     obtain ⟨secondFinal, secondCaptured, normal, source⟩ :=
       capture_normal_on_source relEnv unit initialNormal initialSource captured
     exact ⟨secondFinal, by simpa only [matchBagAtWith, captureRestWith?, Option.mem_toList] using secondCaptured, normal, source⟩
-  | cons selected within head tail =>
+  | .cons selected within head tail => by
     obtain ⟨secondMiddle, headMember, middleNormal, middleSource⟩ :=
       matching_normal_on_source relEnv unit initialNormal initialSource head
     obtain ⟨secondFinal, tailMember, finalNormal, finalSource⟩ :=
@@ -6372,12 +6192,10 @@ theorem matchingBag_normal_on_source
       simp only [matchBagAtWith, List.mem_flatMap]
       exact ⟨(targets[selected], selected), selectedPresent, secondMiddle, headMember, tailMember⟩,
       finalNormal, finalSource⟩
-termination_by sizeOf schemas
+termination_by structural matched
 end
 
-#print axioms matching_normal_on_source
-#print axioms matchingArguments_normal_on_source
-#print axioms matchingBag_normal_on_source
+
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RecursiveView
 
@@ -6440,9 +6258,6 @@ theorem whole_normal_view_matching (relEnv : Engine.RelationEnv) :
   exact ⟨all_spines_increasing, scoped_matching_separator.1, scoped_matching_separator.2,
     whole, sourceEquivalent⟩
 
-#print axioms schema_guard_from_source
-#print axioms compound_substitution_guard_boundary
-#print axioms whole_normal_view_matching
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RecursiveView.ScopeBoundary
 
@@ -6556,7 +6371,6 @@ theorem constructorChoices_sound {language : LanguageDef} {free schemaFree : Fre
       (fun _ _ _ valid => Mettapedia.GSLT.LanguageDef.RestAwareTyping.checkSchemaHasType_sound valid)
       schemaChecked
 
-#print axioms constructorChoices_sound
 
 mutual
 /-- Generate finite source spellings and their retained origin frames.
@@ -6806,10 +6620,6 @@ theorem Focus.components_valid {language : LanguageDef} {bag : GrammarRule} {uni
     exact normalizedOccurrence_plain inside
   | grouped bound components => exact good occurrence member
 
-#print axioms Focus.valid_value
-#print axioms Focus.valid_collectionFree
-#print axioms Focus.scalar_readback
-#print axioms Focus.components_valid
 
 
 /-- Equal normal values at a common typed role preserve an abstraction
@@ -6992,11 +6802,6 @@ theorem Focus.grouping_readback {language : LanguageDef} {bag : GrammarRule} {un
   obtain ⟨occurrence,inside,rfl⟩ := List.mem_map.mp member
   exact valueGood occurrence (List.mem_append_right _ inside)
 
-#print axioms typed_normalForm_represents
-#print axioms Focus.components_image
-#print axioms Focus.group_valid
-#print axioms grouped_sorted_residual
-#print axioms Focus.grouping_readback
 
 
 private theorem presentArguments_readback_of
@@ -7323,7 +7128,6 @@ theorem presentAt_readback {language : LanguageDef} {bag : GrammarRule} {unitLab
             exact image.trans viewRead.2.1
       · simp [presentAt,role] at member
 
-#print axioms presentAt_readback
 
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RecursiveView
@@ -7392,8 +7196,6 @@ theorem constructorChoices_complete_of_source_match
   rw [labelRead, typeRead, notBare, sourceChecked, schemaChecked, beq_self_eq_true, beq_self_eq_true]
   rfl
 
-#print axioms presentAt_source_equivalent
-#print axioms constructorChoices_complete_of_source_match
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RecursiveView
 
@@ -7435,8 +7237,6 @@ theorem produced_view_has_source_and_match (relEnv : Engine.RelationEnv) :
   rw [targetRead]
   exact (whole_normal_view_matching relEnv).2.2.2.1
 
-#print axioms produced_normal_view
-#print axioms produced_view_has_source_and_match
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RecursiveView.ScopeBoundary
 
@@ -7504,9 +7304,6 @@ theorem checked_row_partial_spine
   exact ⟨dependencies, declared, partial_spine_of_argument_types spineChecked
     (List.Forall₂.imp (fun _ _ good => good.forget) typed)⟩
 
-#print axioms partial_spine_of_argument_types
-#print axioms partial_spine_of_checked_arguments
-#print axioms checked_row_partial_spine
 
 open Mettapedia.OSLF.MeTTaIL.Match
 
@@ -7644,7 +7441,6 @@ theorem Focus.scoped_source_groups
   exact ⟨groups, residual, selected, originalResidual, middle, allocation, selectedMatches,
     restRead, values, residualValues, sourcePairs, residualGood⟩
 
-#print axioms Focus.scoped_source_groups
 
 /-- A retained physical component is a leaf of the original algebra
 traversal. Local typing and its normalized value alone do not express this
@@ -7753,10 +7549,6 @@ theorem Focus.local_validity_does_not_imply_physical
   · rw [presentAt.eq_def]
     rfl
 
-#print axioms Focus.components_physical
-#print axioms Focus.group_physical
-#print axioms Focus.scalar_nonbag
-#print axioms Focus.local_validity_does_not_imply_physical
 
 theorem Focus.components_fixed {language : LanguageDef} {bag : GrammarRule} {unitLabel : String}
     (laws : BareBagTheory {language with equations := []} bag (some unitLabel))
@@ -7853,9 +7645,6 @@ theorem Focus.scalar_source_readback
   exact ⟨head, found, headGood, Focus.scalar_nonbag laws good physical found,
     image.trans same, .trans _ _ _ (.symm _ _ equivalent) sourceEquivalent⟩
 
-#print axioms Focus.components_fixed
-#print axioms Focus.scalar_isSome_of_normal
-#print axioms Focus.scalar_source_readback
 
 /-- Compose strict child induction hypotheses through the actual recursive
 group producer and the shared compared argument matcher. This lemma is a
@@ -7955,7 +7744,6 @@ private theorem presentGroups_source_arguments_of
             dsimp only
             exact List.mem_flatMap.mpr ⟨middle, headMatched, laterMatched⟩
 
-#print axioms presentGroups_source_arguments_of
 
 /-- The finite producer covers a scoped capture from an independently
 typed ordinary source match. The inverse spine is earned by the actual
@@ -8062,8 +7850,6 @@ theorem presentAt_bound_covered
   rw [shape]
   simp only [beq_self_eq_true, if_true, List.mem_singleton]
 
-#print axioms presentAt_capture_covered
-#print axioms presentAt_bound_covered
 
 /-- The sorted physical residual preserves the outer collection-data
 boundary of a rest capture. Its source agreement uses the actual authored
@@ -8169,8 +7955,6 @@ private theorem matchBagAtWith_of_front_arguments
       · exact List.mk_mem_zipIdx_iff_getElem?.mpr rfl
       · exact List.mem_flatMap.mpr ⟨next, head, by simpa using restMatched⟩
 
-#print axioms Focus.residual_source_readback
-#print axioms matchBagAtWith_of_front_arguments
 
 /-- The recursive bag case composes strict-child coverage with the real
 scoped residual continuation. Physical allocation, collection-data rests,
@@ -8326,7 +8110,6 @@ private theorem presentAt_bag_covered_of
     dsimp only
     exact matchBagAtWith_of_front_arguments childrenMatched continued
 
-#print axioms presentAt_bag_covered_of
 
 /-- Binder coverage transports the actual typed source head, local sort
 prefix and original zipper together. Only the strict body induction
@@ -8452,7 +8235,6 @@ private theorem presentAt_binder_covered_of
       exact List.mem_map.mpr ⟨body, bodyPresent, rfl⟩
     · simpa only [matchAtWith, List.length_cons] using bodyChecked
 
-#print axioms presentAt_binder_covered_of
 
 /-- Multi-binder descent keeps the entire declared arity, local sort prefix,
 original source context and capture account through the strict body step. -/
@@ -8577,7 +8359,6 @@ private theorem presentAt_binders_covered_of
       exact List.mem_map.mpr ⟨body, bodyPresent, rfl⟩
     · simpa only [matchAtWith, beq_self_eq_true, if_true, List.length_append, List.length_replicate, Nat.add_comm] using bodyChecked
 
-#print axioms presentAt_binders_covered_of
 
 /-- Ordered constructor spines transport independent ordinary source
 matches through strict child induction hypotheses. Each child retains the
@@ -8728,7 +8509,6 @@ private theorem presentArguments_source_arguments_of
                     dsimp only
                     exact List.mem_flatMap.mpr ⟨middle, headMatched, laterMatched⟩
 
-#print axioms presentArguments_source_arguments_of
 
 private theorem schema_apply_inversion {language : LanguageDef} {free : FreeTypeContext}
     {bound : List TypeExpr} {label : String} {arguments : List Pattern} {expected : TypeExpr}
@@ -8889,7 +8669,6 @@ private theorem presentAt_constructor_covered_of
       exact List.mem_map.mpr ⟨children, childrenPresent, rfl⟩
     · simpa only [matchAtWith, beq_self_eq_true, if_true] using childrenMatched
 
-#print axioms presentAt_constructor_covered_of
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RecursiveView
 
@@ -9174,8 +8953,6 @@ theorem start_meaning_iff (parameters : Parameters) (schemaBound : List TypeExpr
         parameters.unitLabel schemaBound path schema focus := by
   simp [startAt,Task.meaning,results,readContinuation]
 
-#print axioms returned_account
-#print axioms start_meaning_iff
 
 theorem children_account (parameters : Parameters) (query : Query .children)
     (next : Continuation .children) (wanted : Spelling) :
@@ -9195,14 +8972,13 @@ theorem children_account (parameters : Parameters) (query : Query .children)
           | some expected =>
               simp [Task.meaning,results,presentArguments,expand,found,readContinuation,
                 List.mem_flatMap,List.mem_map]
-              aesop
+              grind only
   | groups schemaBound path bound index schemas groups =>
       cases schemas <;> cases groups
       all_goals try (solve | simp [Task.meaning,results,presentGroups,expand])
       simp [Task.meaning,results,presentGroups,expand,readContinuation,List.mem_flatMap,List.mem_map]
-      aesop
+      grind only
 
-#print axioms children_account
 
 theorem constructors_account (parameters : Parameters) (schemaBound : List TypeExpr)
     (path : List Nat) (focus : Focus) (label : String) (schemas sources : List Pattern)
@@ -9221,12 +8997,11 @@ theorem constructors_account (parameters : Parameters) (schemaBound : List TypeE
       cases ready : constructorReady parameters schemaBound focus label schemas sources row with
       | false =>
           simp [Task.meaning,expand,ready,List.zipIdx_cons]
-          aesop
+          grind only
       | true =>
           simp [Task.meaning,expand,ready,List.zipIdx_cons,results,readContinuation]
-          aesop
+          grind only
 
-#print axioms constructors_account
 
 theorem cursor_available_start (count : Nat) (occurrences : List SourceOccurrence)
     (groups : List (List SourceOccurrence)) (residual : List SourceOccurrence) :
@@ -9252,23 +9027,25 @@ theorem at_account (parameters : Parameters) (schemaBound : List TypeExpr) (path
         aesop
       · simp [Task.meaning,results,presentAt,expand,role]
   | bvar expected =>
+      simp only [Task.meaning,results,presentAt,expand]
       cases picked : focus.scalar? parameters.unitLabel parameters.category with
-      | none => simp [Task.meaning,results,presentAt,expand,picked]
+      | none => simp
       | some head =>
           cases shape : head.original parameters.unitLabel <;>
-            try (solve | simp [Task.meaning,results,presentAt,expand,picked,shape])
+            try (solve | simp [shape])
           rename_i actual
           by_cases equal : expected == actual <;>
-            simp [Task.meaning,results,presentAt,expand,picked,shape,frame,equal]
+            simp [shape,frame,equal]
   | apply label schemas =>
+      simp only [Task.meaning,results,presentAt,expand]
       cases picked : focus.scalar? parameters.unitLabel parameters.category with
-      | none => simp [Task.meaning,results,presentAt,expand,picked]
+      | none => simp
       | some head =>
           cases shape : head.original parameters.unitLabel <;>
-            try (solve | simp [Task.meaning,results,presentAt,expand,picked,shape])
+            try (solve | simp [shape])
           rename_i actual sources
           by_cases equal : label == actual
-          · simp only [Task.meaning,results,presentAt,expand,picked,shape,equal,if_pos,
+          · simp only [shape,equal,if_pos,
               List.not_mem_nil,false_or,List.mem_singleton,exists_eq_left,constructorChoices,
               constructorReady,List.mem_flatMap,List.mem_map,List.mem_filter,Prod.exists]
             constructor
@@ -9277,39 +9054,38 @@ theorem at_account (parameters : Parameters) (schemaBound : List TypeExpr) (path
               exact ⟨row,index,declared,ready,children,frames,member,accepted⟩
             · rintro ⟨row,index,declared,ready,children,frames,member,accepted⟩
               exact ⟨_,⟨row,index,⟨declared,ready⟩,children,frames,member,rfl⟩,accepted⟩
-          · simp [Task.meaning,results,presentAt,expand,picked,shape,equal]
+          · simp [shape,equal]
   | lambda binder body =>
+      simp only [Task.meaning,results,presentAt,expand]
       cases picked : focus.scalar? parameters.unitLabel parameters.category with
-      | none => simp [Task.meaning,results,presentAt,expand,picked]
+      | none => simp
       | some head =>
           cases role : focus.expected parameters.category <;>
-            try (solve | simp [Task.meaning,results,presentAt,expand,picked,role])
+            try (solve | simp)
           cases shape : head.original parameters.unitLabel <;>
-            try (solve | simp [Task.meaning,results,presentAt,expand,picked,role,shape])
+            try (solve | simp [shape])
           cases context : headContext? head <;>
-            try (solve | simp [Task.meaning,results,presentAt,expand,picked,role,shape,context])
-          simp [Task.meaning,results,presentAt,expand,picked,role,shape,context,
+            try (solve | simp [shape,context])
+          simp [shape,context,
             readContinuation,frame,List.mem_map]
   | multiLambda arity binders body =>
+      simp only [Task.meaning,results,presentAt,expand]
       cases picked : focus.scalar? parameters.unitLabel parameters.category with
-      | none => simp [Task.meaning,results,presentAt,expand,picked]
+      | none => simp
       | some head =>
           cases role : focus.expected parameters.category <;>
-            try (solve | simp [Task.meaning,results,presentAt,expand,picked,role])
+            try (solve | simp)
           rename_i domain codomain
-          cases domain <;> try (solve | simp [Task.meaning,results,presentAt,expand,picked,role])
+          cases domain <;> try (solve | simp)
           cases shape : head.original parameters.unitLabel <;>
-            try (solve | simp [Task.meaning,results,presentAt,expand,picked,role,shape])
+            try (solve | simp [shape])
           rename_i actual sourceBinders sourceBody
           cases context : headContext? head <;>
-            try (solve | simp [Task.meaning,results,presentAt,expand,picked,role,shape,context])
+            try (solve | simp [shape,context])
           by_cases equal : arity == actual
-          · simp [Task.meaning,results,presentAt,expand,picked,role,shape,context,equal,
+          · simp [shape,context,equal,
               readContinuation,frame,List.mem_map]
-          · simp [Task.meaning,results,presentAt,expand,picked,role,shape,context,equal]
-
-#print axioms cursor_available_start
-#print axioms at_account
+          · simp [shape,context,equal]
 
 private theorem group_pending_before_selection {slots index : Nat}
     {closed : List (List SourceOccurrence)} {selected remaining : List SourceOccurrence}
@@ -9342,9 +9118,11 @@ private theorem residual_pending_before_selection {index : Nat}
   refine ⟨groupsEq,occurrence :: suffix,?_,(account.cons occurrence).trans chosen⟩
   simpa only [List.reverse_cons,List.append_assoc,List.singleton_append] using shape
 
-theorem cursor_finished_pending {work : GroupedCursor.Work}
-    {groups : List (List SourceOccurrence)} {residual : List SourceOccurrence}
-    (done : work.finished? = some (groups,residual)) : work.pending groups residual := by
+theorem cursor_finished_pending_iff {work : GroupedCursor.Work}
+    {allocation : List (List SourceOccurrence) × List SourceOccurrence}
+    (done : work.finished? = some allocation)
+    (groups : List (List SourceOccurrence)) (residual : List SourceOccurrence) :
+    work.pending groups residual ↔ allocation = (groups,residual) := by
   cases work with
   | groups slots closed selected remaining => simp [GroupedCursor.Work.finished?] at done
   | selectGroup slots closed selected remaining cursor => simp [GroupedCursor.Work.finished?] at done
@@ -9353,11 +9131,23 @@ theorem cursor_finished_pending {work : GroupedCursor.Work}
       cases remaining with
       | cons head tail => simp [GroupedCursor.Work.finished?] at done
       | nil =>
-          simp only [GroupedCursor.Work.finished?,Option.some.injEq,Prod.mk.injEq] at done
-          rcases done with ⟨rfl,rfl⟩
-          exact ⟨rfl,[],by simp,by simp⟩
+          simp only [GroupedCursor.Work.finished?,Option.some.injEq] at done
+          subst allocation
+          simp only [GroupedCursor.Work.pending,GroupedCursor.residualPending]
+          constructor
+          · rintro ⟨rfl,suffix,rfl,account⟩
+            have empty : suffix = [] := List.perm_nil.mp account
+            subst suffix
+            simp
+          · intro same
+            cases same
+            exact ⟨rfl,[],by simp,by simp⟩
 
-#print axioms cursor_finished_pending
+theorem cursor_finished_pending {work : GroupedCursor.Work}
+    {groups : List (List SourceOccurrence)} {residual : List SourceOccurrence}
+    (done : work.finished? = some (groups,residual)) : work.pending groups residual :=
+  (cursor_finished_pending_iff done groups residual).mpr rfl
+
 
 theorem cursor_expand_pending {work branch : GroupedCursor.Work}
     {groups : List (List SourceOccurrence)} {residual : List SourceOccurrence}
@@ -9388,14 +9178,8 @@ theorem cursor_expand_pending {work branch : GroupedCursor.Work}
           · obtain ⟨index,occurrence,_,found,selectedPending⟩ := pending
             exact group_pending_before_selection found selectedPending
   | selectGroup slots closed selected remaining cursor =>
-      cases found : remaining[cursor]? with
-      | none => simp [GroupedCursor.expand,found] at member
-      | some occurrence =>
-          simp only [GroupedCursor.expand,found,List.mem_cons,List.not_mem_nil,or_false] at member
-          rcases member with rfl | rfl
-          · exact ⟨cursor,occurrence,le_rfl,found,pending⟩
-          · obtain ⟨index,selectedOccurrence,later,selectedFound,selectedPending⟩ := pending
-            exact ⟨index,selectedOccurrence,by omega,selectedFound,selectedPending⟩
+      exact (GroupedCursor.selectGroup_pending_iff slots closed selected remaining cursor groups residual).mpr
+        ⟨branch, member, pending⟩
   | residual closed selected remaining =>
       cases remaining with
       | nil => simp [GroupedCursor.expand] at member
@@ -9405,14 +9189,8 @@ theorem cursor_expand_pending {work branch : GroupedCursor.Work}
           obtain ⟨index,occurrence,_,found,selectedPending⟩ := pending
           exact residual_pending_before_selection found selectedPending
   | selectResidual closed selected remaining cursor =>
-      cases found : remaining[cursor]? with
-      | none => simp [GroupedCursor.expand,found] at member
-      | some occurrence =>
-          simp only [GroupedCursor.expand,found,List.mem_cons,List.not_mem_nil,or_false] at member
-          rcases member with rfl | rfl
-          · exact ⟨cursor,occurrence,le_rfl,found,pending⟩
-          · obtain ⟨index,selectedOccurrence,later,selectedFound,selectedPending⟩ := pending
-            exact ⟨index,selectedOccurrence,by omega,selectedFound,selectedPending⟩
+      exact (GroupedCursor.selectResidual_pending_iff closed selected remaining cursor groups residual).mpr
+        ⟨branch, member, pending⟩
 
 theorem cursor_pending_iff (work : GroupedCursor.Work)
     (groups : List (List SourceOccurrence)) (residual : List SourceOccurrence) :
@@ -9424,33 +9202,6 @@ theorem cursor_pending_iff (work : GroupedCursor.Work)
     · exact cursor_finished_pending done
     · exact cursor_expand_pending member pending
 
-#print axioms cursor_expand_pending
-#print axioms cursor_pending_iff
-
-theorem cursor_finished_pending_iff {work : GroupedCursor.Work}
-    {allocation : List (List SourceOccurrence) × List SourceOccurrence}
-    (done : work.finished? = some allocation)
-    (groups : List (List SourceOccurrence)) (residual : List SourceOccurrence) :
-    work.pending groups residual ↔ allocation = (groups,residual) := by
-  cases work with
-  | groups slots closed selected remaining => simp [GroupedCursor.Work.finished?] at done
-  | selectGroup slots closed selected remaining cursor => simp [GroupedCursor.Work.finished?] at done
-  | selectResidual closed selected remaining cursor => simp [GroupedCursor.Work.finished?] at done
-  | residual closed selected remaining =>
-      cases remaining with
-      | cons head tail => simp [GroupedCursor.Work.finished?] at done
-      | nil =>
-          simp only [GroupedCursor.Work.finished?,Option.some.injEq] at done
-          subst allocation
-          simp only [GroupedCursor.Work.pending,GroupedCursor.residualPending]
-          constructor
-          · rintro ⟨rfl,suffix,rfl,account⟩
-            have empty : suffix = [] := List.perm_nil.mp account
-            subst suffix
-            simp
-          · intro same
-            cases same
-            exact ⟨rfl,[],by simp,by simp⟩
 
 theorem cursor_available_tick (cursor : GroupedCursor.State) (published : Nat)
     (sane : published ≤ cursor.answers.length)
@@ -9476,8 +9227,6 @@ theorem cursor_available_tick (cursor : GroupedCursor.State) (published : Nat)
                 refines]
               tauto
 
-#print axioms cursor_finished_pending_iff
-#print axioms cursor_available_tick
 
 theorem allocationTasks_account (parameters : Parameters) (schemaBound : List TypeExpr)
     (path : List Nat) (focus : Focus) (schemas : List Pattern) (rest : Option String)
@@ -9538,10 +9287,6 @@ theorem allocations_account (parameters : Parameters) (schemaBound : List TypeEx
   rw [allocationTaskBatch_account,pending_allocation_task_account]
   simp only [cursorAvailable,or_and_right,exists_or,Prod.exists]
 
-#print axioms allocationTasks_account
-#print axioms pending_allocation_task_account
-#print axioms allocationTaskBatch_account
-#print axioms allocations_account
 
 theorem expand_account (parameters : Parameters) (task : Task) (wanted : Spelling) :
     task.meaning parameters wanted ↔ wanted ∈ (expand parameters task).2 ∨
@@ -9585,10 +9330,6 @@ theorem run_add (parameters : Parameters) (first second : Nat) (state : State) :
   | zero => simp only [Nat.zero_add,run]
   | succ first ih => simpa only [Nat.succ_add,run] using ih (tick parameters state)
 
-#print axioms expand_account
-#print axioms tick_accepts
-#print axioms run_accepts
-#print axioms run_add
 
 mutual
   def schemaWeight : Pattern → Nat
@@ -9642,9 +9383,6 @@ theorem returned_decreases (parameters : Parameters) {kind : Kind}
   all_goals simp only [Task.rank,Continuation.weight,Query.weight]
   all_goals omega
 
-#print axioms schemaWeight
-#print axioms schemasWeight
-#print axioms returned_decreases
 
 macro "retained_weight" : tactic => `(tactic|
   (subst_vars
@@ -9717,7 +9455,6 @@ theorem request_decreases (parameters : Parameters) {kind : Kind}
   | groups schemaBound path bound index schemas groups =>
       cases schemas <;> cases groups <;> simp [expand] at member <;> retained_weight
 
-#print axioms request_decreases
 
 theorem constructors_decreases (parameters : Parameters) (schemaBound : List TypeExpr)
     (path : List Nat) (focus : Focus) (label : String) (schemas sources : List Pattern)
@@ -9787,9 +9524,6 @@ theorem expand_decreases (parameters : Parameters) {task child : Task}
   | allocations schemaBound path focus schemas rest cursor published within next =>
       exact allocations_decreases parameters schemaBound path focus schemas rest cursor published within next member
 
-#print axioms constructors_decreases
-#print axioms allocations_decreases
-#print axioms expand_decreases
 
 def taskCost (parameters : Parameters) (task : Task) : Nat :=
   1 + (((expand parameters task).1).attach.map fun child => taskCost parameters child.val).sum
@@ -9873,14 +9607,6 @@ theorem start_completes_with_reference_answers (parameters : Parameters)
   exact ⟨steps,drained,fun wanted => (exactAnswers wanted).trans
     (start_accepts_iff parameters schemaBound path schema focus wanted)⟩
 
-#print axioms taskCost
-#print axioms taskCost_eq
-#print axioms tick_cost
-#print axioms finiteDrain
-#print axioms run_idle
-#print axioms start_accepts_iff
-#print axioms completes_with_exact_answers
-#print axioms start_completes_with_reference_answers
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RecursiveView.Retained
 
@@ -9984,8 +9710,6 @@ private theorem rest_occurrence_at_context (context : OneHoleContext) (identifie
     rw [if_pos within, context_row_get]
     simp only [Option.bind_eq_bind, Option.bind_some, Option.pure_def, recurse, context_row_take, context_row_drop, RestSite.push, OneHoleContext.comp]
 
-#print axioms term_occurrence_at_context
-#print axioms rest_occurrence_at_context
 
 /-- A genuine typed schema zipper earns the existing typed occurrence
 classifier at precisely its own full sort prefix and executable address. -/
@@ -10049,9 +9773,6 @@ private theorem capture_partial_spine_contract
   obtain ⟨indices, spineChecked, _⟩ := recovered
   exact ⟨dependencies, arguments, indices, declared, atSite, spineChecked⟩
 
-#print axioms typed_term_occurrence_at_context
-#print axioms typed_rest_occurrence_at_context
-#print axioms capture_partial_spine_contract
 
 
 private theorem context_row_reconstruct {α : Type*} {items : List α} {index : Nat} {item : α}
@@ -10115,8 +9836,6 @@ private theorem bag_slot_typedAt
   exact .collectionConstructor laws.bagAuthored bare rebuilt
     (.here (elementsHaveType_iff.mp typed.forget schema (List.mem_of_getElem? selected)))
 
-#print axioms argument_slot_typedAt
-#print axioms bag_slot_typedAt
 
 
 /-- The actual stored row supplies the checked sorts at its actual typed
@@ -10207,8 +9926,6 @@ private theorem bag_rest_spine_contract
       refine ⟨dependencies, arguments, indices, declared, ?_, spineChecked⟩
       simpa only [List.length_cons, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using atSite
 
-#print axioms arguments?_checked_at_typed_occurrence
-#print axioms bag_rest_spine_contract
 
 /-- Validation identifies the original declaration before a selected child
 is transported through the actual parameter type and source zipper. -/
@@ -10235,7 +9952,6 @@ private theorem schema_argument_slot_typedAt
   simpa only [labelEq, resultRole] using
     argument_slot_typedAt declared ordinary argumentsTyped.forget atIndex atParameter parameterType
 
-#print axioms schema_argument_slot_typedAt
 
 /-- The actual schema derivation identifies its homogeneous carrier and
 retains the strong element typing instead of reconstructing it from the
@@ -10256,7 +9972,6 @@ private theorem schema_bag_typing
       ((GrammarRule.bareParams_cons_iff _ _ _).mp shape).2
     exact ⟨kindEq, rfl, by simpa only [elementEq] using elementsTyped⟩
 
-#print axioms schema_bag_typing
 
 set_option maxRecDepth 4096 in
 /-- Every independently typed ordinary scoped match in an admissible source
@@ -10469,7 +10184,6 @@ theorem presentAt_source_match_covered
 termination_by sizeOf schema
 decreasing_by all_goals sizeOf_pattern_dec
 
-#print axioms presentAt_source_match_covered
 
 /-- At the actual left endpoint, the root schema context is empty and the
 free schema types are the rule's own declarations. The capture account is
@@ -10517,7 +10231,6 @@ theorem presentAt_rule_left_source_match_covered
     rule.left rfl rfl (.here schemaTyped.forget) schemaTyped ⟨sourceGood, collectionless⟩
     trivial rfl rfl representativeGood equivalent matched rfl .nil
 
-#print axioms presentAt_rule_left_source_match_covered
 
 
 set_option maxRecDepth 4096 in
@@ -10610,7 +10323,6 @@ theorem retained_completes_with_source_match
   exact ⟨more, spelling, secondFinal, drained, (exactAnswers spelling).mpr stillAccepted,
     produced, compared, finalNormal, finalSource⟩
 
-#print axioms retained_completes_with_source_match
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RecursiveView
 
@@ -10681,7 +10393,6 @@ theorem collapsed_repeated_rest_retained_coverage (relEnv : Engine.RelationEnv) 
     schema rfl rfl (.here rest_has_data_role.2.2.forget) rest_has_data_role.2.2
     ⟨normalizedGood, rfl⟩ trivial rfl rfl presentationGood equivalent sourceMatched rfl .nil
 
-#print axioms collapsed_repeated_rest_retained_coverage
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.DataRestControls
 
@@ -10994,11 +10705,6 @@ theorem lawNormal_readout {language : LanguageDef} {bag : GrammarRule} {unitLabe
       (by intro row member; rw [laws.equationsEmpty] at member; cases member)
       (by intro row member; rw [laws.equationsEmpty] at member; cases member)).mpr equivalent)).symm
 
-#print axioms declared_law_authority
-#print axioms selected_law_authority
-#print axioms normalize_path
-#print axioms source_collections
-#print axioms lawNormal_readout
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.LexicalReadout
 
@@ -11090,8 +10796,6 @@ theorem data_source_readout {language : LanguageDef} {bag : GrammarRule} {unitLa
       have object := good.object
       simp [isObjectPattern] at object
 
-#print axioms source_readout
-#print axioms data_source_readout
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.LexicalReadout
 
@@ -11222,13 +10926,6 @@ theorem occurrences_distinct (language : LanguageDef) (unitLabel : String) (sour
     current.trans previous.symm
   exact same.nodup_iff.mpr (normalizedOccurrences_distinct unitLabel source)
 
-#print axioms sortTagged_perm
-#print axioms occurrences_source_readout
-#print axioms occurrences_distinct
-#print axioms sortTagged_values
-#print axioms occurrences_account
-#print axioms occurrences_source_account
-#print axioms occurrences_numeric_account
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.LexicalReadout
 
@@ -11351,12 +11048,6 @@ theorem duplicate_addresses_and_unit_account :
       ((AlgebraFocus.unitOccurrences "Z" (bag [.bvar 2, .bvar 2, .apply "Z" []])).map
         AlgebraFocus.SourceOccurrence.address) = [[2]] := by cbv
 
-#print axioms different_order_and_declared_unit
-#print axioms unit_data_readback
-#print axioms singleton_presentation_separator
-#print axioms wrong_unit_retained
-#print axioms nested_data_role_separator
-#print axioms duplicate_addresses_and_unit_account
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.LexicalReadout.Controls
 
@@ -11417,9 +11108,6 @@ theorem native_group_source_account (language : LanguageDef) {unitLabel : String
     (fun occurrence => (occurrence.original, occurrence.address, occurrence.context))
   exact (selected.append_right _).trans (occurrences_source_account language unitLabel source)
 
-#print axioms native_group_allocation
-#print axioms numeric_group_allocation
-#print axioms native_group_source_account
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.LexicalReadout
 
@@ -11595,9 +11283,6 @@ theorem pending_substitution_scope (relEnv : Engine.RelationEnv) :
   rw [actual] at targetTyped equivalent
   exact ⟨typed, rfl, actual, targetTyped, equivalent⟩
 
-#print axioms authorized
-#print axioms mixed_data_and_algebra
-#print axioms pending_substitution_scope
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.RoleAwareSourceControls
 
@@ -11696,7 +11381,6 @@ theorem wrong_unit_source_authority (relEnv : Engine.RelationEnv) :
       cases impossible
     exact different same
 
-#print axioms wrong_unit_source_authority
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.RoleAwareSourceControls
 
@@ -11729,7 +11413,6 @@ theorem data_unit_comparison_separation (relEnv : Engine.RelationEnv) :
   intro impossible
   cases impossible
 
-#print axioms data_unit_comparison_separation
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.RoleAwareSourceControls
 
@@ -11803,10 +11486,6 @@ theorem sourceRecord_sourceCollections {laws : List Laws} {language : LanguageDe
       (sourceRecord laws domains language free bound expected occurrence).value :=
   reduceAt_sourceCollections checked domains domainRoles occurrence.original selected.focus_typed eligible role
 
-#print axioms sourceRecord_typedAt
-#print axioms sourceRecord_source
-#print axioms sourceRecord_sourceCollections
-#print axioms sourceRecords_address_account
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RoleAwareReadout
 
@@ -11907,12 +11586,6 @@ theorem output_index_is_not_source_origin :
   refine ⟨by cbv, by cbv, by cbv, by cbv, ?_⟩
   decide +kernel
 
-#print axioms automatic_source_algebra_authority
-#print axioms automatic_wrong_unit_rejected
-#print axioms mixed_output_source_collections
-#print axioms substitution_output_source_collections
-#print axioms typed_original_algebra_slot
-#print axioms output_index_is_not_source_origin
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.RoleAwareSourceControls
 
@@ -12151,6 +11824,54 @@ mutual
   termination_by elements _ => sizeOf elements
 end
 
+private def collectionTaggedChildren (laws : List Laws) (domains : List TypeExpr)
+    (language : LanguageDef) (free : FreeTypeContext) (bound : List TypeExpr)
+    (kind : CollType) (elements : List Pattern) (rest : Option String) (element : TypeExpr) :
+    List TaggedReduction :=
+  liftedChildren (fun index => .collection kind (elements.take index) .hole
+    (elements.drop (index + 1)) rest) 0
+    (reduceElementsTagged laws domains language free bound elements element)
+
+/-- A collection visit either retains an opaque root, follows the structural
+element type, or uses a selected algebra declaration. The last case supplies
+both reads that license the change to the original occurrences. -/
+private theorem reduceAtTagged_collectionCases (laws : List Laws) (domains : List TypeExpr)
+    (language : LanguageDef) (free : FreeTypeContext) (bound : List TypeExpr)
+    (kind : CollType) (elements : List Pattern) (rest : Option String)
+    (observe : TypeExpr → TaggedReduction → Prop)
+    (held : ∀ expected, observe expected (opaqueTrace bound (some expected)
+      (.collection kind elements rest)))
+    (structural : ∀ element, observe (.collection kind element)
+      (assembleTrace bound (.collection kind element) none (.collection kind elements rest)
+        (.collection kind
+          ((collectionTaggedChildren laws domains language free bound kind elements rest element).map
+            TaggedReduction.target) rest)
+        (collectionTaggedChildren laws domains language free bound kind elements rest element)))
+    (declared : ∀ expected rule element,
+      collectionRule? domains language free bound expected kind elements rest = some rule →
+      bareCollectionElementType? rule kind expected = some element →
+      observe expected (algebraTrace laws bound expected (language.terms.idxOf rule, rule)
+        (.collection kind elements rest) kind rest
+        (collectionTaggedChildren laws domains language free bound kind elements rest element)))
+    (expected : TypeExpr) :
+    observe expected (reduceAtTagged laws domains language free bound
+      (.collection kind elements rest) expected) := by
+  cases expected
+  case collection actual element =>
+    by_cases same : actual = kind
+    · subst actual
+      simpa only [reduceAtTagged, collectionTaggedChildren, ↓reduceIte] using structural element
+    · simpa only [reduceAtTagged, same, ↓reduceIte] using held (.collection actual element)
+  all_goals
+    simp only [reduceAtTagged]
+    split
+    · exact held _
+    · rename_i rule selected
+      split
+      · exact held _
+      · rename_i element elementRead
+        exact declared _ rule element selected elementRead
+
 private theorem reduceArgumentsTagged_targets_of
     (laws : List Laws) (domains : List TypeExpr) (language : LanguageDef) (free : FreeTypeContext)
     (bound : List TypeExpr) (arguments : List Pattern) (parameters : List TermParam)
@@ -12276,7 +11997,6 @@ theorem reduceAtTagged_target (laws : List Laws) (domains : List TypeExpr) (lang
                     (reduceElementsTagged_targets_of laws domains language free bound elements element
                       (fun value member => recurse value member bound element))
 
-#print axioms reduceAtTagged_target
 
 /-- The original source visit sequence is partitioned without changing any
 record or multiplicity. Units and carrier administrations are not surviving
@@ -12495,56 +12215,21 @@ theorem reduceAtTagged_source_account (laws : List Laws) (domains : List TypeExp
             exact taggedAccount_underContext _ (replacementIH bound domain)
   | hcollection kind elements rest recurse =>
       intro bound expected
-      cases expected with
-      | collection actual element =>
-          simp only [reduceAtTagged]
-          split
-          · apply assembleTrace_account
-            apply liftedChildren_account
-            exact reduceElementsTagged_account_of laws domains language free bound elements element
-              (fun value member => recurse value member bound element)
-          · exact opaqueTrace_account _ _ _ _
-      | base category =>
-          simp only [reduceAtTagged]
-          cases selected : collectionRule? domains language free bound (.base category) kind elements rest with
-          | none => exact opaqueTrace_account _ _ _ _
-          | some rule =>
-              dsimp only
-              cases shape : bareCollectionElementType? rule kind (.base category) with
-              | none => exact opaqueTrace_account _ _ _ _
-              | some element =>
-                  apply algebraTrace_account
-                  apply liftedChildren_account
-                  exact reduceElementsTagged_account_of laws domains language free bound elements element
-                    (fun value member => recurse value member bound element)
-      | arrow domain codomain =>
-          simp only [reduceAtTagged]
-          cases selected : collectionRule? domains language free bound (.arrow domain codomain) kind elements rest with
-          | none => exact opaqueTrace_account _ _ _ _
-          | some rule =>
-              dsimp only
-              cases shape : bareCollectionElementType? rule kind (.arrow domain codomain) with
-              | none => exact opaqueTrace_account _ _ _ _
-              | some element =>
-                  apply algebraTrace_account
-                  apply liftedChildren_account
-                  exact reduceElementsTagged_account_of laws domains language free bound elements element
-                    (fun value member => recurse value member bound element)
-      | multiBinder body =>
-          simp only [reduceAtTagged]
-          cases selected : collectionRule? domains language free bound (.multiBinder body) kind elements rest with
-          | none => exact opaqueTrace_account _ _ _ _
-          | some rule =>
-              dsimp only
-              cases shape : bareCollectionElementType? rule kind (.multiBinder body) with
-              | none => exact opaqueTrace_account _ _ _ _
-              | some element =>
-                  apply algebraTrace_account
-                  apply liftedChildren_account
-                  exact reduceElementsTagged_account_of laws domains language free bound elements element
-                    (fun value member => recurse value member bound element)
+      refine reduceAtTagged_collectionCases laws domains language free bound kind elements rest
+        (fun _ trace => trace.SourceAccount) ?_ ?_ ?_ expected
+      · intro type
+        exact opaqueTrace_account _ _ _ _
+      · intro element
+        apply assembleTrace_account
+        apply liftedChildren_account
+        exact reduceElementsTagged_account_of laws domains language free bound elements element
+          (fun value member => recurse value member bound element)
+      · intro type rule element _ _
+        apply algebraTrace_account
+        apply liftedChildren_account
+        exact reduceElementsTagged_account_of laws domains language free bound elements element
+          (fun value member => recurse value member bound element)
 
-#print axioms reduceAtTagged_source_account
 
 /-- The retained zipper and address point to this very source presentation.
 No equality between normalized values is used to select the source point. -/
@@ -12732,53 +12417,28 @@ theorem reduceAtTagged_original_points (laws : List Laws) (domains : List TypeEx
           · exact liftedTrace_rooted (.substReplacement body .hole) (replacementIH bound domain) origin second
   | hcollection kind elements rest recurse =>
       intro bound expected
-      have collectionChildren : ∀ element, ∀ origin ∈
-          (liftedChildren (fun index => .collection kind (elements.take index) .hole
-            (elements.drop (index + 1)) rest) 0
-            (reduceElementsTagged laws domains language free bound elements element)).flatMap TaggedReduction.visited,
-          TypedOrigin.Rooted (.collection kind elements rest) origin := by
-        intro element
-        apply liftedChildren_rooted
-          (reduceElementsTagged_rooted_of laws domains language free bound elements element
-            (fun value member => recurse value member bound element))
-        intro index source selected
-        simpa only [Nat.zero_add, OneHoleContext.fill] using
-          congrArg (fun values => Pattern.collection kind values rest) (raw_source_reconstruct selected)
-      cases expected with
-      | collection actual element =>
-          simp only [reduceAtTagged]
-          split
-          · exact assembleTrace_rooted _ _ _ _ _ _ (collectionChildren element)
-          · exact opaqueTrace_rooted _ _ _ _
-      | base category =>
-          simp only [reduceAtTagged]
-          cases selected : collectionRule? domains language free bound (.base category) kind elements rest with
-          | none => exact opaqueTrace_rooted _ _ _ _
-          | some rule =>
-              dsimp only
-              cases shape : bareCollectionElementType? rule kind (.base category) with
-              | none => exact opaqueTrace_rooted _ _ _ _
-              | some element => exact algebraTrace_rooted _ _ _ _ _ _ _ _ (collectionChildren element)
-      | arrow domain codomain =>
-          simp only [reduceAtTagged]
-          cases selected : collectionRule? domains language free bound (.arrow domain codomain) kind elements rest with
-          | none => exact opaqueTrace_rooted _ _ _ _
-          | some rule =>
-              dsimp only
-              cases shape : bareCollectionElementType? rule kind (.arrow domain codomain) with
-              | none => exact opaqueTrace_rooted _ _ _ _
-              | some element => exact algebraTrace_rooted _ _ _ _ _ _ _ _ (collectionChildren element)
-      | multiBinder body =>
-          simp only [reduceAtTagged]
-          cases selected : collectionRule? domains language free bound (.multiBinder body) kind elements rest with
-          | none => exact opaqueTrace_rooted _ _ _ _
-          | some rule =>
-              dsimp only
-              cases shape : bareCollectionElementType? rule kind (.multiBinder body) with
-              | none => exact opaqueTrace_rooted _ _ _ _
-              | some element => exact algebraTrace_rooted _ _ _ _ _ _ _ _ (collectionChildren element)
+      refine reduceAtTagged_collectionCases laws domains language free bound kind elements rest
+        (fun _ trace => ∀ origin ∈ trace.visited, TypedOrigin.Rooted
+          (.collection kind elements rest) origin) ?_ ?_ ?_ expected
+      · intro type
+        exact opaqueTrace_rooted _ _ _ _
+      · intro element
+        exact assembleTrace_rooted _ _ _ _ _ _ (by
+          apply liftedChildren_rooted
+            (reduceElementsTagged_rooted_of laws domains language free bound elements element
+              (fun value member => recurse value member bound element))
+          intro index value selected
+          simpa only [Nat.zero_add, OneHoleContext.fill] using
+            congrArg (fun values => Pattern.collection kind values rest) (raw_source_reconstruct selected))
+      · intro type rule element _ _
+        exact algebraTrace_rooted _ _ _ _ _ _ _ _ (by
+          apply liftedChildren_rooted
+            (reduceElementsTagged_rooted_of laws domains language free bound elements element
+              (fun value member => recurse value member bound element))
+          intro index value selected
+          simpa only [Nat.zero_add, OneHoleContext.fill] using
+            congrArg (fun values => Pattern.collection kind values rest) (raw_source_reconstruct selected))
 
-#print axioms reduceAtTagged_original_points
 
 private theorem trace_underContext_distinct (context : OneHoleContext) {trace : TaggedReduction}
     (distinct : (trace.visited.map (fun origin => origin.source.address)).Nodup) :
@@ -13049,41 +12709,15 @@ theorem reduceAtTagged_original_addresses_distinct (laws : List Laws) (domains :
         exact ⟨liftedChildren_distinct _ _ _ frames
           (reduceElementsTagged_distinct_of laws domains language free bound elements element
             (fun value member => recurse value member bound element)), childVisits_nonempty _ _ _ frames⟩
-      cases expected with
-      | collection actual element =>
-          simp only [reduceAtTagged]
-          split
-          · exact rootedTrace_distinct _ _ _ _ _ _ (childrenDistinct element).1 (childrenDistinct element).2
-          · exact List.nodup_singleton _
-      | base category =>
-          simp only [reduceAtTagged]
-          cases selected : collectionRule? domains language free bound (.base category) kind elements rest with
-          | none => exact List.nodup_singleton _
-          | some rule =>
-              dsimp only
-              cases shape : bareCollectionElementType? rule kind (.base category) with
-              | none => exact List.nodup_singleton _
-              | some element => exact algebraRootedTrace_distinct _ _ _ _ _ _ _ _ (childrenDistinct element).1 (childrenDistinct element).2
-      | arrow domain codomain =>
-          simp only [reduceAtTagged]
-          cases selected : collectionRule? domains language free bound (.arrow domain codomain) kind elements rest with
-          | none => exact List.nodup_singleton _
-          | some rule =>
-              dsimp only
-              cases shape : bareCollectionElementType? rule kind (.arrow domain codomain) with
-              | none => exact List.nodup_singleton _
-              | some element => exact algebraRootedTrace_distinct _ _ _ _ _ _ _ _ (childrenDistinct element).1 (childrenDistinct element).2
-      | multiBinder body =>
-          simp only [reduceAtTagged]
-          cases selected : collectionRule? domains language free bound (.multiBinder body) kind elements rest with
-          | none => exact List.nodup_singleton _
-          | some rule =>
-              dsimp only
-              cases shape : bareCollectionElementType? rule kind (.multiBinder body) with
-              | none => exact List.nodup_singleton _
-              | some element => exact algebraRootedTrace_distinct _ _ _ _ _ _ _ _ (childrenDistinct element).1 (childrenDistinct element).2
+      refine reduceAtTagged_collectionCases laws domains language free bound kind elements rest
+        (fun _ trace => (trace.visited.map (fun origin => origin.source.address)).Nodup) ?_ ?_ ?_ expected
+      · intro type
+        exact List.nodup_singleton _
+      · intro element
+        exact rootedTrace_distinct _ _ _ _ _ _ (childrenDistinct element).1 (childrenDistinct element).2
+      · intro type rule element _ _
+        exact algebraRootedTrace_distinct _ _ _ _ _ _ _ _ (childrenDistinct element).1 (childrenDistinct element).2
 
-#print axioms reduceAtTagged_original_addresses_distinct
 
 def TaggedReduction.partition (trace : TaggedReduction) : List TypedOrigin :=
   trace.survivors ++ trace.unitRemovals.map AlgebraAdministration.origin ++
@@ -13108,7 +12742,6 @@ theorem reduceAtTagged_original_partition (laws : List Laws) (domains : List Typ
     exact reduceAtTagged_original_points laws domains language free source bound expected origin
       (account.mem_iff.mpr member)
 
-#print axioms reduceAtTagged_original_partition
 
 open GeneralPremise.SchemaTyping
 
@@ -13221,7 +12854,6 @@ theorem reduceAtTagged_complete_of_object (laws : List Laws) (domains : List Typ
             exact reduceElementsTagged_complete_of_objects laws domains language free bound
               (fun element member typed object => recurse element member typed object) items object.2
 
-#print axioms reduceAtTagged_complete_of_object
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RoleAwareReadout
 
@@ -13291,9 +12923,6 @@ theorem substitution_trace_scope_account :
   exact ⟨by cbv, by cbv, by cbv, by cbv, by cbv,
     reduceAtTagged_source_account _ _ _ _ _ _ _, reduceAtTagged_original_points _ _ _ _ _ _ _⟩
 
-#print axioms mixed_trace_physical_account
-#print axioms wrong_trace_origin_rejected
-#print axioms substitution_trace_scope_account
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.RoleAwareSourceControls
 
@@ -13337,7 +12966,6 @@ theorem pending_domain_choice_boundary :
   · exact .substBody (checkHasType_sound (by decide +kernel))
       (.here (checkHasType_sound (by decide +kernel)))
 
-#print axioms pending_domain_choice_boundary
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.RoleAwareSourceControls
 
@@ -13495,8 +13123,6 @@ theorem unit_step {language : LanguageDef} {relEnv : Engine.RelationEnv}
       derived_hasCanonicalBinderMetadata generator canonical,targetTyped.isWellScopedAt⟩,
     .inContext .hole (.inr generator)⟩
 
-#print axioms flatten_step
-#print axioms unit_step
 
 /-- Intrinsic permutation is realized from the actual declared collection
 site at this source, including wrapped and nested data occurrences. Both
@@ -13535,8 +13161,6 @@ theorem lexical_permutation_step {language : LanguageDef} {relEnv : Engine.Relat
       (.collection kind elements none) (.collection kind (PatternLexOrder.sortLex elements) none) :=
   permutation_step discipline unordered (PatternLexOrder.sortLex_perm elements).symm site good
 
-#print axioms permutation_step
-#print axioms lexical_permutation_step
 
 private theorem strengthen_step {language : LanguageDef} {relEnv : Engine.RelationEnv}
     {discipline : EquationDiscipline} {free : FreeTypeContext} {bound : List TypeExpr} {expected : TypeExpr}
@@ -13653,7 +13277,6 @@ private theorem finishAlgebra_typed_path
       simpa only [List.nil_append] using
         splice_typed_path (relEnv := relEnv) checked discipline shape found declaration origin elements [] good represented
 
-#print axioms finishAlgebra_typed_path
 
 private theorem open_list_member {language : LanguageDef} {free : FreeTypeContext}
     {bound : List TypeExpr} {items : List Pattern} {item : Pattern} {expected : TypeExpr}
@@ -13793,8 +13416,6 @@ private theorem elements_typed_path
           simpa only [ReferenceStep.TypedEquivalent,OneHoleContext.fill,reduceElements,List.append_assoc,
             List.singleton_append] using combined
 
-#print axioms arguments_typed_path
-#print axioms elements_typed_path
 
 private theorem reduceAt_typed_path
     {laws : List Laws} {language : LanguageDef} {relEnv : Engine.RelationEnv}
@@ -13918,8 +13539,6 @@ theorem reduceAtTagged_typed_equivalent
   rw [reduceAtTagged_target]
   exact reduceAt_typed_equivalent checked authorized discipline domains free source good
 
-#print axioms reduceAt_typed_equivalent
-#print axioms reduceAtTagged_typed_equivalent
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RoleAwareReadout.TypedPaths
 
@@ -14039,13 +13658,6 @@ theorem pending_substitution_typed_object_boundary (relEnv : Engine.RelationEnv)
     change false = true at impossible
     cases impossible
 
-#print axioms mixed_trace_typed_normalization
-#print axioms binder_scopes_typed_normalization
-#print axioms nested_data_lexical_typed_step
-#print axioms wrong_sort_typed_path_rejected
-#print axioms escaping_typed_path_rejected
-#print axioms wrong_unit_typed_path_rejected
-#print axioms pending_substitution_typed_object_boundary
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.RoleAwareSourceControls
 
@@ -14217,32 +13829,15 @@ private theorem tagged_root_at (laws : List Laws) (domains : List TypeExpr) (lan
       | none => exact ⟨none,by simp only [reduceAtTagged,selected]; rfl⟩
       | some domain => exact ⟨none,by simp only [reduceAtTagged,selected]; rfl⟩
   | collection kind elements rest =>
-      cases expected with
-      | collection actual element =>
-          by_cases same : actual = kind
-          · exact ⟨none,by simp only [reduceAtTagged,same,↓reduceIte]; rfl⟩
-          · exact ⟨none,by simp only [reduceAtTagged,same,↓reduceIte]; rfl⟩
-      | base category =>
-          cases selected : collectionRule? domains language free bound (.base category) kind elements rest with
-          | none => exact ⟨none,by simp only [reduceAtTagged,selected]; rfl⟩
-          | some rule =>
-              cases element : bareCollectionElementType? rule kind (.base category) with
-              | none => exact ⟨none,by simp only [reduceAtTagged,selected,element]; rfl⟩
-              | some elementType => exact ⟨some (language.terms.idxOf rule,rule),by simp only [reduceAtTagged,selected,element]; rfl⟩
-      | arrow domain codomain =>
-          cases selected : collectionRule? domains language free bound (.arrow domain codomain) kind elements rest with
-          | none => exact ⟨none,by simp only [reduceAtTagged,selected]; rfl⟩
-          | some rule =>
-              cases element : bareCollectionElementType? rule kind (.arrow domain codomain) with
-              | none => exact ⟨none,by simp only [reduceAtTagged,selected,element]; rfl⟩
-              | some elementType => exact ⟨some (language.terms.idxOf rule,rule),by simp only [reduceAtTagged,selected,element]; rfl⟩
-      | multiBinder domain =>
-          cases selected : collectionRule? domains language free bound (.multiBinder domain) kind elements rest with
-          | none => exact ⟨none,by simp only [reduceAtTagged,selected]; rfl⟩
-          | some rule =>
-              cases element : bareCollectionElementType? rule kind (.multiBinder domain) with
-              | none => exact ⟨none,by simp only [reduceAtTagged,selected,element]; rfl⟩
-              | some elementType => exact ⟨some (language.terms.idxOf rule,rule),by simp only [reduceAtTagged,selected,element]; rfl⟩
+      refine reduceAtTagged_collectionCases laws domains language free bound kind elements rest
+        (fun type trace => ∃ declaration, trace.root =
+          originAt bound (some type) declaration (.collection kind elements rest) trace.target) ?_ ?_ ?_ expected
+      · intro type
+        exact ⟨none, rfl⟩
+      · intro element
+        exact ⟨none, rfl⟩
+      · intro type rule element _ _
+        exact ⟨some (language.terms.idxOf rule, rule), rfl⟩
 
 private theorem tagged_root_typed_readout
     (laws : List Laws) (domains : List TypeExpr) {language : LanguageDef} {free : FreeTypeContext}
@@ -14458,58 +14053,19 @@ private theorem tagged_root_declaration
         simp only [reduceAtTagged,selected] at recorded <;>
         change none = some (index,rule) at recorded <;> cases recorded
   | collection kind elements rest =>
-      cases expected with
-      | collection actual element =>
-          by_cases same : actual = kind <;> simp only [reduceAtTagged,same,↓reduceIte] at recorded <;>
-            change none = some (index,rule) at recorded <;> cases recorded
-      | base category =>
-          cases selected : collectionRule? domains language free bound (.base category) kind elements rest with
-          | none =>
-              simp only [reduceAtTagged,selected] at recorded
-              change none = some (index,rule) at recorded
-              cases recorded
-          | some chosen =>
-              obtain ⟨element,declared,elementRead,_⟩ := collectionRule_readout selected
-              simp only [reduceAtTagged,selected,elementRead] at recorded
-              change some (language.terms.idxOf chosen,chosen) = some (index,rule) at recorded
-              have indexEq := congrArg Prod.fst (Option.some.inj recorded)
-              have ruleEq := congrArg Prod.snd (Option.some.inj recorded)
-              change language.terms.idxOf chosen = index at indexEq
-              change chosen = rule at ruleEq
-              rw [← indexEq,← ruleEq]
-              exact List.getElem?_idxOf declared
-      | arrow domain codomain =>
-          cases selected : collectionRule? domains language free bound (.arrow domain codomain) kind elements rest with
-          | none =>
-              simp only [reduceAtTagged,selected] at recorded
-              change none = some (index,rule) at recorded
-              cases recorded
-          | some chosen =>
-              obtain ⟨element,declared,elementRead,_⟩ := collectionRule_readout selected
-              simp only [reduceAtTagged,selected,elementRead] at recorded
-              change some (language.terms.idxOf chosen,chosen) = some (index,rule) at recorded
-              have indexEq := congrArg Prod.fst (Option.some.inj recorded)
-              have ruleEq := congrArg Prod.snd (Option.some.inj recorded)
-              change language.terms.idxOf chosen = index at indexEq
-              change chosen = rule at ruleEq
-              rw [← indexEq,← ruleEq]
-              exact List.getElem?_idxOf declared
-      | multiBinder domain =>
-          cases selected : collectionRule? domains language free bound (.multiBinder domain) kind elements rest with
-          | none =>
-              simp only [reduceAtTagged,selected] at recorded
-              change none = some (index,rule) at recorded
-              cases recorded
-          | some chosen =>
-              obtain ⟨element,declared,elementRead,_⟩ := collectionRule_readout selected
-              simp only [reduceAtTagged,selected,elementRead] at recorded
-              change some (language.terms.idxOf chosen,chosen) = some (index,rule) at recorded
-              have indexEq := congrArg Prod.fst (Option.some.inj recorded)
-              have ruleEq := congrArg Prod.snd (Option.some.inj recorded)
-              change language.terms.idxOf chosen = index at indexEq
-              change chosen = rule at ruleEq
-              rw [← indexEq,← ruleEq]
-              exact List.getElem?_idxOf declared
+      revert recorded
+      refine reduceAtTagged_collectionCases laws domains language free bound kind elements rest
+        (fun _ trace => trace.root.declaration = some (index, rule) →
+          language.terms[index]? = some rule) ?_ ?_ ?_ expected
+      · intro type recorded
+        cases recorded
+      · intro element recorded
+        cases recorded
+      · intro type chosen element selected elementRead recorded
+        obtain ⟨_, declared, _, _⟩ := collectionRule_readout selected
+        change some (language.terms.idxOf chosen, chosen) = some (index, rule) at recorded
+        rcases Option.some.inj recorded
+        exact List.getElem?_idxOf declared
 
 /-- A retained local declaration is the actual row at its recorded original
 signature position. Rootedness and equal output values cannot supply this
@@ -14609,22 +14165,9 @@ theorem reduceAtTagged_visit_capture_readout
   intro dependencies arguments indices value spineCheck spine recovered
   exact RecursiveView.recoverValue?_admissible_from_success spineCheck spine valueGood recovered
 
-#print axioms reduceAtTagged_visit_typed_equivalent
-#print axioms reduceAtTagged_visit_capture_readout
 
-#print axioms tagged_root_declaration
-#print axioms reduceAtTagged_visits_declared
 
-#print axioms tagged_root_at
-#print axioms tagged_root_typed_readout
-#print axioms element_slot_typedAt
-#print axioms reduceAtTagged_visits_typedAt
 
-#print axioms originAt_typed_readout
-#print axioms original_underContext_typedAt
-#print axioms liftedChildren_visited_at
-#print axioms reduceArgumentsTagged_at
-#print axioms reduceElementsTagged_at
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RoleAwareReadout
 
@@ -14697,9 +14240,6 @@ theorem wrong_declared_origin_rejected :
   have refused : language.terms[3]? ≠ some wrapper := by decide +kernel
   exact refused declared
 
-#print axioms mixed_visits_typed_readback
-#print axioms nested_data_capture_typed_readback
-#print axioms wrong_declared_origin_rejected
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.RoleAwareSourceControls
 
@@ -15082,11 +14622,7 @@ theorem readOutput_account (language : LanguageDef) (bound : List TypeExpr) (exp
       simpa only [List.append_nil] using account
   | cons head tail => simp only [List.isEmpty_cons] at finished; cases finished
 
-#print axioms readAt_account
-#print axioms readOutput_account
 
-#print axioms readArguments_account_of
-#print axioms readElements_account_of
 
 
 /-- Local value typing is indexed by the role and complete bound context
@@ -15236,12 +14772,6 @@ theorem readOutput_original_account
     rw [← readAccount]
     exact List.mem_map.mpr ⟨entry,member,rfl⟩
 
-#print axioms readAt_header
-#print axioms readAt_target_typed
-#print axioms readArguments_target_typed
-#print axioms readElements_target_typed
-#print axioms reduceAtTagged_survivors_locallyTyped
-#print axioms readOutput_original_account
 
 
 open Mettapedia.GSLT.LanguageDef.GeneralTypedOccurrence
@@ -15400,9 +14930,6 @@ private theorem after_root_supported
   · exact rootSupported
   · exact childrenSupported entry inChildren
 
-#print axioms readArguments_supported_of
-#print axioms readElements_supported_of
-#print axioms after_root_supported
 
 
 private theorem readAt_head_supported
@@ -15646,8 +15173,6 @@ theorem readAt_supported (language : LanguageDef) (free : FreeTypeContext) (targ
                     · cases accepted
           · cases accepted
 
-#print axioms readAt_head_supported
-#print axioms readAt_supported
 
 
 /-- Successful complete readout yields actual licensed output occurrences,
@@ -15729,9 +15254,6 @@ theorem reduceAtTagged_readOutput_capture
   · intro dependencies arguments indices value spineCheck spine recovered
     exact inverse dependencies arguments indices value spineCheck spine (by simpa only [metadata.1] using recovered)
 
-#print axioms readOutput_supported
-#print axioms reduceAtTagged_readOutput_supported
-#print axioms reduceAtTagged_readOutput_capture
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.WithAuthoredEquations.AlgebraFocus.RoleAwareReadout.OutputSites
 
@@ -15860,9 +15382,5 @@ theorem unit_root_presentation_requires_output_declaration (relEnv : Engine.Rela
   exact ⟨by decide +kernel,by decide +kernel,by decide +kernel,.symm _ _ equation,
     by decide +kernel,by decide +kernel⟩
 
-#print axioms mixed_output_sites_and_account
-#print axioms output_address_is_not_original_address
-#print axioms scoped_output_capture_readback
-#print axioms unit_root_presentation_requires_output_declaration
 
 end Mettapedia.GSLT.LanguageDef.BagNormalForm.RoleAwareSourceControls

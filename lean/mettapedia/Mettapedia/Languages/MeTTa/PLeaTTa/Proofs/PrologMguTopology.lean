@@ -627,15 +627,15 @@ theorem TreeSubstitutionTopological.append
 
 mutual
 
-/-- Every canonical one-tree MGU records an acyclic elimination order. -/
-theorem TreeMgu.binding_topological
-    {left right : Tree} {binding : TreeSubstitution}
-    (derivation : TreeMgu left right binding) :
-    TreeSubstitutionTopological binding := by
-  exact TreeMgu.rec
-    (motive_1 := fun _ _ binding _ =>
+private theorem treeAndForest_binding_topological :
+    (∀ {left right binding}, TreeMgu left right binding →
+      TreeSubstitutionTopological binding) ∧
+    (∀ {left right binding}, TreesMgu left right binding →
+      TreeSubstitutionTopological binding) :=
+  TreeMgu.inductBoth
+    (tree := fun _ _ binding =>
       TreeSubstitutionTopological binding)
-    (motive_2 := fun _ _ binding _ =>
+    (forest := fun _ _ binding =>
       TreeSubstitutionTopological binding)
     (fun _ => .nil)
     (fun source value _ absent =>
@@ -651,33 +651,20 @@ theorem TreeMgu.binding_topological
       have extensionAvoids :=
         treesMgu_binding_variablesSatisfy tail baseLeft baseRight
       exact headInduction.append tailInduction extensionAvoids)
-    derivation
+
+/-- Every canonical one-tree MGU records an acyclic elimination order. -/
+theorem TreeMgu.binding_topological
+    {left right : Tree} {binding : TreeSubstitution}
+    (derivation : TreeMgu left right binding) :
+    TreeSubstitutionTopological binding :=
+  treeAndForest_binding_topological.1 derivation
 
 /-- Ordered child unification records the same acyclic order. -/
 theorem TreesMgu.binding_topological
     {left right : List Tree} {binding : TreeSubstitution}
     (derivation : TreesMgu left right binding) :
-    TreeSubstitutionTopological binding := by
-  exact TreesMgu.rec
-    (motive_1 := fun _ _ binding _ =>
-      TreeSubstitutionTopological binding)
-    (motive_2 := fun _ _ binding _ =>
-      TreeSubstitutionTopological binding)
-    (fun _ => .nil)
-    (fun source value _ absent =>
-      .singleton source value absent)
-    (fun value target _ absent =>
-      .singleton target value absent)
-    (fun _ _ _ _ _ childrenInduction => childrenInduction)
-    .nil
-    (fun left right lefts rights base extension head tail
-        headInduction tailInduction => by
-      have baseLeft := headInduction.applyTrees_avoids lefts
-      have baseRight := headInduction.applyTrees_avoids rights
-      have extensionAvoids :=
-        treesMgu_binding_variablesSatisfy tail baseLeft baseRight
-      exact headInduction.append tailInduction extensionAvoids)
-    derivation
+    TreeSubstitutionTopological binding :=
+  treeAndForest_binding_topological.2 derivation
 
 end
 

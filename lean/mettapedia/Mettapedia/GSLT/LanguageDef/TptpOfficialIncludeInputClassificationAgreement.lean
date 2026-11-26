@@ -374,7 +374,8 @@ private theorem apply_inspectFormulaRule_family_exact (fuel : Nat)
           family.annotatedLabel family.bodyType)
         (inspectFormula origin input) =
       [decodeFormula origin sourceName input] := by
-  simp only [inspectFormulaRule, mkRule, typed, a, applyRuleUsing,
+  simp only [inspectFormulaRule, mkRule, BaseSortDeclarations.rule,
+    BaseSortDeclarations.context, a, applyRuleUsing,
     matchPatternForRule_eq_syntactic]
   have initialMatch := inspect_match_exact family.wrapperLabel
     family.annotatedLabel origin sourceName role body annotations span
@@ -397,7 +398,7 @@ private theorem apply_inspectFormulaRule_family_exact (fuel : Nat)
               [.apply inputWrapper
                 [.apply inputAnnotated
                   [sourceName, role, body, annotations]], span]]) = [] := by
-  simp [inspectFormulaRule, inspectFormula, annotatedFormula, mkRule, typed,
+  simp [inspectFormulaRule, inspectFormula, annotatedFormula, mkRule,
     a, v, applyRuleUsing, matchPatternForRule_eq_syntactic, matchPattern,
     matchArgs, different]
 

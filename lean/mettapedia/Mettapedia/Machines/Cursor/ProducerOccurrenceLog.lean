@@ -10516,6 +10516,226 @@ theorem enterActionObservers_nil (history : Option (Prefix Occurrence))
       (history, account, state) := by
   cases history <;> cases account <;> rfl
 
+/-- The executed prefix determines the retained history, account, and
+configuration. The cut keeps the unexecuted suffix in its original order. -/
+private theorem pauseOnGate_cut (history : Option (Prefix Occurrence))
+    (account : Option ProtocolAccount) (fuel : Nat)
+    (decide : Cfg → Action Output clients → OperationGate)
+    (actions : List (Action Output clients)) (state : Cfg) :
+    let paused := pauseOnGate step capture capacity compatible history account fuel decide actions state
+    paused.suffix = actions.drop paused.consumed ∧
+      actions.take paused.consumed ++ paused.suffix = actions ∧
+      (paused.history, paused.account, paused.state) =
+        enterActionObservers step capture capacity compatible history account
+          (actions.take paused.consumed) state := by
+  dsimp only
+  induction actions generalizing fuel history account state with
+  | nil =>
+      simp only [pauseOnGate_nil, List.drop_zero, List.take_zero, List.nil_append,
+        enterActionObservers_nil, and_self]
+  | cons action rest ih =>
+      cases fuel with
+      | zero =>
+          simp only [pauseOnGate_exhausted_step, List.drop_zero, List.take_zero, List.nil_append,
+            enterActionObservers_nil, and_self]
+      | succ fuel =>
+          cases gate : decide state action with
+          | refuse =>
+              rw [pauseOnGate_refuse_step step capture capacity compatible history account fuel
+                decide action rest state gate]
+              simp only [List.drop_zero, List.take_zero, List.nil_append, enterActionObservers_nil, and_self]
+          | stopBefore =>
+              rw [pauseOnGate_breakpoint_step step capture capacity compatible history account fuel
+                decide action rest state gate]
+              simp only [List.drop_zero, List.take_zero, List.nil_append, enterActionObservers_nil, and_self]
+          | incomplete =>
+              rw [pauseOnGate_incomplete_step step capture capacity compatible history account fuel
+                decide action rest state gate]
+              simp only [List.drop_zero, List.take_zero, List.nil_append, enterActionObservers_nil, and_self]
+          | permit =>
+              rw [pauseOnGate_continue step capture capacity compatible history account fuel
+                decide action rest state gate]
+              let next := enterActionObservers step capture capacity compatible history account [action] state
+              have tail := ih next.1 next.2.1 fuel next.2.2
+              rw [List.drop_succ_cons, List.take_succ_cons, List.cons_append]
+              refine ⟨tail.1, congrArg (List.cons action) tail.2.1, ?_⟩
+              rw [tail.2.2]
+              simpa only [List.singleton_append] using
+                (enterActionObservers_append step capture capacity compatible history account [action]
+                  (rest.take (pauseOnGate step capture capacity compatible next.1 next.2.1
+                    fuel decide rest next.2.2).consumed) state).symm
+
+theorem pauseOnGate_split (history : Option (Prefix Occurrence)) (account : Option ProtocolAccount)
+    (fuel : Nat) (decide : Cfg → Action Output clients → OperationGate)
+    (actions : List (Action Output clients)) (state : Cfg) :
+    (pauseOnGate step capture capacity compatible history account fuel decide actions state).suffix =
+        actions.drop
+          (pauseOnGate step capture capacity compatible history account fuel decide actions
+            state).consumed ∧
+      actions.take
+          (pauseOnGate step capture capacity compatible history account fuel decide actions
+            state).consumed ++
+        (pauseOnGate step capture capacity compatible history account fuel decide actions
+          state).suffix =
+        actions :=
+  let cut := pauseOnGate_cut step capture capacity compatible history account fuel decide actions state
+  ⟨cut.1, cut.2.1⟩
+
+/-- History, account, and state are one observation of `actions.take consumed`.
+A refused or stopped action is not part of that observation. -/
+theorem pauseOnGate_observers (history : Option (Prefix Occurrence))
+    (account : Option ProtocolAccount) (fuel : Nat)
+    (decide : Cfg → Action Output clients → OperationGate)
+    (actions : List (Action Output clients)) (state : Cfg) :
+    ((pauseOnGate step capture capacity compatible history account fuel decide actions state).history,
+        (pauseOnGate step capture capacity compatible history account fuel decide actions
+          state).account,
+        (pauseOnGate step capture capacity compatible history account fuel decide actions
+          state).state) =
+      enterActionObservers step capture capacity compatible history account
+        (actions.take
+          (pauseOnGate step capture capacity compatible history account fuel decide actions
+            state).consumed)
+        state :=
+  (pauseOnGate_cut step capture capacity compatible history account fuel decide actions state).2.2
+
+theorem pauseOnGate_erases (history : Option (Prefix Occurrence))
+    (account : Option ProtocolAccount) (fuel : Nat)
+    (decide : Cfg → Action Output clients → OperationGate)
+    (actions : List (Action Output clients)) (state : Cfg) :
+    (pauseOnGate step capture capacity compatible history account fuel decide actions state).state =
+      runActions step capture capacity compatible
+        (actions.take
+          (pauseOnGate step capture capacity compatible history account fuel decide actions
+            state).consumed)
+        state := by
+  have observed := pauseOnGate_observers step capture capacity compatible history account fuel
+    decide actions state
+  exact (congrArg (fun triple => triple.2.2) observed).trans
+    (enterActionObservers_erases step capture capacity compatible history account
+      (actions.take
+        (pauseOnGate step capture capacity compatible history account fuel decide actions
+          state).consumed)
+      state)
+
+theorem pauseOnGate_unexecuted_keeps_account (history : Option (Prefix Occurrence))
+    (account : Option ProtocolAccount) (fuel : Nat)
+    (decide : Cfg → Action Output clients → OperationGate)
+    (actions : List (Action Output clients)) (state : Cfg) :
+    (pauseOnGate step capture capacity compatible history account fuel decide actions state).account =
+        (enterActionObservers step capture capacity compatible history account
+          (actions.take
+            (pauseOnGate step capture capacity compatible history account fuel decide actions
+              state).consumed)
+          state).2.1 ∧
+      (pauseOnGate step capture capacity compatible history account fuel decide actions state).state =
+        (enterActionObservers step capture capacity compatible history account
+          (actions.take
+            (pauseOnGate step capture capacity compatible history account fuel decide actions
+              state).consumed)
+          state).2.2 := by
+  have observed := pauseOnGate_observers step capture capacity compatible history account fuel
+    decide actions state
+  exact ⟨congrArg (fun triple => triple.2.1) observed,
+    congrArg (fun triple => triple.2.2) observed⟩
+
+/-- Unrecorded mode retains no history. Refusal does not allocate an action list. -/
+theorem pauseOnGate_unrecorded (fuel : Nat) (decide : Cfg → Action Output clients → OperationGate)
+    (actions : List (Action Output clients)) (state : Cfg) :
+    (pauseOnGate step capture capacity compatible none none fuel decide actions state).history =
+      none := by
+  have observed := pauseOnGate_observers step capture capacity compatible none none fuel decide
+    actions state
+  exact (congrArg (fun triple => triple.1) observed).trans
+    (congrArg Prod.fst (enterActionObservers_neither step capture capacity compatible
+      (actions.take
+        (pauseOnGate step capture capacity compatible none none fuel decide actions state).consumed)
+      state))
+
+theorem pauseOnGate_disabled (history : Option (Prefix Occurrence))
+    (account : Option ProtocolAccount) (actions : List (Action Output clients)) (state : Cfg) :
+    (pauseOnGate step capture capacity compatible history account actions.length
+        (operationGate (fun _ _ => true) (fun _ _ => false)) actions state).stop =
+      ActionStop.finished ∧
+      (pauseOnGate step capture capacity compatible history account actions.length
+        (operationGate (fun _ _ => true) (fun _ _ => false)) actions state).suffix = [] ∧
+      (pauseOnGate step capture capacity compatible history account actions.length
+        (operationGate (fun _ _ => true) (fun _ _ => false)) actions state).consumed =
+        actions.length ∧
+      ((pauseOnGate step capture capacity compatible history account actions.length
+          (operationGate (fun _ _ => true) (fun _ _ => false)) actions state).history,
+        (pauseOnGate step capture capacity compatible history account actions.length
+          (operationGate (fun _ _ => true) (fun _ _ => false)) actions state).account,
+        (pauseOnGate step capture capacity compatible history account actions.length
+          (operationGate (fun _ _ => true) (fun _ _ => false)) actions state).state) =
+        enterActionObservers step capture capacity compatible history account actions state := by
+  induction actions generalizing history account state with
+  | nil =>
+      rw [pauseOnGate_nil, enterActionObservers_nil]
+      exact ⟨rfl, rfl, rfl, rfl⟩
+  | cons action rest ih =>
+      have pass : operationGate (fun _ _ => true) (fun _ _ => false) state action =
+          OperationGate.permit :=
+        operationGate_permit (fun _ _ => true) (fun _ _ => false) state action rfl rfl
+      rw [List.length_cons]
+      rw [pauseOnGate_continue step capture capacity compatible history account rest.length
+        (operationGate (fun _ _ => true) (fun _ _ => false)) action rest state pass]
+      have tail := ih
+        (enterActionObservers step capture capacity compatible history account [action] state).1
+        (enterActionObservers step capture capacity compatible history account [action] state).2.1
+        (enterActionObservers step capture capacity compatible history account [action] state).2.2
+      refine ⟨tail.1, tail.2.1, ?_, ?_⟩
+      · exact congrArg (fun n => n + 1) tail.2.2.1
+      · rw [tail.2.2.2]
+        rw [← enterActionObservers_append step capture capacity compatible history account [action]
+          rest state]
+        rfl
+
+/-- Resuming a permitted suffix with the stop test disabled runs that suffix
+once. The joined observers equal one uninterrupted schedule of the actions
+that were actually supplied. This equality is not native exclusive-execution
+authority. -/
+theorem pauseOnGate_resume_permitted (history : Option (Prefix Occurrence))
+    (account : Option ProtocolAccount) (fuel : Nat)
+    (decide : Cfg → Action Output clients → OperationGate)
+    (actions : List (Action Output clients)) (state : Cfg) :
+    let paused := pauseOnGate step capture capacity compatible history account fuel decide
+      actions state
+    let resumed := pauseOnGate step capture capacity compatible paused.history paused.account
+      paused.suffix.length (operationGate (fun _ _ => true) (fun _ _ => false)) paused.suffix
+      paused.state
+    resumed.stop = ActionStop.finished ∧ resumed.suffix = [] ∧
+      resumed.consumed = paused.suffix.length ∧
+      (resumed.history, resumed.account, resumed.state) =
+        enterActionObservers step capture capacity compatible history account actions state ∧
+      resumed.state = runActions step capture capacity compatible actions state := by
+  intro paused resumed
+  have finished := pauseOnGate_disabled step capture capacity compatible paused.history
+    paused.account paused.suffix paused.state
+  have cut := pauseOnGate_cut step capture capacity compatible history account fuel decide actions state
+  let taken := actions.take paused.consumed
+  have observers : (paused.history, paused.account, paused.state) =
+      enterActionObservers step capture capacity compatible history account taken state := cut.2.2
+  have full : taken ++ paused.suffix = actions := cut.2.1
+  have joined : (resumed.history, resumed.account, resumed.state) =
+      enterActionObservers step capture capacity compatible history account actions state := by
+    calc
+      _ = enterActionObservers step capture capacity compatible paused.history paused.account
+          paused.suffix paused.state := finished.2.2.2
+      _ = (let earlier := enterActionObservers step capture capacity compatible history account taken state
+          enterActionObservers step capture capacity compatible earlier.1 earlier.2.1
+            paused.suffix earlier.2.2) := congrArg (fun earlier =>
+              enterActionObservers step capture capacity compatible earlier.1 earlier.2.1
+                paused.suffix earlier.2.2) observers
+      _ = enterActionObservers step capture capacity compatible history account
+          (taken ++ paused.suffix) state :=
+        (enterActionObservers_append step capture capacity compatible history account
+          taken paused.suffix state).symm
+      _ = _ := by rw [full]
+  exact ⟨finished.1, finished.2.1, finished.2.2.1, joined,
+    (congrArg (fun triple => triple.2.2) joined).trans
+      (enterActionObservers_erases step capture capacity compatible history account actions state)⟩
+
 theorem pauseBefore_split (history : Option (Prefix Occurrence)) (account : Option ProtocolAccount)
     (fuel : Nat) (breakOn : Cfg → Action Output clients → Bool)
     (actions : List (Action Output clients)) (state : Cfg) :
@@ -10528,35 +10748,9 @@ theorem pauseBefore_split (history : Option (Prefix Occurrence)) (account : Opti
             state).consumed ++
         (pauseBefore step capture capacity compatible history account fuel breakOn actions
           state).suffix =
-        actions := by
-  induction actions generalizing fuel history account state with
-  | nil =>
-      rw [pauseBefore_nil]
-      exact ⟨rfl, rfl⟩
-  | cons action rest ih =>
-      cases fuel with
-      | zero =>
-          rw [pauseBefore_exhausted_step]
-          exact ⟨rfl, rfl⟩
-      | succ fuel =>
-          cases hit : breakOn state action with
-          | true =>
-              rw [pauseBefore_breakpoint_step step capture capacity compatible history account fuel
-                breakOn action rest state hit]
-              exact ⟨rfl, rfl⟩
-          | false =>
-              rw [pauseBefore_continue step capture capacity compatible history account fuel
-                breakOn action rest state hit]
-              have tail := ih
-                (enterActionObservers step capture capacity compatible history account [action]
-                  state).1
-                (enterActionObservers step capture capacity compatible history account [action]
-                  state).2.1
-                fuel
-                (enterActionObservers step capture capacity compatible history account [action]
-                  state).2.2
-              rw [List.drop_succ_cons, List.take_succ_cons, List.cons_append]
-              exact ⟨tail.1, congrArg (List.cons action) tail.2⟩
+        actions :=
+  pauseOnGate_split step capture capacity compatible history account fuel
+    (operationGate (fun _ _ => true) breakOn) actions state
 
 /-- History, account, and state are one observation of `actions.take consumed`.
 The suffix is not an argument of that observation. -/
@@ -10573,44 +10767,9 @@ theorem pauseBefore_observers (history : Option (Prefix Occurrence))
         (actions.take
           (pauseBefore step capture capacity compatible history account fuel breakOn actions
             state).consumed)
-        state := by
-  induction actions generalizing fuel history account state with
-  | nil =>
-      rw [pauseBefore_nil, List.take_zero, enterActionObservers_nil]
-  | cons action rest ih =>
-      cases fuel with
-      | zero =>
-          rw [pauseBefore_exhausted_step, List.take_zero, enterActionObservers_nil]
-      | succ fuel =>
-          cases hit : breakOn state action with
-          | true =>
-              rw [pauseBefore_breakpoint_step step capture capacity compatible history account fuel
-                breakOn action rest state hit, List.take_zero, enterActionObservers_nil]
-          | false =>
-              rw [pauseBefore_continue step capture capacity compatible history account fuel
-                breakOn action rest state hit]
-              have tail := ih
-                (enterActionObservers step capture capacity compatible history account [action]
-                  state).1
-                (enterActionObservers step capture capacity compatible history account [action]
-                  state).2.1
-                fuel
-                (enterActionObservers step capture capacity compatible history account [action]
-                  state).2.2
-              rw [List.take_succ_cons, tail]
-              rw [← enterActionObservers_append step capture capacity compatible history account
-                [action]
-                (rest.take
-                  (pauseBefore step capture capacity compatible
-                    (enterActionObservers step capture capacity compatible history account [action]
-                      state).1
-                    (enterActionObservers step capture capacity compatible history account [action]
-                      state).2.1
-                    fuel breakOn rest
-                    (enterActionObservers step capture capacity compatible history account [action]
-                      state).2.2).consumed)
-                state]
-              rfl
+        state :=
+  pauseOnGate_observers step capture capacity compatible history account fuel
+    (operationGate (fun _ _ => true) breakOn) actions state
 
 theorem pauseBefore_erases (history : Option (Prefix Occurrence))
     (account : Option ProtocolAccount) (fuel : Nat)
@@ -10621,29 +10780,16 @@ theorem pauseBefore_erases (history : Option (Prefix Occurrence))
         (actions.take
           (pauseBefore step capture capacity compatible history account fuel breakOn actions
             state).consumed)
-        state := by
-  have observed := pauseBefore_observers step capture capacity compatible history account fuel
-    breakOn actions state
-  exact (congrArg (fun triple => triple.2.2) observed).trans
-    (enterActionObservers_erases step capture capacity compatible history account
-      (actions.take
-        (pauseBefore step capture capacity compatible history account fuel breakOn actions
-          state).consumed)
-      state)
+        state :=
+  pauseOnGate_erases step capture capacity compatible history account fuel
+    (operationGate (fun _ _ => true) breakOn) actions state
 
 /-- Unrecorded mode retains no history. The consumed count is not an action trace. -/
 theorem pauseBefore_unrecorded (fuel : Nat) (breakOn : Cfg → Action Output clients → Bool)
     (actions : List (Action Output clients)) (state : Cfg) :
     (pauseBefore step capture capacity compatible none none fuel breakOn actions state).history =
-      none := by
-  have observed := pauseBefore_observers step capture capacity compatible none none fuel breakOn
-    actions state
-  exact (congrArg (fun triple => triple.1) observed).trans
-    (congrArg Prod.fst (enterActionObservers_neither step capture capacity compatible
-      (actions.take
-        (pauseBefore step capture capacity compatible none none fuel breakOn actions
-          state).consumed)
-      state))
+      none :=
+  pauseOnGate_unrecorded step capture capacity compatible fuel (operationGate (fun _ _ => true) breakOn) actions state
 
 /-- History and account options do not change the stop, the consumed index,
 the suffix, or the configuration. Refusal, a breakpoint, an incomplete
@@ -10765,11 +10911,9 @@ theorem pauseBefore_unexecuted_keeps_account (history : Option (Prefix Occurrenc
           (actions.take
             (pauseBefore step capture capacity compatible history account fuel breakOn actions
               state).consumed)
-          state).2.2 := by
-  have observed := pauseBefore_observers step capture capacity compatible history account fuel
-    breakOn actions state
-  exact ⟨congrArg (fun triple => triple.2.1) observed,
-    congrArg (fun triple => triple.2.2) observed⟩
+          state).2.2 :=
+  pauseOnGate_unexecuted_keeps_account step capture capacity compatible history account fuel
+    (operationGate (fun _ _ => true) breakOn) actions state
 
 theorem pauseBefore_disabled (history : Option (Prefix Occurrence))
     (account : Option ProtocolAccount) (actions : List (Action Output clients)) (state : Cfg) :
@@ -10785,26 +10929,8 @@ theorem pauseBefore_disabled (history : Option (Prefix Occurrence))
           actions state).account,
         (pauseBefore step capture capacity compatible history account actions.length (fun _ _ => false)
           actions state).state) =
-        enterActionObservers step capture capacity compatible history account actions state := by
-  induction actions generalizing history account state with
-  | nil =>
-      rw [pauseBefore_nil, enterActionObservers_nil]
-      exact ⟨rfl, rfl, rfl, rfl⟩
-  | cons action rest ih =>
-      have pass : (fun (_ : Cfg) (_ : Action Output clients) => false) state action = false := rfl
-      rw [List.length_cons]
-      rw [pauseBefore_continue step capture capacity compatible history account rest.length
-        (fun _ _ => false) action rest state pass]
-      have tail := ih
-        (enterActionObservers step capture capacity compatible history account [action] state).1
-        (enterActionObservers step capture capacity compatible history account [action] state).2.1
-        (enterActionObservers step capture capacity compatible history account [action] state).2.2
-      refine ⟨tail.1, tail.2.1, ?_, ?_⟩
-      · exact congrArg (fun n => n + 1) tail.2.2.1
-      · rw [tail.2.2.2]
-        rw [← enterActionObservers_append step capture capacity compatible history account [action]
-          rest state]
-        rfl
+        enterActionObservers step capture capacity compatible history account actions state :=
+  pauseOnGate_disabled step capture capacity compatible history account actions state
 
 /-- Resuming with the guard disabled runs the unexecuted suffix once in this
 source model. The joined observers equal one uninterrupted schedule. This
@@ -10822,59 +10948,9 @@ theorem pauseBefore_resume (history : Option (Prefix Occurrence))
       resumed.consumed = paused.suffix.length ∧
       (resumed.history, resumed.account, resumed.state) =
         enterActionObservers step capture capacity compatible history account actions state ∧
-      resumed.state = runActions step capture capacity compatible actions state := by
-  intro paused resumed
-  have disabled := pauseBefore_disabled step capture capacity compatible paused.history
-    paused.account paused.suffix paused.state
-  have observed := pauseBefore_observers step capture capacity compatible history account fuel
-    breakOn actions state
-  have split := pauseBefore_split step capture capacity compatible history account fuel breakOn
-    actions state
-  have pausedDef : paused =
-      pauseBefore step capture capacity compatible history account fuel breakOn actions state := rfl
-  have resumedDef : resumed =
-      pauseBefore step capture capacity compatible paused.history paused.account paused.suffix.length
-        (fun _ _ => false) paused.suffix paused.state := rfl
-  have joined :
-      (resumed.history, resumed.account, resumed.state) =
-        enterActionObservers step capture capacity compatible history account actions state := by
-    rw [resumedDef, disabled.2.2.2]
-    rw [congrArg ObservedPause.history pausedDef, congrArg ObservedPause.account pausedDef,
-      congrArg ObservedPause.state pausedDef, congrArg ObservedPause.suffix pausedDef]
-    have hist :
-        (pauseBefore step capture capacity compatible history account fuel breakOn actions state).history =
-          (enterActionObservers step capture capacity compatible history account
-            (actions.take
-              (pauseBefore step capture capacity compatible history account fuel breakOn actions
-                state).consumed)
-            state).1 :=
-      congrArg (fun triple => triple.1) observed
-    have acc :
-        (pauseBefore step capture capacity compatible history account fuel breakOn actions state).account =
-          (enterActionObservers step capture capacity compatible history account
-            (actions.take
-              (pauseBefore step capture capacity compatible history account fuel breakOn actions
-                state).consumed)
-            state).2.1 :=
-      congrArg (fun triple => triple.2.1) observed
-    have st :
-        (pauseBefore step capture capacity compatible history account fuel breakOn actions state).state =
-          (enterActionObservers step capture capacity compatible history account
-            (actions.take
-              (pauseBefore step capture capacity compatible history account fuel breakOn actions
-                state).consumed)
-            state).2.2 :=
-      congrArg (fun triple => triple.2.2) observed
-    rw [hist, acc, st]
-    rw [← enterActionObservers_append step capture capacity compatible history account
-      (actions.take
-        (pauseBefore step capture capacity compatible history account fuel breakOn actions
-          state).consumed)
-      (pauseBefore step capture capacity compatible history account fuel breakOn actions state).suffix
-      state, split.2]
-  exact ⟨disabled.1, disabled.2.1, disabled.2.2.1, joined,
-    (congrArg (fun triple => triple.2.2) joined).trans
-      (enterActionObservers_erases step capture capacity compatible history account actions state)⟩
+      resumed.state = runActions step capture capacity compatible actions state :=
+  pauseOnGate_resume_permitted step capture capacity compatible history account fuel
+    (operationGate (fun _ _ => true) breakOn) actions state
 
 set_option backward.isDefEq.respectTransparency false in
 /-- The occurrence word of the schedule is the word of `actions.take consumed`
@@ -11278,155 +11354,7 @@ theorem omitted_pause_history_is_not_the_source_word :
       resumed.state.delivery.log.positions (1 : Fin 2) = some 1 := by
   exact ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
-theorem pauseOnGate_split (history : Option (Prefix Occurrence)) (account : Option ProtocolAccount)
-    (fuel : Nat) (decide : Cfg → Action Output clients → OperationGate)
-    (actions : List (Action Output clients)) (state : Cfg) :
-    (pauseOnGate step capture capacity compatible history account fuel decide actions state).suffix =
-        actions.drop
-          (pauseOnGate step capture capacity compatible history account fuel decide actions
-            state).consumed ∧
-      actions.take
-          (pauseOnGate step capture capacity compatible history account fuel decide actions
-            state).consumed ++
-        (pauseOnGate step capture capacity compatible history account fuel decide actions
-          state).suffix =
-        actions := by
-  induction actions generalizing fuel history account state with
-  | nil =>
-      rw [pauseOnGate_nil]
-      exact ⟨rfl, rfl⟩
-  | cons action rest ih =>
-      cases fuel with
-      | zero =>
-          rw [pauseOnGate_exhausted_step]
-          exact ⟨rfl, rfl⟩
-      | succ fuel =>
-          cases gate : decide state action with
-          | refuse =>
-              rw [pauseOnGate_refuse_step step capture capacity compatible history account fuel
-                decide action rest state gate]
-              exact ⟨rfl, rfl⟩
-          | stopBefore =>
-              rw [pauseOnGate_breakpoint_step step capture capacity compatible history account fuel
-                decide action rest state gate]
-              exact ⟨rfl, rfl⟩
-          | incomplete =>
-              rw [pauseOnGate_incomplete_step step capture capacity compatible history account fuel
-                decide action rest state gate]
-              exact ⟨rfl, rfl⟩
-          | permit =>
-              rw [pauseOnGate_continue step capture capacity compatible history account fuel
-                decide action rest state gate]
-              have tail := ih
-                (enterActionObservers step capture capacity compatible history account [action]
-                  state).1
-                (enterActionObservers step capture capacity compatible history account [action]
-                  state).2.1
-                fuel
-                (enterActionObservers step capture capacity compatible history account [action]
-                  state).2.2
-              rw [List.drop_succ_cons, List.take_succ_cons, List.cons_append]
-              exact ⟨tail.1, congrArg (List.cons action) tail.2⟩
 
-/-- History, account, and state are one observation of `actions.take consumed`.
-A refused or stopped action is not part of that observation. -/
-theorem pauseOnGate_observers (history : Option (Prefix Occurrence))
-    (account : Option ProtocolAccount) (fuel : Nat)
-    (decide : Cfg → Action Output clients → OperationGate)
-    (actions : List (Action Output clients)) (state : Cfg) :
-    ((pauseOnGate step capture capacity compatible history account fuel decide actions state).history,
-        (pauseOnGate step capture capacity compatible history account fuel decide actions
-          state).account,
-        (pauseOnGate step capture capacity compatible history account fuel decide actions
-          state).state) =
-      enterActionObservers step capture capacity compatible history account
-        (actions.take
-          (pauseOnGate step capture capacity compatible history account fuel decide actions
-            state).consumed)
-        state := by
-  induction actions generalizing fuel history account state with
-  | nil =>
-      rw [pauseOnGate_nil, List.take_zero, enterActionObservers_nil]
-  | cons action rest ih =>
-      cases fuel with
-      | zero =>
-          rw [pauseOnGate_exhausted_step, List.take_zero, enterActionObservers_nil]
-      | succ fuel =>
-          cases gate : decide state action with
-          | refuse =>
-              rw [pauseOnGate_refuse_step step capture capacity compatible history account fuel
-                decide action rest state gate, List.take_zero, enterActionObservers_nil]
-          | stopBefore =>
-              rw [pauseOnGate_breakpoint_step step capture capacity compatible history account fuel
-                decide action rest state gate, List.take_zero, enterActionObservers_nil]
-          | incomplete =>
-              rw [pauseOnGate_incomplete_step step capture capacity compatible history account fuel
-                decide action rest state gate, List.take_zero, enterActionObservers_nil]
-          | permit =>
-              rw [pauseOnGate_continue step capture capacity compatible history account fuel
-                decide action rest state gate]
-              have tail := ih
-                (enterActionObservers step capture capacity compatible history account [action]
-                  state).1
-                (enterActionObservers step capture capacity compatible history account [action]
-                  state).2.1
-                fuel
-                (enterActionObservers step capture capacity compatible history account [action]
-                  state).2.2
-              rw [List.take_succ_cons, tail]
-              rw [← enterActionObservers_append step capture capacity compatible history account
-                [action]
-                (rest.take
-                  (pauseOnGate step capture capacity compatible
-                    (enterActionObservers step capture capacity compatible history account [action]
-                      state).1
-                    (enterActionObservers step capture capacity compatible history account [action]
-                      state).2.1
-                    fuel decide rest
-                    (enterActionObservers step capture capacity compatible history account [action]
-                      state).2.2).consumed)
-                state]
-              rfl
-
-theorem pauseOnGate_erases (history : Option (Prefix Occurrence))
-    (account : Option ProtocolAccount) (fuel : Nat)
-    (decide : Cfg → Action Output clients → OperationGate)
-    (actions : List (Action Output clients)) (state : Cfg) :
-    (pauseOnGate step capture capacity compatible history account fuel decide actions state).state =
-      runActions step capture capacity compatible
-        (actions.take
-          (pauseOnGate step capture capacity compatible history account fuel decide actions
-            state).consumed)
-        state := by
-  have observed := pauseOnGate_observers step capture capacity compatible history account fuel
-    decide actions state
-  exact (congrArg (fun triple => triple.2.2) observed).trans
-    (enterActionObservers_erases step capture capacity compatible history account
-      (actions.take
-        (pauseOnGate step capture capacity compatible history account fuel decide actions
-          state).consumed)
-      state)
-
-theorem pauseOnGate_unexecuted_keeps_account (history : Option (Prefix Occurrence))
-    (account : Option ProtocolAccount) (fuel : Nat)
-    (decide : Cfg → Action Output clients → OperationGate)
-    (actions : List (Action Output clients)) (state : Cfg) :
-    (pauseOnGate step capture capacity compatible history account fuel decide actions state).account =
-        (enterActionObservers step capture capacity compatible history account
-          (actions.take
-            (pauseOnGate step capture capacity compatible history account fuel decide actions
-              state).consumed)
-          state).2.1 ∧
-      (pauseOnGate step capture capacity compatible history account fuel decide actions state).state =
-        (enterActionObservers step capture capacity compatible history account
-          (actions.take
-            (pauseOnGate step capture capacity compatible history account fuel decide actions
-              state).consumed)
-          state).2.2 := by
-  have observed := pauseOnGate_observers step capture capacity compatible history account fuel
-    decide actions state
-  exact ⟨congrArg (fun triple => triple.2.1) observed,
-    congrArg (fun triple => triple.2.2) observed⟩
 
 /-- The same account option is the paid account under either history option.
 `pauseOnGate_recording_irrelevant` supplies the shared consumed index. -/
@@ -11526,129 +11454,26 @@ theorem pauseOnGate_restart_keeps_suffix_and_account
     (some (Prefix.initial bound)) account fuel decide actions state
   exact ⟨aligned.1.symm, aligned.2.1.symm, aligned.2.2.1.symm, paid.symm, aligned.2.2.2.symm⟩
 
-/-- Unrecorded mode retains no history. Refusal does not allocate an action list. -/
-theorem pauseOnGate_unrecorded (fuel : Nat) (decide : Cfg → Action Output clients → OperationGate)
-    (actions : List (Action Output clients)) (state : Cfg) :
-    (pauseOnGate step capture capacity compatible none none fuel decide actions state).history =
-      none := by
-  have observed := pauseOnGate_observers step capture capacity compatible none none fuel decide
-    actions state
-  exact (congrArg (fun triple => triple.1) observed).trans
-    (congrArg Prod.fst (enterActionObservers_neither step capture capacity compatible
-      (actions.take
-        (pauseOnGate step capture capacity compatible none none fuel decide actions state).consumed)
-      state))
 
-theorem pauseOnGate_disabled (history : Option (Prefix Occurrence))
-    (account : Option ProtocolAccount) (actions : List (Action Output clients)) (state : Cfg) :
-    (pauseOnGate step capture capacity compatible history account actions.length
-        (operationGate (fun _ _ => true) (fun _ _ => false)) actions state).stop =
-      ActionStop.finished ∧
-      (pauseOnGate step capture capacity compatible history account actions.length
-        (operationGate (fun _ _ => true) (fun _ _ => false)) actions state).suffix = [] ∧
-      (pauseOnGate step capture capacity compatible history account actions.length
-        (operationGate (fun _ _ => true) (fun _ _ => false)) actions state).consumed =
-        actions.length ∧
-      ((pauseOnGate step capture capacity compatible history account actions.length
-          (operationGate (fun _ _ => true) (fun _ _ => false)) actions state).history,
-        (pauseOnGate step capture capacity compatible history account actions.length
-          (operationGate (fun _ _ => true) (fun _ _ => false)) actions state).account,
-        (pauseOnGate step capture capacity compatible history account actions.length
-          (operationGate (fun _ _ => true) (fun _ _ => false)) actions state).state) =
-        enterActionObservers step capture capacity compatible history account actions state := by
-  induction actions generalizing history account state with
-  | nil =>
-      rw [pauseOnGate_nil, enterActionObservers_nil]
-      exact ⟨rfl, rfl, rfl, rfl⟩
-  | cons action rest ih =>
-      have pass : operationGate (fun _ _ => true) (fun _ _ => false) state action =
-          OperationGate.permit :=
-        operationGate_permit (fun _ _ => true) (fun _ _ => false) state action rfl rfl
-      rw [List.length_cons]
-      rw [pauseOnGate_continue step capture capacity compatible history account rest.length
-        (operationGate (fun _ _ => true) (fun _ _ => false)) action rest state pass]
-      have tail := ih
-        (enterActionObservers step capture capacity compatible history account [action] state).1
-        (enterActionObservers step capture capacity compatible history account [action] state).2.1
-        (enterActionObservers step capture capacity compatible history account [action] state).2.2
-      refine ⟨tail.1, tail.2.1, ?_, ?_⟩
-      · exact congrArg (fun n => n + 1) tail.2.2.1
-      · rw [tail.2.2.2]
-        rw [← enterActionObservers_append step capture capacity compatible history account [action]
-          rest state]
-        rfl
-
-/-- Resuming a permitted suffix with the stop test disabled runs that suffix
-once. The joined observers equal one uninterrupted schedule of the actions
-that were actually supplied. This equality is not native exclusive-execution
-authority. -/
-theorem pauseOnGate_resume_permitted (history : Option (Prefix Occurrence))
-    (account : Option ProtocolAccount) (fuel : Nat)
-    (decide : Cfg → Action Output clients → OperationGate)
-    (actions : List (Action Output clients)) (state : Cfg) :
-    let paused := pauseOnGate step capture capacity compatible history account fuel decide
-      actions state
-    let resumed := pauseOnGate step capture capacity compatible paused.history paused.account
-      paused.suffix.length (operationGate (fun _ _ => true) (fun _ _ => false)) paused.suffix
-      paused.state
-    resumed.stop = ActionStop.finished ∧ resumed.suffix = [] ∧
-      resumed.consumed = paused.suffix.length ∧
-      (resumed.history, resumed.account, resumed.state) =
-        enterActionObservers step capture capacity compatible history account actions state ∧
-      resumed.state = runActions step capture capacity compatible actions state := by
-  intro paused resumed
-  have disabled := pauseOnGate_disabled step capture capacity compatible paused.history
-    paused.account paused.suffix paused.state
-  have observed := pauseOnGate_observers step capture capacity compatible history account fuel
-    decide actions state
-  have split := pauseOnGate_split step capture capacity compatible history account fuel decide
-    actions state
-  have pausedDef : paused =
-      pauseOnGate step capture capacity compatible history account fuel decide actions state := rfl
-  have resumedDef : resumed =
-      pauseOnGate step capture capacity compatible paused.history paused.account
-        paused.suffix.length (operationGate (fun _ _ => true) (fun _ _ => false)) paused.suffix
-        paused.state := rfl
-  have joined :
-      (resumed.history, resumed.account, resumed.state) =
-        enterActionObservers step capture capacity compatible history account actions state := by
-    rw [resumedDef, disabled.2.2.2]
-    rw [congrArg ObservedPause.history pausedDef, congrArg ObservedPause.account pausedDef,
-      congrArg ObservedPause.state pausedDef, congrArg ObservedPause.suffix pausedDef]
-    have hist :
-        (pauseOnGate step capture capacity compatible history account fuel decide actions state).history =
-          (enterActionObservers step capture capacity compatible history account
-            (actions.take
-              (pauseOnGate step capture capacity compatible history account fuel decide actions
-                state).consumed)
-            state).1 :=
-      congrArg (fun triple => triple.1) observed
-    have acc :
-        (pauseOnGate step capture capacity compatible history account fuel decide actions state).account =
-          (enterActionObservers step capture capacity compatible history account
-            (actions.take
-              (pauseOnGate step capture capacity compatible history account fuel decide actions
-                state).consumed)
-            state).2.1 :=
-      congrArg (fun triple => triple.2.1) observed
-    have st :
-        (pauseOnGate step capture capacity compatible history account fuel decide actions state).state =
-          (enterActionObservers step capture capacity compatible history account
-            (actions.take
-              (pauseOnGate step capture capacity compatible history account fuel decide actions
-                state).consumed)
-            state).2.2 :=
-      congrArg (fun triple => triple.2.2) observed
-    rw [hist, acc, st]
-    rw [← enterActionObservers_append step capture capacity compatible history account
-      (actions.take
-        (pauseOnGate step capture capacity compatible history account fuel decide actions
-          state).consumed)
-      (pauseOnGate step capture capacity compatible history account fuel decide actions state).suffix
-      state, split.2]
-  exact ⟨disabled.1, disabled.2.1, disabled.2.2.1, joined,
-    (congrArg (fun triple => triple.2.2) joined).trans
-      (enterActionObservers_erases step capture capacity compatible history account actions state)⟩
+/-- The retained cut determines the observers below. The cause of a stop
+carries separate information even when the cut is the same. -/
+example (history : Option (Prefix Occurrence)) (account : Option ProtocolAccount)
+    (action : Action Output clients) (state : Cfg) :
+    let refused := pauseOnGate step capture capacity compatible history account 1
+      (fun _ _ => .refuse) [action] state
+    let stopped := pauseOnGate step capture capacity compatible history account 1
+      (fun _ _ => .stopBefore) [action] state
+    (refused.history, refused.account, refused.state, refused.suffix, refused.consumed) =
+      (stopped.history, stopped.account, stopped.state, stopped.suffix, stopped.consumed) ∧
+      refused.stop ≠ stopped.stop := by
+  dsimp only
+  rw [pauseOnGate_refuse_step step capture capacity compatible history account 0
+        (fun _ _ => .refuse) action [] state rfl,
+      pauseOnGate_breakpoint_step step capture capacity compatible history account 0
+        (fun _ _ => .stopBefore) action [] state rfl]
+  refine ⟨rfl, ?_⟩
+  intro same
+  cases same
 
 /-- A disabled stop test still permits under constant authorization, and the
 same disabled test does not turn an authorization denial into that permit.

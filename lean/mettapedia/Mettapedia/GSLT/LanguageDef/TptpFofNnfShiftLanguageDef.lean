@@ -1,3 +1,5 @@
+import Mettapedia.GSLT.LanguageDef.BaseSortDeclarations
+import Mettapedia.GSLT.LanguageDef.StructuralInclusion
 import Mettapedia.GSLT.LanguageDef.TptpFofNnfLanguageDef
 import Mettapedia.GSLT.LanguageDef.RewriteValidationCertificate
 import Mettapedia.GSLT.LanguageDef.StructuralCategory
@@ -37,17 +39,11 @@ def v (name : String) : Pattern := .fvar name
 
 def typed (entries : List (String × String)) :
     List (String × TypeExpr) :=
-  entries.map fun entry => (entry.1, .base entry.2)
+  BaseSortDeclarations.context entries
 
 def ctor (label category : String) (parameters : List (String × String))
-    (policy : Option TermEvalPolicy := none) : GrammarRule := {
-  label
-  category
-  params := parameters.map fun parameter =>
-    .simple parameter.1 (.base parameter.2)
-  syntaxPattern := [.terminal label]
-  evalPolicy? := policy
-}
+    (policy : Option TermEvalPolicy := none) : GrammarRule :=
+  BaseSortDeclarations.constructor label category parameters policy
 
 def indexZero : Pattern := a "tptp-fof-resolved:index-zero"
 def indexSucc (index : Pattern) : Pattern :=
@@ -99,13 +95,8 @@ def formulaResult (cutoff source target : Pattern) : Pattern :=
   a "tptp-fof-nnf-shift:formula-result" [cutoff, source, target]
 
 def mkRule (name : String) (context : List (String × String))
-    (premises : List Premise) (left right : Pattern) : RewriteRule := {
-  name
-  typeContext := typed context
-  premises
-  left
-  right
-}
+    (premises : List Premise) (left right : Pattern) : RewriteRule :=
+  BaseSortDeclarations.rule name (typed context) premises left right
 
 def congruence (source target : Pattern) : Premise :=
   .congruence source target
@@ -559,20 +550,16 @@ theorem language_validate : language.validate = [] := by
 def validated : ValidatedLanguageDef := ⟨language, language_validate⟩
 
 def sourceInclusion :
-    StructuralMorphism TptpFofNnfLanguageDef.validated validated where
-  symbols := LanguageDefSymbolMap.id
-  mapsTypes declaration membership := by
-    rw [mapTypeDecl_id]
-    exact List.mem_append_left _ membership
-  mapsTerms declaration membership := by
-    rw [mapGrammarRule_id]
-    exact List.mem_append_left _ membership
-  mapsEquations declaration membership := by
-    change declaration ∈ TptpFofNnfLanguageDef.language.equations at membership
-    simp [TptpFofNnfLanguageDef.no_equations] at membership
-  mapsRewrites declaration membership := by
-    change declaration ∈ TptpFofNnfLanguageDef.language.rewrites at membership
-    simp [TptpFofNnfLanguageDef.no_rewrites] at membership
+    StructuralMorphism TptpFofNnfLanguageDef.validated validated :=
+  StructuralMorphism.ofDeclarationInclusion {
+    types := fun _ member => List.mem_append_left _ member
+    terms := fun _ member => List.mem_append_left _ member
+    equations := by
+      change TptpFofNnfLanguageDef.language.equations ⊆ _
+      exact TptpFofNnfLanguageDef.no_equations ▸ List.nil_subset _
+    rewrites := by
+      change TptpFofNnfLanguageDef.language.rewrites ⊆ _
+      exact TptpFofNnfLanguageDef.no_rewrites ▸ List.nil_subset _ }
 
 /-! ## Exact root rules -/
 

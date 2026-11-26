@@ -27,6 +27,7 @@ def named (value : Name) : Format := word value.toString
 partial def term : FTerm → Format
   | .var name => form [word "var", word (egalVar name)]
   | .num value => form [word "num", word (toString value)]
+  | .str value => form [word "str", word s!"\"{value}\""]
   | .app name arguments => form [word "app", named name, form (arguments.map term)]
   | .apv function arguments => form [word "apv", term function, form (arguments.map term)]
   | .lam name type body => form [word "lam", word (egalVar name), term type, term body]
@@ -46,15 +47,29 @@ def read (name : Name) (expression : Expr) : MetaM FTerm := do
   | .ok result => pure result
   | .error reason => throwError "recursion interface {name} cannot be read: {reason}"
 
+/-- The parts of a declaration the export reads, as the Egal interpretation reads them: when they
+apply a quotient primitive outside the Type-carrier profile (`Quot.liftOn` at `Sort u`), at the
+declaration's Type instance (each level parameter a successor), the instance that interpretation
+covers; otherwise at the declaration's own levels. -/
+def interpreted (info : ConstantInfo) (parts : List Expr) : MetaM (List Expr) := do
+  let outside ← parts.anyM fun e => return !(← QuotientProfile.outside e).isEmpty
+  unless outside do return parts
+  let levels := info.levelParams.map fun u => Level.succ (.param u)
+  return parts.map (·.instantiateLevelParams info.levelParams levels)
+
 def definition (name : Name) : MetaM Format := do
   let .defnInfo info ← getConstInfo name | throwError "recipe component is not a definition: {name}"
+  let (type, value) ← match ← interpreted (.defnInfo info) [info.type, info.value] with
+    | [type, value] => pure (type, value)
+    | _ => throwError "a definition's type and value: {name}"
   return form [word "LeanRecursionDefinition", named name,
-    form [word "Type", term (← read name info.type)],
-    form [word "Value", term (← read name info.value)]]
+    form [word "Type", term (← read name type)],
+    form [word "Value", term (← read name value)]]
 
 def theoremStatement (name : Name) : MetaM Format := do
   let info ← getConstInfo name
-  return form [word "LeanRecursionTheorem", named name, term (← read name info.type),
+  let type := (← interpreted info [info.type]).headD info.type
+  return form [word "LeanRecursionTheorem", named name, term (← read name type),
     form [word "Axioms", form ((← collectAxioms name).toList.map named)]]
 
 def record (entry : Derive.Record) : Format :=
@@ -88,7 +103,8 @@ def render (entries : Array Derive.Record) : MetaM String := do
   let mut sourceProofsEmitted : NameSet := {}
   for entry in entries do
     result := result ++ (record entry).pretty 120 ++ "\n\n"
-    let sourceType ← read entry.source (← getConstInfo entry.source).type
+    let source ← getConstInfo entry.source
+    let sourceType ← read entry.source ((← interpreted source [source.type]).headD source.type)
     result := result ++ (form [word "LeanRecursionSourceType", named entry.source, term sourceType]).pretty 120 ++ "\n\n"
     for name in entry.measure.toArray ++ #[entry.relation, entry.recipe] do
       result := result ++ (← definition name).pretty 120 ++ "\n\n"

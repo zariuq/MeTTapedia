@@ -7856,7 +7856,7 @@ theorem realizes_completed_unique {space : Space} {task : Task} {results : Resul
       ⟨space, .work task, [], earned⟩ = (actual, .finished finished)) :
     actual = results ∧ finished = ⟨space, .returning [], [], earned ++ results⟩ := by
   obtain ⟨_, complete⟩ := realizes_completed realized earned
-  exact Machine.finished_unique ran complete
+  exact Machine.finished_run_eq ran complete
 
 /-- An actual finished run of the admitted source has exactly the derived
 occurrences; finishing does not authorize dropping retained bindings. -/

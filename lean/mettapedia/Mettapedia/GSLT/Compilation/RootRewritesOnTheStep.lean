@@ -94,6 +94,28 @@ def optionRow : Option String → Expr
   | none => .sym 0
   | some name => .code (.sym (labelCode name))
 
+/-- **A number as a row**: zero, and the successor of a number. Bound indices and binder arities are numbers, so a
+rule can count them down. -/
+def numeral : ℕ → Expr
+  | 0 => .sym 0
+  | n + 1 => .app (.sym 1) (numeral n)
+
+@[simp] theorem numeral_inj {m n : ℕ} : numeral m = numeral n ↔ m = n := by
+  constructor
+  · intro same
+    induction m generalizing n with
+    | zero => cases n <;> simp_all [numeral]
+    | succ m ih =>
+        cases n with
+        | zero => simp [numeral] at same
+        | succ n =>
+            simp only [numeral, Expr.app.injEq, true_and] at same
+            rw [ih same]
+  · rintro rfl
+    rfl
+
+theorem numeral_injective : Function.Injective numeral := fun _ _ same => numeral_inj.mp same
+
 /-- A list of names as a row. -/
 def namesRow : List String → Expr
   | [] => .sym 0
@@ -103,12 +125,12 @@ mutual
   /-- **A source term as one row.** Every term has a row, also a term that a rule
   can only capture whole. -/
   def encode : Pattern → Expr
-    | .bvar index => .app (.sym 0) (.sym index)
+    | .bvar index => .app (.sym 0) (numeral index)
     | .fvar name => .app (.sym 1) (.sym (labelCode name))
     | .apply label arguments => .app (.sym 2) (.app (.sym (labelCode label)) (encodeList arguments))
     | .lambda binder body => .app (.sym 3) (.app (optionRow binder) (encode body))
     | .multiLambda arity binders body =>
-        .app (.sym 4) (.app (.sym arity) (.app (namesRow binders) (encode body)))
+        .app (.sym 4) (.app (numeral arity) (.app (namesRow binders) (encode body)))
     | .subst body value => .app (.sym 5) (.app (encode body) (encode value))
     | .collection kind elements rest =>
         .app (.sym 6) (.app (.sym (collectionCode kind)) (.app (encodeList elements) (optionRow rest)))
@@ -183,12 +205,27 @@ def symTerm (code : Nat) : Tm := .const (.sym code)
 
 @[simp] theorem unknowns_symTerm (code : Nat) : unknowns (symTerm code) = [] := rfl
 
+/-- A number as a row pattern. -/
+def numeralTerm : ℕ → Tm
+  | 0 => symTerm 0
+  | n + 1 => appTerm (symTerm 1) (numeralTerm n)
+
+@[simp] theorem inst_numeralTerm (θ : ℕ → Expr) (n : ℕ) : inst θ (numeralTerm n) = numeral n := by
+  induction n with
+  | zero => rfl
+  | succ n ih => simp [numeralTerm, numeral, ih]
+
+@[simp] theorem unknowns_numeralTerm (n : ℕ) : unknowns (numeralTerm n) = [] := by
+  induction n with
+  | zero => rfl
+  | succ n ih => simp [numeralTerm, ih]
+
 mutual
   /-- A first-order pattern as a row pattern. Binders, explicit substitutions and
   collection patterns have none. -/
   def lower? : Pattern → Option Tm
     | .fvar name => some (.var (labelCode name))
-    | .bvar index => some (appTerm (symTerm 0) (symTerm index))
+    | .bvar index => some (appTerm (symTerm 0) (numeralTerm index))
     | .apply label arguments =>
         (lowerList? arguments).map fun lowered => appTerm (symTerm 2) (appTerm (symTerm (labelCode label)) lowered)
     | .lambda _ _ => none

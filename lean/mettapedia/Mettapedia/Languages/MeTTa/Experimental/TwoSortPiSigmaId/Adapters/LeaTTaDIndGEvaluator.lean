@@ -1,4 +1,5 @@
 import Mettapedia.Languages.MeTTa.Experimental.TwoSortPiSigmaId.Adapters.CICGuestBridge
+import Mettapedia.Languages.MeTTa.LeaTTa.EvaluatorCorrectness.ClosedAtomMatchTactic
 import MettaHyperonFull.Minimal.Stdlib
 import MettaHyperonFull.Operational.Properties
 import MettaHyperonFull.Proofs.Correspondence
@@ -2981,6 +2982,18 @@ private theorem sortAtom_vars_nil (sort : DIndGArtifactSort) :
     (sortAtom sort).vars = [] :=
   List.eq_nil_iff_forall_not_mem.mpr (fun _ => sortAtom_vars_absent sort)
 
+local macro "closed_encoded_atom" : tactic => `(tactic|
+  first
+  | assumption
+  | apply sigAtom_vars_nil
+  | apply termAtom_vars_nil
+  | apply declNameAtom_vars_nil
+  | apply casesAtom_vars_nil
+  | apply argsAtom_vars_nil
+  | apply ctorsAtom_vars_nil
+  | apply sortAtom_vars_nil
+  | simp [Metta.Atom.vars, mNat, ctxNilAtom, mSym, mBool, mExpr])
+
 private theorem declNameAtom_not_var
     (name : Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Syntax.DeclName)
     (v : String) :
@@ -3053,6 +3066,13 @@ private theorem nfQuery_vars_nil_early
     (sig : DIndGArtifactSig) (raw : DIndGArtifactTerm) :
     (nfQuery sig raw).vars = [] := by
   simp [nfQuery, mExpr, mSym, Metta.Atom.vars, sigAtom_vars_nil, termAtom_vars_nil]
+
+private theorem match_freshened_closed (counter : Nat) {lhs rhs target : Atom}
+    {answers : List Bindings} (closed : target.vars = []) (matched : matchAtoms lhs target = answers) :
+    matchAtoms (freshenRule counter lhs rhs).1 target =
+      answers.map (renameBindings (counterSuffix counter)) := by
+  rw [freshenRule_eq_renBy,
+    matchAtoms_renBy_closed_target_eq _ (counterSuffix_injective counter) _ _ closed, matched]
 
 /-- The repaired matcher filters complete candidate bindings before threading
 them into the next `matchAll` accumulator.  This helper exposes the singleton
@@ -3858,114 +3878,6 @@ theorem if_false_instantiate_bindings (thenA elseA : Metta.Atom)
     Metta.Subst.apply, Metta.Subst.lookup, mVar]
 
 set_option maxHeartbeats 2000000 in
-theorem let_rule_match_nx (atom template : Metta.Atom)
-    (hAtom : "atom" ∉ atom.vars)
-    (hTemplate : "template" ∉ template.vars)
-    (hAtomNonVar : ∀ w, atom ≠ Metta.Atom.var w)
-    (hTemplateNonVar : ∀ w, template ≠ Metta.Atom.var w)
-    (hPatternAtom : "pattern" ∉ atom.vars)
-    (hTemplateAtom : "template" ∉ atom.vars)
-    (hPatternTemplate : "pattern" ∉ template.vars)
-    (hAtomTemplate : "atom" ∉ template.vars) :
-    Metta.matchAtoms letRulePair.1 (mExpr "let" [mVar "nx", atom, template]) =
-      [[ Metta.BindingRel.val "template" template
-       , Metta.BindingRel.val "atom" atom
-       , Metta.BindingRel.eq "pattern" "nx" ]] := by
-  simp only [Metta.matchAtoms, Metta.matchAtomsWith, letRulePair, mExpr, mSym, mVar]
-  unfold Metta.matchAll
-  simp [Metta.matchAtomsWith, Metta.Bindings.merge]
-  unfold Metta.matchAll
-  simp [Metta.matchAtomsWith]
-  unfold Metta.matchAll
-  have hloopEq : Metta.Bindings.hasLoop
-      [Metta.BindingRel.eq "pattern" "nx"] = false :=
-    Bindings.hasLoop_singleton_eq_of_ne "pattern" "nx" (by decide)
-  rw [match_var_occurs_free_nonvar_atom "atom" atom hAtom hAtomNonVar]
-  have hloopAtom : Metta.Bindings.hasLoop
-      [Metta.BindingRel.val "atom" atom] = false :=
-    hasLoop_singleton_val_not_false "atom" atom hAtom
-  simp [Metta.Bindings.merge, Metta.Bindings.mergeOne, Metta.Bindings.addVarBinding,
-    Metta.Bindings.classValues, Metta.Bindings.eqClassOrdered, Metta.Bindings.eqVarsInOrder,
-    Metta.Bindings.addValRaw, Metta.Bindings.removeVal, hloopAtom]
-  unfold Metta.matchAll
-  rw [match_var_occurs_free_nonvar_atom "template" template hTemplate hTemplateNonVar]
-  have hloopTemplate : Metta.Bindings.hasLoop
-      [Metta.BindingRel.val "template" template] = false :=
-    hasLoop_singleton_val_not_false "template" template hTemplate
-  have hloopResult : Metta.Bindings.hasLoop
-      [ Metta.BindingRel.val "template" template
-      , Metta.BindingRel.val "atom" atom
-      , Metta.BindingRel.eq "pattern" "nx" ] = false :=
-    hasLoop_two_vals_one_eq_false_of_joint_fresh
-      "template" "atom" "pattern" "nx" template atom
-      (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
-      hPatternAtom hAtom hTemplateAtom
-      hPatternTemplate hAtomTemplate hTemplate hAtomNonVar hTemplateNonVar
-  simp [Metta.Bindings.merge, Metta.Bindings.mergeOne, Metta.Bindings.addVarBinding,
-    Metta.Bindings.classValues, Metta.Bindings.eqClassOrdered, Metta.Bindings.eqVarsInOrder,
-    Metta.Bindings.addValRaw, Metta.Bindings.removeVal, hloopTemplate]
-  unfold Metta.matchAll
-  change List.filter (fun bindings => !Metta.Bindings.hasLoop bindings)
-      [[ Metta.BindingRel.val "template" template
-       , Metta.BindingRel.val "atom" atom
-       , Metta.BindingRel.eq "pattern" "nx" ]] = _
-  simp [hloopResult]
-
-set_option maxHeartbeats 2000000 in
-theorem let_rule_match_ny (atom template : Metta.Atom)
-    (hAtom : "atom" ∉ atom.vars)
-    (hTemplate : "template" ∉ template.vars)
-    (hAtomNonVar : ∀ w, atom ≠ Metta.Atom.var w)
-    (hTemplateNonVar : ∀ w, template ≠ Metta.Atom.var w)
-    (hPatternAtom : "pattern" ∉ atom.vars)
-    (hTemplateAtom : "template" ∉ atom.vars)
-    (hPatternTemplate : "pattern" ∉ template.vars)
-    (hAtomTemplate : "atom" ∉ template.vars) :
-    Metta.matchAtoms letRulePair.1 (mExpr "let" [mVar "ny", atom, template]) =
-      [[ Metta.BindingRel.val "template" template
-       , Metta.BindingRel.val "atom" atom
-       , Metta.BindingRel.eq "pattern" "ny" ]] := by
-  simp only [Metta.matchAtoms, Metta.matchAtomsWith, letRulePair, mExpr, mSym, mVar]
-  unfold Metta.matchAll
-  simp [Metta.matchAtomsWith, Metta.Bindings.merge]
-  unfold Metta.matchAll
-  simp [Metta.matchAtomsWith]
-  unfold Metta.matchAll
-  have hloopEq : Metta.Bindings.hasLoop
-      [Metta.BindingRel.eq "pattern" "ny"] = false :=
-    Bindings.hasLoop_singleton_eq_of_ne "pattern" "ny" (by decide)
-  rw [match_var_occurs_free_nonvar_atom "atom" atom hAtom hAtomNonVar]
-  have hloopAtom : Metta.Bindings.hasLoop
-      [Metta.BindingRel.val "atom" atom] = false :=
-    hasLoop_singleton_val_not_false "atom" atom hAtom
-  simp [Metta.Bindings.merge, Metta.Bindings.mergeOne, Metta.Bindings.addVarBinding,
-    Metta.Bindings.classValues, Metta.Bindings.eqClassOrdered, Metta.Bindings.eqVarsInOrder,
-    Metta.Bindings.addValRaw, Metta.Bindings.removeVal, hloopAtom]
-  unfold Metta.matchAll
-  rw [match_var_occurs_free_nonvar_atom "template" template hTemplate hTemplateNonVar]
-  have hloopTemplate : Metta.Bindings.hasLoop
-      [Metta.BindingRel.val "template" template] = false :=
-    hasLoop_singleton_val_not_false "template" template hTemplate
-  have hloopResult : Metta.Bindings.hasLoop
-      [ Metta.BindingRel.val "template" template
-      , Metta.BindingRel.val "atom" atom
-      , Metta.BindingRel.eq "pattern" "ny" ] = false :=
-    hasLoop_two_vals_one_eq_false_of_joint_fresh
-      "template" "atom" "pattern" "ny" template atom
-      (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
-      hPatternAtom hAtom hTemplateAtom
-      hPatternTemplate hAtomTemplate hTemplate hAtomNonVar hTemplateNonVar
-  simp [Metta.Bindings.merge, Metta.Bindings.mergeOne, Metta.Bindings.addVarBinding,
-    Metta.Bindings.classValues, Metta.Bindings.eqClassOrdered, Metta.Bindings.eqVarsInOrder,
-    Metta.Bindings.addValRaw, Metta.Bindings.removeVal, hloopTemplate]
-  unfold Metta.matchAll
-  change List.filter (fun bindings => !Metta.Bindings.hasLoop bindings)
-      [[ Metta.BindingRel.val "template" template
-       , Metta.BindingRel.val "atom" atom
-       , Metta.BindingRel.eq "pattern" "ny" ]] = _
-  simp [hloopResult]
-
-set_option maxHeartbeats 2000000 in
 private theorem let_rule_match_named
     (pattern atomVar templateVar binder : String)
     (atom template : Metta.Atom)
@@ -4072,11 +3984,86 @@ private theorem let_rule_match_named
   unfold Metta.matchAll
   exact filter_singleton_binding_of_hasLoop_false _ hloopResult
 
+theorem let_rule_match_nx (atom template : Metta.Atom)
+    (hAtom : "atom" ∉ atom.vars)
+    (hTemplate : "template" ∉ template.vars)
+    (hAtomNonVar : ∀ w, atom ≠ Metta.Atom.var w)
+    (hTemplateNonVar : ∀ w, template ≠ Metta.Atom.var w)
+    (hPatternAtom : "pattern" ∉ atom.vars)
+    (hTemplateAtom : "template" ∉ atom.vars)
+    (hPatternTemplate : "pattern" ∉ template.vars)
+    (hAtomTemplate : "atom" ∉ template.vars) :
+    Metta.matchAtoms letRulePair.1 (mExpr "let" [mVar "nx", atom, template]) =
+      [[ Metta.BindingRel.val "template" template
+       , Metta.BindingRel.val "atom" atom
+       , Metta.BindingRel.eq "pattern" "nx" ]] := by
+  exact let_rule_match_named "pattern" "atom" "template" "nx" atom template
+    hAtom hTemplate hAtomNonVar hTemplateNonVar
+    (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+    hPatternAtom hTemplateAtom hPatternTemplate hAtomTemplate
+
+theorem let_rule_match_ny (atom template : Metta.Atom)
+    (hAtom : "atom" ∉ atom.vars)
+    (hTemplate : "template" ∉ template.vars)
+    (hAtomNonVar : ∀ w, atom ≠ Metta.Atom.var w)
+    (hTemplateNonVar : ∀ w, template ≠ Metta.Atom.var w)
+    (hPatternAtom : "pattern" ∉ atom.vars)
+    (hTemplateAtom : "template" ∉ atom.vars)
+    (hPatternTemplate : "pattern" ∉ template.vars)
+    (hAtomTemplate : "atom" ∉ template.vars) :
+    Metta.matchAtoms letRulePair.1 (mExpr "let" [mVar "ny", atom, template]) =
+      [[ Metta.BindingRel.val "template" template
+       , Metta.BindingRel.val "atom" atom
+       , Metta.BindingRel.eq "pattern" "ny" ]] := by
+  exact let_rule_match_named "pattern" "atom" "template" "ny" atom template
+    hAtom hTemplate hAtomNonVar hTemplateNonVar
+    (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+    hPatternAtom hTemplateAtom hPatternTemplate hAtomTemplate
+
 private def letRuleBindings
     (binder : String) (atom template : Metta.Atom) : Metta.Bindings :=
   [ Metta.BindingRel.val "template" template
   , Metta.BindingRel.val "atom" atom
   , Metta.BindingRel.eq "pattern" binder ]
+
+/-- A `let` match retains two value payloads and the ambient endpoint of
+its equality binding. A rename must avoid all three. -/
+private theorem letRuleBindings_rename_fresh_iff (rename : String → String)
+    (binder : String) (atom template : Atom) :
+    RenamedBindingKeysFreshForPayloads rename (letRuleBindings binder atom template) ↔
+      ∀ key ∈ ["template", "atom", "pattern"],
+        rename key ∉ atom.vars ∧ rename key ∉ template.vars ∧ rename key ≠ binder := by
+  constructor
+  · intro fresh key relevant
+    have observed := fresh key (by simpa [letRuleBindings, bindingRuleKeys] using relevant)
+    exact ⟨observed.1 "atom" atom (by simp [letRuleBindings]),
+      observed.1 "template" template (by simp [letRuleBindings]),
+      observed.2 "pattern" binder (by simp [letRuleBindings])⟩
+  · intro fresh key relevant
+    obtain ⟨noAtom, noTemplate, noBinder⟩ :=
+      fresh key (by simpa [letRuleBindings, bindingRuleKeys] using relevant)
+    constructor
+    · intro name value carried
+      simp [letRuleBindings] at carried
+      rcases carried with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+      · exact noTemplate
+      · exact noAtom
+    · intro name endpoint carried
+      simp [letRuleBindings] at carried
+      rcases carried with ⟨rfl, rfl⟩
+      exact noBinder
+
+example : RenamedBindingKeysFreshForPayloads id
+    (letRuleBindings "x" (.sym "value") (.var "x")) := by
+  apply (letRuleBindings_rename_fresh_iff _ _ _ _).mpr
+  intro key relevant
+  simp at relevant
+  rcases relevant with rfl | rfl | rfl <;> simp [Atom.vars]
+
+example : ¬ RenamedBindingKeysFreshForPayloads id
+    (letRuleBindings "template" (.sym "value") (.sym "body")) := by
+  intro fresh
+  exact ((letRuleBindings_rename_fresh_iff _ _ _ _).mp fresh "template" (by simp)).2.2 rfl
 
 theorem let_instantiate_bindings
     (binder : String) (atom template : Metta.Atom)
@@ -4246,6 +4233,90 @@ private theorem fresh_let_rule_match
       hAtomBinder hTemplateBinder
       hPatternAtom hTemplateAtom hPatternTemplate hAtomTemplate)
 
+private theorem value_step {bindings : Bindings} (values : ValueBindings bindings)
+    (seed : List VarName) : Bindings.eqStep bindings seed = seed := by
+  induction values with
+  | nil => rfl
+  | val _ ih => exact ih
+
+/-- Equality readout ignores the value-only suffix. It still sees the
+direction of the edge in the representative order. -/
+private theorem ordered_one_edge {bindings : Bindings} (values : ValueBindings bindings)
+    {left right : VarName} (distinct : left ≠ right) :
+    Bindings.eqClassOrdered (.eq left right :: bindings) left = [right, left] := by
+  have step (seed : List VarName) :
+      Bindings.eqStep (.eq left right :: bindings) seed =
+        Bindings.eqStep [.eq left right] seed := by
+    simp only [Bindings.eqStep, List.foldl_cons, List.foldl_nil]
+    exact value_step values _
+  have start : Bindings.eqStep (.eq left right :: bindings) [left] = [left, right] := by
+    rw [step]
+    simp [Bindings.eqStep, distinct, Ne.symm distinct]
+  have loop : Bindings.eqStep (.eq left right :: bindings) [left, right] = [left, right] := by
+    rw [step]
+    simp [Bindings.eqStep, distinct, Ne.symm distinct]
+  have closure : Bindings.eqClass (.eq left right :: bindings) left = [left, right] := by
+    unfold Bindings.eqClass
+    rw [show 2 * (BindingRel.eq left right :: bindings).length + 1 =
+        Nat.succ (2 * (BindingRel.eq left right :: bindings).length) by omega]
+    simp only [Bindings.eqClassAux, start]
+    exact Bindings.eqClassAux_of_stable _ _ loop _
+  have order : Bindings.eqVarsInOrder (.eq left right :: bindings) = [right, left] := by
+    have empty := values.eqVarsInOrder_nil
+    unfold Bindings.eqVarsInOrder at empty ⊢
+    rw [List.reverse_cons, List.foldl_append, empty]
+    simp [distinct]
+  simp [Bindings.eqClassOrdered, closure, order]
+
+private theorem merge_let_valueBindings
+    (ambient : Bindings) (values : ValueBindings ambient)
+    (f : String → String) (injective : Function.Injective f)
+    (binder : String) (atom template : Atom)
+    (atomNonVar : ∀ name, atom ≠ .var name)
+    (templateNonVar : ∀ name, template ≠ .var name)
+    (patternBinder : f "pattern" ≠ binder)
+    (atomBinder : f "atom" ≠ binder)
+    (templateBinder : f "template" ≠ binder)
+    (patternFresh : f "pattern" ∉ bindingValueKeys ambient)
+    (atomFresh : f "atom" ∉ bindingValueKeys ambient)
+    (templateFresh : f "template" ∉ bindingValueKeys ambient)
+    (binderFresh : binder ∉ bindingValueKeys ambient) :
+    Bindings.merge ambient (renameBindings f (letRuleBindings binder atom template)) =
+      [(renameBindings f (letRuleBindings binder atom template)).reverse ++ ambient] := by
+  let first := BindingRel.val (f "template") template :: ambient
+  let second := BindingRel.val (f "atom") atom :: first
+  let edge := BindingRel.eq (f "pattern") binder
+  have atomTemplate := injective.ne (by decide : "atom" ≠ "template")
+  have patternTemplate := injective.ne (by decide : "pattern" ≠ "template")
+  have patternAtom := injective.ne (by decide : "pattern" ≠ "atom")
+  have firstStep : Bindings.mergeOne [ambient] (.val (f "template") template) = [first] := by
+    simpa only [Bindings.merge, List.foldl_cons, List.foldl_nil, List.singleton_append] using
+      values.merge_singleton_val_eq_of_not_key templateNonVar templateFresh
+  have secondValues : ValueBindings second := .val (.val values)
+  have secondStep : Bindings.mergeOne [first] (.val (f "atom") atom) = [second] := by
+    have fresh : f "atom" ∉ bindingValueKeys first := by
+      simp [first, bindingValueKeys, atomTemplate, atomFresh]
+    simpa only [Bindings.merge, List.foldl_cons, List.foldl_nil, List.singleton_append] using
+      (ValueBindings.val values).merge_singleton_val_eq_of_not_key atomNonVar fresh
+  have binderAbsent : Bindings.lookupVal (edge :: second) binder = none :=
+    lookupVal_none_of_not_mem_keys (by
+      simp [edge, second, first, bindingValueKeys, Ne.symm atomBinder, Ne.symm templateBinder, binderFresh])
+  have patternAbsent : Bindings.lookupVal (edge :: second) (f "pattern") = none :=
+    lookupVal_none_of_not_mem_keys (by
+      simp [edge, second, first, bindingValueKeys, patternAtom, patternTemplate, patternFresh])
+  have edgeNoValue : Bindings.classValues (edge :: second) (f "pattern") = [] := by
+    have order : Bindings.eqClassOrdered (edge :: second) (f "pattern") = [binder, f "pattern"] :=
+      ordered_one_edge secondValues patternBinder
+    simp only [Bindings.classValues, order,
+      List.filterMap_cons, binderAbsent, patternAbsent, List.filterMap_nil]
+  have thirdStep : Bindings.mergeOne [second] edge = [edge :: second] := by
+    simpa only [Bindings.merge, List.foldl_cons, List.foldl_nil, List.singleton_append] using
+      merge_singleton_eq_eq_of_valueless_class patternBinder edgeNoValue secondValues.eq_not_mem
+  simp only [letRuleBindings, renameBindings, Bindings.merge, List.foldl_cons, List.foldl_nil,
+    firstStep, secondStep]
+  exact thirdStep
+
+
 /-- The repaired mixed `let` matcher environment merges from empty in runtime
 cons order: its two values are followed by the explicit pattern/binder class. -/
 private theorem merge_empty_renamed_letRuleBindings_eq
@@ -4259,64 +4330,9 @@ private theorem merge_empty_renamed_letRuleBindings_eq
     Metta.Bindings.merge []
         (renameBindings f (letRuleBindings binder atom template)) =
       [(renameBindings f (letRuleBindings binder atom template)).reverse] := by
-  have hTemplateAtom : f "template" ≠ f "atom" := by
-    intro h
-    have : "template" = "atom" := hf h
-    contradiction
-  have hPatternAtom : f "pattern" ≠ f "atom" := by
-    intro h
-    have : "pattern" = "atom" := hf h
-    contradiction
-  have hPatternTemplate : f "pattern" ≠ f "template" := by
-    intro h
-    have : "pattern" = "template" := hf h
-    contradiction
-  have hfirst :
-      Metta.Bindings.merge []
-          [Metta.BindingRel.val (f "template") template] =
-        [[Metta.BindingRel.val (f "template") template]] :=
-    singleton_val_merge_empty_eq (f "template") template hTemplateNonVar
-  have hsecond :
-      Metta.Bindings.merge [Metta.BindingRel.val (f "template") template]
-          [Metta.BindingRel.val (f "atom") atom] =
-        [[Metta.BindingRel.val (f "atom") atom,
-          Metta.BindingRel.val (f "template") template]] := by
-    simpa using ValueBindings.merge_singleton_val_eq_of_not_key
-      (ValueBindings.val ValueBindings.nil) hAtomNonVar
-      (by simpa [bindingValueKeys] using Ne.symm hTemplateAtom)
-  have hclassValues :
-      Metta.Bindings.classValues
-          [ Metta.BindingRel.eq (f "pattern") binder
-          , Metta.BindingRel.val (f "atom") atom
-          , Metta.BindingRel.val (f "template") template ]
-          (f "pattern") = [] := by
-    exact Bindings.classValues_one_eq_two_vals_left_eq_nil
-      (f "pattern") binder (f "atom") (f "template") atom template
-      hPatternBinder hPatternAtom hPatternTemplate
-      (Ne.symm hAtomBinder) (Ne.symm hTemplateBinder)
-  have hthird :
-      Metta.Bindings.merge
-          [ Metta.BindingRel.val (f "atom") atom
-          , Metta.BindingRel.val (f "template") template ]
-          [Metta.BindingRel.eq (f "pattern") binder] =
-        [[ Metta.BindingRel.eq (f "pattern") binder
-         , Metta.BindingRel.val (f "atom") atom
-         , Metta.BindingRel.val (f "template") template ]] := by
-    simpa using merge_singleton_eq_eq_of_valueless_class
-      hPatternBinder hclassValues (by simp)
-  simp only [letRuleBindings, renameBindings, Metta.Bindings.merge,
-    List.foldl_cons, List.foldl_nil]
-  rw [show Metta.Bindings.mergeOne [[]]
-      (Metta.BindingRel.val (f "template") template) =
-        [[Metta.BindingRel.val (f "template") template]] by
-      simpa [Metta.Bindings.merge] using hfirst]
-  rw [show Metta.Bindings.mergeOne
-      [[Metta.BindingRel.val (f "template") template]]
-      (Metta.BindingRel.val (f "atom") atom) =
-        [[Metta.BindingRel.val (f "atom") atom,
-          Metta.BindingRel.val (f "template") template]] by
-      simpa [Metta.Bindings.merge] using hsecond]
-  simpa [Metta.Bindings.merge] using hthird
+  simpa using merge_let_valueBindings [] .nil f hf binder atom template hAtomNonVar hTemplateNonVar
+    hPatternBinder hAtomBinder hTemplateBinder (by simp [bindingValueKeys]) (by simp [bindingValueKeys])
+    (by simp [bindingValueKeys]) (by simp [bindingValueKeys])
 
 /-- Merging the runtime-order `let` environment from empty restores matcher
 order. This is the second merge performed by argument binding retention. -/
@@ -5719,257 +5735,6 @@ private theorem match_ternary_nested_binary_vars
   unfold Metta.matchAll
   rfl
 
-/-- Matcher for the `DDef $c $T $body` declaration head used by
-`def-body-of`.
-
-LeaTTa's list matcher accumulates the bindings right-to-left inside the
-constructor, giving `body`, then `T`, then `c`. -/
-private theorem match_ddef_expr_vars
-    (defName : Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Syntax.DeclName)
-    (type body : DIndGArtifactTerm) :
-    Metta.matchAtomsWith none
-      (mExpr "DDef" [mVar "c", mVar "T", mVar "body"])
-      (mExpr "DDef" [declNameAtom defName, termAtom type, termAtom body]) =
-    [[Metta.BindingRel.val "body" (termAtom body),
-      Metta.BindingRel.val "T" (termAtom type),
-      Metta.BindingRel.val "c" (declNameAtom defName)]] := by
-  simp only [Metta.matchAtomsWith, mExpr, mSym, mVar]
-  unfold Metta.matchAll
-  simp [Metta.matchAtomsWith, Metta.Bindings.merge]
-  unfold Metta.matchAll
-  rw [match_var_occurs_free_nonvar_atom "c" (declNameAtom defName)
-    (declNameAtom_vars_absent defName) (declNameAtom_not_var defName)]
-  rw [filter_singleton_binding_of_hasLoop_false _
-    (hasLoop_singleton_val_not_false "c" (declNameAtom defName)
-      (declNameAtom_vars_absent defName))]
-  simp only [List.flatMap_singleton]
-  rw [singleton_val_merge_empty_eq "c" (declNameAtom defName)
-    (declNameAtom_not_var defName)]
-  unfold Metta.matchAll
-  rw [match_var_occurs_free_nonvar_atom "T" (termAtom type)
-    (termAtom_vars_absent type) (termAtom_not_var type)]
-  rw [filter_singleton_binding_of_hasLoop_false _
-    (hasLoop_singleton_val_not_false "T" (termAtom type)
-      (termAtom_vars_absent type))]
-  simp only [List.flatMap_singleton]
-  rw [ValueBindings.merge_singleton_val_eq_of_not_key
-    (ValueBindings.val ValueBindings.nil) (termAtom_not_var type)
-    (by simp [bindingValueKeys])]
-  simp only [List.singleton_append]
-  unfold Metta.matchAll
-  rw [match_var_occurs_free_nonvar_atom "body" (termAtom body)
-    (termAtom_vars_absent body) (termAtom_not_var body)]
-  rw [filter_singleton_binding_of_hasLoop_false _
-    (hasLoop_singleton_val_not_false "body" (termAtom body)
-      (termAtom_vars_absent body))]
-  simp only [List.flatMap_singleton]
-  rw [ValueBindings.merge_singleton_val_eq_of_not_key
-    (ValueBindings.val (ValueBindings.val ValueBindings.nil)) (termAtom_not_var body)
-    (by simp [bindingValueKeys])]
-  unfold Metta.matchAll
-  rfl
-
-/-- Matcher for a signature whose head is a `DDef` declaration. -/
-private theorem match_scons_ddef_expr
-    (rest : DIndGArtifactSig)
-    (defName : Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Syntax.DeclName)
-    (type body : DIndGArtifactTerm) :
-    Metta.matchAtomsWith none
-      (mExpr "SCons"
-        [mExpr "DDef" [mVar "c", mVar "T", mVar "body"], mVar "rest"])
-      (sigAtom (sigWithHeadDecl (.ddef defName type body) rest)) =
-    [[Metta.BindingRel.val "rest" (sigAtom rest),
-      Metta.BindingRel.val "c" (declNameAtom defName),
-      Metta.BindingRel.val "T" (termAtom type),
-      Metta.BindingRel.val "body" (termAtom body)]] := by
-  rw [show sigAtom (sigWithHeadDecl (.ddef defName type body) rest) =
-      mExpr "SCons"
-        [mExpr "DDef" [declNameAtom defName, termAtom type, termAtom body],
-          sigAtom rest] by
-    simp [sigWithHeadDecl, sigAtom, declAtom, mExpr, mSym]]
-  simp only [Metta.matchAtomsWith, mExpr, mSym, mVar]
-  unfold Metta.matchAll
-  simp [Metta.matchAtomsWith, Metta.Bindings.merge]
-  unfold Metta.matchAll
-  rw [show
-      Metta.matchAtomsWith none
-        (Metta.Atom.expr [Metta.Atom.sym "DDef", Metta.Atom.var "c",
-          Metta.Atom.var "T", Metta.Atom.var "body"])
-        (Metta.Atom.expr [Metta.Atom.sym "DDef", declNameAtom defName,
-          termAtom type, termAtom body]) =
-        [[Metta.BindingRel.val "body" (termAtom body),
-          Metta.BindingRel.val "T" (termAtom type),
-      Metta.BindingRel.val "c" (declNameAtom defName)]] from
-    match_ddef_expr_vars defName type body]
-  have hloopInner : Metta.Bindings.hasLoop
-      [ Metta.BindingRel.val "body" (termAtom body)
-      , Metta.BindingRel.val "T" (termAtom type)
-      , Metta.BindingRel.val "c" (declNameAtom defName) ] = false :=
-    ClosedValueBindings.hasLoop_false
-      (ClosedValueBindings.val (termAtom_vars_nil body)
-        (ClosedValueBindings.val (termAtom_vars_nil type)
-          (ClosedValueBindings.val (declNameAtom_vars_nil defName)
-            ClosedValueBindings.nil)))
-  rw [filter_singleton_binding_of_hasLoop_false _ hloopInner]
-  simp only [List.flatMap_singleton]
-  have hmergeInner : Metta.Bindings.merge []
-      [ Metta.BindingRel.val "body" (termAtom body)
-      , Metta.BindingRel.val "T" (termAtom type)
-      , Metta.BindingRel.val "c" (declNameAtom defName) ] =
-      [[ Metta.BindingRel.val "c" (declNameAtom defName)
-       , Metta.BindingRel.val "T" (termAtom type)
-       , Metta.BindingRel.val "body" (termAtom body) ]] := by
-    apply merge_closed_noConflict_eq
-    · exact ClosedValueBindings.val (termAtom_vars_nil body)
-        (ClosedValueBindings.val (termAtom_vars_nil type)
-          (ClosedValueBindings.val (declNameAtom_vars_nil defName) ClosedValueBindings.nil))
-    · simp [bindingValueKeys]
-    · exact ClosedValueBindings.nil
-    · simp [bindingValueKeys]
-  rw [hmergeInner]
-  unfold Metta.matchAll
-  rw [match_var_occurs_free_nonvar_atom "rest" (sigAtom rest)
-    (sigAtom_vars_absent rest) (sigAtom_not_var rest)]
-  rw [filter_singleton_binding_of_hasLoop_false _
-    (hasLoop_singleton_val_not_false "rest" (sigAtom rest)
-      (sigAtom_vars_absent rest))]
-  simp only [List.flatMap_singleton]
-  rw [ValueBindings.merge_singleton_val_eq_of_not_key
-    (ValueBindings.val (ValueBindings.val (ValueBindings.val ValueBindings.nil)))
-    (sigAtom_not_var rest) (by simp [bindingValueKeys])]
-  unfold Metta.matchAll
-  rfl
-
-private theorem match_ddef_expr_vars_named
-    (c T bodyVar : String)
-    (defName : Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Syntax.DeclName)
-    (type body : DIndGArtifactTerm)
-    (hT_c : T ≠ c)
-    (hbody_T : bodyVar ≠ T)
-    (hbody_c : bodyVar ≠ c) :
-    Metta.matchAtomsWith none
-      (mExpr "DDef" [mVar c, mVar T, mVar bodyVar])
-      (mExpr "DDef" [declNameAtom defName, termAtom type, termAtom body]) =
-    [[Metta.BindingRel.val bodyVar (termAtom body),
-      Metta.BindingRel.val T (termAtom type),
-      Metta.BindingRel.val c (declNameAtom defName)]] := by
-  simp only [Metta.matchAtomsWith, mExpr, mSym, mVar]
-  unfold Metta.matchAll
-  simp [Metta.matchAtomsWith, Metta.Bindings.merge]
-  unfold Metta.matchAll
-  rw [match_var_occurs_free_nonvar_atom c (declNameAtom defName)
-    (declNameAtom_vars_absent defName) (declNameAtom_not_var defName)]
-  rw [filter_singleton_binding_of_hasLoop_false _
-    (hasLoop_singleton_val_not_false c (declNameAtom defName)
-      (declNameAtom_vars_absent defName))]
-  simp only [List.flatMap_singleton]
-  rw [singleton_val_merge_empty_eq c (declNameAtom defName) (declNameAtom_not_var defName)]
-  unfold Metta.matchAll
-  rw [match_var_occurs_free_nonvar_atom T (termAtom type)
-    (termAtom_vars_absent type) (termAtom_not_var type)]
-  rw [filter_singleton_binding_of_hasLoop_false _
-    (hasLoop_singleton_val_not_false T (termAtom type)
-      (termAtom_vars_absent type))]
-  simp only [List.flatMap_singleton]
-  rw [ValueBindings.merge_singleton_val_eq_of_not_key
-    (ValueBindings.val ValueBindings.nil) (termAtom_not_var type)
-    (by simpa [bindingValueKeys] using hT_c)]
-  simp only [List.singleton_append]
-  unfold Metta.matchAll
-  rw [match_var_occurs_free_nonvar_atom bodyVar (termAtom body)
-    (termAtom_vars_absent body) (termAtom_not_var body)]
-  rw [filter_singleton_binding_of_hasLoop_false _
-    (hasLoop_singleton_val_not_false bodyVar (termAtom body)
-      (termAtom_vars_absent body))]
-  simp only [List.flatMap_singleton]
-  rw [ValueBindings.merge_singleton_val_eq_of_not_key
-    (ValueBindings.val (ValueBindings.val ValueBindings.nil)) (termAtom_not_var body)
-    (by simp [bindingValueKeys, hbody_T, hbody_c])]
-  unfold Metta.matchAll
-  rfl
-
-private theorem match_scons_ddef_expr_named
-    (c T bodyVar restVar : String)
-    (rest : DIndGArtifactSig)
-    (defName : Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Syntax.DeclName)
-    (type body : DIndGArtifactTerm)
-    (hT_c : T ≠ c)
-    (hbody_T : bodyVar ≠ T)
-    (hbody_c : bodyVar ≠ c)
-    (hrest_body : restVar ≠ bodyVar)
-    (hrest_T : restVar ≠ T)
-    (hrest_c : restVar ≠ c) :
-    Metta.matchAtomsWith none
-      (mExpr "SCons"
-        [mExpr "DDef" [mVar c, mVar T, mVar bodyVar], mVar restVar])
-      (sigAtom (sigWithHeadDecl (.ddef defName type body) rest)) =
-    [[Metta.BindingRel.val restVar (sigAtom rest),
-      Metta.BindingRel.val c (declNameAtom defName),
-      Metta.BindingRel.val T (termAtom type),
-      Metta.BindingRel.val bodyVar (termAtom body)]] := by
-  rw [show sigAtom (sigWithHeadDecl (.ddef defName type body) rest) =
-      mExpr "SCons"
-        [mExpr "DDef" [declNameAtom defName, termAtom type, termAtom body],
-          sigAtom rest] by
-    simp [sigWithHeadDecl, sigAtom, declAtom, mExpr, mSym]]
-  simp only [Metta.matchAtomsWith, mExpr, mSym, mVar]
-  unfold Metta.matchAll
-  simp [Metta.matchAtomsWith, Metta.Bindings.merge]
-  unfold Metta.matchAll
-  rw [show
-      Metta.matchAtomsWith none
-        (Metta.Atom.expr
-          [Metta.Atom.sym "DDef", Metta.Atom.var c,
-            Metta.Atom.var T, Metta.Atom.var bodyVar])
-        (Metta.Atom.expr [Metta.Atom.sym "DDef", declNameAtom defName,
-          termAtom type, termAtom body]) =
-        [[Metta.BindingRel.val bodyVar (termAtom body),
-          Metta.BindingRel.val T (termAtom type),
-      Metta.BindingRel.val c (declNameAtom defName)]] from
-    match_ddef_expr_vars_named c T bodyVar defName type body
-      hT_c hbody_T hbody_c]
-  have hloopInner : Metta.Bindings.hasLoop
-      [ Metta.BindingRel.val bodyVar (termAtom body)
-      , Metta.BindingRel.val T (termAtom type)
-      , Metta.BindingRel.val c (declNameAtom defName) ] = false :=
-    ClosedValueBindings.hasLoop_false
-      (ClosedValueBindings.val (termAtom_vars_nil body)
-        (ClosedValueBindings.val (termAtom_vars_nil type)
-          (ClosedValueBindings.val (declNameAtom_vars_nil defName)
-            ClosedValueBindings.nil)))
-  rw [filter_singleton_binding_of_hasLoop_false _ hloopInner]
-  simp only [List.flatMap_singleton]
-  have hmergeInner :
-      Metta.Bindings.merge []
-        [Metta.BindingRel.val bodyVar (termAtom body),
-          Metta.BindingRel.val T (termAtom type),
-          Metta.BindingRel.val c (declNameAtom defName)] =
-        [[Metta.BindingRel.val c (declNameAtom defName),
-          Metta.BindingRel.val T (termAtom type),
-          Metta.BindingRel.val bodyVar (termAtom body)]] := by
-    apply merge_closed_noConflict_eq
-    · exact ClosedValueBindings.val (termAtom_vars_nil body)
-        (ClosedValueBindings.val (termAtom_vars_nil type)
-          (ClosedValueBindings.val (declNameAtom_vars_nil defName)
-            ClosedValueBindings.nil))
-    · simp [bindingValueKeys, hT_c, hbody_T, hbody_c]
-    · exact ClosedValueBindings.nil
-    · simp [bindingValueKeys]
-  rw [hmergeInner]
-  unfold Metta.matchAll
-  rw [match_var_occurs_free_nonvar_atom restVar (sigAtom rest)
-    (sigAtom_vars_absent rest) (sigAtom_not_var rest)]
-  rw [filter_singleton_binding_of_hasLoop_false _
-    (hasLoop_singleton_val_not_false restVar (sigAtom rest)
-      (sigAtom_vars_absent rest))]
-  simp only [List.flatMap_singleton]
-  rw [ValueBindings.merge_singleton_val_eq_of_not_key
-    (ValueBindings.val (ValueBindings.val (ValueBindings.val ValueBindings.nil)))
-    (sigAtom_not_var rest)
-    (by simp [bindingValueKeys, hrest_body, hrest_T, hrest_c])]
-  unfold Metta.matchAll
-  rfl
-
 /-- The leaf `nf` rule for encoded variables matches with the two closed
 bindings consumed by the certified `Var` readout. -/
 theorem nf_var_rule_match
@@ -5977,18 +5742,8 @@ theorem nf_var_rule_match
     Metta.matchAtoms (mExpr "nf" [mVar "sig", mExpr "Var" [mVar "k"]])
       (nfQuery sig (.var k)) =
       [nfVarRuleBindings sig k] := by
-  have hmatch := match_binary_nested_unary_vars "nf" "sig" "Var" "k"
-      (sigAtom sig) (mNat k) (by decide)
-      (sigAtom_vars_absent sig) (mNat_vars_absent k)
-      (sigAtom_not_var sig) (mNat_not_var k)
-  have hloop : Metta.Bindings.hasLoop (nfVarRuleBindings sig k) = false :=
-    ClosedValueBindings.hasLoop_false
-      (ClosedValueBindings.val (by simp [mNat, Metta.Atom.vars])
-        (ClosedValueBindings.val (sigAtom_vars_nil sig) ClosedValueBindings.nil))
-  unfold Metta.matchAtoms
-  simp only [nfQuery, termAtom, nfVarRuleBindings]
-  rw [hmatch]
-  exact filter_singleton_binding_of_hasLoop_false _ hloop
+  simp only [nfQuery, termAtom]
+  closed_atom_match using (by closed_encoded_atom)
 
 /-- Instantiating the leaf `nf`/`Var` body returns the encoded variable. -/
 theorem nf_var_instantiate_bindings
@@ -6010,19 +5765,8 @@ theorem nf_srt_rule_match
     Metta.matchAtoms (mExpr "nf" [mVar "sig", mExpr "Srt" [mVar "s"]])
       (nfQuery sig (.srt sort)) =
       [nfSrtRuleBindings sig sort] := by
-  have hmatch := match_binary_nested_unary_vars "nf" "sig" "Srt" "s"
-      (sigAtom sig) (sortAtom sort) (by decide)
-      (sigAtom_vars_absent sig) (sortAtom_vars_absent sort)
-      (sigAtom_not_var sig) (sortAtom_not_var sort)
-  have hloop : Metta.Bindings.hasLoop (nfSrtRuleBindings sig sort) = false :=
-    ClosedValueBindings.hasLoop_false
-      (ClosedValueBindings.val
-        (List.eq_nil_iff_forall_not_mem.mpr (fun v => sortAtom_vars_absent sort))
-        (ClosedValueBindings.val (sigAtom_vars_nil sig) ClosedValueBindings.nil))
-  unfold Metta.matchAtoms
-  simp only [nfQuery, termAtom, nfSrtRuleBindings]
-  rw [hmatch]
-  exact filter_singleton_binding_of_hasLoop_false _ hloop
+  simp only [nfQuery, termAtom]
+  closed_atom_match using (by closed_encoded_atom)
 
 /-- Instantiating the leaf `nf`/`Srt` body returns the encoded sort. -/
 theorem nf_srt_instantiate_bindings
@@ -6045,18 +5789,8 @@ theorem nf_con_rule_match
     Metta.matchAtoms (mExpr "nf" [mVar "sig", mExpr "Con" [mVar "x"]])
       (nfQuery sig (.con name)) =
       [nfConRuleBindings sig name] := by
-  have hmatch := match_binary_nested_unary_vars "nf" "sig" "Con" "x"
-      (sigAtom sig) (declNameAtom name) (by decide)
-      (sigAtom_vars_absent sig) (declNameAtom_vars_absent name)
-      (sigAtom_not_var sig) (declNameAtom_not_var name)
-  have hloop : Metta.Bindings.hasLoop (nfConRuleBindings sig name) = false :=
-    ClosedValueBindings.hasLoop_false
-      (ClosedValueBindings.val (declNameAtom_vars_nil name)
-        (ClosedValueBindings.val (sigAtom_vars_nil sig) ClosedValueBindings.nil))
-  unfold Metta.matchAtoms
-  simp only [nfQuery, termAtom, nfConRuleBindings]
-  rw [hmatch]
-  exact filter_singleton_binding_of_hasLoop_false _ hloop
+  simp only [nfQuery, termAtom]
+  closed_atom_match using (by closed_encoded_atom)
 
 /-- Instantiating the leaf `nf`/`Con` body returns the encoded constant. -/
 theorem nf_con_instantiate_bindings
@@ -6081,18 +5815,8 @@ theorem nf_def_rule_match
     (name : Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Syntax.DeclName) :
     Metta.matchAtoms nfDefRuleLhs (nfQuery sig (.defn name)) =
       [nfDefRuleBindings sig name] := by
-  have hmatch := match_binary_nested_unary_vars "nf" "sig" "Def" "x"
-      (sigAtom sig) (declNameAtom name) (by decide)
-      (sigAtom_vars_absent sig) (declNameAtom_vars_absent name)
-      (sigAtom_not_var sig) (declNameAtom_not_var name)
-  have hloop : Metta.Bindings.hasLoop (nfDefRuleBindings sig name) = false :=
-    ClosedValueBindings.hasLoop_false
-      (ClosedValueBindings.val (declNameAtom_vars_nil name)
-        (ClosedValueBindings.val (sigAtom_vars_nil sig) ClosedValueBindings.nil))
-  unfold Metta.matchAtoms
-  simp only [nfDefRuleLhs, nfQuery, termAtom, nfDefRuleBindings]
-  rw [hmatch]
-  exact filter_singleton_binding_of_hasLoop_false _ hloop
+  simp only [nfQuery, termAtom]
+  closed_atom_match using (by closed_encoded_atom)
 
 private theorem fresh_nf_def_rule_match
     (counter : Nat)
@@ -6101,39 +5825,8 @@ private theorem fresh_nf_def_rule_match
     Metta.matchAtoms (freshenRule counter nfDefRuleLhs nfDefRuleRhs).1
         (nfQuery sig (.defn name)) =
       [renameBindings (counterSuffix counter) (nfDefRuleBindings sig name)] := by
-  let f := counterSuffix counter
-  rw [freshenRule_eq_renBy]
-  have hneq : f "x" ≠ f "sig" := by
-    intro h
-    exact (by decide : "x" ≠ "sig") ((counterSuffix_injective counter) h)
-  simp only [nfDefRuleLhs, nfDefRuleBindings, nfQuery, termAtom, renameBindings,
-    mExpr, mSym, mVar]
-  have hrenSym (s : String) :
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy
-          (counterSuffix counter)
-          (Metta.Atom.sym s) = Metta.Atom.sym s := by
-    simp [Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  simp only [Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy_expr,
-    Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy_var,
-    hrenSym, List.map_cons, List.map_nil]
-  change Metta.matchAtoms
-      (mExpr "nf" [mVar (f "sig"), mExpr "Def" [mVar (f "x")]])
-      (mExpr "nf" [sigAtom sig, mExpr "Def" [declNameAtom name]]) =
-    [[Metta.BindingRel.val (f "x") (declNameAtom name),
-      Metta.BindingRel.val (f "sig") (sigAtom sig)]]
-  have hmatch := match_binary_nested_unary_vars "nf" (f "sig") "Def" (f "x")
-      (sigAtom sig) (declNameAtom name) hneq
-      (sigAtom_vars_absent sig) (declNameAtom_vars_absent name)
-      (sigAtom_not_var sig) (declNameAtom_not_var name)
-  have hloop : Metta.Bindings.hasLoop
-      [ Metta.BindingRel.val (f "x") (declNameAtom name)
-      , Metta.BindingRel.val (f "sig") (sigAtom sig) ] = false :=
-    ClosedValueBindings.hasLoop_false
-      (ClosedValueBindings.val (declNameAtom_vars_nil name)
-        (ClosedValueBindings.val (sigAtom_vars_nil sig) ClosedValueBindings.nil))
-  unfold Metta.matchAtoms
-  rw [hmatch]
-  exact filter_singleton_binding_of_hasLoop_false _ hloop
+  exact match_freshened_closed counter (nfQuery_vars_nil_early sig _)
+    (nf_def_rule_match sig name)
 
 /-- Instantiating the source `nf`/`Def` root body exposes the definition-body
 lookup and control-flow readout for the concrete signature/name. -/
@@ -6286,197 +5979,7 @@ theorem def_body_of_ddef_rule_match
         (sigAtom (sigWithHeadDecl (.ddef defName type body) rest))
         (declNameAtom queryName)) =
       [defBodyOfDDefRuleBindings rest defName type body queryName] := by
-  simp only [Metta.matchAtoms, Metta.matchAtomsWith, defBodyOfDDefRuleLhs,
-    defBodyOfQueryAtom, mExpr, mSym, mVar]
-  unfold Metta.matchAll
-  simp [Metta.matchAtomsWith, Metta.Bindings.merge]
-  unfold Metta.matchAll
-  rw [show
-      Metta.matchAtomsWith none
-        (Metta.Atom.expr
-          [Metta.Atom.sym "SCons",
-            Metta.Atom.expr [Metta.Atom.sym "DDef", Metta.Atom.var "c",
-              Metta.Atom.var "T", Metta.Atom.var "body"],
-            Metta.Atom.var "rest"])
-        (sigAtom (sigWithHeadDecl (.ddef defName type body) rest)) =
-        [[Metta.BindingRel.val "rest" (sigAtom rest),
-          Metta.BindingRel.val "c" (declNameAtom defName),
-          Metta.BindingRel.val "T" (termAtom type),
-          Metta.BindingRel.val "body" (termAtom body)]] from
-    match_scons_ddef_expr rest defName type body]
-  have hloopSCons : Metta.Bindings.hasLoop
-      [Metta.BindingRel.val "rest" (sigAtom rest),
-        Metta.BindingRel.val "c" (declNameAtom defName),
-        Metta.BindingRel.val "T" (termAtom type),
-        Metta.BindingRel.val "body" (termAtom body)] = false :=
-    ClosedValueBindings.hasLoop_false
-      (ClosedValueBindings.val (sigAtom_vars_nil rest)
-        (ClosedValueBindings.val (declNameAtom_vars_nil defName)
-          (ClosedValueBindings.val (termAtom_vars_nil type)
-            (ClosedValueBindings.val (termAtom_vars_nil body)
-              ClosedValueBindings.nil))))
-  rw [filter_singleton_binding_of_hasLoop_false _ hloopSCons]
-  simp only [List.flatMap_singleton]
-  have hmergeInner :
-      Metta.Bindings.merge []
-        [Metta.BindingRel.val "rest" (sigAtom rest),
-          Metta.BindingRel.val "c" (declNameAtom defName),
-          Metta.BindingRel.val "T" (termAtom type),
-          Metta.BindingRel.val "body" (termAtom body)] =
-        [[Metta.BindingRel.val "body" (termAtom body),
-          Metta.BindingRel.val "T" (termAtom type),
-          Metta.BindingRel.val "c" (declNameAtom defName),
-          Metta.BindingRel.val "rest" (sigAtom rest)]] := by
-    apply merge_closed_noConflict_eq
-    · exact ClosedValueBindings.val (sigAtom_vars_nil rest)
-        (ClosedValueBindings.val (declNameAtom_vars_nil defName)
-          (ClosedValueBindings.val (termAtom_vars_nil type)
-            (ClosedValueBindings.val (termAtom_vars_nil body)
-              ClosedValueBindings.nil)))
-    · simp [bindingValueKeys]
-    · exact ClosedValueBindings.nil
-    · simp [bindingValueKeys]
-  rw [hmergeInner]
-  unfold Metta.matchAll
-  rw [match_var_occurs_free_nonvar_atom "x" (declNameAtom queryName)
-    (declNameAtom_vars_absent queryName) (declNameAtom_not_var queryName)]
-  rw [filter_singleton_binding_of_hasLoop_false _
-    (hasLoop_singleton_val_not_false "x" (declNameAtom queryName)
-      (declNameAtom_vars_absent queryName))]
-  simp only [List.flatMap_singleton]
-  rw [ValueBindings.merge_singleton_val_eq_of_not_key
-    (ValueBindings.val (ValueBindings.val (ValueBindings.val
-      (ValueBindings.val ValueBindings.nil))))
-    (declNameAtom_not_var queryName) (by simp [bindingValueKeys])]
-  unfold Metta.matchAll
-  have hloopResult : Metta.Bindings.hasLoop
-      [Metta.BindingRel.val "x" (declNameAtom queryName),
-        Metta.BindingRel.val "body" (termAtom body),
-        Metta.BindingRel.val "T" (termAtom type),
-        Metta.BindingRel.val "c" (declNameAtom defName),
-        Metta.BindingRel.val "rest" (sigAtom rest)] = false :=
-    ClosedValueBindings.hasLoop_false
-      (ClosedValueBindings.val (declNameAtom_vars_nil queryName)
-        (ClosedValueBindings.val (termAtom_vars_nil body)
-          (ClosedValueBindings.val (termAtom_vars_nil type)
-            (ClosedValueBindings.val (declNameAtom_vars_nil defName)
-              (ClosedValueBindings.val (sigAtom_vars_nil rest)
-                ClosedValueBindings.nil)))))
-  simpa [defBodyOfDDefRuleBindings, List.singleton_append] using
-    (filter_singleton_binding_of_hasLoop_false _ hloopResult)
-
-private theorem def_body_of_ddef_rule_match_named
-    (c T bodyVar restVar xVar : String)
-    (rest : DIndGArtifactSig)
-    (defName : Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Syntax.DeclName)
-    (type body : DIndGArtifactTerm)
-    (queryName : Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Syntax.DeclName)
-    (hT_c : T ≠ c)
-    (hbody_T : bodyVar ≠ T)
-    (hbody_c : bodyVar ≠ c)
-    (hrest_body : restVar ≠ bodyVar)
-    (hrest_T : restVar ≠ T)
-    (hrest_c : restVar ≠ c)
-    (hx_rest : xVar ≠ restVar)
-    (hx_c : xVar ≠ c)
-    (hx_T : xVar ≠ T)
-    (hx_body : xVar ≠ bodyVar) :
-    Metta.matchAtoms
-      (defBodyOfQueryAtom
-        (mExpr "SCons"
-          [mExpr "DDef" [mVar c, mVar T, mVar bodyVar], mVar restVar])
-        (mVar xVar))
-      (defBodyOfQueryAtom
-        (sigAtom (sigWithHeadDecl (.ddef defName type body) rest))
-        (declNameAtom queryName)) =
-      [[ Metta.BindingRel.val xVar (declNameAtom queryName)
-       , Metta.BindingRel.val bodyVar (termAtom body)
-       , Metta.BindingRel.val T (termAtom type)
-       , Metta.BindingRel.val c (declNameAtom defName)
-       , Metta.BindingRel.val restVar (sigAtom rest) ]] := by
-  simp only [Metta.matchAtoms, Metta.matchAtomsWith, defBodyOfQueryAtom,
-    mExpr, mSym, mVar]
-  unfold Metta.matchAll
-  simp [Metta.matchAtomsWith, Metta.Bindings.merge]
-  unfold Metta.matchAll
-  rw [show
-      Metta.matchAtomsWith none
-        (Metta.Atom.expr
-          [Metta.Atom.sym "SCons",
-            Metta.Atom.expr [Metta.Atom.sym "DDef", Metta.Atom.var c,
-              Metta.Atom.var T, Metta.Atom.var bodyVar],
-            Metta.Atom.var restVar])
-        (sigAtom (sigWithHeadDecl (.ddef defName type body) rest)) =
-        [[Metta.BindingRel.val restVar (sigAtom rest),
-          Metta.BindingRel.val c (declNameAtom defName),
-          Metta.BindingRel.val T (termAtom type),
-          Metta.BindingRel.val bodyVar (termAtom body)]] from
-    match_scons_ddef_expr_named c T bodyVar restVar rest defName type body
-      hT_c hbody_T hbody_c hrest_body hrest_T hrest_c]
-  have hloopSCons : Metta.Bindings.hasLoop
-      [Metta.BindingRel.val restVar (sigAtom rest),
-        Metta.BindingRel.val c (declNameAtom defName),
-        Metta.BindingRel.val T (termAtom type),
-        Metta.BindingRel.val bodyVar (termAtom body)] = false :=
-    ClosedValueBindings.hasLoop_false
-      (ClosedValueBindings.val (sigAtom_vars_nil rest)
-        (ClosedValueBindings.val (declNameAtom_vars_nil defName)
-          (ClosedValueBindings.val (termAtom_vars_nil type)
-            (ClosedValueBindings.val (termAtom_vars_nil body)
-              ClosedValueBindings.nil))))
-  rw [filter_singleton_binding_of_hasLoop_false _ hloopSCons]
-  have hc_T : c ≠ T := by
-    intro h
-    exact hT_c h.symm
-  have hT_body : T ≠ bodyVar := by
-    intro h
-    exact hbody_T h.symm
-  have hc_body : c ≠ bodyVar := by
-    intro h
-    exact hbody_c h.symm
-  simp only [List.flatMap_singleton]
-  have hmergeInner :
-      Metta.Bindings.merge []
-        [Metta.BindingRel.val restVar (sigAtom rest),
-          Metta.BindingRel.val c (declNameAtom defName),
-          Metta.BindingRel.val T (termAtom type),
-          Metta.BindingRel.val bodyVar (termAtom body)] =
-        [[Metta.BindingRel.val bodyVar (termAtom body),
-          Metta.BindingRel.val T (termAtom type),
-          Metta.BindingRel.val c (declNameAtom defName),
-          Metta.BindingRel.val restVar (sigAtom rest)]] := by
-    apply merge_closed_noConflict_eq
-    · exact ClosedValueBindings.val (sigAtom_vars_nil rest)
-        (ClosedValueBindings.val (declNameAtom_vars_nil defName)
-          (ClosedValueBindings.val (termAtom_vars_nil type)
-            (ClosedValueBindings.val (termAtom_vars_nil body)
-              ClosedValueBindings.nil)))
-    · simp [bindingValueKeys, hrest_c, hrest_T, hrest_body,
-        hc_T, hc_body, hT_body]
-    · exact ClosedValueBindings.nil
-    · simp [bindingValueKeys]
-  rw [hmergeInner]
-  unfold Metta.matchAll
-  rw [match_var_occurs_free_nonvar_atom xVar (declNameAtom queryName)
-    (declNameAtom_vars_absent queryName) (declNameAtom_not_var queryName)]
-  rw [filter_singleton_binding_of_hasLoop_false _
-    (hasLoop_singleton_val_not_false xVar (declNameAtom queryName)
-      (declNameAtom_vars_absent queryName))]
-  simp only [List.flatMap_singleton]
-  rw [ValueBindings.merge_singleton_val_eq_of_not_key
-    (ValueBindings.val (ValueBindings.val (ValueBindings.val
-      (ValueBindings.val ValueBindings.nil))))
-    (declNameAtom_not_var queryName)
-    (by simp [bindingValueKeys, hx_rest, hx_c, hx_T, hx_body])]
-  unfold Metta.matchAll
-  exact filter_singleton_binding_of_hasLoop_false _
-    (ClosedValueBindings.hasLoop_false
-      (ClosedValueBindings.val (declNameAtom_vars_nil queryName)
-        (ClosedValueBindings.val (termAtom_vars_nil body)
-          (ClosedValueBindings.val (termAtom_vars_nil type)
-            (ClosedValueBindings.val (declNameAtom_vars_nil defName)
-              (ClosedValueBindings.val (sigAtom_vars_nil rest)
-                ClosedValueBindings.nil))))))
+  closed_atom_match using (by closed_encoded_atom)
 
 private theorem fresh_def_body_of_ddef_rule_match
     (counter : Nat)
@@ -6491,31 +5994,10 @@ private theorem fresh_def_body_of_ddef_rule_match
           (declNameAtom queryName)) =
       [renameBindings (counterSuffix counter)
         (defBodyOfDDefRuleBindings rest defName type body queryName)] := by
-  let f := counterSuffix counter
-  have hf : Function.Injective f := by
-    simpa [f] using counterSuffix_injective counter
-  have hneq : ∀ {a b : String}, a ≠ b → f a ≠ f b := by
-    intro a b hab h
-    exact hab (hf h)
-  rw [freshenRule_eq_renBy]
-  simpa [f, defBodyOfDDefRuleLhs, defBodyOfDDefRuleRhs,
-    defBodyOfDDefRuleBindings, defBodyOfQueryAtom, renameBindings,
-    mExpr, mSym, mVar,
-    Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy] using
-    def_body_of_ddef_rule_match_named
-      (c := f "c") (T := f "T") (bodyVar := f "body")
-      (restVar := f "rest") (xVar := f "x")
-      rest defName type body queryName
-      (hneq (by decide : "T" ≠ "c"))
-      (hneq (by decide : "body" ≠ "T"))
-      (hneq (by decide : "body" ≠ "c"))
-      (hneq (by decide : "rest" ≠ "body"))
-      (hneq (by decide : "rest" ≠ "T"))
-      (hneq (by decide : "rest" ≠ "c"))
-      (hneq (by decide : "x" ≠ "rest"))
-      (hneq (by decide : "x" ≠ "c"))
-      (hneq (by decide : "x" ≠ "T"))
-      (hneq (by decide : "x" ≠ "body"))
+  exact match_freshened_closed counter
+    (by simp [defBodyOfQueryAtom, mExpr, mSym, Metta.Atom.vars, sigAtom_vars_nil,
+      declNameAtom_vars_nil])
+    (def_body_of_ddef_rule_match rest defName type body queryName)
 
 /-- Instantiating the source `def-body-of`/`DDef` body exposes the lookup
 branching readout for the encoded head declaration. -/
@@ -6546,15 +6028,8 @@ theorem nf_bad_rule_match
     Metta.matchAtoms (mExpr "nf" [mVar "sig", mExpr "Bad" [mVar "e"]])
       (nfQuery sig (.bad reason)) =
       [nfBadRuleBindings sig reason] := by
-  apply matchAtoms_eq_singleton_of_matchAtomsWith_eq_closed
-  · simpa only [nfQuery, termAtom, nfBadRuleBindings, mSym] using
-      match_binary_nested_unary_vars "nf" "sig" "Bad" "e"
-        (sigAtom sig) (Metta.Atom.sym reason) (by decide)
-        (sigAtom_vars_absent sig) (by simp [Metta.Atom.vars])
-        (sigAtom_not_var sig) (by intro w; simp)
-  · simp only [nfBadRuleBindings]
-    exact ClosedValueBindings.val (by simp [mSym, Metta.Atom.vars])
-      (ClosedValueBindings.val (sigAtom_vars_nil sig) ClosedValueBindings.nil)
+  simp only [nfQuery, termAtom]
+  closed_atom_match using (by closed_encoded_atom)
 
 /-- Instantiating the leaf `nf`/`Bad` body returns the encoded bad term. -/
 theorem nf_bad_instantiate_bindings
@@ -6575,20 +6050,8 @@ theorem nf_pi_rule_match
     (sig : DIndGArtifactSig) (rawDomain rawBody : DIndGArtifactTerm) :
     Metta.matchAtoms nfPiRuleLhs (nfQuery sig (.pi rawDomain rawBody)) =
       [nfPiRuleBindings sig rawDomain rawBody] := by
-  apply matchAtoms_eq_singleton_of_matchAtomsWith_eq_closed
-  · simpa only [nfPiRuleLhs, nfQuery, termAtom, nfPiRuleBindings] using
-      match_binary_nested_binary_vars "nf" "sig" "Pi" "A" "B"
-        (sigAtom sig) (termAtom rawDomain) (termAtom rawBody)
-        (by decide) (by decide) (by decide)
-        (sigAtom_vars_absent sig) (termAtom_vars_absent rawDomain)
-        (termAtom_vars_absent rawBody) (sigAtom_not_var sig)
-        (termAtom_not_var rawDomain) (termAtom_not_var rawBody)
-        (sigAtom_vars_nil sig) (termAtom_vars_nil rawDomain)
-        (termAtom_vars_nil rawBody)
-  · simp only [nfPiRuleBindings]
-    exact ClosedValueBindings.val (termAtom_vars_nil rawDomain)
-      (ClosedValueBindings.val (termAtom_vars_nil rawBody)
-        (ClosedValueBindings.val (sigAtom_vars_nil sig) ClosedValueBindings.nil))
+  simp only [nfQuery, termAtom]
+  closed_atom_match using (by closed_encoded_atom)
 
 /-- Instantiating the recursive `nf`/`Pi` body exposes the two recursive
 normalization subqueries. -/
@@ -6612,20 +6075,8 @@ theorem nf_lam_rule_match
     (sig : DIndGArtifactSig) (rawDomain rawBody : DIndGArtifactTerm) :
     Metta.matchAtoms nfLamRuleLhs (nfQuery sig (.lam rawDomain rawBody)) =
       [nfLamRuleBindings sig rawDomain rawBody] := by
-  apply matchAtoms_eq_singleton_of_matchAtomsWith_eq_closed
-  · simpa only [nfLamRuleLhs, nfQuery, termAtom, nfLamRuleBindings] using
-      match_binary_nested_binary_vars "nf" "sig" "Lam" "A" "b"
-        (sigAtom sig) (termAtom rawDomain) (termAtom rawBody)
-        (by decide) (by decide) (by decide)
-        (sigAtom_vars_absent sig) (termAtom_vars_absent rawDomain)
-        (termAtom_vars_absent rawBody) (sigAtom_not_var sig)
-        (termAtom_not_var rawDomain) (termAtom_not_var rawBody)
-        (sigAtom_vars_nil sig) (termAtom_vars_nil rawDomain)
-        (termAtom_vars_nil rawBody)
-  · simp only [nfLamRuleBindings]
-    exact ClosedValueBindings.val (termAtom_vars_nil rawDomain)
-      (ClosedValueBindings.val (termAtom_vars_nil rawBody)
-        (ClosedValueBindings.val (sigAtom_vars_nil sig) ClosedValueBindings.nil))
+  simp only [nfQuery, termAtom]
+  closed_atom_match using (by closed_encoded_atom)
 
 /-- Instantiating the recursive `nf`/`Lam` body exposes the two recursive
 normalization subqueries. -/
@@ -19763,91 +19214,8 @@ theorem infer_apply_args_nil_rule_match
     Metta.matchAtoms inferApplyArgsNilRulePair.1
         (inferApplyArgsNilQuery sig rawType) =
       [inferApplyArgsNilRuleBindings sig rawType] := by
-  have hmergeSig :
-      Metta.Bindings.merge [] [Metta.BindingRel.val "sig" (sigAtom sig)] =
-        [[Metta.BindingRel.val "sig" (sigAtom sig)]] := by
-    simpa [bindingValueKeys] using
-      (merge_closed_noConflict_eq
-        (b := [Metta.BindingRel.val "sig" (sigAtom sig)]) (acc := [])
-        (ClosedValueBindings.val (sigAtom_vars_nil sig) ClosedValueBindings.nil)
-        (by simp [bindingValueKeys]) ClosedValueBindings.nil
-        (by intro x hx hmem; cases hmem))
-  have hmergeCtx :
-      Metta.Bindings.merge [Metta.BindingRel.val "sig" (sigAtom sig)]
-          [Metta.BindingRel.val "ctx" ctxNilAtom] =
-        [[Metta.BindingRel.val "ctx" ctxNilAtom,
-          Metta.BindingRel.val "sig" (sigAtom sig)]] := by
-    simpa [bindingValueKeys] using
-      (merge_closed_noConflict_eq
-        (b := [Metta.BindingRel.val "ctx" ctxNilAtom])
-        (acc := [Metta.BindingRel.val "sig" (sigAtom sig)])
-        (ClosedValueBindings.val
-          (by simp [ctxNilAtom, mSym, Metta.Atom.vars])
-          ClosedValueBindings.nil)
-        (by simp [bindingValueKeys])
-        (ClosedValueBindings.val (sigAtom_vars_nil sig) ClosedValueBindings.nil)
-        (by simp [bindingValueKeys]))
-  have hmergeT :
-      Metta.Bindings.merge
-          [Metta.BindingRel.val "ctx" ctxNilAtom,
-            Metta.BindingRel.val "sig" (sigAtom sig)]
-          [Metta.BindingRel.val "T" (termAtom rawType)] =
-        [[Metta.BindingRel.val "T" (termAtom rawType),
-          Metta.BindingRel.val "ctx" ctxNilAtom,
-          Metta.BindingRel.val "sig" (sigAtom sig)]] := by
-    simpa [bindingValueKeys] using
-      (merge_closed_noConflict_eq
-        (b := [Metta.BindingRel.val "T" (termAtom rawType)])
-        (acc := [Metta.BindingRel.val "ctx" ctxNilAtom,
-          Metta.BindingRel.val "sig" (sigAtom sig)])
-        (ClosedValueBindings.val (termAtom_vars_nil rawType) ClosedValueBindings.nil)
-        (by simp [bindingValueKeys])
-        (ClosedValueBindings.val
-          (by simp [ctxNilAtom, mSym, Metta.Atom.vars])
-          (ClosedValueBindings.val (sigAtom_vars_nil sig) ClosedValueBindings.nil))
-        (by simp [bindingValueKeys]))
-  have hloopSig :
-      Metta.Bindings.hasLoop [Metta.BindingRel.val "sig" (sigAtom sig)] = false :=
-    ClosedValueBindings.hasLoop_false
-      (ClosedValueBindings.val (sigAtom_vars_nil sig) ClosedValueBindings.nil)
-  have hloopCtx :
-      Metta.Bindings.hasLoop [Metta.BindingRel.val "ctx" ctxNilAtom] = false :=
-    ClosedValueBindings.hasLoop_false
-      (ClosedValueBindings.val
-        (by simp [ctxNilAtom, mSym, Metta.Atom.vars]) ClosedValueBindings.nil)
-  have hloopT :
-      Metta.Bindings.hasLoop [Metta.BindingRel.val "T" (termAtom rawType)] = false :=
-    ClosedValueBindings.hasLoop_false
-      (ClosedValueBindings.val (termAtom_vars_nil rawType) ClosedValueBindings.nil)
-  have hloopResult :
-      Metta.Bindings.hasLoop
-        [Metta.BindingRel.val "T" (termAtom rawType),
-          Metta.BindingRel.val "ctx" ctxNilAtom,
-          Metta.BindingRel.val "sig" (sigAtom sig)] = false :=
-    ClosedValueBindings.hasLoop_false
-      (ClosedValueBindings.val (termAtom_vars_nil rawType)
-        (ClosedValueBindings.val
-          (by simp [ctxNilAtom, mSym, Metta.Atom.vars])
-          (ClosedValueBindings.val (sigAtom_vars_nil sig) ClosedValueBindings.nil)))
-  simp only [inferApplyArgsNilRulePair, inferApplyArgsNilQuery, mExpr, mSym, mVar,
-    Metta.matchAtoms, Metta.matchAtomsWith]
-  unfold Metta.matchAll
-  simp [Metta.matchAtomsWith, Metta.Bindings.merge]
-  unfold Metta.matchAll
-  rw [match_var_occurs_free_nonvar_atom "sig" (sigAtom sig) (sigAtom_vars_absent sig)
-    (sigAtom_not_var sig)]
-  simp [hloopSig, hmergeSig]
-  unfold Metta.matchAll
-  rw [match_var_occurs_free_nonvar_atom "ctx" ctxNilAtom ctxNilAtom_vars_absent
-    ctxNilAtom_not_var]
-  simp [hloopCtx, hmergeCtx]
-  unfold Metta.matchAll
-  rw [match_var_occurs_free_nonvar_atom "T" (termAtom rawType)
-    (termAtom_vars_absent rawType) (termAtom_not_var rawType)]
-  simp [hloopT, hmergeT, inferApplyArgsNilRuleBindings]
-  unfold Metta.matchAll
-  simp [argsAtom, mSym, Metta.matchAtomsWith, Metta.matchAll, Metta.Bindings.merge,
-    hloopResult]
+  simp only [inferApplyArgsNilQuery, argsAtom]
+  closed_atom_match using (by closed_encoded_atom)
 
 /-- Instantiating the helper RHS exposes the `nf` query consumed by D2. -/
 theorem infer_apply_args_nil_instantiate_bindings
@@ -38241,6 +37609,28 @@ private theorem fresh_nf_ctor_mismatch_match_nil
   rw [hraw]
   rfl
 
+/-- Freshening changes variable spellings while preserving a declared constructor
+head. A closed query with a different head publishes no item from that rule. -/
+private theorem queryOpItems_nf_distinct_heads
+    (counter : Nat) (sig : DIndGArtifactSig)
+    {rule : Metta.Atom × Metta.Atom} {target : Metta.Atom}
+    {patternHead targetHead : String} {patternArgs targetArgs : List Metta.Atom}
+    (pattern : rule.1 = mExpr "nf" [mVar "sig", mExpr patternHead patternArgs])
+    (shape : target = mExpr "nf" [sigAtom sig, mExpr targetHead targetArgs])
+    (closed : target.vars = []) (different : patternHead ≠ targetHead) :
+    Metta.Minimal.queryOpItemsOfRule [] target [] counter rule = [] := by
+  let rename := Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy (counterSuffix counter)
+  have fresh : (freshenRule counter rule.1 rule.2).1 =
+      mExpr "nf" [mVar (counterSuffix counter "sig"), mExpr patternHead (patternArgs.map rename)] := by
+    rw [freshenRule_eq_renBy, pattern]
+    simp [rename, mExpr, mVar, mSym, Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
+  have noMatch : Metta.matchAtoms (freshenRule counter rule.1 rule.2).1 target = [] := by
+    rw [fresh, shape]
+    exact fresh_nf_ctor_mismatch_match_nil (counterSuffix counter) sig patternHead
+      (patternArgs.map rename) targetHead targetArgs different
+  rw [queryOpItemsOfRule_eq_legacy_of_target_vars_nil counter target rule closed]
+  simp only [noMatch, List.flatMap_nil]
+
 /-- Exact one-candidate query readout under a live incoming theory.
 
 This is the data-preserving counterpart of the mismatch lemmas below: once
@@ -39185,27 +38575,12 @@ private theorem queryOpItems_nf_var_on_def_body_of_eq_nil
         (mExpr "nf" [sigAtom sig,
           defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) []
         counter nfVarRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfVarRulePair.1 nfVarRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Var" [mVar (f "k")]],
-          mExpr "Var" [mVar (f "k")]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfVarRulePair, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Var" [mVar (f "k")]])
-          (mExpr "nf" [sigAtom sig,
-            defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) = [] := by
-    simpa [defBodyOfQueryAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Var" [mVar (f "k")]
-        "def-body-of" [sigAtom sig, declNameAtom name] (by decide)
-  rw [queryOpItemsOfRule_eq_legacy_of_target_vars_nil counter _ nfVarRulePair
-    (by simp [defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil,
-      mExpr, mSym, Metta.Atom.vars])]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Var") (targetHead := "def-body-of")
+    (targetArgs := [sigAtom sig, declNameAtom name])
+  · rfl
+  · simp only [defBodyOfQueryAtom]
+  · simp [defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+  · decide
 
 private theorem queryOpItems_nf_srt_on_def_body_of_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig)
@@ -39214,27 +38589,12 @@ private theorem queryOpItems_nf_srt_on_def_body_of_eq_nil
         (mExpr "nf" [sigAtom sig,
           defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) []
         counter nfSrtRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfSrtRulePair.1 nfSrtRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Srt" [mVar (f "s")]],
-          mExpr "Srt" [mVar (f "s")]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfSrtRulePair, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Srt" [mVar (f "s")]])
-          (mExpr "nf" [sigAtom sig,
-            defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) = [] := by
-    simpa [defBodyOfQueryAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Srt" [mVar (f "s")]
-        "def-body-of" [sigAtom sig, declNameAtom name] (by decide)
-  rw [queryOpItemsOfRule_eq_legacy_of_target_vars_nil counter _ nfSrtRulePair
-    (by simp [defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil,
-      mExpr, mSym, Metta.Atom.vars])]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Srt") (targetHead := "def-body-of")
+    (targetArgs := [sigAtom sig, declNameAtom name])
+  · rfl
+  · simp only [defBodyOfQueryAtom]
+  · simp [defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+  · decide
 
 private theorem queryOpItems_nf_con_on_def_body_of_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig)
@@ -39243,27 +38603,12 @@ private theorem queryOpItems_nf_con_on_def_body_of_eq_nil
         (mExpr "nf" [sigAtom sig,
           defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) []
         counter nfConRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfConRulePair.1 nfConRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Con" [mVar (f "x")]],
-          mExpr "Con" [mVar (f "x")]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfConRulePair, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Con" [mVar (f "x")]])
-          (mExpr "nf" [sigAtom sig,
-            defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) = [] := by
-    simpa [defBodyOfQueryAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Con" [mVar (f "x")]
-        "def-body-of" [sigAtom sig, declNameAtom name] (by decide)
-  rw [queryOpItemsOfRule_eq_legacy_of_target_vars_nil counter _ nfConRulePair
-    (by simp [defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil,
-      mExpr, mSym, Metta.Atom.vars])]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Con") (targetHead := "def-body-of")
+    (targetArgs := [sigAtom sig, declNameAtom name])
+  · rfl
+  · simp only [defBodyOfQueryAtom]
+  · simp [defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+  · decide
 
 private theorem queryOpItems_nf_pi_on_def_body_of_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig)
@@ -39272,33 +38617,12 @@ private theorem queryOpItems_nf_pi_on_def_body_of_eq_nil
         (mExpr "nf" [sigAtom sig,
           defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) []
         counter (nfPiRuleLhs, nfPiRuleRhs) = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfPiRuleLhs nfPiRuleRhs =
-        (mExpr "nf" [mVar (f "sig"),
-            mExpr "Pi" [mVar (f "A"), mVar (f "B")]],
-          mExpr "Pi"
-            [mExpr "nf" [mVar (f "sig"), mVar (f "A")],
-             mExpr "nf" [mVar (f "sig"), mVar (f "B")]]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfPiRuleLhs, nfPiRuleRhs, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"),
-            mExpr "Pi" [mVar (f "A"), mVar (f "B")]])
-          (mExpr "nf" [sigAtom sig,
-            defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) = [] := by
-    simpa [defBodyOfQueryAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Pi"
-        [mVar (f "A"), mVar (f "B")] "def-body-of"
-        [sigAtom sig, declNameAtom name] (by decide)
-  rw [queryOpItemsOfRule_eq_legacy_of_target_vars_nil counter _
-    (nfPiRuleLhs, nfPiRuleRhs)
-    (by simp [defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil,
-      mExpr, mSym, Metta.Atom.vars])]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Pi") (targetHead := "def-body-of")
+    (targetArgs := [sigAtom sig, declNameAtom name])
+  · rfl
+  · simp only [defBodyOfQueryAtom]
+  · simp [defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+  · decide
 
 private theorem queryOpItems_nf_lam_on_def_body_of_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig)
@@ -39307,32 +38631,12 @@ private theorem queryOpItems_nf_lam_on_def_body_of_eq_nil
         (mExpr "nf" [sigAtom sig,
           defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) []
         counter nfLamRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfLamRulePair.1 nfLamRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"),
-            mExpr "Lam" [mVar (f "A"), mVar (f "b")]],
-          mExpr "Lam"
-            [mExpr "nf" [mVar (f "sig"), mVar (f "A")],
-             mExpr "nf" [mVar (f "sig"), mVar (f "b")]]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfLamRulePair, nfLamRuleLhs, nfLamRuleRhs, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"),
-            mExpr "Lam" [mVar (f "A"), mVar (f "b")]])
-          (mExpr "nf" [sigAtom sig,
-            defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) = [] := by
-    simpa [defBodyOfQueryAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Lam"
-        [mVar (f "A"), mVar (f "b")] "def-body-of"
-        [sigAtom sig, declNameAtom name] (by decide)
-  rw [queryOpItemsOfRule_eq_legacy_of_target_vars_nil counter _ nfLamRulePair
-    (by simp [defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil,
-      mExpr, mSym, Metta.Atom.vars])]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Lam") (targetHead := "def-body-of")
+    (targetArgs := [sigAtom sig, declNameAtom name])
+  · rfl
+  · simp only [defBodyOfQueryAtom]
+  · simp [defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+  · decide
 
 private theorem queryOpItems_nf_bad_on_def_body_of_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig)
@@ -39341,27 +38645,12 @@ private theorem queryOpItems_nf_bad_on_def_body_of_eq_nil
         (mExpr "nf" [sigAtom sig,
           defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) []
         counter nfBadRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfBadRulePair.1 nfBadRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Bad" [mVar (f "e")]],
-          mExpr "Bad" [mVar (f "e")]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfBadRulePair, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Bad" [mVar (f "e")]])
-          (mExpr "nf" [sigAtom sig,
-            defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) = [] := by
-    simpa [defBodyOfQueryAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Bad" [mVar (f "e")]
-        "def-body-of" [sigAtom sig, declNameAtom name] (by decide)
-  rw [queryOpItemsOfRule_eq_legacy_of_target_vars_nil counter _ nfBadRulePair
-    (by simp [defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil,
-      mExpr, mSym, Metta.Atom.vars])]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Bad") (targetHead := "def-body-of")
+    (targetArgs := [sigAtom sig, declNameAtom name])
+  · rfl
+  · simp only [defBodyOfQueryAtom]
+  · simp [defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+  · decide
 
 private theorem queryOpItems_nf_indG_zero_iota_on_def_body_of_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig)
@@ -39403,33 +38692,12 @@ private theorem queryOpItems_nf_def_on_def_body_of_eq_nil
         (mExpr "nf" [sigAtom sig,
           defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) []
         counter nfDefRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfDefRulePair.1 nfDefRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Def" [mVar (f "x")]],
-          mExpr "let"
-            [ mVar (f "body")
-            , mExpr "def-body-of" [mVar (f "sig"), mVar (f "x")]
-            , mExpr "if"
-                [ mExpr "is-bad" [mVar (f "body")]
-                , mExpr "Bad" [mSym "unknown-definition"]
-                , mExpr "nf" [mVar (f "sig"), mVar (f "body")] ] ]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfDefRulePair, nfDefRuleLhs, nfDefRuleRhs, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Def" [mVar (f "x")]])
-          (mExpr "nf" [sigAtom sig,
-            defBodyOfQueryAtom (sigAtom sig) (declNameAtom name)]) = [] := by
-    simpa [defBodyOfQueryAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Def" [mVar (f "x")]
-        "def-body-of" [sigAtom sig, declNameAtom name] (by decide)
-  rw [queryOpItemsOfRule_eq_legacy_of_target_vars_nil counter _ nfDefRulePair
-    (by simp [defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil,
-      mExpr, mSym, Metta.Atom.vars])]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Def") (targetHead := "def-body-of")
+    (targetArgs := [sigAtom sig, declNameAtom name])
+  · rfl
+  · simp only [defBodyOfQueryAtom]
+  · simp [defBodyOfQueryAtom, sigAtom_vars_nil, declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+  · decide
 
 private theorem queryOpFold_nf_def_body_of_pre_eq
     (st : St) (sig : DIndGArtifactSig)
@@ -39896,6 +39164,41 @@ theorem mettaEval_kernelDefControlEnv_nf_def_body_of_eq_state_from
   rfl
 
 
+/-- A distinct constructor misses each ordinary rule at its actual counter.
+The position reserved for the iota rule remains available to its caller. -/
+private theorem queryOpItems_nf_ordinary_candidates_miss
+    (counter : Nat) (sig : DIndGArtifactSig) (tag : String) (args : List Metta.Atom)
+    (target : Metta.Atom) (formed : target = mExpr "nf" [sigAtom sig, mExpr tag args])
+    (outside : tag ∉ (["Var", "Srt", "Con", "Pi", "Lam", "Bad", "Def"] : List String)) :
+      Metta.Minimal.queryOpItemsOfRule [] target [] (counter) nfVarRulePair = [] ∧
+      Metta.Minimal.queryOpItemsOfRule [] target [] (counter + 1) nfSrtRulePair = [] ∧
+      Metta.Minimal.queryOpItemsOfRule [] target [] (counter + 1 + 1) nfConRulePair = [] ∧
+      Metta.Minimal.queryOpItemsOfRule [] target [] (counter + 1 + 1 + 1) (nfPiRuleLhs, nfPiRuleRhs) = [] ∧
+      Metta.Minimal.queryOpItemsOfRule [] target [] (counter + 1 + 1 + 1 + 1) nfLamRulePair = [] ∧
+      Metta.Minimal.queryOpItemsOfRule [] target [] (counter + 1 + 1 + 1 + 1 + 1) nfBadRulePair = [] ∧
+      Metta.Minimal.queryOpItemsOfRule [] target [] (counter + 1 + 1 + 1 + 1 + 1 + 1 + 1) nfDefRulePair = [] := by
+  subst target
+  have distinct (ctor : String)
+      (member : ctor ∈ (["Var", "Srt", "Con", "Pi", "Lam", "Bad", "Def"] : List String)) :
+      ctor ≠ tag := by
+    intro same
+    exact outside (same ▸ member)
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · exact queryOpItems_nf_ctor_mismatch_eq_nil_from (counter) sig tag args [] "Var"
+      [mVar "k"] nfVarRulePair.2 (distinct "Var" (by simp))
+  · exact queryOpItems_nf_ctor_mismatch_eq_nil_from (counter + 1) sig tag args [] "Srt"
+      [mVar "s"] nfSrtRulePair.2 (distinct "Srt" (by simp))
+  · exact queryOpItems_nf_ctor_mismatch_eq_nil_from (counter + 1 + 1) sig tag args [] "Con"
+      [mVar "x"] nfConRulePair.2 (distinct "Con" (by simp))
+  · exact queryOpItems_nf_ctor_mismatch_eq_nil_from (counter + 1 + 1 + 1) sig tag args [] "Pi"
+      [mVar "A", mVar "B"] nfPiRuleRhs (distinct "Pi" (by simp))
+  · exact queryOpItems_nf_ctor_mismatch_eq_nil_from (counter + 1 + 1 + 1 + 1) sig tag args [] "Lam"
+      [mVar "A", mVar "b"] nfLamRulePair.2 (distinct "Lam" (by simp))
+  · exact queryOpItems_nf_ctor_mismatch_eq_nil_from (counter + 1 + 1 + 1 + 1 + 1) sig tag args [] "Bad"
+      [mVar "e"] nfBadRulePair.2 (distinct "Bad" (by simp))
+  · exact queryOpItems_nf_ctor_mismatch_eq_nil_from (counter + 1 + 1 + 1 + 1 + 1 + 1 + 1) sig tag args [] "Def"
+      [mVar "x"] nfDefRulePair.2 (distinct "Def" (by simp))
+
 private theorem queryOp_kernelDefControlEnv_nf_app_eq
     (st : St) (sig : DIndGArtifactSig)
     (rawFn rawArg : DIndGArtifactTerm)
@@ -39906,9 +39209,6 @@ private theorem queryOp_kernelDefControlEnv_nf_app_eq
       , { counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
           world := st.world }) := by
   let target := nfQuery sig (.app rawFn rawArg)
-  have htargetClosed : target.vars = [] := by
-    simp [target, nfQuery, sigAtom_vars_nil, termAtom_vars_nil, mExpr, mSym,
-      Metta.Atom.vars]
   have hNotVarHead : isVariableHeaded target = false := by
     simp [target, nfQuery, termAtom, isVariableHeaded, mExpr, mSym]
   have hCand :
@@ -39925,154 +39225,9 @@ private theorem queryOp_kernelDefControlEnv_nf_app_eq
     have hstaticInit := candidatesW_init_eq_candidates kernelEnv target
     rw [hstaticInit] at hcand
     simpa [target] using hcand
-  have hVar :
-      Metta.Minimal.queryOpItemsOfRule [] target [] st.counter nfVarRulePair = [] := by
-    let f := counterSuffix st.counter
-    have hFresh :
-        freshenRule st.counter nfVarRulePair.1 nfVarRulePair.2 =
-          (mExpr "nf" [mVar (f "sig"), mExpr "Var" [mVar (f "k")]],
-            mExpr "Var" [mVar (f "k")]) := by
-      rw [freshenRule_eq_renBy]
-      simp [f, nfVarRulePair, mExpr, mSym, mVar,
-        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-    have hMatch :
-        Metta.matchAtoms
-            (mExpr "nf" [mVar (f "sig"), mExpr "Var" [mVar (f "k")]])
-            target = [] := by
-      simpa [target, nfQuery, termAtom] using
-        fresh_nf_ctor_mismatch_match_nil f sig "Var" [mVar (f "k")]
-          "App" [termAtom rawFn, termAtom rawArg] (by decide)
-    exact queryOpItemsOfRule_eq_nil_of_legacy_fresh_match_nil
-      st.counter target
-      (mExpr "nf" [mVar (f "sig"), mExpr "Var" [mVar (f "k")]])
-      (mExpr "Var" [mVar (f "k")]) nfVarRulePair htargetClosed hFresh hMatch
-  have hSrt :
-      Metta.Minimal.queryOpItemsOfRule [] target [] (st.counter + 1) nfSrtRulePair = [] := by
-    let f := counterSuffix (st.counter + 1)
-    have hFresh :
-        freshenRule (st.counter + 1) nfSrtRulePair.1 nfSrtRulePair.2 =
-          (mExpr "nf" [mVar (f "sig"), mExpr "Srt" [mVar (f "s")]],
-            mExpr "Srt" [mVar (f "s")]) := by
-      rw [freshenRule_eq_renBy]
-      simp [f, nfSrtRulePair, mExpr, mSym, mVar,
-        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-    have hMatch :
-        Metta.matchAtoms
-            (mExpr "nf" [mVar (f "sig"), mExpr "Srt" [mVar (f "s")]])
-            target = [] := by
-      simpa [target, nfQuery, termAtom] using
-        fresh_nf_ctor_mismatch_match_nil f sig "Srt" [mVar (f "s")]
-          "App" [termAtom rawFn, termAtom rawArg] (by decide)
-    exact queryOpItemsOfRule_eq_nil_of_legacy_fresh_match_nil
-      (st.counter + 1) target
-      (mExpr "nf" [mVar (f "sig"), mExpr "Srt" [mVar (f "s")]])
-      (mExpr "Srt" [mVar (f "s")]) nfSrtRulePair htargetClosed hFresh hMatch
-  have hCon :
-      Metta.Minimal.queryOpItemsOfRule [] target [] (st.counter + 1 + 1) nfConRulePair = [] := by
-    let f := counterSuffix (st.counter + 1 + 1)
-    have hFresh :
-        freshenRule (st.counter + 1 + 1) nfConRulePair.1 nfConRulePair.2 =
-          (mExpr "nf" [mVar (f "sig"), mExpr "Con" [mVar (f "x")]],
-            mExpr "Con" [mVar (f "x")]) := by
-      rw [freshenRule_eq_renBy]
-      simp [f, nfConRulePair, mExpr, mSym, mVar,
-        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-    have hMatch :
-        Metta.matchAtoms
-            (mExpr "nf" [mVar (f "sig"), mExpr "Con" [mVar (f "x")]])
-            target = [] := by
-      simpa [target, nfQuery, termAtom] using
-        fresh_nf_ctor_mismatch_match_nil f sig "Con" [mVar (f "x")]
-          "App" [termAtom rawFn, termAtom rawArg] (by decide)
-    exact queryOpItemsOfRule_eq_nil_of_legacy_fresh_match_nil
-      (st.counter + 1 + 1) target
-      (mExpr "nf" [mVar (f "sig"), mExpr "Con" [mVar (f "x")]])
-      (mExpr "Con" [mVar (f "x")]) nfConRulePair htargetClosed hFresh hMatch
-  have hPi :
-      Metta.Minimal.queryOpItemsOfRule [] target [] (st.counter + 1 + 1 + 1)
-          (nfPiRuleLhs, nfPiRuleRhs) = [] := by
-    let f := counterSuffix (st.counter + 1 + 1 + 1)
-    have hFresh :
-        freshenRule (st.counter + 1 + 1 + 1) nfPiRuleLhs nfPiRuleRhs =
-          (mExpr "nf" [mVar (f "sig"),
-              mExpr "Pi" [mVar (f "A"), mVar (f "B")]],
-            mExpr "Pi"
-              [mExpr "nf" [mVar (f "sig"), mVar (f "A")],
-               mExpr "nf" [mVar (f "sig"), mVar (f "B")]]) := by
-      rw [freshenRule_eq_renBy]
-      simp [f, nfPiRuleLhs, nfPiRuleRhs, mExpr, mSym, mVar,
-        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-    have hMatch :
-        Metta.matchAtoms
-            (mExpr "nf" [mVar (f "sig"),
-              mExpr "Pi" [mVar (f "A"), mVar (f "B")]])
-            target = [] := by
-      simpa [target, nfQuery, termAtom] using
-        fresh_nf_ctor_mismatch_match_nil f sig "Pi"
-          [mVar (f "A"), mVar (f "B")] "App"
-          [termAtom rawFn, termAtom rawArg] (by decide)
-    exact queryOpItemsOfRule_eq_nil_of_legacy_fresh_match_nil
-      (st.counter + 1 + 1 + 1) target
-      (mExpr "nf" [mVar (f "sig"),
-        mExpr "Pi" [mVar (f "A"), mVar (f "B")]])
-      (mExpr "Pi"
-        [mExpr "nf" [mVar (f "sig"), mVar (f "A")],
-         mExpr "nf" [mVar (f "sig"), mVar (f "B")]])
-      (nfPiRuleLhs, nfPiRuleRhs) htargetClosed hFresh hMatch
-  have hLam :
-      Metta.Minimal.queryOpItemsOfRule [] target [] (st.counter + 1 + 1 + 1 + 1)
-          nfLamRulePair = [] := by
-    let f := counterSuffix (st.counter + 1 + 1 + 1 + 1)
-    have hFresh :
-        freshenRule (st.counter + 1 + 1 + 1 + 1) nfLamRulePair.1 nfLamRulePair.2 =
-          (mExpr "nf" [mVar (f "sig"),
-              mExpr "Lam" [mVar (f "A"), mVar (f "b")]],
-            mExpr "Lam"
-              [mExpr "nf" [mVar (f "sig"), mVar (f "A")],
-               mExpr "nf" [mVar (f "sig"), mVar (f "b")]]) := by
-      rw [freshenRule_eq_renBy]
-      simp [f, nfLamRulePair, nfLamRuleLhs, nfLamRuleRhs, mExpr, mSym, mVar,
-        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-    have hMatch :
-        Metta.matchAtoms
-            (mExpr "nf" [mVar (f "sig"),
-              mExpr "Lam" [mVar (f "A"), mVar (f "b")]])
-            target = [] := by
-      simpa [target, nfQuery, termAtom] using
-        fresh_nf_ctor_mismatch_match_nil f sig "Lam"
-          [mVar (f "A"), mVar (f "b")] "App"
-          [termAtom rawFn, termAtom rawArg] (by decide)
-    exact queryOpItemsOfRule_eq_nil_of_legacy_fresh_match_nil
-      (st.counter + 1 + 1 + 1 + 1) target
-      (mExpr "nf" [mVar (f "sig"),
-        mExpr "Lam" [mVar (f "A"), mVar (f "b")]])
-      (mExpr "Lam"
-        [mExpr "nf" [mVar (f "sig"), mVar (f "A")],
-         mExpr "nf" [mVar (f "sig"), mVar (f "b")]])
-      nfLamRulePair htargetClosed hFresh hMatch
-  have hBad :
-      Metta.Minimal.queryOpItemsOfRule [] target [] (st.counter + 1 + 1 + 1 + 1 + 1)
-          nfBadRulePair = [] := by
-    let f := counterSuffix (st.counter + 1 + 1 + 1 + 1 + 1)
-    have hFresh :
-        freshenRule (st.counter + 1 + 1 + 1 + 1 + 1)
-            nfBadRulePair.1 nfBadRulePair.2 =
-          (mExpr "nf" [mVar (f "sig"), mExpr "Bad" [mVar (f "e")]],
-            mExpr "Bad" [mVar (f "e")]) := by
-      rw [freshenRule_eq_renBy]
-      simp [f, nfBadRulePair, mExpr, mSym, mVar,
-        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-    have hMatch :
-        Metta.matchAtoms
-            (mExpr "nf" [mVar (f "sig"), mExpr "Bad" [mVar (f "e")]])
-            target = [] := by
-      simpa [target, nfQuery, termAtom] using
-        fresh_nf_ctor_mismatch_match_nil f sig "Bad" [mVar (f "e")]
-          "App" [termAtom rawFn, termAtom rawArg] (by decide)
-    exact queryOpItemsOfRule_eq_nil_of_legacy_fresh_match_nil
-      (st.counter + 1 + 1 + 1 + 1 + 1) target
-      (mExpr "nf" [mVar (f "sig"), mExpr "Bad" [mVar (f "e")]])
-      (mExpr "Bad" [mVar (f "e")]) nfBadRulePair htargetClosed hFresh hMatch
+  obtain ⟨hVar, hSrt, hCon, hPi, hLam, hBad, hDef⟩ :=
+    queryOpItems_nf_ordinary_candidates_miss st.counter sig "App"
+      [termAtom rawFn, termAtom rawArg] target (by simp [target, nfQuery, termAtom]) (by decide +kernel)
   have hIota :
       Metta.Minimal.queryOpItemsOfRule [] target [] (st.counter + 1 + 1 + 1 + 1 + 1 + 1)
           nfIndGZeroIotaRulePair = [] := by
@@ -40083,42 +39238,6 @@ private theorem queryOp_kernelDefControlEnv_nf_app_eq
           simp [cicStage3IndGZeroRawRuntime, termAtom, argsAtom, casesAtom,
             sortAtom, declNameAtom, mExpr, mSym, Metta.matchAtoms,
             Metta.matchAtomsWith, Metta.matchAll])
-  have hDef :
-      Metta.Minimal.queryOpItemsOfRule [] target [] (st.counter + 1 + 1 + 1 + 1 + 1 + 1 + 1)
-          nfDefRulePair = [] := by
-    let f := counterSuffix (st.counter + 1 + 1 + 1 + 1 + 1 + 1 + 1)
-    have hFresh :
-        freshenRule (st.counter + 1 + 1 + 1 + 1 + 1 + 1 + 1)
-            nfDefRulePair.1 nfDefRulePair.2 =
-          (mExpr "nf" [mVar (f "sig"), mExpr "Def" [mVar (f "x")]],
-            mExpr "let"
-              [ mVar (f "body")
-              , mExpr "def-body-of" [mVar (f "sig"), mVar (f "x")]
-              , mExpr "if"
-                  [ mExpr "is-bad" [mVar (f "body")]
-                  , mExpr "Bad" [mSym "unknown-definition"]
-                  , mExpr "nf" [mVar (f "sig"), mVar (f "body")] ] ]) := by
-      rw [freshenRule_eq_renBy]
-      simp [f, nfDefRulePair, nfDefRuleLhs, nfDefRuleRhs, mExpr, mSym, mVar,
-        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-    have hMatch :
-        Metta.matchAtoms
-            (mExpr "nf" [mVar (f "sig"), mExpr "Def" [mVar (f "x")]])
-            target = [] := by
-      simpa [target, nfQuery, termAtom] using
-        fresh_nf_ctor_mismatch_match_nil f sig "Def" [mVar (f "x")]
-          "App" [termAtom rawFn, termAtom rawArg] (by decide)
-    exact queryOpItemsOfRule_eq_nil_of_legacy_fresh_match_nil
-      (st.counter + 1 + 1 + 1 + 1 + 1 + 1 + 1) target
-      (mExpr "nf" [mVar (f "sig"), mExpr "Def" [mVar (f "x")]])
-      (mExpr "let"
-        [ mVar (f "body")
-        , mExpr "def-body-of" [mVar (f "sig"), mVar (f "x")]
-        , mExpr "if"
-            [ mExpr "is-bad" [mVar (f "body")]
-            , mExpr "Bad" [mSym "unknown-definition"]
-            , mExpr "nf" [mVar (f "sig"), mVar (f "body")] ] ])
-      nfDefRulePair htargetClosed hFresh hMatch
   unfold queryOp
   rw [hNotVarHead]
   simp only [Bool.false_eq_true, ↓reduceIte]
@@ -40229,9 +39348,6 @@ private theorem queryOp_kernelDefControlEnv_nf_indG_eq
       , { counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
           world := st.world }) := by
   let target := nfQuery sig (.indG familyName params motive cases indices scrutinee)
-  have htargetClosed : target.vars = [] := by
-    simp [target, nfQuery, sigAtom_vars_nil, termAtom_vars_nil, mExpr, mSym,
-      Metta.Atom.vars]
   have hNotVarHead : isVariableHeaded target = false := by
     simp [target, nfQuery, termAtom, isVariableHeaded, mExpr, mSym]
   have hCand :
@@ -40249,202 +39365,16 @@ private theorem queryOp_kernelDefControlEnv_nf_indG_eq
     have hstaticInit := candidatesW_init_eq_candidates kernelEnv target
     rw [hstaticInit] at hcand
     simpa [target] using hcand
-  have hVar :
-      Metta.Minimal.queryOpItemsOfRule [] target [] st.counter nfVarRulePair = [] := by
-    let f := counterSuffix st.counter
-    have hFresh :
-        freshenRule st.counter nfVarRulePair.1 nfVarRulePair.2 =
-          (mExpr "nf" [mVar (f "sig"), mExpr "Var" [mVar (f "k")]],
-            mExpr "Var" [mVar (f "k")]) := by
-      rw [freshenRule_eq_renBy]
-      simp [f, nfVarRulePair, mExpr, mSym, mVar,
-        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-    have hMatch :
-        Metta.matchAtoms
-            (mExpr "nf" [mVar (f "sig"), mExpr "Var" [mVar (f "k")]])
-            target = [] := by
-      simpa [target, nfQuery, termAtom] using
-        fresh_nf_ctor_mismatch_match_nil f sig "Var" [mVar (f "k")] "IndG"
-          [declNameAtom familyName, argsAtom params, termAtom motive, casesAtom cases,
-            argsAtom indices, termAtom scrutinee] (by decide)
-    exact queryOpItemsOfRule_eq_nil_of_legacy_fresh_match_nil
-      st.counter target
-      (mExpr "nf" [mVar (f "sig"), mExpr "Var" [mVar (f "k")]])
-      (mExpr "Var" [mVar (f "k")]) nfVarRulePair htargetClosed hFresh hMatch
-  have hSrt :
-      Metta.Minimal.queryOpItemsOfRule [] target [] (st.counter + 1) nfSrtRulePair = [] := by
-    let f := counterSuffix (st.counter + 1)
-    have hFresh :
-        freshenRule (st.counter + 1) nfSrtRulePair.1 nfSrtRulePair.2 =
-          (mExpr "nf" [mVar (f "sig"), mExpr "Srt" [mVar (f "s")]],
-            mExpr "Srt" [mVar (f "s")]) := by
-      rw [freshenRule_eq_renBy]
-      simp [f, nfSrtRulePair, mExpr, mSym, mVar,
-        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-    have hMatch :
-        Metta.matchAtoms
-            (mExpr "nf" [mVar (f "sig"), mExpr "Srt" [mVar (f "s")]])
-            target = [] := by
-      simpa [target, nfQuery, termAtom] using
-        fresh_nf_ctor_mismatch_match_nil f sig "Srt" [mVar (f "s")] "IndG"
-          [declNameAtom familyName, argsAtom params, termAtom motive, casesAtom cases,
-            argsAtom indices, termAtom scrutinee] (by decide)
-    exact queryOpItemsOfRule_eq_nil_of_legacy_fresh_match_nil
-      (st.counter + 1) target
-      (mExpr "nf" [mVar (f "sig"), mExpr "Srt" [mVar (f "s")]])
-      (mExpr "Srt" [mVar (f "s")]) nfSrtRulePair htargetClosed hFresh hMatch
-  have hCon :
-      Metta.Minimal.queryOpItemsOfRule [] target [] (st.counter + 1 + 1) nfConRulePair = [] := by
-    let f := counterSuffix (st.counter + 1 + 1)
-    have hFresh :
-        freshenRule (st.counter + 1 + 1) nfConRulePair.1 nfConRulePair.2 =
-          (mExpr "nf" [mVar (f "sig"), mExpr "Con" [mVar (f "x")]],
-            mExpr "Con" [mVar (f "x")]) := by
-      rw [freshenRule_eq_renBy]
-      simp [f, nfConRulePair, mExpr, mSym, mVar,
-        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-    have hMatch :
-        Metta.matchAtoms
-            (mExpr "nf" [mVar (f "sig"), mExpr "Con" [mVar (f "x")]])
-            target = [] := by
-      simpa [target, nfQuery, termAtom] using
-        fresh_nf_ctor_mismatch_match_nil f sig "Con" [mVar (f "x")] "IndG"
-          [declNameAtom familyName, argsAtom params, termAtom motive, casesAtom cases,
-            argsAtom indices, termAtom scrutinee] (by decide)
-    exact queryOpItemsOfRule_eq_nil_of_legacy_fresh_match_nil
-      (st.counter + 1 + 1) target
-      (mExpr "nf" [mVar (f "sig"), mExpr "Con" [mVar (f "x")]])
-      (mExpr "Con" [mVar (f "x")]) nfConRulePair htargetClosed hFresh hMatch
-  have hPi :
-      Metta.Minimal.queryOpItemsOfRule [] target [] (st.counter + 1 + 1 + 1)
-          (nfPiRuleLhs, nfPiRuleRhs) = [] := by
-    let f := counterSuffix (st.counter + 1 + 1 + 1)
-    have hFresh :
-        freshenRule (st.counter + 1 + 1 + 1) nfPiRuleLhs nfPiRuleRhs =
-          (mExpr "nf" [mVar (f "sig"),
-              mExpr "Pi" [mVar (f "A"), mVar (f "B")]],
-            mExpr "Pi"
-              [mExpr "nf" [mVar (f "sig"), mVar (f "A")],
-               mExpr "nf" [mVar (f "sig"), mVar (f "B")]]) := by
-      rw [freshenRule_eq_renBy]
-      simp [f, nfPiRuleLhs, nfPiRuleRhs, mExpr, mSym, mVar,
-        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-    have hMatch :
-        Metta.matchAtoms
-            (mExpr "nf" [mVar (f "sig"),
-              mExpr "Pi" [mVar (f "A"), mVar (f "B")]])
-            target = [] := by
-      simpa [target, nfQuery, termAtom] using
-        fresh_nf_ctor_mismatch_match_nil f sig "Pi"
-          [mVar (f "A"), mVar (f "B")] "IndG"
-          [declNameAtom familyName, argsAtom params, termAtom motive, casesAtom cases,
-            argsAtom indices, termAtom scrutinee] (by decide)
-    exact queryOpItemsOfRule_eq_nil_of_legacy_fresh_match_nil
-      (st.counter + 1 + 1 + 1) target
-      (mExpr "nf" [mVar (f "sig"),
-        mExpr "Pi" [mVar (f "A"), mVar (f "B")]])
-      (mExpr "Pi"
-        [mExpr "nf" [mVar (f "sig"), mVar (f "A")],
-         mExpr "nf" [mVar (f "sig"), mVar (f "B")]])
-      (nfPiRuleLhs, nfPiRuleRhs) htargetClosed hFresh hMatch
-  have hLam :
-      Metta.Minimal.queryOpItemsOfRule [] target [] (st.counter + 1 + 1 + 1 + 1)
-          nfLamRulePair = [] := by
-    let f := counterSuffix (st.counter + 1 + 1 + 1 + 1)
-    have hFresh :
-        freshenRule (st.counter + 1 + 1 + 1 + 1) nfLamRulePair.1 nfLamRulePair.2 =
-          (mExpr "nf" [mVar (f "sig"),
-              mExpr "Lam" [mVar (f "A"), mVar (f "b")]],
-            mExpr "Lam"
-              [mExpr "nf" [mVar (f "sig"), mVar (f "A")],
-               mExpr "nf" [mVar (f "sig"), mVar (f "b")]]) := by
-      rw [freshenRule_eq_renBy]
-      simp [f, nfLamRulePair, nfLamRuleLhs, nfLamRuleRhs, mExpr, mSym, mVar,
-        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-    have hMatch :
-        Metta.matchAtoms
-            (mExpr "nf" [mVar (f "sig"),
-              mExpr "Lam" [mVar (f "A"), mVar (f "b")]])
-            target = [] := by
-      simpa [target, nfQuery, termAtom] using
-        fresh_nf_ctor_mismatch_match_nil f sig "Lam"
-          [mVar (f "A"), mVar (f "b")] "IndG"
-          [declNameAtom familyName, argsAtom params, termAtom motive, casesAtom cases,
-            argsAtom indices, termAtom scrutinee] (by decide)
-    exact queryOpItemsOfRule_eq_nil_of_legacy_fresh_match_nil
-      (st.counter + 1 + 1 + 1 + 1) target
-      (mExpr "nf" [mVar (f "sig"),
-        mExpr "Lam" [mVar (f "A"), mVar (f "b")]])
-      (mExpr "Lam"
-        [mExpr "nf" [mVar (f "sig"), mVar (f "A")],
-         mExpr "nf" [mVar (f "sig"), mVar (f "b")]])
-      nfLamRulePair htargetClosed hFresh hMatch
-  have hBad :
-      Metta.Minimal.queryOpItemsOfRule [] target [] (st.counter + 1 + 1 + 1 + 1 + 1)
-          nfBadRulePair = [] := by
-    let f := counterSuffix (st.counter + 1 + 1 + 1 + 1 + 1)
-    have hFresh :
-        freshenRule (st.counter + 1 + 1 + 1 + 1 + 1) nfBadRulePair.1 nfBadRulePair.2 =
-          (mExpr "nf" [mVar (f "sig"), mExpr "Bad" [mVar (f "e")]],
-            mExpr "Bad" [mVar (f "e")]) := by
-      rw [freshenRule_eq_renBy]
-      simp [f, nfBadRulePair, mExpr, mSym, mVar,
-        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-    have hMatch :
-        Metta.matchAtoms
-            (mExpr "nf" [mVar (f "sig"), mExpr "Bad" [mVar (f "e")]])
-            target = [] := by
-      simpa [target, nfQuery, termAtom] using
-        fresh_nf_ctor_mismatch_match_nil f sig "Bad" [mVar (f "e")] "IndG"
-          [declNameAtom familyName, argsAtom params, termAtom motive, casesAtom cases,
-            argsAtom indices, termAtom scrutinee] (by decide)
-    exact queryOpItemsOfRule_eq_nil_of_legacy_fresh_match_nil
-      (st.counter + 1 + 1 + 1 + 1 + 1) target
-      (mExpr "nf" [mVar (f "sig"), mExpr "Bad" [mVar (f "e")]])
-      (mExpr "Bad" [mVar (f "e")]) nfBadRulePair htargetClosed hFresh hMatch
+  obtain ⟨hVar, hSrt, hCon, hPi, hLam, hBad, hDef⟩ :=
+    queryOpItems_nf_ordinary_candidates_miss st.counter sig "IndG"
+      [declNameAtom familyName, argsAtom params, termAtom motive, casesAtom cases,
+        argsAtom indices, termAtom scrutinee] target (by simp [target, nfQuery, termAtom]) (by decide +kernel)
   have hIota :
       Metta.Minimal.queryOpItemsOfRule [] target [] (st.counter + 1 + 1 + 1 + 1 + 1 + 1)
           nfIndGZeroIotaRulePair = [] := by
     exact queryOpItems_nf_indG_zero_iota_eq_nil_of_term_match_nil
       (st.counter + 6) sig
       (.indG familyName params motive cases indices scrutinee) hIotaMiss
-  have hDef :
-      Metta.Minimal.queryOpItemsOfRule [] target [] (st.counter + 1 + 1 + 1 + 1 + 1 + 1 + 1)
-          nfDefRulePair = [] := by
-    let f := counterSuffix (st.counter + 1 + 1 + 1 + 1 + 1 + 1 + 1)
-    have hFresh :
-        freshenRule (st.counter + 1 + 1 + 1 + 1 + 1 + 1 + 1)
-            nfDefRulePair.1 nfDefRulePair.2 =
-          (mExpr "nf" [mVar (f "sig"), mExpr "Def" [mVar (f "x")]],
-            mExpr "let"
-              [ mVar (f "body")
-              , mExpr "def-body-of" [mVar (f "sig"), mVar (f "x")]
-              , mExpr "if"
-                  [ mExpr "is-bad" [mVar (f "body")]
-                  , mExpr "Bad" [mSym "unknown-definition"]
-                  , mExpr "nf" [mVar (f "sig"), mVar (f "body")] ] ]) := by
-      rw [freshenRule_eq_renBy]
-      simp [f, nfDefRulePair, nfDefRuleLhs, nfDefRuleRhs, mExpr, mSym, mVar,
-        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-    have hMatch :
-        Metta.matchAtoms
-            (mExpr "nf" [mVar (f "sig"), mExpr "Def" [mVar (f "x")]])
-            target = [] := by
-      simpa [target, nfQuery, termAtom] using
-        fresh_nf_ctor_mismatch_match_nil f sig "Def" [mVar (f "x")] "IndG"
-          [declNameAtom familyName, argsAtom params, termAtom motive, casesAtom cases,
-            argsAtom indices, termAtom scrutinee] (by decide)
-    exact queryOpItemsOfRule_eq_nil_of_legacy_fresh_match_nil
-      (st.counter + 1 + 1 + 1 + 1 + 1 + 1 + 1) target
-      (mExpr "nf" [mVar (f "sig"), mExpr "Def" [mVar (f "x")]])
-      (mExpr "let"
-        [ mVar (f "body")
-        , mExpr "def-body-of" [mVar (f "sig"), mVar (f "x")]
-        , mExpr "if"
-            [ mExpr "is-bad" [mVar (f "body")]
-            , mExpr "Bad" [mSym "unknown-definition"]
-            , mExpr "nf" [mVar (f "sig"), mVar (f "body")] ] ])
-      nfDefRulePair htargetClosed hFresh hMatch
   unfold queryOp
   rw [hNotVarHead]
   simp only [Bool.false_eq_true, ↓reduceIte]
@@ -40573,9 +39503,6 @@ private theorem queryOp_kernelDefControlEnv_nf_indG_zero_iota_eq
       , { counter := st.counter + nfDefCandidatePreWithIndGZeroIota.length + 1,
           world := st.world }) := by
   let target := nfQuery sig cicStage3IndGZeroRawRuntime
-  have htargetClosed : target.vars = [] := by
-    simp [target, nfQuery, sigAtom_vars_nil, termAtom_vars_nil, mExpr, mSym,
-      Metta.Atom.vars]
   let rootBnd :=
     (renameBindings (counterSuffix (st.counter + 6))
       (nfIndGZeroIotaRuleBindings sig)).reverse
@@ -40597,202 +39524,15 @@ private theorem queryOp_kernelDefControlEnv_nf_indG_zero_iota_eq
       (nfQuery sig (.indG `nat [] (.srt .type) [] [] (.con `z)))
     rw [hstaticInit] at hcand
     simpa [target, cicStage3IndGZeroRawRuntime] using hcand
-  have hVar :
-      Metta.Minimal.queryOpItemsOfRule [] target [] st.counter nfVarRulePair = [] := by
-    let f := counterSuffix st.counter
-    have hFresh :
-        freshenRule st.counter nfVarRulePair.1 nfVarRulePair.2 =
-          (mExpr "nf" [mVar (f "sig"), mExpr "Var" [mVar (f "k")]],
-            mExpr "Var" [mVar (f "k")]) := by
-      rw [freshenRule_eq_renBy]
-      simp [f, nfVarRulePair, mExpr, mSym, mVar,
-        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-    have hMatch :
-        Metta.matchAtoms
-            (mExpr "nf" [mVar (f "sig"), mExpr "Var" [mVar (f "k")]])
-            target = [] := by
-      simpa [target, cicStage3IndGZeroRawRuntime, nfQuery, termAtom] using
-        fresh_nf_ctor_mismatch_match_nil f sig "Var" [mVar (f "k")] "IndG"
-          [declNameAtom `nat, argsAtom [], termAtom (.srt .type), casesAtom [],
-            argsAtom [], termAtom (.con `z)] (by decide)
-    exact queryOpItemsOfRule_eq_nil_of_legacy_fresh_match_nil
-      st.counter target
-      (mExpr "nf" [mVar (f "sig"), mExpr "Var" [mVar (f "k")]])
-      (mExpr "Var" [mVar (f "k")]) nfVarRulePair htargetClosed hFresh hMatch
-  have hSrt :
-      Metta.Minimal.queryOpItemsOfRule [] target [] (st.counter + 1) nfSrtRulePair = [] := by
-    let f := counterSuffix (st.counter + 1)
-    have hFresh :
-        freshenRule (st.counter + 1) nfSrtRulePair.1 nfSrtRulePair.2 =
-          (mExpr "nf" [mVar (f "sig"), mExpr "Srt" [mVar (f "s")]],
-            mExpr "Srt" [mVar (f "s")]) := by
-      rw [freshenRule_eq_renBy]
-      simp [f, nfSrtRulePair, mExpr, mSym, mVar,
-        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-    have hMatch :
-        Metta.matchAtoms
-            (mExpr "nf" [mVar (f "sig"), mExpr "Srt" [mVar (f "s")]])
-            target = [] := by
-      simpa [target, cicStage3IndGZeroRawRuntime, nfQuery, termAtom] using
-        fresh_nf_ctor_mismatch_match_nil f sig "Srt" [mVar (f "s")] "IndG"
-          [declNameAtom `nat, argsAtom [], termAtom (.srt .type), casesAtom [],
-            argsAtom [], termAtom (.con `z)] (by decide)
-    exact queryOpItemsOfRule_eq_nil_of_legacy_fresh_match_nil
-      (st.counter + 1) target
-      (mExpr "nf" [mVar (f "sig"), mExpr "Srt" [mVar (f "s")]])
-      (mExpr "Srt" [mVar (f "s")]) nfSrtRulePair htargetClosed hFresh hMatch
-  have hCon :
-      Metta.Minimal.queryOpItemsOfRule [] target [] (st.counter + 1 + 1) nfConRulePair = [] := by
-    let f := counterSuffix (st.counter + 1 + 1)
-    have hFresh :
-        freshenRule (st.counter + 1 + 1) nfConRulePair.1 nfConRulePair.2 =
-          (mExpr "nf" [mVar (f "sig"), mExpr "Con" [mVar (f "x")]],
-            mExpr "Con" [mVar (f "x")]) := by
-      rw [freshenRule_eq_renBy]
-      simp [f, nfConRulePair, mExpr, mSym, mVar,
-        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-    have hMatch :
-        Metta.matchAtoms
-            (mExpr "nf" [mVar (f "sig"), mExpr "Con" [mVar (f "x")]])
-            target = [] := by
-      simpa [target, cicStage3IndGZeroRawRuntime, nfQuery, termAtom] using
-        fresh_nf_ctor_mismatch_match_nil f sig "Con" [mVar (f "x")] "IndG"
-          [declNameAtom `nat, argsAtom [], termAtom (.srt .type), casesAtom [],
-            argsAtom [], termAtom (.con `z)] (by decide)
-    exact queryOpItemsOfRule_eq_nil_of_legacy_fresh_match_nil
-      (st.counter + 1 + 1) target
-      (mExpr "nf" [mVar (f "sig"), mExpr "Con" [mVar (f "x")]])
-      (mExpr "Con" [mVar (f "x")]) nfConRulePair htargetClosed hFresh hMatch
-  have hPi :
-      Metta.Minimal.queryOpItemsOfRule [] target [] (st.counter + 1 + 1 + 1)
-          (nfPiRuleLhs, nfPiRuleRhs) = [] := by
-    let f := counterSuffix (st.counter + 1 + 1 + 1)
-    have hFresh :
-        freshenRule (st.counter + 1 + 1 + 1) nfPiRuleLhs nfPiRuleRhs =
-          (mExpr "nf" [mVar (f "sig"),
-              mExpr "Pi" [mVar (f "A"), mVar (f "B")]],
-            mExpr "Pi"
-              [mExpr "nf" [mVar (f "sig"), mVar (f "A")],
-               mExpr "nf" [mVar (f "sig"), mVar (f "B")]]) := by
-      rw [freshenRule_eq_renBy]
-      simp [f, nfPiRuleLhs, nfPiRuleRhs, mExpr, mSym, mVar,
-        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-    have hMatch :
-        Metta.matchAtoms
-            (mExpr "nf" [mVar (f "sig"),
-              mExpr "Pi" [mVar (f "A"), mVar (f "B")]])
-            target = [] := by
-      simpa [target, cicStage3IndGZeroRawRuntime, nfQuery, termAtom] using
-        fresh_nf_ctor_mismatch_match_nil f sig "Pi"
-          [mVar (f "A"), mVar (f "B")] "IndG"
-          [declNameAtom `nat, argsAtom [], termAtom (.srt .type), casesAtom [],
-            argsAtom [], termAtom (.con `z)] (by decide)
-    exact queryOpItemsOfRule_eq_nil_of_legacy_fresh_match_nil
-      (st.counter + 1 + 1 + 1) target
-      (mExpr "nf" [mVar (f "sig"),
-        mExpr "Pi" [mVar (f "A"), mVar (f "B")]])
-      (mExpr "Pi"
-        [mExpr "nf" [mVar (f "sig"), mVar (f "A")],
-         mExpr "nf" [mVar (f "sig"), mVar (f "B")]])
-      (nfPiRuleLhs, nfPiRuleRhs) htargetClosed hFresh hMatch
-  have hLam :
-      Metta.Minimal.queryOpItemsOfRule [] target [] (st.counter + 1 + 1 + 1 + 1)
-          nfLamRulePair = [] := by
-    let f := counterSuffix (st.counter + 1 + 1 + 1 + 1)
-    have hFresh :
-        freshenRule (st.counter + 1 + 1 + 1 + 1) nfLamRulePair.1 nfLamRulePair.2 =
-          (mExpr "nf" [mVar (f "sig"),
-              mExpr "Lam" [mVar (f "A"), mVar (f "b")]],
-            mExpr "Lam"
-              [mExpr "nf" [mVar (f "sig"), mVar (f "A")],
-               mExpr "nf" [mVar (f "sig"), mVar (f "b")]]) := by
-      rw [freshenRule_eq_renBy]
-      simp [f, nfLamRulePair, nfLamRuleLhs, nfLamRuleRhs, mExpr, mSym, mVar,
-        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-    have hMatch :
-        Metta.matchAtoms
-            (mExpr "nf" [mVar (f "sig"),
-              mExpr "Lam" [mVar (f "A"), mVar (f "b")]])
-            target = [] := by
-      simpa [target, cicStage3IndGZeroRawRuntime, nfQuery, termAtom] using
-        fresh_nf_ctor_mismatch_match_nil f sig "Lam"
-          [mVar (f "A"), mVar (f "b")] "IndG"
-          [declNameAtom `nat, argsAtom [], termAtom (.srt .type), casesAtom [],
-            argsAtom [], termAtom (.con `z)] (by decide)
-    exact queryOpItemsOfRule_eq_nil_of_legacy_fresh_match_nil
-      (st.counter + 1 + 1 + 1 + 1) target
-      (mExpr "nf" [mVar (f "sig"),
-        mExpr "Lam" [mVar (f "A"), mVar (f "b")]])
-      (mExpr "Lam"
-        [mExpr "nf" [mVar (f "sig"), mVar (f "A")],
-         mExpr "nf" [mVar (f "sig"), mVar (f "b")]])
-      nfLamRulePair htargetClosed hFresh hMatch
-  have hBad :
-      Metta.Minimal.queryOpItemsOfRule [] target [] (st.counter + 1 + 1 + 1 + 1 + 1)
-          nfBadRulePair = [] := by
-    let f := counterSuffix (st.counter + 1 + 1 + 1 + 1 + 1)
-    have hFresh :
-        freshenRule (st.counter + 1 + 1 + 1 + 1 + 1) nfBadRulePair.1 nfBadRulePair.2 =
-          (mExpr "nf" [mVar (f "sig"), mExpr "Bad" [mVar (f "e")]],
-            mExpr "Bad" [mVar (f "e")]) := by
-      rw [freshenRule_eq_renBy]
-      simp [f, nfBadRulePair, mExpr, mSym, mVar,
-        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-    have hMatch :
-        Metta.matchAtoms
-            (mExpr "nf" [mVar (f "sig"), mExpr "Bad" [mVar (f "e")]])
-            target = [] := by
-      simpa [target, cicStage3IndGZeroRawRuntime, nfQuery, termAtom] using
-        fresh_nf_ctor_mismatch_match_nil f sig "Bad" [mVar (f "e")] "IndG"
-          [declNameAtom `nat, argsAtom [], termAtom (.srt .type), casesAtom [],
-            argsAtom [], termAtom (.con `z)] (by decide)
-    exact queryOpItemsOfRule_eq_nil_of_legacy_fresh_match_nil
-      (st.counter + 1 + 1 + 1 + 1 + 1) target
-      (mExpr "nf" [mVar (f "sig"), mExpr "Bad" [mVar (f "e")]])
-      (mExpr "Bad" [mVar (f "e")]) nfBadRulePair htargetClosed hFresh hMatch
+  obtain ⟨hVar, hSrt, hCon, hPi, hLam, hBad, hDef⟩ :=
+    queryOpItems_nf_ordinary_candidates_miss st.counter sig "IndG"
+      [declNameAtom `nat, argsAtom [], termAtom (.srt .type), casesAtom [], argsAtom [], termAtom (.con `z)] target (by simp [target, nfQuery, termAtom, cicStage3IndGZeroRawRuntime]) (by decide +kernel)
   have hIota :
       Metta.Minimal.queryOpItemsOfRule [] target [] (st.counter + 1 + 1 + 1 + 1 + 1 + 1)
           nfIndGZeroIotaRulePair =
         [evalResult [] nfIndGZeroIotaReadout rootBnd] := by
     simpa [target, rootBnd, Nat.add_assoc] using
       queryOpItems_nf_indG_zero_iota_eq (st.counter + 6) sig
-  have hDef :
-      Metta.Minimal.queryOpItemsOfRule [] target [] (st.counter + 1 + 1 + 1 + 1 + 1 + 1 + 1)
-          nfDefRulePair = [] := by
-    let f := counterSuffix (st.counter + 1 + 1 + 1 + 1 + 1 + 1 + 1)
-    have hFresh :
-        freshenRule (st.counter + 1 + 1 + 1 + 1 + 1 + 1 + 1)
-            nfDefRulePair.1 nfDefRulePair.2 =
-          (mExpr "nf" [mVar (f "sig"), mExpr "Def" [mVar (f "x")]],
-            mExpr "let"
-              [ mVar (f "body")
-              , mExpr "def-body-of" [mVar (f "sig"), mVar (f "x")]
-              , mExpr "if"
-                  [ mExpr "is-bad" [mVar (f "body")]
-                  , mExpr "Bad" [mSym "unknown-definition"]
-                  , mExpr "nf" [mVar (f "sig"), mVar (f "body")] ] ]) := by
-      rw [freshenRule_eq_renBy]
-      simp [f, nfDefRulePair, nfDefRuleLhs, nfDefRuleRhs, mExpr, mSym, mVar,
-        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-    have hMatch :
-        Metta.matchAtoms
-            (mExpr "nf" [mVar (f "sig"), mExpr "Def" [mVar (f "x")]])
-            target = [] := by
-      simpa [target, cicStage3IndGZeroRawRuntime, nfQuery, termAtom] using
-        fresh_nf_ctor_mismatch_match_nil f sig "Def" [mVar (f "x")] "IndG"
-          [declNameAtom `nat, argsAtom [], termAtom (.srt .type), casesAtom [],
-            argsAtom [], termAtom (.con `z)] (by decide)
-    exact queryOpItemsOfRule_eq_nil_of_legacy_fresh_match_nil
-      (st.counter + 1 + 1 + 1 + 1 + 1 + 1 + 1) target
-      (mExpr "nf" [mVar (f "sig"), mExpr "Def" [mVar (f "x")]])
-      (mExpr "let"
-        [ mVar (f "body")
-        , mExpr "def-body-of" [mVar (f "sig"), mVar (f "x")]
-        , mExpr "if"
-            [ mExpr "is-bad" [mVar (f "body")]
-            , mExpr "Bad" [mSym "unknown-definition"]
-            , mExpr "nf" [mVar (f "sig"), mVar (f "body")] ] ])
-      nfDefRulePair htargetClosed hFresh hMatch
   unfold queryOp
   rw [hNotVarHead]
   simp only [Bool.false_eq_true, ↓reduceIte]
@@ -49332,127 +48072,53 @@ private theorem queryOpItems_nf_srt_eq_singleton_closed
 private theorem queryOpItems_nf_con_on_srt_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig) (sort : DIndGArtifactSort) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.srt sort)) [] counter nfConRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfConRulePair.1 nfConRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Con" [mVar (f "x")]],
-          mExpr "Con" [mVar (f "x")]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfConRulePair, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Con" [mVar (f "x")]])
-          (nfQuery sig (.srt sort)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Con" [mVar (f "x")]
-        "Srt" [sortAtom sort] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Con") (targetHead := "Srt")
+    (targetArgs := [sortAtom sort])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpItems_nf_pi_on_srt_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig) (sort : DIndGArtifactSort) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.srt sort)) [] counter
         (nfPiRuleLhs, nfPiRuleRhs) = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfPiRuleLhs nfPiRuleRhs =
-        (mExpr "nf" [mVar (f "sig"),
-            mExpr "Pi" [mVar (f "A"), mVar (f "B")]],
-          mExpr "Pi"
-            [mExpr "nf" [mVar (f "sig"), mVar (f "A")],
-             mExpr "nf" [mVar (f "sig"), mVar (f "B")]]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfPiRuleLhs, nfPiRuleRhs, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"),
-            mExpr "Pi" [mVar (f "A"), mVar (f "B")]])
-          (nfQuery sig (.srt sort)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Pi"
-        [mVar (f "A"), mVar (f "B")] "Srt" [sortAtom sort] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Pi") (targetHead := "Srt")
+    (targetArgs := [sortAtom sort])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpItems_nf_lam_on_srt_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig) (sort : DIndGArtifactSort) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.srt sort)) [] counter nfLamRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfLamRulePair.1 nfLamRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"),
-            mExpr "Lam" [mVar (f "A"), mVar (f "b")]],
-          mExpr "Lam"
-            [mExpr "nf" [mVar (f "sig"), mVar (f "A")],
-             mExpr "nf" [mVar (f "sig"), mVar (f "b")]]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfLamRulePair, nfLamRuleLhs, nfLamRuleRhs, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"),
-            mExpr "Lam" [mVar (f "A"), mVar (f "b")]])
-          (nfQuery sig (.srt sort)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Lam"
-        [mVar (f "A"), mVar (f "b")] "Srt" [sortAtom sort] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Lam") (targetHead := "Srt")
+    (targetArgs := [sortAtom sort])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpItems_nf_bad_on_srt_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig) (sort : DIndGArtifactSort) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.srt sort)) [] counter nfBadRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfBadRulePair.1 nfBadRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Bad" [mVar (f "e")]],
-          mExpr "Bad" [mVar (f "e")]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfBadRulePair, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Bad" [mVar (f "e")]])
-          (nfQuery sig (.srt sort)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Bad" [mVar (f "e")]
-        "Srt" [sortAtom sort] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Bad") (targetHead := "Srt")
+    (targetArgs := [sortAtom sort])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpItems_nf_def_on_srt_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig) (sort : DIndGArtifactSort) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.srt sort)) [] counter nfDefRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfDefRulePair.1 nfDefRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Def" [mVar (f "x")]],
-          mExpr "let"
-            [ mVar (f "body")
-            , mExpr "def-body-of" [mVar (f "sig"), mVar (f "x")]
-            , mExpr "if"
-                [ mExpr "is-bad" [mVar (f "body")]
-                , mExpr "Bad" [mSym "unknown-definition"]
-                , mExpr "nf" [mVar (f "sig"), mVar (f "body")] ] ]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfDefRulePair, nfDefRuleLhs, nfDefRuleRhs, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Def" [mVar (f "x")]])
-          (nfQuery sig (.srt sort)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Def" [mVar (f "x")]
-        "Srt" [sortAtom sort] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Def") (targetHead := "Srt")
+    (targetArgs := [sortAtom sort])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOp_kernelDefControlEnv_nf_srt_eq
     (st : St) (sig : DIndGArtifactSig) (sort : DIndGArtifactSort)
@@ -50271,149 +48937,63 @@ private theorem queryOpItems_nf_var_eq_singleton_closed
 private theorem queryOpItems_nf_srt_on_var_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig) (k : Nat) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.var k)) [] counter nfSrtRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfSrtRulePair.1 nfSrtRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Srt" [mVar (f "s")]],
-          mExpr "Srt" [mVar (f "s")]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfSrtRulePair, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Srt" [mVar (f "s")]])
-          (nfQuery sig (.var k)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Srt" [mVar (f "s")]
-        "Var" [mNat k] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Srt") (targetHead := "Var")
+    (targetArgs := [mNat k])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpItems_nf_con_on_var_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig) (k : Nat) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.var k)) [] counter nfConRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfConRulePair.1 nfConRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Con" [mVar (f "x")]],
-          mExpr "Con" [mVar (f "x")]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfConRulePair, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Con" [mVar (f "x")]])
-          (nfQuery sig (.var k)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Con" [mVar (f "x")]
-        "Var" [mNat k] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Con") (targetHead := "Var")
+    (targetArgs := [mNat k])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpItems_nf_pi_on_var_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig) (k : Nat) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.var k)) [] counter
         (nfPiRuleLhs, nfPiRuleRhs) = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfPiRuleLhs nfPiRuleRhs =
-        (mExpr "nf" [mVar (f "sig"),
-            mExpr "Pi" [mVar (f "A"), mVar (f "B")]],
-          mExpr "Pi"
-            [mExpr "nf" [mVar (f "sig"), mVar (f "A")],
-             mExpr "nf" [mVar (f "sig"), mVar (f "B")]]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfPiRuleLhs, nfPiRuleRhs, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"),
-            mExpr "Pi" [mVar (f "A"), mVar (f "B")]])
-          (nfQuery sig (.var k)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Pi"
-        [mVar (f "A"), mVar (f "B")] "Var" [mNat k] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Pi") (targetHead := "Var")
+    (targetArgs := [mNat k])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpItems_nf_lam_on_var_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig) (k : Nat) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.var k)) [] counter nfLamRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfLamRulePair.1 nfLamRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"),
-            mExpr "Lam" [mVar (f "A"), mVar (f "b")]],
-          mExpr "Lam"
-            [mExpr "nf" [mVar (f "sig"), mVar (f "A")],
-             mExpr "nf" [mVar (f "sig"), mVar (f "b")]]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfLamRulePair, nfLamRuleLhs, nfLamRuleRhs, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"),
-            mExpr "Lam" [mVar (f "A"), mVar (f "b")]])
-          (nfQuery sig (.var k)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Lam"
-        [mVar (f "A"), mVar (f "b")] "Var" [mNat k] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Lam") (targetHead := "Var")
+    (targetArgs := [mNat k])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpItems_nf_bad_on_var_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig) (k : Nat) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.var k)) [] counter nfBadRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfBadRulePair.1 nfBadRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Bad" [mVar (f "e")]],
-          mExpr "Bad" [mVar (f "e")]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfBadRulePair, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Bad" [mVar (f "e")]])
-          (nfQuery sig (.var k)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Bad" [mVar (f "e")]
-        "Var" [mNat k] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Bad") (targetHead := "Var")
+    (targetArgs := [mNat k])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpItems_nf_def_on_var_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig) (k : Nat) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.var k)) [] counter nfDefRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfDefRulePair.1 nfDefRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Def" [mVar (f "x")]],
-          mExpr "let"
-            [ mVar (f "body")
-            , mExpr "def-body-of" [mVar (f "sig"), mVar (f "x")]
-            , mExpr "if"
-                [ mExpr "is-bad" [mVar (f "body")]
-                , mExpr "Bad" [mSym "unknown-definition"]
-                , mExpr "nf" [mVar (f "sig"), mVar (f "body")] ] ]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfDefRulePair, nfDefRuleLhs, nfDefRuleRhs, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Def" [mVar (f "x")]])
-          (nfQuery sig (.var k)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Def" [mVar (f "x")]
-        "Var" [mNat k] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Def") (targetHead := "Var")
+    (targetArgs := [mNat k])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 /-- Exact `nf Var` query readout under one closed public binding.  Candidate
 order, private-prefix/public-suffix bindings, and the final counter are all
@@ -51553,47 +50133,23 @@ private theorem queryOpItems_nf_var_on_con_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig)
     (name : Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Syntax.DeclName) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.con name)) [] counter nfVarRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfVarRulePair.1 nfVarRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Var" [mVar (f "k")]],
-          mExpr "Var" [mVar (f "k")]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfVarRulePair, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Var" [mVar (f "k")]])
-          (nfQuery sig (.con name)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Var" [mVar (f "k")]
-        "Con" [declNameAtom name] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Var") (targetHead := "Con")
+    (targetArgs := [declNameAtom name])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpItems_nf_srt_on_con_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig)
     (name : Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Syntax.DeclName) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.con name)) [] counter nfSrtRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfSrtRulePair.1 nfSrtRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Srt" [mVar (f "s")]],
-          mExpr "Srt" [mVar (f "s")]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfSrtRulePair, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Srt" [mVar (f "s")]])
-          (nfQuery sig (.con name)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Srt" [mVar (f "s")]
-        "Con" [declNameAtom name] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Srt") (targetHead := "Con")
+    (targetArgs := [declNameAtom name])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpItems_nf_con_eq
     (counter : Nat) (sig : DIndGArtifactSig)
@@ -51687,107 +50243,45 @@ private theorem queryOpItems_nf_pi_on_con_eq_nil
     (name : Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Syntax.DeclName) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.con name)) [] counter
         (nfPiRuleLhs, nfPiRuleRhs) = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfPiRuleLhs nfPiRuleRhs =
-        (mExpr "nf" [mVar (f "sig"),
-            mExpr "Pi" [mVar (f "A"), mVar (f "B")]],
-          mExpr "Pi"
-            [mExpr "nf" [mVar (f "sig"), mVar (f "A")],
-             mExpr "nf" [mVar (f "sig"), mVar (f "B")]]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfPiRuleLhs, nfPiRuleRhs, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"),
-            mExpr "Pi" [mVar (f "A"), mVar (f "B")]])
-          (nfQuery sig (.con name)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Pi"
-        [mVar (f "A"), mVar (f "B")] "Con" [declNameAtom name] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Pi") (targetHead := "Con")
+    (targetArgs := [declNameAtom name])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpItems_nf_lam_on_con_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig)
     (name : Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Syntax.DeclName) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.con name)) [] counter nfLamRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfLamRulePair.1 nfLamRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"),
-            mExpr "Lam" [mVar (f "A"), mVar (f "b")]],
-          mExpr "Lam"
-            [mExpr "nf" [mVar (f "sig"), mVar (f "A")],
-             mExpr "nf" [mVar (f "sig"), mVar (f "b")]]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfLamRulePair, nfLamRuleLhs, nfLamRuleRhs, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"),
-            mExpr "Lam" [mVar (f "A"), mVar (f "b")]])
-          (nfQuery sig (.con name)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Lam"
-        [mVar (f "A"), mVar (f "b")] "Con" [declNameAtom name] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Lam") (targetHead := "Con")
+    (targetArgs := [declNameAtom name])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpItems_nf_bad_on_con_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig)
     (name : Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Syntax.DeclName) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.con name)) [] counter nfBadRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfBadRulePair.1 nfBadRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Bad" [mVar (f "e")]],
-          mExpr "Bad" [mVar (f "e")]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfBadRulePair, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Bad" [mVar (f "e")]])
-          (nfQuery sig (.con name)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Bad" [mVar (f "e")]
-        "Con" [declNameAtom name] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Bad") (targetHead := "Con")
+    (targetArgs := [declNameAtom name])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpItems_nf_def_on_con_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig)
     (name : Mettapedia.TypeTheory.Calculi.TwoSortPiSigmaId.Syntax.DeclName) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.con name)) [] counter nfDefRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfDefRulePair.1 nfDefRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Def" [mVar (f "x")]],
-          mExpr "let"
-            [ mVar (f "body")
-            , mExpr "def-body-of" [mVar (f "sig"), mVar (f "x")]
-            , mExpr "if"
-                [ mExpr "is-bad" [mVar (f "body")]
-                , mExpr "Bad" [mSym "unknown-definition"]
-                , mExpr "nf" [mVar (f "sig"), mVar (f "body")] ] ]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfDefRulePair, nfDefRuleLhs, nfDefRuleRhs, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Def" [mVar (f "x")]])
-          (nfQuery sig (.con name)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Def" [mVar (f "x")]
-        "Con" [declNameAtom name] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Def") (targetHead := "Con")
+    (targetArgs := [declNameAtom name])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOp_kernelDefControlEnv_nf_con_eq
     (st : St) (sig : DIndGArtifactSig)
@@ -52012,115 +50506,44 @@ private theorem fresh_nf_pi_rule_match
         (nfQuery sig (.pi rawDomain rawBody)) =
       [renameBindings (counterSuffix counter)
         (nfPiRuleBindings sig rawDomain rawBody)] := by
-  let f := counterSuffix counter
-  rw [freshenRule_eq_renBy]
-  have hraw :=
-    match_binary_nested_binary_vars "nf" (f "sig") "Pi" (f "A") (f "B")
-      (sigAtom sig) (termAtom rawDomain) (termAtom rawBody)
-      (by
-        intro h
-        have : "B" = "A" := (counterSuffix_injective counter) h
-        contradiction)
-      (by
-        intro h
-        have : "A" = "sig" := (counterSuffix_injective counter) h
-        contradiction)
-      (by
-        intro h
-        have : "B" = "sig" := (counterSuffix_injective counter) h
-        contradiction)
-      (sigAtom_vars_absent sig) (termAtom_vars_absent rawDomain)
-      (termAtom_vars_absent rawBody) (sigAtom_not_var sig)
-      (termAtom_not_var rawDomain) (termAtom_not_var rawBody)
-      (sigAtom_vars_nil sig) (termAtom_vars_nil rawDomain)
-      (termAtom_vars_nil rawBody)
-  unfold Metta.matchAtoms
-  rw [show Metta.matchAtomsWith none
-      (Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy f nfPiRuleLhs)
-      (nfQuery sig (.pi rawDomain rawBody)) =
-      [renameBindings f (nfPiRuleBindings sig rawDomain rawBody)] by
-    simpa only [nfPiRuleLhs, nfQuery, termAtom, nfPiRuleBindings,
-      renameBindings, mExpr, mSym, mVar, List.map_cons, List.map_nil,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy] using hraw]
-  exact filter_singleton_binding_of_hasLoop_false _
-    (ClosedValueBindings.hasLoop_false
-      (ClosedValueBindings.rename
-        (ClosedValueBindings.val (termAtom_vars_nil rawDomain)
-          (ClosedValueBindings.val (termAtom_vars_nil rawBody)
-            (ClosedValueBindings.val (sigAtom_vars_nil sig)
-              ClosedValueBindings.nil)))))
+  exact match_freshened_closed counter (nfQuery_vars_nil_early sig _)
+    (nf_pi_rule_match sig rawDomain rawBody)
 
 private theorem queryOpItems_nf_var_on_pi_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig)
     (rawDomain rawBody : DIndGArtifactTerm) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.pi rawDomain rawBody)) [] counter
         nfVarRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfVarRulePair.1 nfVarRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Var" [mVar (f "k")]],
-          mExpr "Var" [mVar (f "k")]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfVarRulePair, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Var" [mVar (f "k")]])
-          (nfQuery sig (.pi rawDomain rawBody)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Var" [mVar (f "k")] "Pi"
-        [termAtom rawDomain, termAtom rawBody] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Var") (targetHead := "Pi")
+    (targetArgs := [termAtom rawDomain, termAtom rawBody])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpItems_nf_srt_on_pi_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig)
     (rawDomain rawBody : DIndGArtifactTerm) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.pi rawDomain rawBody)) [] counter
         nfSrtRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfSrtRulePair.1 nfSrtRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Srt" [mVar (f "s")]],
-          mExpr "Srt" [mVar (f "s")]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfSrtRulePair, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Srt" [mVar (f "s")]])
-          (nfQuery sig (.pi rawDomain rawBody)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Srt" [mVar (f "s")] "Pi"
-        [termAtom rawDomain, termAtom rawBody] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Srt") (targetHead := "Pi")
+    (targetArgs := [termAtom rawDomain, termAtom rawBody])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpItems_nf_con_on_pi_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig)
     (rawDomain rawBody : DIndGArtifactTerm) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.pi rawDomain rawBody)) [] counter
         nfConRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfConRulePair.1 nfConRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Con" [mVar (f "x")]],
-          mExpr "Con" [mVar (f "x")]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfConRulePair, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Con" [mVar (f "x")]])
-          (nfQuery sig (.pi rawDomain rawBody)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Con" [mVar (f "x")] "Pi"
-        [termAtom rawDomain, termAtom rawBody] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Con") (targetHead := "Pi")
+    (targetArgs := [termAtom rawDomain, termAtom rawBody])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpItems_nf_pi_eq
     (counter : Nat) (sig : DIndGArtifactSig)
@@ -52226,83 +50649,36 @@ private theorem queryOpItems_nf_lam_on_pi_eq_nil
     (rawDomain rawBody : DIndGArtifactTerm) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.pi rawDomain rawBody)) [] counter
         nfLamRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfLamRulePair.1 nfLamRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"),
-            mExpr "Lam" [mVar (f "A"), mVar (f "b")]],
-          mExpr "Lam"
-            [mExpr "nf" [mVar (f "sig"), mVar (f "A")],
-             mExpr "nf" [mVar (f "sig"), mVar (f "b")]]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfLamRulePair, nfLamRuleLhs, nfLamRuleRhs, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"),
-            mExpr "Lam" [mVar (f "A"), mVar (f "b")]])
-          (nfQuery sig (.pi rawDomain rawBody)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Lam"
-        [mVar (f "A"), mVar (f "b")] "Pi"
-        [termAtom rawDomain, termAtom rawBody] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Lam") (targetHead := "Pi")
+    (targetArgs := [termAtom rawDomain, termAtom rawBody])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpItems_nf_bad_on_pi_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig)
     (rawDomain rawBody : DIndGArtifactTerm) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.pi rawDomain rawBody)) [] counter
         nfBadRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfBadRulePair.1 nfBadRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Bad" [mVar (f "e")]],
-          mExpr "Bad" [mVar (f "e")]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfBadRulePair, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Bad" [mVar (f "e")]])
-          (nfQuery sig (.pi rawDomain rawBody)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Bad" [mVar (f "e")] "Pi"
-        [termAtom rawDomain, termAtom rawBody] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Bad") (targetHead := "Pi")
+    (targetArgs := [termAtom rawDomain, termAtom rawBody])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpItems_nf_def_on_pi_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig)
     (rawDomain rawBody : DIndGArtifactTerm) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.pi rawDomain rawBody)) [] counter
         nfDefRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfDefRulePair.1 nfDefRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Def" [mVar (f "x")]],
-          mExpr "let"
-            [ mVar (f "body")
-            , mExpr "def-body-of" [mVar (f "sig"), mVar (f "x")]
-            , mExpr "if"
-                [ mExpr "is-bad" [mVar (f "body")]
-                , mExpr "Bad" [mSym "unknown-definition"]
-                , mExpr "nf" [mVar (f "sig"), mVar (f "body")] ] ]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfDefRulePair, nfDefRuleLhs, nfDefRuleRhs, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Def" [mVar (f "x")]])
-          (nfQuery sig (.pi rawDomain rawBody)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Def" [mVar (f "x")] "Pi"
-        [termAtom rawDomain, termAtom rawBody] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Def") (targetHead := "Pi")
+    (targetArgs := [termAtom rawDomain, termAtom rawBody])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpFold_nf_pi_pre_eq
     (st : St) (sig : DIndGArtifactSig)
@@ -52486,144 +50862,56 @@ private theorem fresh_nf_lam_rule_match
         (nfQuery sig (.lam rawDomain rawBody)) =
       [renameBindings (counterSuffix counter)
         (nfLamRuleBindings sig rawDomain rawBody)] := by
-  let f := counterSuffix counter
-  rw [freshenRule_eq_renBy]
-  have hraw :=
-    match_binary_nested_binary_vars "nf" (f "sig") "Lam" (f "A") (f "b")
-      (sigAtom sig) (termAtom rawDomain) (termAtom rawBody)
-      (by
-        intro h
-        have : "b" = "A" := (counterSuffix_injective counter) h
-        contradiction)
-      (by
-        intro h
-        have : "A" = "sig" := (counterSuffix_injective counter) h
-        contradiction)
-      (by
-        intro h
-        have : "b" = "sig" := (counterSuffix_injective counter) h
-        contradiction)
-      (sigAtom_vars_absent sig) (termAtom_vars_absent rawDomain)
-      (termAtom_vars_absent rawBody) (sigAtom_not_var sig)
-      (termAtom_not_var rawDomain) (termAtom_not_var rawBody)
-      (sigAtom_vars_nil sig) (termAtom_vars_nil rawDomain)
-      (termAtom_vars_nil rawBody)
-  unfold Metta.matchAtoms
-  rw [show Metta.matchAtomsWith none
-      (Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy f nfLamRuleLhs)
-      (nfQuery sig (.lam rawDomain rawBody)) =
-      [renameBindings f (nfLamRuleBindings sig rawDomain rawBody)] by
-    simpa only [nfLamRuleLhs, nfQuery, termAtom, nfLamRuleBindings,
-      renameBindings, mExpr, mSym, mVar, List.map_cons, List.map_nil,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy] using hraw]
-  exact filter_singleton_binding_of_hasLoop_false _
-    (ClosedValueBindings.hasLoop_false
-      (ClosedValueBindings.rename
-        (ClosedValueBindings.val (termAtom_vars_nil rawDomain)
-          (ClosedValueBindings.val (termAtom_vars_nil rawBody)
-            (ClosedValueBindings.val (sigAtom_vars_nil sig)
-              ClosedValueBindings.nil)))))
+  exact match_freshened_closed counter (nfQuery_vars_nil_early sig _)
+    (nf_lam_rule_match sig rawDomain rawBody)
 
 private theorem queryOpItems_nf_var_on_lam_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig)
     (rawDomain rawBody : DIndGArtifactTerm) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.lam rawDomain rawBody)) [] counter
         nfVarRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfVarRulePair.1 nfVarRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Var" [mVar (f "k")]],
-          mExpr "Var" [mVar (f "k")]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfVarRulePair, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Var" [mVar (f "k")]])
-          (nfQuery sig (.lam rawDomain rawBody)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Var" [mVar (f "k")] "Lam"
-        [termAtom rawDomain, termAtom rawBody] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Var") (targetHead := "Lam")
+    (targetArgs := [termAtom rawDomain, termAtom rawBody])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpItems_nf_srt_on_lam_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig)
     (rawDomain rawBody : DIndGArtifactTerm) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.lam rawDomain rawBody)) [] counter
         nfSrtRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfSrtRulePair.1 nfSrtRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Srt" [mVar (f "s")]],
-          mExpr "Srt" [mVar (f "s")]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfSrtRulePair, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Srt" [mVar (f "s")]])
-          (nfQuery sig (.lam rawDomain rawBody)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Srt" [mVar (f "s")] "Lam"
-        [termAtom rawDomain, termAtom rawBody] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Srt") (targetHead := "Lam")
+    (targetArgs := [termAtom rawDomain, termAtom rawBody])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpItems_nf_con_on_lam_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig)
     (rawDomain rawBody : DIndGArtifactTerm) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.lam rawDomain rawBody)) [] counter
         nfConRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfConRulePair.1 nfConRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Con" [mVar (f "x")]],
-          mExpr "Con" [mVar (f "x")]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfConRulePair, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Con" [mVar (f "x")]])
-          (nfQuery sig (.lam rawDomain rawBody)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Con" [mVar (f "x")] "Lam"
-        [termAtom rawDomain, termAtom rawBody] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Con") (targetHead := "Lam")
+    (targetArgs := [termAtom rawDomain, termAtom rawBody])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpItems_nf_pi_on_lam_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig)
     (rawDomain rawBody : DIndGArtifactTerm) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.lam rawDomain rawBody)) [] counter
         (nfPiRuleLhs, nfPiRuleRhs) = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfPiRuleLhs nfPiRuleRhs =
-        (mExpr "nf" [mVar (f "sig"),
-            mExpr "Pi" [mVar (f "A"), mVar (f "B")]],
-          mExpr "Pi"
-            [mExpr "nf" [mVar (f "sig"), mVar (f "A")],
-             mExpr "nf" [mVar (f "sig"), mVar (f "B")]]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfPiRuleLhs, nfPiRuleRhs, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"),
-            mExpr "Pi" [mVar (f "A"), mVar (f "B")]])
-          (nfQuery sig (.lam rawDomain rawBody)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Pi"
-        [mVar (f "A"), mVar (f "B")] "Lam"
-        [termAtom rawDomain, termAtom rawBody] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Pi") (targetHead := "Lam")
+    (targetArgs := [termAtom rawDomain, termAtom rawBody])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpItems_nf_lam_eq
     (counter : Nat) (sig : DIndGArtifactSig)
@@ -52856,54 +51144,24 @@ private theorem queryOpItems_nf_bad_on_lam_eq_nil
     (rawDomain rawBody : DIndGArtifactTerm) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.lam rawDomain rawBody)) [] counter
         nfBadRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfBadRulePair.1 nfBadRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Bad" [mVar (f "e")]],
-          mExpr "Bad" [mVar (f "e")]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfBadRulePair, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Bad" [mVar (f "e")]])
-          (nfQuery sig (.lam rawDomain rawBody)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Bad" [mVar (f "e")] "Lam"
-        [termAtom rawDomain, termAtom rawBody] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Bad") (targetHead := "Lam")
+    (targetArgs := [termAtom rawDomain, termAtom rawBody])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpItems_nf_def_on_lam_eq_nil
     (counter : Nat) (sig : DIndGArtifactSig)
     (rawDomain rawBody : DIndGArtifactTerm) :
     Metta.Minimal.queryOpItemsOfRule [] (nfQuery sig (.lam rawDomain rawBody)) [] counter
         nfDefRulePair = [] := by
-  let f := counterSuffix counter
-  have hfresh :
-      freshenRule counter nfDefRulePair.1 nfDefRulePair.2 =
-        (mExpr "nf" [mVar (f "sig"), mExpr "Def" [mVar (f "x")]],
-          mExpr "let"
-            [ mVar (f "body")
-            , mExpr "def-body-of" [mVar (f "sig"), mVar (f "x")]
-            , mExpr "if"
-                [ mExpr "is-bad" [mVar (f "body")]
-                , mExpr "Bad" [mSym "unknown-definition"]
-                , mExpr "nf" [mVar (f "sig"), mVar (f "body")] ] ]) := by
-    rw [freshenRule_eq_renBy]
-    simp [f, nfDefRulePair, nfDefRuleLhs, nfDefRuleRhs, mExpr, mSym, mVar,
-      Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy]
-  have hmatch :
-      Metta.matchAtoms
-          (mExpr "nf" [mVar (f "sig"), mExpr "Def" [mVar (f "x")]])
-          (nfQuery sig (.lam rawDomain rawBody)) = [] := by
-    simpa [nfQuery, termAtom] using
-      fresh_nf_ctor_mismatch_match_nil f sig "Def" [mVar (f "x")] "Lam"
-        [termAtom rawDomain, termAtom rawBody] (by decide)
-  rw [queryOpItemsOfRule_nfQuery_eq_legacy]
-  rw [hfresh]
-  simp [hmatch]
+  apply queryOpItems_nf_distinct_heads counter sig (patternHead := "Def") (targetHead := "Lam")
+    (targetArgs := [termAtom rawDomain, termAtom rawBody])
+  · rfl
+  · simp only [nfQuery, termAtom]
+  · exact nfQuery_vars_nil_early sig _
+  · decide
 
 private theorem queryOpFold_nf_lam_pre_eq
     (st : St) (sig : DIndGArtifactSig)
@@ -55646,30 +53904,22 @@ private theorem mettaEval_kernelDefControlEnv_nonWitness_nf_def_let_body_mem
   have hFresh :
       RenamedBindingKeysFreshForPayloads (counterSuffix stAtom.counter)
         (letRuleBindings binder bodyAtom template) := by
+    apply (letRuleBindings_rename_fresh_iff _ _ _ _).mpr
     intro key hkey
-    simp [letRuleBindings, bindingRuleKeys] at hkey
+    simp at hkey
     have hKeyNe : counterSuffix stAtom.counter key ≠ binder := by
       rcases hkey with rfl | rfl | rfl
       · exact hTemplateNe
       · exact hAtomNe
       · exact hPatternNe
-    constructor
-    · intro x a hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with hmem | hmem
-      · rcases hmem with ⟨rfl, rfl⟩
-        simp [template, sigAtom_vars_nil, mExpr, mSym, mVar,
-          Metta.Atom.vars, hKeyNe]
-      · rcases hmem with ⟨rfl, rfl⟩
-        simpa [bodyAtom] using
-          (by
-            rw [termAtom_vars_nil leattaDefControlNonWitnessBody]
-            simp : counterSuffix stAtom.counter key ∉
-              (termAtom leattaDefControlNonWitnessBody).vars)
-    · intro x y hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with ⟨rfl, rfl⟩
-      exact hKeyNe
+    refine ⟨?_, ?_, hKeyNe⟩
+    · simpa [bodyAtom] using
+        (by
+          rw [termAtom_vars_nil leattaDefControlNonWitnessBody]
+          simp : counterSuffix stAtom.counter key ∉
+            (termAtom leattaDefControlNonWitnessBody).vars)
+    · simp [template, sigAtom_vars_nil, mExpr, mSym, mVar,
+        Metta.Atom.vars, hKeyNe]
   have hRoot :
       interpretFuel kernelDefControlEnv (fuel + 6 + 1) stAtom
           [evalItemNil (mExpr "let" [mVar binder, bodyAtom, template])] [] =
@@ -55707,24 +53957,18 @@ private theorem mettaEval_kernelDefControlEnv_nonWitness_nf_def_let_body_mem
   have hBinderTemplateBeq : (binder == counterSuffix stAtom.counter "template") = false :=
     beq_eq_false_iff_ne.mpr hTemplateNe.symm
   have hTemplateAtom :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" := by
-    intro h
-    have h' : "template" = "atom" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hTemplatePattern :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "template" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hAtomTemplate :
       counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "template" := by
     intro h
     exact hTemplateAtom h.symm
   have hAtomPattern :
-      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "atom" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hPatternTemplate :
       counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "template" := by
     intro h
@@ -55736,54 +53980,17 @@ private theorem mettaEval_kernelDefControlEnv_nonWitness_nf_def_let_body_mem
   have hLetBndNil :
       restrictBnd (([mVar binder, bodyQuery, template]).flatMap Atom.vars)
           ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
-    have hmerge :
-        Metta.Bindings.merge [] rootBnd =
-          [renameBindings (counterSuffix stAtom.counter)
-            (letRuleBindings binder bodyAtom template)] := by
-      simpa [rootBnd] using
-        merge_empty_reversed_renamed_letRuleBindings_eq
-          (counterSuffix stAtom.counter)
-          (counterSuffix_injective stAtom.counter)
-          binder bodyAtom template hBodyNonVar hTemplateNonVar
-          hPatternNe hAtomNe hTemplateNe
-    rw [hmerge]
-    simp only [List.head?_cons, Option.getD_some]
-    have hinst :
-        Metta.instantiate
-            (renameBindings (counterSuffix stAtom.counter)
-              (letRuleBindings binder bodyAtom template))
-            (mVar binder) = mVar binder :=
-      merged_let_binder_instantiate_eq_self
-        (counterSuffix stAtom.counter)
-        (counterSuffix_injective stAtom.counter)
-        binder bodyAtom template hPatternNe hAtomNe hTemplateNe
-    have hresolve := resolveAtom_var_of_instantiate_eq_self
-      (renameBindings (counterSuffix stAtom.counter)
-        (letRuleBindings binder bodyAtom template)) binder hinst
-    have hresolve4 :
-        resolveAtom
-            [ Metta.BindingRel.val (counterSuffix stAtom.counter "template") template
-            , Metta.BindingRel.val (counterSuffix stAtom.counter "atom") bodyAtom
-            , Metta.BindingRel.eq (counterSuffix stAtom.counter "pattern") binder ]
-            4 (Metta.Atom.var binder) = Metta.Atom.var binder := by
-      simpa [letRuleBindings, renameBindings] using hresolve 4
     have hvars :
         (([mVar binder, bodyQuery, template]).flatMap Atom.vars) =
           [binder, binder, binder] := by
       simp [bodyQuery, template, defBodyOfQueryAtom,
         sigAtom_vars_nil, declNameAtom_vars_nil,
         mExpr, mSym, mVar, Metta.Atom.vars]
-    rw [hvars]
-    change restrictBnd [binder, binder, binder]
-        [ Metta.BindingRel.val (counterSuffix stAtom.counter "template") template
-        , Metta.BindingRel.val (counterSuffix stAtom.counter "atom") bodyAtom
-        , Metta.BindingRel.eq (counterSuffix stAtom.counter "pattern") binder ] = []
-    exact restrictBnd_triple_fresh_let_binder
-      binder
-      (counterSuffix stAtom.counter "template")
-      (counterSuffix stAtom.counter "atom")
-      (counterSuffix stAtom.counter "pattern")
-      template bodyAtom hPatternNe hresolve4
+    simpa [rootBnd] using
+      restrictBnd_merge_empty_reversed_letRuleBindings_eq_nil
+        (counterSuffix stAtom.counter) (counterSuffix_injective stAtom.counter)
+        binder bodyAtom bodyQuery template hBodyNonVar hTemplateNonVar
+        hPatternNe hAtomNe hTemplateNe hvars
   have hFinal :
       (bodyAtom, finalBnd) ∈
         (mettaEval kernelDefControlEnv (fuel + 6) stRoot
@@ -56923,30 +55130,22 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_nf_def_let_body
   have hFresh :
       RenamedBindingKeysFreshForPayloads (counterSuffix stAtom.counter)
         (letRuleBindings binder bodyAtom template) := by
+    apply (letRuleBindings_rename_fresh_iff _ _ _ _).mpr
     intro key hkey
-    simp [letRuleBindings, bindingRuleKeys] at hkey
+    simp at hkey
     have hKeyNe : counterSuffix stAtom.counter key ≠ binder := by
       rcases hkey with rfl | rfl | rfl
       · exact hTemplateNe
       · exact hAtomNe
       · exact hPatternNe
-    constructor
-    · intro x a hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with hmem | hmem
-      · rcases hmem with ⟨rfl, rfl⟩
-        simp [template, sigAtom_vars_nil, mExpr, mSym, mVar,
-          Metta.Atom.vars, hKeyNe]
-      · rcases hmem with ⟨rfl, rfl⟩
-        simpa [bodyAtom] using
-          (by
-            rw [termAtom_vars_nil cicStage3RawIdentityWitness]
-            simp : counterSuffix stAtom.counter key ∉
-              (termAtom cicStage3RawIdentityWitness).vars)
-    · intro x y hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with ⟨rfl, rfl⟩
-      exact hKeyNe
+    refine ⟨?_, ?_, hKeyNe⟩
+    · simpa [bodyAtom] using
+        (by
+          rw [termAtom_vars_nil cicStage3RawIdentityWitness]
+          simp : counterSuffix stAtom.counter key ∉
+            (termAtom cicStage3RawIdentityWitness).vars)
+    · simp [template, sigAtom_vars_nil, mExpr, mSym, mVar,
+        Metta.Atom.vars, hKeyNe]
   have hRoot :
       interpretFuel kernelDefControlEnv (fuel + 9 + 1) stAtom
           [evalItemNil (mExpr "let" [mVar binder, bodyAtom, template])] [] =
@@ -56972,24 +55171,18 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_nf_def_let_body
   have hBinderTemplateNe : binder ≠ counterSuffix stAtom.counter "template" :=
     hTemplateNe.symm
   have hTemplateAtom :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" := by
-    intro h
-    have h' : "template" = "atom" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hTemplatePattern :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "template" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hAtomTemplate :
       counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "template" := by
     intro h
     exact hTemplateAtom h.symm
   have hAtomPattern :
-      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "atom" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hPatternTemplate :
       counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "template" := by
     intro h
@@ -57001,54 +55194,17 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_nf_def_let_body
   have hLetBndNil :
       restrictBnd (([mVar binder, bodyQuery, template]).flatMap Atom.vars)
           ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
-    have hmerge :
-        Metta.Bindings.merge [] rootBnd =
-          [renameBindings (counterSuffix stAtom.counter)
-            (letRuleBindings binder bodyAtom template)] := by
-      simpa [rootBnd] using
-        merge_empty_reversed_renamed_letRuleBindings_eq
-          (counterSuffix stAtom.counter)
-          (counterSuffix_injective stAtom.counter)
-          binder bodyAtom template hBodyNonVar hTemplateNonVar
-          hPatternNe hAtomNe hTemplateNe
-    rw [hmerge]
-    simp only [List.head?_cons, Option.getD_some]
-    have hinst :
-        Metta.instantiate
-            (renameBindings (counterSuffix stAtom.counter)
-              (letRuleBindings binder bodyAtom template))
-            (mVar binder) = mVar binder :=
-      merged_let_binder_instantiate_eq_self
-        (counterSuffix stAtom.counter)
-        (counterSuffix_injective stAtom.counter)
-        binder bodyAtom template hPatternNe hAtomNe hTemplateNe
-    have hresolve := resolveAtom_var_of_instantiate_eq_self
-      (renameBindings (counterSuffix stAtom.counter)
-        (letRuleBindings binder bodyAtom template)) binder hinst
-    have hresolve4 :
-        resolveAtom
-            [ Metta.BindingRel.val (counterSuffix stAtom.counter "template") template
-            , Metta.BindingRel.val (counterSuffix stAtom.counter "atom") bodyAtom
-            , Metta.BindingRel.eq (counterSuffix stAtom.counter "pattern") binder ]
-            4 (Metta.Atom.var binder) = Metta.Atom.var binder := by
-      simpa [letRuleBindings, renameBindings] using hresolve 4
     have hvars :
         (([mVar binder, bodyQuery, template]).flatMap Atom.vars) =
           [binder, binder, binder] := by
       simp [bodyQuery, template, defBodyOfQueryAtom,
         sigAtom_vars_nil, declNameAtom_vars_nil,
         mExpr, mSym, mVar, Metta.Atom.vars]
-    rw [hvars]
-    change restrictBnd [binder, binder, binder]
-        [ Metta.BindingRel.val (counterSuffix stAtom.counter "template") template
-        , Metta.BindingRel.val (counterSuffix stAtom.counter "atom") bodyAtom
-        , Metta.BindingRel.eq (counterSuffix stAtom.counter "pattern") binder ] = []
-    exact restrictBnd_triple_fresh_let_binder
-      binder
-      (counterSuffix stAtom.counter "template")
-      (counterSuffix stAtom.counter "atom")
-      (counterSuffix stAtom.counter "pattern")
-      template bodyAtom hPatternNe hresolve4
+    simpa [rootBnd] using
+      restrictBnd_merge_empty_reversed_letRuleBindings_eq_nil
+        (counterSuffix stAtom.counter) (counterSuffix_injective stAtom.counter)
+        binder bodyAtom bodyQuery template hBodyNonVar hTemplateNonVar
+        hPatternNe hAtomNe hTemplateNe hvars
   have hFinal :
       (bodyAtom, finalBnd) ∈
         (mettaEval kernelDefControlEnv (fuel + 9) stRoot
@@ -57520,30 +55676,22 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_nf_def_let_body
   have hFresh :
       RenamedBindingKeysFreshForPayloads (counterSuffix stAtom.counter)
         (letRuleBindings binder bodyAtom template) := by
+    apply (letRuleBindings_rename_fresh_iff _ _ _ _).mpr
     intro key hkey
-    simp [letRuleBindings, bindingRuleKeys] at hkey
+    simp at hkey
     have hKeyNe : counterSuffix stAtom.counter key ≠ binder := by
       rcases hkey with rfl | rfl | rfl
       · exact hTemplateNe
       · exact hAtomNe
       · exact hPatternNe
-    constructor
-    · intro x a hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with hmem | hmem
-      · rcases hmem with ⟨rfl, rfl⟩
-        simp [template, sigAtom_vars_nil, mExpr, mSym, mVar,
-          Metta.Atom.vars, hKeyNe]
-      · rcases hmem with ⟨rfl, rfl⟩
-        simpa [bodyAtom] using
-          (by
-            rw [termAtom_vars_nil cicStage3RawIdentityWitness]
-            simp : counterSuffix stAtom.counter key ∉
-              (termAtom cicStage3RawIdentityWitness).vars)
-    · intro x y hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with ⟨rfl, rfl⟩
-      exact hKeyNe
+    refine ⟨?_, ?_, hKeyNe⟩
+    · simpa [bodyAtom] using
+        (by
+          rw [termAtom_vars_nil cicStage3RawIdentityWitness]
+          simp : counterSuffix stAtom.counter key ∉
+            (termAtom cicStage3RawIdentityWitness).vars)
+    · simp [template, sigAtom_vars_nil, mExpr, mSym, mVar,
+        Metta.Atom.vars, hKeyNe]
   have hRoot :
       interpretFuel kernelDefControlEnv (fuel + 9 + 1) stAtom
           [evalItemNil (mExpr "let" [mVar binder, bodyAtom, template])] [] =
@@ -57569,24 +55717,18 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_nf_def_let_body
   have hBinderTemplateNe : binder ≠ counterSuffix stAtom.counter "template" :=
     hTemplateNe.symm
   have hTemplateAtom :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" := by
-    intro h
-    have h' : "template" = "atom" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hTemplatePattern :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "template" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hAtomTemplate :
       counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "template" := by
     intro h
     exact hTemplateAtom h.symm
   have hAtomPattern :
-      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "atom" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hPatternTemplate :
       counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "template" := by
     intro h
@@ -62701,30 +60843,22 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutAfte
   have hFresh :
       RenamedBindingKeysFreshForPayloads (counterSuffix stAtom.counter)
         (letRuleBindings binder bodyAtom template) := by
+    apply (letRuleBindings_rename_fresh_iff _ _ _ _).mpr
     intro key hkey
-    simp [letRuleBindings, bindingRuleKeys] at hkey
+    simp at hkey
     have hKeyNe : counterSuffix stAtom.counter key ≠ binder := by
       rcases hkey with rfl | rfl | rfl
       · exact hTemplateNe
       · exact hAtomNe
       · exact hPatternNe
-    constructor
-    · intro x a hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with hmem | hmem
-      · rcases hmem with ⟨rfl, rfl⟩
-        simp [template, bodyAtom, termAtom_vars_nil cicStage3RawIdentityWitness,
-          mExpr, mSym, mVar, mBool, Metta.Atom.vars, hKeyNe]
-      · rcases hmem with ⟨rfl, rfl⟩
-        simpa [bodyAtom] using
-          (by
-            rw [termAtom_vars_nil cicStage3RawIdentityWitness]
-            simp : counterSuffix stAtom.counter key ∉
-              (termAtom cicStage3RawIdentityWitness).vars)
-    · intro x y hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with ⟨rfl, rfl⟩
-      exact hKeyNe
+    refine ⟨?_, ?_, hKeyNe⟩
+    · simpa [bodyAtom] using
+        (by
+          rw [termAtom_vars_nil cicStage3RawIdentityWitness]
+          simp : counterSuffix stAtom.counter key ∉
+            (termAtom cicStage3RawIdentityWitness).vars)
+    · simp [template, bodyAtom, termAtom_vars_nil cicStage3RawIdentityWitness,
+        mExpr, mSym, mVar, mBool, Metta.Atom.vars, hKeyNe]
   have hRoot :
       interpretFuel kernelDefControlEnv (fuel + 7 + 1) stAtom
           [evalItemNil (mExpr "let" [mVar binder, bodyAtom, template])] [] =
@@ -62750,24 +60884,18 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutAfte
   have hBinderTemplateNe : binder ≠ counterSuffix stAtom.counter "template" :=
     hTemplateNe.symm
   have hTemplateAtom :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" := by
-    intro h
-    have h' : "template" = "atom" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hTemplatePattern :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "template" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hAtomTemplate :
       counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "template" := by
     intro h
     exact hTemplateAtom h.symm
   have hAtomPattern :
-      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "atom" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hPatternTemplate :
       counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "template" := by
     intro h
@@ -64252,112 +62380,20 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutAfte
       Metta.Bindings.merge ambient
           (renameBindings (counterSuffix stAtom.counter)
             (letRuleBindings binder bodyAtom template)) = [rootBnd] := by
-    let f := counterSuffix stAtom.counter
-    let templateKey := f "template"
-    let atomKey := f "atom"
-    let patternKey := f "pattern"
-    let withTemplate : Metta.Bindings :=
-      Metta.BindingRel.val templateKey template :: ambient
-    let withAtom : Metta.Bindings :=
-      Metta.BindingRel.val atomKey bodyAtom :: withTemplate
-    let candidate : Metta.Bindings :=
-      Metta.BindingRel.eq patternKey binder :: withAtom
-    have hTemplateOuter : templateKey ≠ outerBinder := by
-      exact hFreshKeys (Or.inl rfl)
-    have hAtomOuter : atomKey ≠ outerBinder := by
-      exact hFreshKeys (Or.inr (Or.inl rfl))
-    have hPatternOuter : patternKey ≠ outerBinder := by
-      exact hFreshKeys (Or.inr (Or.inr rfl))
-    have hPatternAtom : patternKey ≠ atomKey := by
-      intro h
-      have : "pattern" = "atom" := counterSuffix_injective stAtom.counter h
-      contradiction
-    have hPatternTemplate : patternKey ≠ templateKey := by
-      intro h
-      have : "pattern" = "template" := counterSuffix_injective stAtom.counter h
-      contradiction
-    have hAtomTemplate : atomKey ≠ templateKey := by
-      intro h
-      have : "atom" = "template" := counterSuffix_injective stAtom.counter h
-      contradiction
-    have hBinderOuter : binder ≠ outerBinder := by
-      simp [binder, outerBinder]
-    have hPatternBinder : patternKey ≠ binder := by
-      simpa [patternKey, f] using hPatternFresh
-    have hAtomKeyBinder : atomKey ≠ binder := by
-      simpa [atomKey, f] using hAtomBinder
-    have hTemplateKeyBinder : templateKey ≠ binder := by
-      simpa [templateKey, f] using hTemplateFresh
-    have hAmbientValues : ValueBindings ambient := by
-      exact ValueBindings.val ValueBindings.nil
-    have hTemplateNotKey : templateKey ∉ bindingValueKeys ambient := by
-      simp [ambient, outerBinder, bindingValueKeys, hTemplateOuter]
-    have hFirst :
-        Metta.Bindings.merge ambient
-            [Metta.BindingRel.val templateKey template] = [withTemplate] := by
-      simpa [withTemplate] using
-        hAmbientValues.merge_singleton_val_eq_of_not_key
-          hTemplateNonVar hTemplateNotKey
-    have hWithTemplateValues : ValueBindings withTemplate :=
-      ValueBindings.val hAmbientValues
-    have hAtomNotKey : atomKey ∉ bindingValueKeys withTemplate := by
-      simp [withTemplate, ambient, outerBinder, bindingValueKeys,
-        hAtomTemplate, hAtomOuter]
-    have hSecond :
-        Metta.Bindings.merge withTemplate
-            [Metta.BindingRel.val atomKey bodyAtom] = [withAtom] := by
-      simpa [withAtom] using
-        hWithTemplateValues.merge_singleton_val_eq_of_not_key
-          hBodyNonVar hAtomNotKey
-    have hstepPattern0 :
-        Metta.Bindings.eqStep candidate [patternKey] = [patternKey, binder] := by
-      simp [candidate, withAtom, withTemplate, ambient, Metta.Bindings.eqStep,
-        hPatternBinder, hPatternBinder.symm]
-    have hstepPattern :
-        Metta.Bindings.eqStep candidate [patternKey, binder] =
-          [patternKey, binder] := by
-      simp [candidate, withAtom, withTemplate, ambient, Metta.Bindings.eqStep,
-        hPatternBinder, hPatternBinder.symm]
-    have heqClassPattern :
-        Metta.Bindings.eqClass candidate patternKey = [patternKey, binder] := by
-      simp [Metta.Bindings.eqClass, candidate, withAtom, withTemplate, ambient,
-        Metta.Bindings.eqClassAux, hstepPattern0, hstepPattern]
-    have horder : Metta.Bindings.eqVarsInOrder candidate = [binder, patternKey] := by
-      simp [candidate, withAtom, withTemplate, ambient,
-        Metta.Bindings.eqVarsInOrder, hPatternBinder]
-    have hclassPattern :
-        Metta.Bindings.eqClassOrdered candidate patternKey = [binder, patternKey] := by
-      simp [Metta.Bindings.eqClassOrdered, horder, heqClassPattern,
-        hPatternBinder, hPatternBinder.symm]
-    have hvaluesPattern : Metta.Bindings.classValues candidate patternKey = [] := by
-      rw [Metta.Bindings.classValues, hclassPattern]
-      simp [candidate, withAtom, withTemplate, ambient, Metta.Bindings.lookupVal,
-        hAtomKeyBinder.symm, hPatternAtom,
-        hTemplateKeyBinder.symm, hPatternTemplate,
-        hBinderOuter, hPatternOuter]
-    have hThird :
-        Metta.Bindings.merge withAtom [Metta.BindingRel.eq patternKey binder] =
-          [candidate] := by
-      simpa [candidate] using
-        merge_singleton_eq_eq_of_valueless_class hPatternBinder hvaluesPattern
-          (ValueBindings.eq_not_mem (ValueBindings.val hWithTemplateValues))
-    have hFirstStep :
-        Metta.Bindings.mergeOne [ambient]
-            (Metta.BindingRel.val templateKey template) = [withTemplate] := by
-      simpa [Metta.Bindings.merge] using hFirst
-    have hSecondStep :
-        Metta.Bindings.mergeOne [withTemplate]
-            (Metta.BindingRel.val atomKey bodyAtom) = [withAtom] := by
-      simpa [Metta.Bindings.merge] using hSecond
-    have hThirdStep :
-        Metta.Bindings.mergeOne [withAtom]
-            (Metta.BindingRel.eq patternKey binder) = [candidate] := by
-      simpa [Metta.Bindings.merge] using hThird
-    simp only [letRuleBindings, renameBindings, Metta.Bindings.merge,
-      List.foldl_cons, List.foldl_nil]
-    rw [hFirstStep, hSecondStep, hThirdStep]
-    simp [rootBnd, candidate, withAtom, withTemplate, f,
-      templateKey, atomKey, patternKey, letRuleBindings, renameBindings]
+    have freshTemplate : counterSuffix stAtom.counter "template" ≠ outerBinder :=
+      hFreshKeys (Or.inl rfl)
+    have freshAtom : counterSuffix stAtom.counter "atom" ≠ outerBinder :=
+      hFreshKeys (Or.inr (Or.inl rfl))
+    have freshPattern : counterSuffix stAtom.counter "pattern" ≠ outerBinder :=
+      hFreshKeys (Or.inr (Or.inr rfl))
+    have freshBinder : binder ≠ outerBinder := by simp [binder, outerBinder]
+    simpa only [rootBnd] using merge_let_valueBindings ambient (.val .nil)
+      (counterSuffix stAtom.counter) (counterSuffix_injective stAtom.counter)
+      binder bodyAtom template hBodyNonVar hTemplateNonVar hPatternFresh hAtomBinder hTemplateFresh
+      (by simp [ambient, bindingValueKeys, freshPattern])
+      (by simp [ambient, bindingValueKeys, freshAtom])
+      (by simp [ambient, bindingValueKeys, freshTemplate])
+      (by simp [ambient, bindingValueKeys, freshBinder])
   have hRoot :
       interpretFuel kernelDefControlEnv (fuel + 7 + 1) stAtom
           [{ stack := atomToStack
@@ -64622,27 +62658,32 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutAfte
   rw [hEq]
   exact hmem
 
-private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutAfterNxNamed_fresh_ambient_true_exists_bnd
-    (fuel : Nat) (st : St)
-    (hWorld : st.world = St.init.world) :
+/-- Continue a named conversion using the exact singleton normalizer result
+and the state after that evaluation. The freshened bindings are resolved once
+and justify rule instantiation, readback stability, and absence of a loop. -/
+private theorem mettaEval_kernelDefControlEnv_namedConversion_of_singleton
+    (fuel : Nat) (st stAtom : St) (sig : DIndGArtifactSig) (raw : DIndGArtifactTerm)
+    (hWorld : st.world = St.init.world) (hArgWorld : stAtom.world = st.world)
+    (hTermNotBad : ∀ badVar,
+      Metta.matchAtoms (termAtom raw) (mExpr "Bad" [mVar badVar]) = [])
+    (hBodyUnify : Metta.Bindings.unifyValues [termAtom raw, termAtom raw] = some [])
+    (hAtom :
+      let ambient := [Metta.BindingRel.val (counterSuffix St.init.counter "nx") (termAtom raw)]
+      mettaEval kernelDefControlEnv (fuel + 7) st ambient (nfQuery sig raw) =
+        ([(termAtom raw, ambient)], stAtom)) :
     let outerBinder := counterSuffix St.init.counter "nx"
     let binder := counterSuffix St.init.counter "ny"
-    let bodyAtom := termAtom cicStage3RawIdentityWitness
-    let ambient : Metta.Bindings :=
-        [Metta.BindingRel.val outerBinder bodyAtom]
+    let bodyAtom := termAtom raw
+    let ambient := [Metta.BindingRel.val outerBinder bodyAtom]
     ∃ bnd,
       (mBool true, bnd) ∈
         (mettaEval kernelDefControlEnv (fuel + 8) st ambient
-          (convReadoutAfterNxNamed binder
-            cicStage3RawArtifactSigWithPropToType0Witness
-            cicStage3RawIdentityWitness bodyAtom)).1 := by
+          (convReadoutAfterNxNamed binder sig raw bodyAtom)).1 := by
   dsimp
   let outerBinder := counterSuffix St.init.counter "nx"
   let binder := counterSuffix St.init.counter "ny"
-  let bodyAtom := termAtom cicStage3RawIdentityWitness
-  let bodyQuery :=
-    nfQuery cicStage3RawArtifactSigWithPropToType0Witness
-      cicStage3RawIdentityWitness
+  let bodyAtom := termAtom raw
+  let bodyQuery := nfQuery sig raw
   let ambient : Metta.Bindings :=
     [Metta.BindingRel.val outerBinder bodyAtom]
   let template :=
@@ -64654,7 +62695,6 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutAfte
           , mBool false
           , mExpr "==" [bodyAtom, mVar binder] ] ]
   let target := mExpr "let" [mVar binder, bodyQuery, template]
-  let stAtom : St := { counter := st.counter + 40, world := st.world }
   let stRoot : St := { counter := stAtom.counter + 1, world := stAtom.world }
   let rootBnd :=
     (renameBindings (counterSuffix stAtom.counter)
@@ -64672,7 +62712,7 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutAfte
     contradiction
   have hBinderOuterNe : binder ≠ outerBinder := fun h => hOuterBinderNe h.symm
   have hBodyClosed : bodyAtom.vars = [] := by
-    simpa [bodyAtom] using termAtom_vars_nil cicStage3RawIdentityWitness
+    simpa [bodyAtom] using termAtom_vars_nil raw
   have hClosedAmbient : ClosedValueBindings ambient := by
     simpa [ambient] using
       ClosedValueBindings.val hBodyClosed ClosedValueBindings.nil
@@ -64681,47 +62721,31 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutAfte
     have hSig :
           Metta.Subst.apply
               [(outerBinder, bodyAtom)]
-          (sigAtom cicStage3RawArtifactSigWithPropToType0Witness) =
-          sigAtom cicStage3RawArtifactSigWithPropToType0Witness := by
+          (sigAtom sig) =
+          sigAtom sig := by
       exact Metta.Subst.apply_of_closed _ _
-        (sigAtom_vars_nil cicStage3RawArtifactSigWithPropToType0Witness)
+        (sigAtom_vars_nil sig)
     have hRaw :
           Metta.Subst.apply
               [(outerBinder, bodyAtom)]
-          (termAtom cicStage3RawIdentityWitness) =
-          termAtom cicStage3RawIdentityWitness := by
+          (termAtom raw) =
+          termAtom raw := by
       exact Metta.Subst.apply_of_closed _ _
-        (termAtom_vars_nil cicStage3RawIdentityWitness)
+        (termAtom_vars_nil raw)
     have hBody :
           Metta.Subst.apply
               [(outerBinder, bodyAtom)] bodyAtom =
           bodyAtom := by
       exact Metta.Subst.apply_of_closed _ bodyAtom
-        (by simpa [bodyAtom] using termAtom_vars_nil cicStage3RawIdentityWitness)
+        (by simpa [bodyAtom] using termAtom_vars_nil raw)
     rw [hClosedAmbient.instantiate_eq_subst_apply]
     simp [target, ambient, bodyQuery, nfQuery, template, binder, outerBinder,
       Metta.bindingsToSubst, Metta.Subst.apply,
       Metta.Subst.lookup, mExpr, mSym, mVar, mBool, hSig, hRaw, hBody,
       hBinderOuterNe]
-  have hBodyUnify : Metta.Bindings.unifyValues [bodyAtom, bodyAtom] = some [] :=
-    unifyValues_cicStage3RawIdentityWitness_self
-  have hNFFresh : ∀ counter {v : String},
-      v = "s" ∨ v = "sig" ∨ v = "k" ∨ v = "A" ∨ v = "b" →
-      counterSuffix counter v ≠ outerBinder := by
-    intro counter v hv heq
-    rcases hv with rfl | rfl | rfl | rfl | rfl <;>
-      (have hc := congrArg String.toList heq; simp [outerBinder, counterSuffix] at hc)
-  have hAtom :
-      mettaEval kernelDefControlEnv (fuel + 7) st ambient bodyQuery =
-        ([(bodyAtom, ambient)], stAtom) := by
-    simpa [bodyQuery, bodyAtom, ambient, stAtom] using
-      mettaEval_kernelDefControlEnv_nf_rawIdentityWitness_eq_state_singleton_closed
-        fuel st cicStage3RawArtifactSigWithPropToType0Witness outerBinder bodyAtom
-        hStatic hImports hTypes hBodyClosed
-        (termAtom_not_var cicStage3RawIdentityWitness) hBodyUnify hNFFresh
   obtain ⟨hPlan, hArguments, hScope⟩ :=
     kernelDefControlEnv_let_retained_singleton_arguments
-      cicStage3RawIdentityWitness bodyQuery (fuel + 7) st stAtom outerBinder binder
+      raw bodyQuery (fuel + 7) st stAtom outerBinder binder
       hTypes hBinderOuterNe
       (by simp [bodyQuery, nfQuery, sigAtom_vars_nil, termAtom_vars_nil,
         mExpr, mSym, Metta.Atom.vars]) hBodyUnify hAtom
@@ -64730,7 +62754,7 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutAfte
           [mVar binder, bodyQuery, template]).find?
         (fun ho : Metta.Atom × Metta.Atom => (ho.1 == emptyA || ho.1.isError) && ho.1 != ho.2)) = none := by
     have hBodyNoErr : bodyAtom.isError = false := by
-      simpa [bodyAtom] using termAtom_isError_false cicStage3RawIdentityWitness
+      simpa [bodyAtom] using termAtom_isError_false raw
     have hVarNoErr : (mVar binder).isError = false := by
       rfl
     have hTemplateNoErr : template.isError = false := by
@@ -64739,7 +62763,7 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutAfte
       bodyAtom, bodyQuery, template, mExpr, mSym]
   have hBodyNonVar : ∀ w, bodyAtom ≠ Metta.Atom.var w := by
     intro w
-    simpa [bodyAtom] using termAtom_not_var cicStage3RawIdentityWitness w
+    simpa [bodyAtom] using termAtom_not_var raw w
   have hTemplateNonVar : ∀ w, template ≠ Metta.Atom.var w := by
     intro w
     simp [template, mExpr, mSym]
@@ -64780,24 +62804,18 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutAfte
   have hBinderTemplateNe : binder ≠ counterSuffix stAtom.counter "template" :=
     hTemplateFresh.symm
   have hTemplateAtom :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" := by
-    intro h
-    have h' : "template" = "atom" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hTemplatePattern :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "template" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hAtomTemplate :
       counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "template" := by
     intro h
     exact hTemplateAtom h.symm
   have hAtomPattern :
-      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "atom" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hPatternTemplate :
       counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "template" := by
     intro h
@@ -64825,94 +62843,13 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutAfte
       Metta.Bindings.merge ambient
           (renameBindings (counterSuffix stAtom.counter)
             (letRuleBindings binder bodyAtom template)) = [rootBnd] := by
-    let f := counterSuffix stAtom.counter
-    let templateKey := f "template"
-    let atomKey := f "atom"
-    let patternKey := f "pattern"
-    let withTemplate : Metta.Bindings :=
-      Metta.BindingRel.val templateKey template :: ambient
-    let withAtom : Metta.Bindings :=
-      Metta.BindingRel.val atomKey bodyAtom :: withTemplate
-    let candidate : Metta.Bindings :=
-      Metta.BindingRel.eq patternKey binder :: withAtom
-    have hPatternBinder : patternKey ≠ binder := by
-      simpa [patternKey, f] using hPatternFresh
-    have hAtomKeyBinder : atomKey ≠ binder := by
-      simpa [atomKey, f] using hAtomFresh
-    have hTemplateKeyBinder : templateKey ≠ binder := by
-      simpa [templateKey, f] using hTemplateFresh
-    have hAmbientValues : ValueBindings ambient := by
-      exact hClosedAmbient.toValueBindings
-    have hTemplateNotKey : templateKey ∉ bindingValueKeys ambient := by
-      simp [templateKey, f, ambient, bindingValueKeys, hTemplateOuter]
-    have hFirst :
-        Metta.Bindings.merge ambient
-            [Metta.BindingRel.val templateKey template] = [withTemplate] := by
-      simpa [withTemplate] using
-        hAmbientValues.merge_singleton_val_eq_of_not_key
-          hTemplateNonVar hTemplateNotKey
-    have hWithTemplateValues : ValueBindings withTemplate :=
-      ValueBindings.val hAmbientValues
-    have hAtomNotKey : atomKey ∉ bindingValueKeys withTemplate := by
-      simp [atomKey, templateKey, f, withTemplate, ambient, bindingValueKeys,
-        hAtomTemplate, hAtomOuter]
-    have hSecond :
-        Metta.Bindings.merge withTemplate
-            [Metta.BindingRel.val atomKey bodyAtom] = [withAtom] := by
-      simpa [withAtom] using
-        hWithTemplateValues.merge_singleton_val_eq_of_not_key
-          hBodyNonVar hAtomNotKey
-    have hstepPattern0 :
-        Metta.Bindings.eqStep candidate [patternKey] = [patternKey, binder] := by
-      simp [candidate, withAtom, withTemplate, ambient, Metta.Bindings.eqStep,
-        hPatternBinder, hPatternBinder.symm]
-    have hstepPattern :
-        Metta.Bindings.eqStep candidate [patternKey, binder] =
-          [patternKey, binder] := by
-      simp [candidate, withAtom, withTemplate, ambient, Metta.Bindings.eqStep,
-        hPatternBinder, hPatternBinder.symm]
-    have heqClassPattern :
-        Metta.Bindings.eqClass candidate patternKey = [patternKey, binder] := by
-      simp [Metta.Bindings.eqClass, candidate, withAtom, withTemplate, ambient,
-        Metta.Bindings.eqClassAux, hstepPattern0, hstepPattern]
-    have horder : Metta.Bindings.eqVarsInOrder candidate = [binder, patternKey] := by
-      simp [candidate, withAtom, withTemplate, ambient,
-        Metta.Bindings.eqVarsInOrder, hPatternBinder]
-    have hclassPattern :
-        Metta.Bindings.eqClassOrdered candidate patternKey = [binder, patternKey] := by
-      simp [Metta.Bindings.eqClassOrdered, horder, heqClassPattern,
-        hPatternBinder, hPatternBinder.symm]
-    have hvaluesPattern :
-        Metta.Bindings.classValues candidate patternKey = [] := by
-      rw [Metta.Bindings.classValues, hclassPattern]
-      simp [candidate, withAtom, withTemplate, ambient, Metta.Bindings.lookupVal,
-        atomKey, templateKey, patternKey, f,
-        hAtomKeyBinder.symm, hPatternAtom,
-        hTemplateKeyBinder.symm, hPatternTemplate,
-        hBinderOuterNe, hPatternOuter]
-    have hThird :
-        Metta.Bindings.merge withAtom [Metta.BindingRel.eq patternKey binder] =
-          [candidate] := by
-      simpa [candidate] using
-        merge_singleton_eq_eq_of_valueless_class hPatternBinder hvaluesPattern
-          (ValueBindings.eq_not_mem (ValueBindings.val hWithTemplateValues))
-    have hFirstStep :
-        Metta.Bindings.mergeOne [ambient]
-            (Metta.BindingRel.val templateKey template) = [withTemplate] := by
-      simpa [Metta.Bindings.merge] using hFirst
-    have hSecondStep :
-        Metta.Bindings.mergeOne [withTemplate]
-            (Metta.BindingRel.val atomKey bodyAtom) = [withAtom] := by
-      simpa [Metta.Bindings.merge] using hSecond
-    have hThirdStep :
-        Metta.Bindings.mergeOne [withAtom]
-            (Metta.BindingRel.eq patternKey binder) = [candidate] := by
-      simpa [Metta.Bindings.merge] using hThird
-    simp only [letRuleBindings, renameBindings, Metta.Bindings.merge,
-      List.foldl_cons, List.foldl_nil]
-    rw [hFirstStep, hSecondStep, hThirdStep]
-    simp [rootBnd, candidate, withAtom, withTemplate, f,
-      templateKey, atomKey, patternKey, letRuleBindings, renameBindings]
+    simpa only [rootBnd] using merge_let_valueBindings ambient hClosedAmbient.toValueBindings
+      (counterSuffix stAtom.counter) (counterSuffix_injective stAtom.counter)
+      binder bodyAtom template hBodyNonVar hTemplateNonVar hPatternFresh hAtomFresh hTemplateFresh
+      (by simp [ambient, bindingValueKeys, hPatternOuter])
+      (by simp [ambient, bindingValueKeys, hAtomOuter])
+      (by simp [ambient, bindingValueKeys, hTemplateOuter])
+      (by simp [ambient, bindingValueKeys, hBinderOuterNe])
   have hRoot :
       interpretFuel kernelDefControlEnv (fuel + 7 + 1) stAtom
           [{ stack := atomToStack
@@ -64922,9 +62859,9 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutAfte
              bnd := ambient }] [] =
         ([(root, rootBnd)], stRoot) := by
     have hStaticAtom : stAtom.world.selfExtra = [] := by
-      simpa [stAtom] using hStatic
+      simpa only [hArgWorld] using hStatic
     have hImportsAtom : stAtom.world.selfImports = [] := by
-      simpa [stAtom] using hImports
+      simpa only [hArgWorld] using hImports
     have hTargetRoot :
         Metta.instantiate ambient (mExpr "let" [mVar binder, bodyAtom, template]) =
           mExpr "let" [mVar binder, bodyAtom, template] := by
@@ -64933,7 +62870,7 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutAfte
               [(outerBinder, bodyAtom)] bodyAtom =
             bodyAtom := by
         exact Metta.Subst.apply_of_closed _ bodyAtom
-          (by simpa [bodyAtom] using termAtom_vars_nil cicStage3RawIdentityWitness)
+          (by simpa [bodyAtom] using termAtom_vars_nil raw)
       rw [hClosedAmbient.instantiate_eq_subst_apply]
       simp [ambient, template, outerBinder, binder,
         Metta.bindingsToSubst, Metta.Subst.apply, Metta.Subst.lookup,
@@ -64967,250 +62904,147 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutAfte
         Metta.Atom.vars, hPatternFresh, hAtomFresh, hTemplateFresh,
         hFreshKeys, hPatternBody, hPatternTemplateVars, hAtomBody,
         hAtomTemplateVars, hTemplateBody, hTemplateTemplate]
+    let p := counterSuffix stAtom.counter "pattern"
+    let a := counterSuffix stAtom.counter "atom"
+    let t := counterSuffix stAtom.counter "template"
+    let b : Metta.Bindings :=
+      [ Metta.BindingRel.eq p binder
+      , Metta.BindingRel.val a bodyAtom
+      , Metta.BindingRel.val t template
+      , Metta.BindingRel.val outerBinder bodyAtom ]
+    have hstepA : Metta.Bindings.eqStep b [a] = [a] := by
+      simp [b, Metta.Bindings.eqStep, p, a, hPatternAtom,
+        hBinderAtomNe]
+    have hstepT : Metta.Bindings.eqStep b [t] = [t] := by
+      simp [b, Metta.Bindings.eqStep, p, t, hPatternTemplate,
+        hBinderTemplateNe]
+    have hstepP0 : Metta.Bindings.eqStep b [p] = [p, binder] := by
+      simp [b, Metta.Bindings.eqStep, p, hPatternFresh, hBinderPatternNe]
+    have hstepP : Metta.Bindings.eqStep b [p, binder] = [p, binder] := by
+      simp [b, Metta.Bindings.eqStep, p, hPatternFresh, hBinderPatternNe]
+    have hstepBinder0 : Metta.Bindings.eqStep b [binder] = [binder, p] := by
+      simp [b, Metta.Bindings.eqStep, p, hPatternFresh]
+    have hstepBinder : Metta.Bindings.eqStep b [binder, p] = [binder, p] := by
+      simp [b, Metta.Bindings.eqStep, p, hPatternFresh, hBinderPatternNe]
+    have heqClassA : Metta.Bindings.eqClass b a = [a] := by
+      simp [Metta.Bindings.eqClass, b, Metta.Bindings.eqClassAux, hstepA]
+    have heqClassT : Metta.Bindings.eqClass b t = [t] := by
+      simp [Metta.Bindings.eqClass, b, Metta.Bindings.eqClassAux, hstepT]
+    have heqClassP : Metta.Bindings.eqClass b p = [p, binder] := by
+      simp [Metta.Bindings.eqClass, b, Metta.Bindings.eqClassAux,
+        hstepP0, hstepP]
+    have heqClassBinder : Metta.Bindings.eqClass b binder = [binder, p] := by
+      simp [Metta.Bindings.eqClass, b, Metta.Bindings.eqClassAux,
+        hstepBinder0, hstepBinder]
+    have horder : Metta.Bindings.eqVarsInOrder b = [binder, p] := by
+      simp [b, Metta.Bindings.eqVarsInOrder, p, hPatternFresh]
+    have hclassA : Metta.Bindings.eqClassOrdered b a = [a] := by
+      simp [Metta.Bindings.eqClassOrdered, horder, heqClassA,
+        p, a, hPatternAtom, hBinderAtomNe]
+    have hclassT : Metta.Bindings.eqClassOrdered b t = [t] := by
+      simp [Metta.Bindings.eqClassOrdered, horder, heqClassT,
+        p, t, hPatternTemplate, hBinderTemplateNe]
+    have hclassP : Metta.Bindings.eqClassOrdered b p = [binder, p] := by
+      simp [Metta.Bindings.eqClassOrdered, horder, heqClassP,
+        p, hPatternFresh, hBinderPatternNe]
+    have hclassBinder :
+        Metta.Bindings.eqClassOrdered b binder = [binder, p] := by
+      simp [Metta.Bindings.eqClassOrdered, horder, heqClassBinder,
+        p, hPatternFresh, hBinderPatternNe]
+    have hvaluesA : Metta.Bindings.classValues b a = [bodyAtom] := by
+      rw [Metta.Bindings.classValues, hclassA]
+      simp [b, a, t, Metta.Bindings.lookupVal]
+    have hvaluesT : Metta.Bindings.classValues b t = [template] := by
+      rw [Metta.Bindings.classValues, hclassT]
+      simp [b, a, t, Metta.Bindings.lookupVal, hTemplateAtom]
+    have hvaluesP : Metta.Bindings.classValues b p = [] := by
+      rw [Metta.Bindings.classValues, hclassP]
+      simp [b, p, a, t, Metta.Bindings.lookupVal,
+        hAtomFresh.symm, hPatternAtom, hTemplateFresh.symm, hPatternTemplate,
+        hBinderOuterNe, hPatternOuter]
+    have hvaluesBinder : Metta.Bindings.classValues b binder = [] := by
+      rw [Metta.Bindings.classValues, hclassBinder]
+      simp [b, p, a, t, Metta.Bindings.lookupVal,
+        hAtomFresh.symm, hPatternAtom, hTemplateFresh.symm, hPatternTemplate,
+        hBinderOuterNe, hPatternOuter]
+    have hresolveA : Metta.Bindings.resolve b a = some bodyAtom := by
+      apply Bindings.resolve_eq_closed_class_value hclassA hvaluesA hBodyClosed
+      simp [b, Metta.Bindings.resolutionFuel,
+        Metta.Bindings.relationResolutionFuel, Metta.Atom.size]
+      omega
+    have hTemplateVars : template.vars = [binder, binder] := by
+      simp [template, bodyAtom, termAtom_vars_nil, mExpr, mSym, mVar, mBool,
+        Metta.Atom.vars]
+    have hrepresentativeBinder :
+        Metta.Bindings.eqRepresentative b binder = binder := by
+      simp [Metta.Bindings.eqRepresentative, hclassBinder]
+    have htemplateAux :
+        Metta.Bindings.resolveAtomAux b
+            (Metta.Bindings.resolutionFuel b (mVar t)).pred [t] template =
+          some template := by
+      apply Bindings.resolveAtomAux_inert
+      · intro x hx
+        have hx' : x = binder := by simpa [hTemplateVars] using hx
+        subst x
+        exact hvaluesBinder
+      · intro x hx
+        have hx' : x = binder := by simpa [hTemplateVars] using hx
+        subst x
+        exact hrepresentativeBinder
+      · intro x hx y hy
+        have hx' : x = binder := by simpa [hTemplateVars] using hx
+        subst x
+        rw [hclassBinder] at hy
+        simp at hy
+        simp only [List.mem_singleton]
+        rcases hy with rfl | rfl
+        · exact hBinderTemplateNe
+        · exact hPatternTemplate
+      · simp [b, Metta.Bindings.resolutionFuel,
+          Metta.Bindings.relationResolutionFuel, mVar, Metta.Atom.size]
+        omega
+    have hresolveT : Metta.Bindings.resolve b t = some template :=
+      Bindings.resolve_eq_nonvar_class_value hclassT hvaluesT
+        hTemplateNonVar htemplateAux
+    have hrepresentativeP : Metta.Bindings.eqRepresentative b p = binder := by
+      simp [Metta.Bindings.eqRepresentative, hclassP]
+    have hresolveP : Metta.Bindings.resolve b p = some (mVar binder) := by
+      apply Bindings.resolve_eq_representative_of_valueless_class
+        hclassP (by simp) hvaluesP hrepresentativeP
+    have hRootBndEq : rootBnd = b := by
+      simp [rootBnd, b, p, a, t, ambient, letRuleBindings, renameBindings]
+    have hFreshRhs :
+        (freshenRule stAtom.counter letRulePair.1 letRulePair.2).2 =
+          mExpr "unify" [mVar a, mVar p, mVar t, mSym "Empty"] := by
+      rw [freshenRule_eq_renBy]
+      simp [letRulePair, p, a, t,
+        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy,
+        mExpr, mSym, mVar]
     have hResult :
         Metta.instantiate rootBnd
             (freshenRule stAtom.counter letRulePair.1 letRulePair.2).2 =
           root := by
-      let p := counterSuffix stAtom.counter "pattern"
-      let a := counterSuffix stAtom.counter "atom"
-      let t := counterSuffix stAtom.counter "template"
-      let b : Metta.Bindings :=
-        [ Metta.BindingRel.eq p binder
-        , Metta.BindingRel.val a bodyAtom
-        , Metta.BindingRel.val t template
-        , Metta.BindingRel.val outerBinder bodyAtom ]
-      have hstepA : Metta.Bindings.eqStep b [a] = [a] := by
-        simp [b, Metta.Bindings.eqStep, p, a, hPatternAtom,
-          hBinderAtomNe]
-      have hstepT : Metta.Bindings.eqStep b [t] = [t] := by
-        simp [b, Metta.Bindings.eqStep, p, t, hPatternTemplate,
-          hBinderTemplateNe]
-      have hstepP0 : Metta.Bindings.eqStep b [p] = [p, binder] := by
-        simp [b, Metta.Bindings.eqStep, p, hPatternFresh, hBinderPatternNe]
-      have hstepP : Metta.Bindings.eqStep b [p, binder] = [p, binder] := by
-        simp [b, Metta.Bindings.eqStep, p, hPatternFresh, hBinderPatternNe]
-      have hstepBinder0 : Metta.Bindings.eqStep b [binder] = [binder, p] := by
-        simp [b, Metta.Bindings.eqStep, p, hPatternFresh]
-      have hstepBinder : Metta.Bindings.eqStep b [binder, p] = [binder, p] := by
-        simp [b, Metta.Bindings.eqStep, p, hPatternFresh, hBinderPatternNe]
-      have heqClassA : Metta.Bindings.eqClass b a = [a] := by
-        simp [Metta.Bindings.eqClass, b, Metta.Bindings.eqClassAux, hstepA]
-      have heqClassT : Metta.Bindings.eqClass b t = [t] := by
-        simp [Metta.Bindings.eqClass, b, Metta.Bindings.eqClassAux, hstepT]
-      have heqClassP : Metta.Bindings.eqClass b p = [p, binder] := by
-        simp [Metta.Bindings.eqClass, b, Metta.Bindings.eqClassAux,
-          hstepP0, hstepP]
-      have heqClassBinder : Metta.Bindings.eqClass b binder = [binder, p] := by
-        simp [Metta.Bindings.eqClass, b, Metta.Bindings.eqClassAux,
-          hstepBinder0, hstepBinder]
-      have horder : Metta.Bindings.eqVarsInOrder b = [binder, p] := by
-        simp [b, Metta.Bindings.eqVarsInOrder, p, hPatternFresh]
-      have hclassA : Metta.Bindings.eqClassOrdered b a = [a] := by
-        simp [Metta.Bindings.eqClassOrdered, horder, heqClassA,
-          p, a, hPatternAtom, hBinderAtomNe]
-      have hclassT : Metta.Bindings.eqClassOrdered b t = [t] := by
-        simp [Metta.Bindings.eqClassOrdered, horder, heqClassT,
-          p, t, hPatternTemplate, hBinderTemplateNe]
-      have hclassP : Metta.Bindings.eqClassOrdered b p = [binder, p] := by
-        simp [Metta.Bindings.eqClassOrdered, horder, heqClassP,
-          p, hPatternFresh, hBinderPatternNe]
-      have hclassBinder :
-          Metta.Bindings.eqClassOrdered b binder = [binder, p] := by
-        simp [Metta.Bindings.eqClassOrdered, horder, heqClassBinder,
-          p, hPatternFresh, hBinderPatternNe]
-      have hvaluesA : Metta.Bindings.classValues b a = [bodyAtom] := by
-        rw [Metta.Bindings.classValues, hclassA]
-        simp [b, a, t, Metta.Bindings.lookupVal]
-      have hvaluesT : Metta.Bindings.classValues b t = [template] := by
-        rw [Metta.Bindings.classValues, hclassT]
-        simp [b, a, t, Metta.Bindings.lookupVal, hTemplateAtom]
-      have hvaluesP : Metta.Bindings.classValues b p = [] := by
-        rw [Metta.Bindings.classValues, hclassP]
-        simp [b, p, a, t, Metta.Bindings.lookupVal,
-          hAtomFresh.symm, hPatternAtom, hTemplateFresh.symm, hPatternTemplate,
-          hBinderOuterNe, hPatternOuter]
-      have hvaluesBinder : Metta.Bindings.classValues b binder = [] := by
-        rw [Metta.Bindings.classValues, hclassBinder]
-        simp [b, p, a, t, Metta.Bindings.lookupVal,
-          hAtomFresh.symm, hPatternAtom, hTemplateFresh.symm, hPatternTemplate,
-          hBinderOuterNe, hPatternOuter]
-      have hresolveA : Metta.Bindings.resolve b a = some bodyAtom := by
-        apply Bindings.resolve_eq_closed_class_value hclassA hvaluesA hBodyClosed
-        simp [b, Metta.Bindings.resolutionFuel,
-          Metta.Bindings.relationResolutionFuel, Metta.Atom.size]
-        omega
-      have hTemplateVars : template.vars = [binder, binder] := by
-        simp [template, bodyAtom, termAtom_vars_nil, mExpr, mSym, mVar, mBool,
-          Metta.Atom.vars]
-      have hrepresentativeBinder :
-          Metta.Bindings.eqRepresentative b binder = binder := by
-        simp [Metta.Bindings.eqRepresentative, hclassBinder]
-      have htemplateAux :
-          Metta.Bindings.resolveAtomAux b
-              (Metta.Bindings.resolutionFuel b (mVar t)).pred [t] template =
-            some template := by
-        apply Bindings.resolveAtomAux_inert
-        · intro x hx
-          have hx' : x = binder := by simpa [hTemplateVars] using hx
-          subst x
-          exact hvaluesBinder
-        · intro x hx
-          have hx' : x = binder := by simpa [hTemplateVars] using hx
-          subst x
-          exact hrepresentativeBinder
-        · intro x hx y hy
-          have hx' : x = binder := by simpa [hTemplateVars] using hx
-          subst x
-          rw [hclassBinder] at hy
-          simp at hy
-          simp only [List.mem_singleton]
-          rcases hy with rfl | rfl
-          · exact hBinderTemplateNe
-          · exact hPatternTemplate
-        · simp [b, Metta.Bindings.resolutionFuel,
-            Metta.Bindings.relationResolutionFuel, mVar, Metta.Atom.size]
-          omega
-      have hresolveT : Metta.Bindings.resolve b t = some template :=
-        Bindings.resolve_eq_nonvar_class_value hclassT hvaluesT
-          hTemplateNonVar htemplateAux
-      have hrepresentativeP : Metta.Bindings.eqRepresentative b p = binder := by
-        simp [Metta.Bindings.eqRepresentative, hclassP]
-      have hresolveP : Metta.Bindings.resolve b p = some (mVar binder) := by
-        apply Bindings.resolve_eq_representative_of_valueless_class
-          hclassP (by simp) hvaluesP hrepresentativeP
-      have hRootBndEq : rootBnd = b := by
-        simp [rootBnd, b, p, a, t, ambient, letRuleBindings, renameBindings]
-      have hFreshRhs :
-          (freshenRule stAtom.counter letRulePair.1 letRulePair.2).2 =
-            mExpr "unify" [mVar a, mVar p, mVar t, mSym "Empty"] := by
-        rw [freshenRule_eq_renBy]
-        simp [letRulePair, p, a, t,
-          Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy,
-          mExpr, mSym, mVar]
       rw [hRootBndEq, hFreshRhs]
       simp [root, bodyAtom, template, Metta.instantiate,
         Metta.Bindings.resolveAtom, hresolveA, hresolveT, hresolveP,
         mExpr, mSym, mVar, mBool]
+    have hresolveBinder : Metta.Bindings.resolve b binder = some (mVar binder) := by
+      apply Bindings.resolve_eq_representative_of_valueless_class
+        hclassBinder (by simp) hvaluesBinder hrepresentativeBinder
+    have hBodyResolve : Metta.Bindings.resolveAtom b bodyAtom = bodyAtom := by
+      simpa [Metta.instantiate] using
+        Metta.instantiate_of_closed b bodyAtom hBodyClosed
+    have hTemplateResolve : Metta.Bindings.resolveAtom b template = template := by
+      simp [template, Metta.Bindings.resolveAtom, hBodyResolve, hresolveBinder,
+        mExpr, mSym, mVar, mBool]
     have hRootStable :
         Metta.instantiate rootBnd root = root := by
-      let p := counterSuffix stAtom.counter "pattern"
-      let a := counterSuffix stAtom.counter "atom"
-      let t := counterSuffix stAtom.counter "template"
-      let b : Metta.Bindings :=
-        [ Metta.BindingRel.eq p binder
-        , Metta.BindingRel.val a bodyAtom
-        , Metta.BindingRel.val t template
-        , Metta.BindingRel.val outerBinder bodyAtom ]
-      have hstepBinder0 : Metta.Bindings.eqStep b [binder] = [binder, p] := by
-        simp [b, Metta.Bindings.eqStep, p, hPatternFresh]
-      have hstepBinder : Metta.Bindings.eqStep b [binder, p] = [binder, p] := by
-        simp [b, Metta.Bindings.eqStep, p, hPatternFresh, hBinderPatternNe]
-      have heqClassBinder : Metta.Bindings.eqClass b binder = [binder, p] := by
-        simp [Metta.Bindings.eqClass, b, Metta.Bindings.eqClassAux,
-          hstepBinder0, hstepBinder]
-      have horder : Metta.Bindings.eqVarsInOrder b = [binder, p] := by
-        simp [b, Metta.Bindings.eqVarsInOrder, p, hPatternFresh]
-      have hclassBinder :
-          Metta.Bindings.eqClassOrdered b binder = [binder, p] := by
-        simp [Metta.Bindings.eqClassOrdered, horder, heqClassBinder,
-          p, hPatternFresh, hBinderPatternNe]
-      have hvaluesBinder : Metta.Bindings.classValues b binder = [] := by
-        rw [Metta.Bindings.classValues, hclassBinder]
-        simp [b, p, a, t, Metta.Bindings.lookupVal,
-          hAtomFresh.symm, hPatternAtom,
-          hTemplateFresh.symm, hPatternTemplate, hBinderOuterNe, hPatternOuter]
-      have hrepresentativeBinder :
-          Metta.Bindings.eqRepresentative b binder = binder := by
-        simp [Metta.Bindings.eqRepresentative, hclassBinder]
-      have hresolveBinder : Metta.Bindings.resolve b binder = some (mVar binder) := by
-        apply Bindings.resolve_eq_representative_of_valueless_class
-          hclassBinder (by simp) hvaluesBinder hrepresentativeBinder
-      have hBodyResolve : Metta.Bindings.resolveAtom b bodyAtom = bodyAtom := by
-        simpa [Metta.instantiate] using
-          Metta.instantiate_of_closed b bodyAtom hBodyClosed
-      have hTemplateResolve : Metta.Bindings.resolveAtom b template = template := by
-        simp [template, Metta.Bindings.resolveAtom, hBodyResolve, hresolveBinder,
-          mExpr, mSym, mVar, mBool]
-      have hRootBndEq : rootBnd = b := by
-        simp [rootBnd, b, p, a, t, ambient, letRuleBindings, renameBindings]
       rw [hRootBndEq]
       simp [root, Metta.instantiate, Metta.Bindings.resolveAtom,
         hBodyResolve, hTemplateResolve, hresolveBinder,
         mExpr, mSym, mVar]
     have hLoop :
         Metta.Bindings.hasLoop rootBnd = false := by
-      let p := counterSuffix stAtom.counter "pattern"
-      let a := counterSuffix stAtom.counter "atom"
-      let t := counterSuffix stAtom.counter "template"
-      let b : Metta.Bindings :=
-        [ Metta.BindingRel.eq p binder
-        , Metta.BindingRel.val a bodyAtom
-        , Metta.BindingRel.val t template
-        , Metta.BindingRel.val outerBinder bodyAtom ]
-      have hRootBndEq : rootBnd = b := by
-        simp [rootBnd, b, p, a, t, ambient, letRuleBindings, renameBindings]
-      have hFreshRhs :
-          (freshenRule stAtom.counter letRulePair.1 letRulePair.2).2 =
-            mExpr "unify" [mVar a, mVar p, mVar t, mSym "Empty"] := by
-        rw [freshenRule_eq_renBy]
-        simp [letRulePair, p, a, t,
-          Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy,
-          mExpr, mSym, mVar]
-      have hInst :
-          Metta.instantiate b
-              (mExpr "unify" [mVar a, mVar p, mVar t, mSym "Empty"]) =
-            root := by
-        have h := hResult
-        rw [hRootBndEq, hFreshRhs] at h
-        exact h
-      have hGet :
-          (Metta.Bindings.resolve b a).getD (mVar a) = bodyAtom ∧
-          (Metta.Bindings.resolve b p).getD (mVar p) = mVar binder ∧
-          (Metta.Bindings.resolve b t).getD (mVar t) = template := by
-        simpa [root, Metta.instantiate, Metta.Bindings.resolveAtom,
-          mExpr, mSym, mVar] using hInst
-      have resolveSomeOfGetDNe
-          (x : String) (result : Metta.Atom)
-          (hne : result ≠ mVar x)
-          (hget : (Metta.Bindings.resolve b x).getD (mVar x) = result) :
-          ∃ value, Metta.Bindings.resolve b x = some value := by
-        apply Option.ne_none_iff_exists'.mp
-        intro hr
-        have hdefault : mVar x = result := by simpa [hr] using hget
-        exact hne hdefault.symm
-      have hresolveASome : ∃ value, Metta.Bindings.resolve b a = some value :=
-        resolveSomeOfGetDNe a bodyAtom
-          (by simpa [mVar] using hBodyNonVar a) hGet.1
-      have hresolvePSome : ∃ value, Metta.Bindings.resolve b p = some value :=
-        resolveSomeOfGetDNe p (mVar binder)
-          (by simpa [mVar] using hPatternFresh.symm) hGet.2.1
-      have hresolveTSome : ∃ value, Metta.Bindings.resolve b t = some value :=
-        resolveSomeOfGetDNe t template
-          (by simpa [mVar] using hTemplateNonVar t) hGet.2.2
-      have hstepBinder0 : Metta.Bindings.eqStep b [binder] = [binder, p] := by
-        simp [b, Metta.Bindings.eqStep, p, hPatternFresh]
-      have hstepBinder : Metta.Bindings.eqStep b [binder, p] = [binder, p] := by
-        simp [b, Metta.Bindings.eqStep, p, hPatternFresh, hBinderPatternNe]
-      have heqClassBinder : Metta.Bindings.eqClass b binder = [binder, p] := by
-        simp [Metta.Bindings.eqClass, b, Metta.Bindings.eqClassAux,
-          hstepBinder0, hstepBinder]
-      have horder : Metta.Bindings.eqVarsInOrder b = [binder, p] := by
-        simp [b, Metta.Bindings.eqVarsInOrder, p, hPatternFresh]
-      have hclassBinder :
-          Metta.Bindings.eqClassOrdered b binder = [binder, p] := by
-        simp [Metta.Bindings.eqClassOrdered, horder, heqClassBinder,
-          p, hPatternFresh, hBinderPatternNe]
-      have hvaluesBinder : Metta.Bindings.classValues b binder = [] := by
-        rw [Metta.Bindings.classValues, hclassBinder]
-        simp [b, p, a, t, Metta.Bindings.lookupVal,
-          hAtomFresh.symm, hPatternAtom,
-          hTemplateFresh.symm, hPatternTemplate, hBinderOuterNe, hPatternOuter]
-      have hrepresentativeBinder :
-          Metta.Bindings.eqRepresentative b binder = binder := by
-        simp [Metta.Bindings.eqRepresentative, hclassBinder]
-      have hresolveBinder : Metta.Bindings.resolve b binder = some (mVar binder) := by
-        apply Bindings.resolve_eq_representative_of_valueless_class
-          hclassBinder (by simp) hvaluesBinder hrepresentativeBinder
       have hstepOuter : Metta.Bindings.eqStep b [outerBinder] = [outerBinder] := by
         simp [b, Metta.Bindings.eqStep, p, hPatternOuter, hBinderOuterNe]
       have heqClassOuter :
@@ -65258,18 +63092,15 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutAfte
               x = outerBinder := by
           simpa [b, Metta.Bindings.vars, hBodyClosed, hTemplateVars] using hx
         rcases hxCases with rfl | rfl | rfl | rfl | rfl | rfl
-        · rcases hresolvePSome with ⟨value, hvalue⟩
-          exact Bindings.resolveAtomAux_some_of_resolve_some hvalue
+        · exact Bindings.resolveAtomAux_some_of_resolve_some hresolveP
         · exact Bindings.resolveAtomAux_some_of_resolve_some hresolveBinder
-        · rcases hresolveASome with ⟨value, hvalue⟩
-          exact Bindings.resolveAtomAux_some_of_resolve_some hvalue
-        · rcases hresolveTSome with ⟨value, hvalue⟩
-          exact Bindings.resolveAtomAux_some_of_resolve_some hvalue
+        · exact Bindings.resolveAtomAux_some_of_resolve_some hresolveA
+        · exact Bindings.resolveAtomAux_some_of_resolve_some hresolveT
         · exact Bindings.resolveAtomAux_some_of_resolve_some hresolveBinder
         · exact Bindings.resolveAtomAux_some_of_resolve_some hresolveOuter
       rw [hRootBndEq]
       exact hloop
-    simpa [root, rootBnd, stAtom, stRoot, bodyAtom,
+    simpa [root, rootBnd, stRoot, bodyAtom,
       ambient, template, binder, outerBinder, Nat.add_assoc] using
       interpretFuel_kernelDefControlEnv_let_root_eq_with_keyed_ambient
         (fuel := fuel + 7) (st := stAtom)
@@ -65305,11 +63136,9 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutAfte
       (have hc := congrArg String.toList heq; simp [outerBinder, binder, counterSuffix] at hc)
   obtain ⟨finalBnd, hFinalAmbient⟩ :=
     mettaEval_kernelDefControlEnv_conv_after_ny_unify_true_from_supported
-      cicStage3RawIdentityWitness
-      (fun badVar => termAtom_not_match_bad_pattern_nameFree badVar
-        cicStage3RawIdentityWitness_nameFree cicStage3RawIdentityWitness_not_bad)
+      raw hTermNotBad
       fuel stRoot binder ambient (fun x => x = outerBinder ∨ x = binder)
-      (by simpa [stRoot, stAtom] using hWorld) hClosedAmbient
+      (by simpa [stRoot, hArgWorld] using hWorld) hClosedAmbient
       (by simp [ambient, Metta.Bindings.vars, hBodyClosed, hBinderOuterNe])
       (Or.inr rfl)
       (by intro x hx; left; simpa [ambient, bindingValueKeys] using hx)
@@ -65335,8 +63164,54 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutAfte
       (by simp [mBool, Metta.Atom.isError])
   exact ⟨_, by
     simpa [target, convReadoutAfterNxNamed, bodyQuery, template, root, rootBnd,
-      nfQuery, bodyAtom, binder, outerBinder, ambient, stAtom, stRoot,
+      nfQuery, bodyAtom, binder, outerBinder, ambient, stRoot,
       mExpr, mSym, mVar, mBool, Nat.add_assoc] using hmem⟩
+
+example (raw : DIndGArtifactTerm) (binder : String) :
+    Metta.instantiate [.val binder (termAtom raw)] (mVar binder) ≠ mVar binder := by
+  have absent : binder ∉ (termAtom raw).vars := by
+    simp [termAtom_vars_nil]
+  change Metta.instantiate [.val binder (termAtom raw)] (.var binder) ≠ .var binder
+  rw [Metta.instantiate_singleton_val_var_of_not_mem binder (termAtom raw) absent]
+  exact termAtom_not_var raw binder
+
+private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutAfterNxNamed_fresh_ambient_true_exists_bnd
+    (fuel : Nat) (st : St)
+    (hWorld : st.world = St.init.world) :
+    let outerBinder := counterSuffix St.init.counter "nx"
+    let binder := counterSuffix St.init.counter "ny"
+    let bodyAtom := termAtom cicStage3RawIdentityWitness
+    let ambient : Metta.Bindings :=
+        [Metta.BindingRel.val outerBinder bodyAtom]
+    ∃ bnd,
+      (mBool true, bnd) ∈
+        (mettaEval kernelDefControlEnv (fuel + 8) st ambient
+          (convReadoutAfterNxNamed binder
+            cicStage3RawArtifactSigWithPropToType0Witness
+            cicStage3RawIdentityWitness bodyAtom)).1 := by
+  let outerBinder := counterSuffix St.init.counter "nx"
+  let bodyAtom := termAtom cicStage3RawIdentityWitness
+  let next : St := { counter := st.counter + 40, world := st.world }
+  have hTypes : KernelDefControlEnvTypeWorld st.world := by
+    simpa only [hWorld] using kernelDefControlEnvTypeWorld_init
+  have hNFFresh : ∀ counter {v : String},
+      v = "s" ∨ v = "sig" ∨ v = "k" ∨ v = "A" ∨ v = "b" →
+      counterSuffix counter v ≠ outerBinder := by
+    intro counter v member equal
+    rcases member with rfl | rfl | rfl | rfl | rfl <;>
+      (have chars := congrArg String.toList equal
+       simp [outerBinder, counterSuffix] at chars)
+  have hEval :=
+    mettaEval_kernelDefControlEnv_nf_rawIdentityWitness_eq_state_singleton_closed
+      fuel st cicStage3RawArtifactSigWithPropToType0Witness outerBinder bodyAtom
+      (by rw [hWorld]; rfl) (by rw [hWorld]; rfl) hTypes
+      (termAtom_vars_nil cicStage3RawIdentityWitness)
+      (termAtom_not_var cicStage3RawIdentityWitness) unifyValues_cicStage3RawIdentityWitness_self hNFFresh
+  exact mettaEval_kernelDefControlEnv_namedConversion_of_singleton
+    fuel st next cicStage3RawArtifactSigWithPropToType0Witness cicStage3RawIdentityWitness hWorld rfl
+    (fun badVar => termAtom_not_match_bad_pattern_nameFree badVar
+      cicStage3RawIdentityWitness_nameFree cicStage3RawIdentityWitness_not_bad)
+    unifyValues_cicStage3RawIdentityWitness_self hEval
 
 private theorem mettaEval_kernelDefControlEnv_propToType0Witness_conv_after_nx_unify_true_exists_bnd
     (fuel : Nat) (st : St)
@@ -65850,8 +63725,9 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutName
   have hFresh :
       RenamedBindingKeysFreshForPayloads (counterSuffix stAtom.counter)
         (letRuleBindings binder bodyAtom template) := by
+    apply (letRuleBindings_rename_fresh_iff _ _ _ _).mpr
     intro key hkey
-    simp [letRuleBindings, bindingRuleKeys] at hkey
+    simp at hkey
     have hKeyNe : counterSuffix stAtom.counter key ≠ binder := by
       rcases hkey with rfl | rfl | rfl
       · exact hTemplateNe
@@ -65862,24 +63738,15 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutName
       · exact hTemplateOtherNe
       · exact hAtomOtherNe
       · exact hPatternOtherNe
-    constructor
-    · intro x a hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with hmem | hmem
-      · rcases hmem with ⟨rfl, rfl⟩
-        simp [template, convReadoutAfterNxNamed, sigAtom_vars_nil,
-          termAtom_vars_nil cicStage3RawIdentityWitness, mExpr, mSym, mVar,
-          mBool, Metta.Atom.vars, hKeyNe, hKeyOtherNe]
-      · rcases hmem with ⟨rfl, rfl⟩
-        simpa [bodyAtom] using
-          (by
-            rw [termAtom_vars_nil cicStage3RawIdentityWitness]
-            simp : counterSuffix stAtom.counter key ∉
-              (termAtom cicStage3RawIdentityWitness).vars)
-    · intro x y hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with ⟨rfl, rfl⟩
-      exact hKeyNe
+    refine ⟨?_, ?_, hKeyNe⟩
+    · simpa [bodyAtom] using
+        (by
+          rw [termAtom_vars_nil cicStage3RawIdentityWitness]
+          simp : counterSuffix stAtom.counter key ∉
+            (termAtom cicStage3RawIdentityWitness).vars)
+    · simp [template, convReadoutAfterNxNamed, sigAtom_vars_nil,
+        termAtom_vars_nil cicStage3RawIdentityWitness, mExpr, mSym, mVar,
+        mBool, Metta.Atom.vars, hKeyNe, hKeyOtherNe]
   have hRoot :
       interpretFuel kernelDefControlEnv (fuel + 9 + 1) stAtom
           [evalItemNil (mExpr "let" [mVar binder, bodyAtom, template])] [] =
@@ -65911,24 +63778,18 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutName
   have hOtherTemplateNe : otherBinder ≠ counterSuffix stAtom.counter "template" :=
     hTemplateOtherNe.symm
   have hTemplateAtom :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" := by
-    intro h
-    have h' : "template" = "atom" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hTemplatePattern :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "template" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hAtomTemplate :
       counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "template" := by
     intro h
     exact hTemplateAtom h.symm
   have hAtomPattern :
-      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "atom" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hPatternTemplate :
       counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "template" := by
     intro h
@@ -65940,86 +63801,18 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutName
   have hLetBndNil :
       restrictBnd (([mVar binder, bodyQuery, template]).flatMap Atom.vars)
           ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
-    let f := counterSuffix stAtom.counter
-    let merged := renameBindings f (letRuleBindings binder bodyAtom template)
-    have hMerge : Metta.Bindings.merge [] rootBnd = [merged] := by
-      simpa [rootBnd, merged, f] using
-        merge_empty_reversed_renamed_letRuleBindings_eq
-          f (counterSuffix_injective stAtom.counter) binder bodyAtom template
-          hBodyNonVar hTemplateNonVar hPatternNe hAtomNe hTemplateNe
-    have hinstBinder :
-        Metta.instantiate merged (mVar binder) = mVar binder := by
-      simpa [merged] using
-        merged_let_binder_instantiate_eq_self
-          f (counterSuffix_injective stAtom.counter) binder bodyAtom template
-          hPatternNe hAtomNe hTemplateNe
-    have hresolveBinder :
-        resolveAtom merged 4 (Metta.Atom.var binder) = Metta.Atom.var binder := by
-      simpa [mVar] using
-        resolveAtom_var_of_instantiate_eq_self merged binder hinstBinder 4
-    have hBinderOtherNe : binder ≠ otherBinder := by
+    have binderDistinct : binder ≠ otherBinder := by
       intro h
-      have h' : "nx" = "ny" := (counterSuffix_injective St.init.counter) h
-      exact (by decide : "nx" ≠ "ny") h'
-    have hstepOther :
-        Metta.Bindings.eqStep merged [otherBinder] = [otherBinder] := by
-      simp [merged, f, letRuleBindings, renameBindings, Metta.Bindings.eqStep,
-        hPatternOtherNe, hBinderOtherNe]
-    have heqClassOther :
-        Metta.Bindings.eqClass merged otherBinder = [otherBinder] := by
-      unfold Metta.Bindings.eqClass
-      rw [show 2 * merged.length + 1 = 7 by
-        simp [merged, letRuleBindings, renameBindings]]
-      simp [Metta.Bindings.eqClassAux, hstepOther]
-    have horder :
-        Metta.Bindings.eqVarsInOrder merged = [binder, f "pattern"] := by
-      simp [merged, f, letRuleBindings, renameBindings,
-        Metta.Bindings.eqVarsInOrder, hPatternNe]
-    have hclassOther :
-        Metta.Bindings.eqClassOrdered merged otherBinder = [otherBinder] := by
-      simp [Metta.Bindings.eqClassOrdered, horder, heqClassOther, f,
-        hBinderOtherNe, hPatternOtherNe]
-    have hvaluesOther :
-        Metta.Bindings.classValues merged otherBinder = [] := by
-      rw [Metta.Bindings.classValues, hclassOther]
-      simp [merged, f, letRuleBindings, renameBindings, Metta.Bindings.lookupVal,
-        hOtherTemplateNe, hOtherAtomNe]
-    have hresolveOther :
-        Metta.Bindings.resolve merged otherBinder = none := by
-      unfold Metta.Bindings.resolve
-      rw [hclassOther, hvaluesOther]
-      simp
-    have hinstOther :
-        Metta.instantiate merged (mVar otherBinder) = mVar otherBinder := by
-      simp [Metta.instantiate, Metta.Bindings.resolveAtom, hresolveOther, mVar]
-    have hresolveOtherLegacy :
-        resolveAtom merged 4 (Metta.Atom.var otherBinder) =
-          Metta.Atom.var otherBinder := by
-      simpa [mVar] using
-        resolveAtom_var_of_instantiate_eq_self merged otherBinder hinstOther 4
-    have hvars :
+      exact (by decide : "nx" ≠ "ny") ((counterSuffix_injective St.init.counter) h)
+    have reads :
         (([mVar binder, bodyQuery, template]).flatMap Atom.vars) =
           [binder, otherBinder, binder, otherBinder, binder, otherBinder] := by
-      simp [bodyQuery, template, convReadoutAfterNxNamed, nfQuery,
-        sigAtom_vars_nil, termAtom_vars_nil, mExpr, mSym, mVar, mBool,
-        Metta.Atom.vars]
-    rw [hMerge, hvars]
-    change restrictBnd
-      [binder, otherBinder, binder, otherBinder, binder, otherBinder] merged = []
-    have hlength : merged.length + 1 = 4 := by
-      simp [merged, letRuleBindings, renameBindings]
-    apply restrictBnd_eq_nil_of_resolves_self_and_no_public_eqs
-    · intro name hname
-      simp only [List.mem_cons, List.not_mem_nil, or_false] at hname
-      rcases hname with rfl | rfl | rfl | rfl | rfl | rfl
-      · simpa [hlength] using hresolveBinder
-      · simpa [hlength] using hresolveOtherLegacy
-      · simpa [hlength] using hresolveBinder
-      · simpa [hlength] using hresolveOtherLegacy
-      · simpa [hlength] using hresolveBinder
-      · simpa [hlength] using hresolveOtherLegacy
-    · simp [merged, f, letRuleBindings, renameBindings,
-        hPatternNe, hPatternOtherNe]
+      simp [bodyQuery, template, convReadoutAfterNxNamed, nfQuery, sigAtom_vars_nil,
+        termAtom_vars_nil, mExpr, mSym, mVar, mBool, Metta.Atom.vars]
+    simpa [rootBnd] using restrictBnd_merge_empty_reversed_letRuleBindings_two_vars_eq_nil
+      (counterSuffix stAtom.counter) (counterSuffix_injective stAtom.counter)
+      binder otherBinder bodyAtom bodyQuery template hBodyNonVar hTemplateNonVar
+      hPatternNe hAtomNe hTemplateNe binderDistinct hPatternOtherNe hAtomOtherNe hTemplateOtherNe reads
   rcases
       mettaEval_kernelDefControlEnv_propToType0Witness_conv_after_nx_unify_true_exists_bnd_named_fresh
         fuel stRoot (by simpa [stRoot, stAtom] using hWorld) with
@@ -66138,8 +63931,9 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutName
   have hFresh :
       RenamedBindingKeysFreshForPayloads (counterSuffix stAtom.counter)
         (letRuleBindings binder bodyAtom template) := by
+    apply (letRuleBindings_rename_fresh_iff _ _ _ _).mpr
     intro key hkey
-    simp [letRuleBindings, bindingRuleKeys] at hkey
+    simp at hkey
     have hKeyNe : counterSuffix stAtom.counter key ≠ binder := by
       rcases hkey with rfl | rfl | rfl
       · exact hTemplateNe
@@ -66150,24 +63944,15 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutName
       · exact hTemplateOtherNe
       · exact hAtomOtherNe
       · exact hPatternOtherNe
-    constructor
-    · intro x a hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with hmem | hmem
-      · rcases hmem with ⟨rfl, rfl⟩
-        simp [template, convReadoutAfterNxNamed, sigAtom_vars_nil,
-          termAtom_vars_nil cicStage3RawIdentityWitness, mExpr, mSym, mVar,
-          mBool, Metta.Atom.vars, hKeyNe, hKeyOtherNe]
-      · rcases hmem with ⟨rfl, rfl⟩
-        simpa [bodyAtom] using
-          (by
-            rw [termAtom_vars_nil cicStage3RawIdentityWitness]
-            simp : counterSuffix stAtom.counter key ∉
-              (termAtom cicStage3RawIdentityWitness).vars)
-    · intro x y hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with ⟨rfl, rfl⟩
-      exact hKeyNe
+    refine ⟨?_, ?_, hKeyNe⟩
+    · simpa [bodyAtom] using
+        (by
+          rw [termAtom_vars_nil cicStage3RawIdentityWitness]
+          simp : counterSuffix stAtom.counter key ∉
+            (termAtom cicStage3RawIdentityWitness).vars)
+    · simp [template, convReadoutAfterNxNamed, sigAtom_vars_nil,
+        termAtom_vars_nil cicStage3RawIdentityWitness, mExpr, mSym, mVar,
+        mBool, Metta.Atom.vars, hKeyNe, hKeyOtherNe]
   have hRoot :
       interpretFuel kernelDefControlEnv (fuel + 11 + 1) stAtom
           [evalItemNil (mExpr "let" [mVar binder, bodyAtom, template])] [] =
@@ -66199,24 +63984,18 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadoutName
   have hOtherTemplateNe : otherBinder ≠ counterSuffix stAtom.counter "template" :=
     hTemplateOtherNe.symm
   have hTemplateAtom :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" := by
-    intro h
-    have h' : "template" = "atom" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hTemplatePattern :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "template" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hAtomTemplate :
       counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "template" := by
     intro h
     exact hTemplateAtom h.symm
   have hAtomPattern :
-      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "atom" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hPatternTemplate :
       counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "template" := by
     intro h
@@ -66810,8 +64589,9 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadout_tru
   have hFresh :
       RenamedBindingKeysFreshForPayloads (counterSuffix stAtom.counter)
         (letRuleBindings binder bodyAtom template) := by
+    apply (letRuleBindings_rename_fresh_iff _ _ _ _).mpr
     intro key hkey
-    simp [letRuleBindings, bindingRuleKeys] at hkey
+    simp at hkey
     have hKeyNe : counterSuffix stAtom.counter key ≠ binder := by
       rcases hkey with rfl | rfl | rfl
       · exact hTemplateNe
@@ -66824,24 +64604,15 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadout_tru
       · exact hPatternOtherNe
     have hKeyNyNe : counterSuffix stAtom.counter key ≠ "ny" := by
       simpa [otherBinder] using hKeyOtherNe
-    constructor
-    · intro x a hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with hmem | hmem
-      · rcases hmem with ⟨rfl, rfl⟩
-        simp [template, convReadoutAfterNx,
-          sigAtom_vars_nil, termAtom_vars_nil cicStage3RawIdentityWitness,
-          mExpr, mSym, mVar, mBool, Metta.Atom.vars, hKeyNe, hKeyNyNe]
-      · rcases hmem with ⟨rfl, rfl⟩
-        simpa [bodyAtom] using
-          (by
-            rw [termAtom_vars_nil cicStage3RawIdentityWitness]
-            simp : counterSuffix stAtom.counter key ∉
-              (termAtom cicStage3RawIdentityWitness).vars)
-    · intro x y hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with ⟨rfl, rfl⟩
-      exact hKeyNe
+    refine ⟨?_, ?_, hKeyNe⟩
+    · simpa [bodyAtom] using
+        (by
+          rw [termAtom_vars_nil cicStage3RawIdentityWitness]
+          simp : counterSuffix stAtom.counter key ∉
+            (termAtom cicStage3RawIdentityWitness).vars)
+    · simp [template, convReadoutAfterNx,
+        sigAtom_vars_nil, termAtom_vars_nil cicStage3RawIdentityWitness,
+        mExpr, mSym, mVar, mBool, Metta.Atom.vars, hKeyNe, hKeyNyNe]
   have hRoot :
       interpretFuel kernelDefControlEnv (fuel + 9 + 1) stAtom
           [evalItemNil (mExpr "let" [mVar binder, bodyAtom, template])] [] =
@@ -66887,24 +64658,18 @@ private theorem mettaEval_kernelDefControlEnv_propToType0Witness_convReadout_tru
   have hBinderOtherNe : binder ≠ otherBinder := by decide
   have hOtherBinderNe : otherBinder ≠ binder := by decide
   have hTemplateAtom :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" := by
-    intro h
-    have h' : "template" = "atom" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hTemplatePattern :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "template" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hAtomTemplate :
       counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "template" := by
     intro h
     exact hTemplateAtom h.symm
   have hAtomPattern :
-      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "atom" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hPatternTemplate :
       counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "template" := by
     intro h
@@ -68556,135 +66321,8 @@ theorem infer_indg_params_args_nil_rule_match
     Metta.matchAtoms inferIndgParamsArgsNilRulePair.1
         (inferIndgParamsArgsNilQuery sig name motive cases indices scrut ctors rawT0) =
       [inferIndgParamsArgsNilRuleBindings sig name motive cases indices scrut ctors rawT0] := by
-  unfold inferIndgParamsArgsNilRuleBindings
-  simp only [inferIndgParamsArgsNilRulePair, inferIndgParamsArgsNilQuery, mExpr, mSym, mVar,
-    Metta.matchAtoms, Metta.matchAtomsWith]
-  unfold Metta.matchAll
-  simp [Metta.matchAtomsWith]
-  unfold Metta.matchAll
-  rw [match_var_occurs_free_nonvar_atom "sig" (sigAtom sig)
-    (sigAtom_vars_absent sig) (sigAtom_not_var sig)]
-  rw [filter_singleton_binding_of_hasLoop_false _
-    (hasLoop_singleton_val_not_false "sig" (sigAtom sig)
-      (sigAtom_vars_absent sig))]
-  rw [show Metta.Bindings.merge [] [] = ([[]] : List Metta.Bindings) by rfl]
-  simp only [List.flatMap_singleton]
-  rw [singleton_val_merge_empty_eq "sig" (sigAtom sig) (sigAtom_not_var sig)]
-  unfold Metta.matchAll
-  rw [match_var_occurs_free_nonvar_atom "ctx" ctxNilAtom
-    ctxNilAtom_vars_absent ctxNilAtom_not_var]
-  rw [filter_singleton_binding_of_hasLoop_false _
-    (hasLoop_singleton_val_not_false "ctx" ctxNilAtom ctxNilAtom_vars_absent)]
-  simp only [List.flatMap_singleton]
-  rw [ValueBindings.merge_singleton_val_eq_of_not_key
-    (ValueBindings.val ValueBindings.nil) ctxNilAtom_not_var
-    (by simp [bindingValueKeys])]
-  unfold Metta.matchAll
-  rw [match_var_occurs_free_nonvar_atom "name" (declNameAtom name)
-    (declNameAtom_vars_absent name) (declNameAtom_not_var name)]
-  rw [filter_singleton_binding_of_hasLoop_false _
-    (hasLoop_singleton_val_not_false "name" (declNameAtom name)
-      (declNameAtom_vars_absent name))]
-  simp only [List.flatMap_singleton, List.singleton_append]
-  rw [ValueBindings.merge_singleton_val_eq_of_not_key
-    (ValueBindings.val (ValueBindings.val ValueBindings.nil))
-    (declNameAtom_not_var name) (by simp [bindingValueKeys])]
-  unfold Metta.matchAll
-  simp [argsAtom, mSym, Metta.matchAtomsWith, Metta.Bindings.merge]
-  unfold Metta.matchAll
-  rw [match_var_occurs_free_nonvar_atom "motive" (termAtom motive)
-    (termAtom_vars_absent motive) (termAtom_not_var motive)]
-  rw [filter_singleton_binding_of_hasLoop_false _
-    (hasLoop_singleton_val_not_false "motive" (termAtom motive)
-      (termAtom_vars_absent motive))]
-  simp only [List.flatMap_singleton]
-  rw [ValueBindings.merge_singleton_val_eq_of_not_key
-    (ValueBindings.val
-      (ValueBindings.val (ValueBindings.val ValueBindings.nil)))
-    (termAtom_not_var motive) (by simp [bindingValueKeys])]
-  unfold Metta.matchAll
-  rw [match_var_occurs_free_nonvar_atom "cases" (casesAtom cases)
-    (casesAtom_vars_absent cases) (casesAtom_not_var cases)]
-  rw [filter_singleton_binding_of_hasLoop_false _
-    (hasLoop_singleton_val_not_false "cases" (casesAtom cases)
-      (casesAtom_vars_absent cases))]
-  simp only [List.flatMap_singleton, List.singleton_append]
-  rw [ValueBindings.merge_singleton_val_eq_of_not_key
-    (ValueBindings.val
-      (ValueBindings.val
-        (ValueBindings.val (ValueBindings.val ValueBindings.nil))))
-    (casesAtom_not_var cases) (by simp [bindingValueKeys])]
-  unfold Metta.matchAll
-  rw [match_var_occurs_free_nonvar_atom "indices" (argsAtom indices)
-    (argsAtom_vars_absent indices) (argsAtom_not_var indices)]
-  rw [filter_singleton_binding_of_hasLoop_false _
-    (hasLoop_singleton_val_not_false "indices" (argsAtom indices)
-      (argsAtom_vars_absent indices))]
-  simp only [List.flatMap_singleton, List.singleton_append]
-  rw [ValueBindings.merge_singleton_val_eq_of_not_key
-    (ValueBindings.val
-      (ValueBindings.val
-        (ValueBindings.val
-          (ValueBindings.val (ValueBindings.val ValueBindings.nil)))))
-    (argsAtom_not_var indices) (by simp [bindingValueKeys])]
-  unfold Metta.matchAll
-  rw [match_var_occurs_free_nonvar_atom "scrut" (termAtom scrut)
-    (termAtom_vars_absent scrut) (termAtom_not_var scrut)]
-  rw [filter_singleton_binding_of_hasLoop_false _
-    (hasLoop_singleton_val_not_false "scrut" (termAtom scrut)
-      (termAtom_vars_absent scrut))]
-  simp only [List.flatMap_singleton, List.singleton_append]
-  rw [ValueBindings.merge_singleton_val_eq_of_not_key
-    (ValueBindings.val
-      (ValueBindings.val
-        (ValueBindings.val
-          (ValueBindings.val
-            (ValueBindings.val (ValueBindings.val ValueBindings.nil))))))
-    (termAtom_not_var scrut) (by simp [bindingValueKeys])]
-  unfold Metta.matchAll
-  rw [match_var_occurs_free_nonvar_atom "ctors" (ctorsAtom ctors)
-    (ctorsAtom_vars_absent ctors) (ctorsAtom_not_var ctors)]
-  rw [filter_singleton_binding_of_hasLoop_false _
-    (hasLoop_singleton_val_not_false "ctors" (ctorsAtom ctors)
-      (ctorsAtom_vars_absent ctors))]
-  simp only [List.flatMap_singleton, List.singleton_append]
-  rw [ValueBindings.merge_singleton_val_eq_of_not_key
-    (ValueBindings.val
-      (ValueBindings.val
-        (ValueBindings.val
-          (ValueBindings.val
-            (ValueBindings.val
-              (ValueBindings.val (ValueBindings.val ValueBindings.nil)))))))
-    (ctorsAtom_not_var ctors) (by simp [bindingValueKeys])]
-  unfold Metta.matchAll
-  rw [match_var_occurs_free_nonvar_atom "T0" (termAtom rawT0)
-    (termAtom_vars_absent rawT0) (termAtom_not_var rawT0)]
-  rw [filter_singleton_binding_of_hasLoop_false _
-    (hasLoop_singleton_val_not_false "T0" (termAtom rawT0)
-      (termAtom_vars_absent rawT0))]
-  simp only [List.flatMap_singleton, List.singleton_append]
-  rw [ValueBindings.merge_singleton_val_eq_of_not_key
-    (ValueBindings.val
-      (ValueBindings.val
-        (ValueBindings.val
-          (ValueBindings.val
-            (ValueBindings.val
-              (ValueBindings.val
-                (ValueBindings.val (ValueBindings.val ValueBindings.nil))))))))
-    (termAtom_not_var rawT0) (by simp [bindingValueKeys])]
-  unfold Metta.matchAll
-  exact filter_singleton_binding_of_hasLoop_false _
-    (ClosedValueBindings.hasLoop_false
-      (ClosedValueBindings.val (termAtom_vars_nil rawT0)
-        (ClosedValueBindings.val (ctorsAtom_vars_nil ctors)
-          (ClosedValueBindings.val (termAtom_vars_nil scrut)
-            (ClosedValueBindings.val (argsAtom_vars_nil indices)
-              (ClosedValueBindings.val (casesAtom_vars_nil cases)
-                (ClosedValueBindings.val (termAtom_vars_nil motive)
-                  (ClosedValueBindings.val (declNameAtom_vars_nil name)
-                    (ClosedValueBindings.val ctxNilAtom_vars_nil_local
-                      (ClosedValueBindings.val (sigAtom_vars_nil sig)
-                        ClosedValueBindings.nil))))))))))
+  simp only [inferIndgParamsArgsNilQuery, argsAtom]
+  closed_atom_match using (by closed_encoded_atom)
 
 theorem infer_indg_params_args_nil_instantiate_bindings
     (sig : DIndGArtifactSig) (name : DeclName)
@@ -76775,534 +74413,6 @@ private theorem nfQuery_beq_true_term_payload
     (by simpa [nfQuery, mExpr, mSym] using hEq)
   exact hPayload.2
 
-private theorem cicStage3_resolved_decl_conv_of_termAtom_beq_true_any_depth
-    {n : Nat} {rawLeft rawRight : DIndGArtifactTerm}
-    {left right : ScopedTerm n}
-    (hLeftResolved : CicStage3ResolvedNfTerm rawLeft)
-    (hRightResolved : CicStage3ResolvedNfTerm rawRight)
-    (hLeft :
-      DIndGArtifactTermTranslates
-        cicStage3RawNameTranslatesWithPropToType0Witness n rawLeft left)
-    (hRight :
-      DIndGArtifactTermTranslates
-        cicStage3RawNameTranslatesWithPropToType0Witness n rawRight right)
-    (hBeq : (termAtom rawLeft == termAtom rawRight) = true) :
-    ConvDecl
-      (envOfSpecs
-        cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-      left right := by
-  have hRaw : rawLeft = rawRight :=
-    termAtom_beq_injective_on_cicStage3_resolved
-      hLeftResolved hRightResolved hBeq
-  have hCommon :
-      ∃ target : ScopedTerm n,
-        CicStage3ResolvedNfDeclTarget n rawLeft target ∧
-          CicStage3ResolvedNfDeclTarget n rawRight target :=
-    cicStage3_resolved_common_decl_target_of_raw_eq_any_depth
-      hLeftResolved hLeft hRaw
-  exact
-    cicStage3_resolved_decl_conv_of_common_target_any_depth
-      hLeftResolved hRightResolved hLeft hRight hCommon
-
-private theorem cicStage3_nonWitness_defn_stuck_readout_beq_true_convDecl_any_depth
-    {n : Nat} {leftName rightName : DeclName}
-    {left right : ScopedTerm n}
-    (hLeftName :
-      cicStage3RawNameWithPropToType0WitnessBounded leftName)
-    (hRightName :
-      cicStage3RawNameWithPropToType0WitnessBounded rightName)
-    (hEq :
-      (cicStage3NonWitnessDefnStuckReadout leftName ==
-        cicStage3NonWitnessDefnStuckReadout rightName) = true)
-    (hLeft :
-      DIndGArtifactTermTranslates
-        cicStage3RawNameTranslatesWithPropToType0Witness n
-        (.defn leftName) left)
-    (hRight :
-      DIndGArtifactTermTranslates
-        cicStage3RawNameTranslatesWithPropToType0Witness n
-        (.defn rightName) right) :
-    ConvDecl
-      (envOfSpecs
-        cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-      left right := by
-  have hNameEq : leftName = rightName :=
-    cicStage3_nonWitness_defn_stuck_readout_beq_true_name_eq
-      hLeftName hRightName hEq
-  subst rightName
-  have hTermEq : left = right :=
-    dindg_translate_unique_on_defn_withPropToType0Witness hLeft hRight
-  subst right
-  exact Relation.EqvGen.refl left
-
-private theorem cicStage3_nfQuery_beq_true_translates_convDecl_any_depth
-    {n : Nat} {sig : DIndGArtifactSig}
-    {rawLeft rawRight : DIndGArtifactTerm}
-    {left right : ScopedTerm n}
-    (hEq : (nfQuery sig rawLeft == nfQuery sig rawRight) = true)
-    (hLeft :
-      DIndGArtifactTermTranslates
-        cicStage3RawNameTranslatesWithPropToType0Witness n rawLeft left)
-    (hRight :
-      DIndGArtifactTermTranslates
-        cicStage3RawNameTranslatesWithPropToType0Witness n rawRight right) :
-    ConvDecl
-      (envOfSpecs
-        cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-      left right := by
-    have hTermBeq :
-        (termAtom rawLeft == termAtom rawRight) = true :=
-      nfQuery_beq_true_term_payload hEq
-    have hTermEq : left = right :=
-      dindg_translate_eq_of_termAtom_beq_withPropToType0Witness
-        hTermBeq
-        (by
-          simpa [cicStage3RawArtifactSigWithPropToType0Witness] using hLeft)
-        (by
-          simpa [cicStage3RawArtifactSigWithPropToType0Witness] using hRight)
-    subst right
-    exact Relation.EqvGen.refl left
-
-private theorem cicStage3_resolved_nf_runtime_output_self
-    {raw rawNf : DIndGArtifactTerm}
-    (hOut : CicStage3ResolvedNfRuntimeOutput raw rawNf) :
-    CicStage3ResolvedNfRuntimeOutput rawNf rawNf := by
-  induction hOut with
-  | var k =>
-      exact CicStage3ResolvedNfRuntimeOutput.var k
-  | srt sort =>
-      exact CicStage3ResolvedNfRuntimeOutput.srt sort
-  | con hName =>
-      exact CicStage3ResolvedNfRuntimeOutput.con hName
-  | witnessDefn =>
-      unfold cicStage3RawIdentityWitness
-      exact
-        CicStage3ResolvedNfRuntimeOutput.lam
-          (CicStage3ResolvedNfRuntimeOutput.srt .type)
-          (CicStage3ResolvedNfRuntimeOutput.lam
-            (CicStage3ResolvedNfRuntimeOutput.srt .type)
-            (CicStage3ResolvedNfRuntimeOutput.var 0))
-  | bad reason =>
-      exact CicStage3ResolvedNfRuntimeOutput.bad reason
-  | pi hDomain hBody ihDomain ihBody =>
-      exact CicStage3ResolvedNfRuntimeOutput.pi ihDomain ihBody
-  | lam hDomain hBody ihDomain ihBody =>
-      exact CicStage3ResolvedNfRuntimeOutput.lam ihDomain ihBody
-
-private theorem cicStage3_convDecl_of_reductions_to_resolved_common_target_any_depth
-    {n : Nat} {rawLeftNf rawRightNf : DIndGArtifactTerm}
-    {left right leftNf rightNf : ScopedTerm n}
-    (hLeftRed :
-      RedStarDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        left leftNf)
-    (hRightRed :
-      RedStarDecl
-        (envOfSpecs
-          cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-        right rightNf)
-    (hLeftResolved : CicStage3ResolvedNfTerm rawLeftNf)
-    (hRightResolved : CicStage3ResolvedNfTerm rawRightNf)
-    (hLeftNf :
-      DIndGArtifactTermTranslates
-        cicStage3RawNameTranslatesWithPropToType0Witness n rawLeftNf leftNf)
-    (hRightNf :
-      DIndGArtifactTermTranslates
-        cicStage3RawNameTranslatesWithPropToType0Witness n rawRightNf rightNf)
-    (hCommon :
-      ∃ target : ScopedTerm n,
-        CicStage3ResolvedNfDeclTarget n rawLeftNf target ∧
-          CicStage3ResolvedNfDeclTarget n rawRightNf target) :
-    ConvDecl
-      (envOfSpecs
-        cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-      left right := by
-  let E :=
-    envOfSpecs
-      cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs
-  have hNfConv : ConvDecl E leftNf rightNf :=
-    cicStage3_resolved_decl_conv_of_common_target_any_depth
-      hLeftResolved hRightResolved hLeftNf hRightNf hCommon
-  have hLeftConv : ConvDecl E left leftNf :=
-    redStarDecl_implies_conv hLeftRed
-  have hRightConv : ConvDecl E right rightNf :=
-    redStarDecl_implies_conv hRightRed
-  exact
-    Relation.EqvGen.trans _ _ _
-      hLeftConv
-      (Relation.EqvGen.trans _ _ _
-        hNfConv
-        (Relation.EqvGen.symm _ _ hRightConv))
-
-private theorem cicStage3_resolved_runtime_outputs_beq_convDecl_any_depth
-    {n : Nat} {rawLeft rawRight rawLeftNf rawRightNf : DIndGArtifactTerm}
-    {left right : ScopedTerm n}
-    (hLeftOut : CicStage3ResolvedNfRuntimeOutput rawLeft rawLeftNf)
-    (hRightOut : CicStage3ResolvedNfRuntimeOutput rawRight rawRightNf)
-    (hLeft :
-      DIndGArtifactTermTranslates
-        cicStage3RawNameTranslatesWithPropToType0Witness n rawLeft left)
-    (hRight :
-      DIndGArtifactTermTranslates
-        cicStage3RawNameTranslatesWithPropToType0Witness n rawRight right)
-    (hBeq : (termAtom rawLeftNf == termAtom rawRightNf) = true) :
-    ConvDecl
-      (envOfSpecs
-        cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-      left right := by
-  rcases
-      cicStage3_resolved_nf_runtime_output_decl_reduction_exists
-        hLeftOut hLeft with
-    ⟨leftNf, hLeftNf, hLeftRed⟩
-  rcases
-      cicStage3_resolved_nf_runtime_output_decl_reduction_exists
-        hRightOut hRight with
-    ⟨rightNf, hRightNf, hRightRed⟩
-  have hLeftResolved :
-      CicStage3ResolvedNfTerm rawLeftNf :=
-    cicStage3_resolved_nf_runtime_output_resolved hLeftOut
-  have hRightResolved :
-      CicStage3ResolvedNfTerm rawRightNf :=
-    cicStage3_resolved_nf_runtime_output_resolved hRightOut
-  have hRawEq : rawLeftNf = rawRightNf :=
-    termAtom_beq_injective_on_cicStage3_resolved
-      hLeftResolved hRightResolved hBeq
-  have hCommon :
-      ∃ target : ScopedTerm n,
-        CicStage3ResolvedNfDeclTarget n rawLeftNf target ∧
-          CicStage3ResolvedNfDeclTarget n rawRightNf target :=
-    cicStage3_resolved_common_decl_target_of_raw_eq_any_depth
-      hLeftResolved hLeftNf hRawEq
-  exact
-    cicStage3_convDecl_of_reductions_to_resolved_common_target_any_depth
-      hLeftRed hRightRed hLeftResolved hRightResolved
-      hLeftNf hRightNf hCommon
-
-private theorem cicStage3_resolved_self_beq_canonical_convDecl_any_depth
-    {n : Nat} {rawLeft rawLeftOut rawRight : DIndGArtifactTerm}
-    {outRight : Metta.Atom} {left right : ScopedTerm n}
-    (hLeftSelf : CicStage3ResolvedNfRuntimeOutput rawLeft rawLeftOut)
-    (hSelf : rawLeftOut = rawLeft)
-    (hRightCanon : CicStage3CanonicalNfRuntimeReadout rawRight outRight)
-    (hLeft :
-      DIndGArtifactTermTranslates
-        cicStage3RawNameTranslatesWithPropToType0Witness n rawLeftOut left)
-    (hRight :
-      DIndGArtifactTermTranslates
-        cicStage3RawNameTranslatesWithPropToType0Witness n rawRight right)
-    (hBeq : (termAtom rawLeftOut == outRight) = true) :
-    ConvDecl
-      (envOfSpecs
-        cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-      left right := by
-  induction hLeftSelf generalizing n rawRight outRight left right with
-  | var k =>
-      cases hSelf
-      cases hLeft with
-      | var hIndex =>
-          cases hRightCanon with
-          | resolved hRightOut =>
-              exact
-                cicStage3_resolved_runtime_outputs_beq_convDecl_any_depth
-                  (CicStage3ResolvedNfRuntimeOutput.var k) hRightOut
-                  (DIndGArtifactTermTranslates.var hIndex) hRight
-                  (by simpa using hBeq)
-          | defnStuck hName hNotWitness =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | appStuck hFn hArg =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | indGStuck hFamily =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | pi hDomain hBody =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | lam hDomain hBody =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-  | srt sort =>
-      cases hSelf
-      cases sort
-      · cases hLeft with
-        | srt_type =>
-          cases hRightCanon with
-          | resolved hRightOut =>
-              exact
-                cicStage3_resolved_runtime_outputs_beq_convDecl_any_depth
-                  (CicStage3ResolvedNfRuntimeOutput.srt .type) hRightOut
-                  DIndGArtifactTermTranslates.srt_type hRight
-                  (by simpa using hBeq)
-          | defnStuck hName hNotWitness =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | appStuck hFn hArg =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | indGStuck hFamily =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | pi hDomain hBody =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | lam hDomain hBody =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-      · cases hLeft with
-        | srt_kind =>
-          cases hRightCanon with
-          | resolved hRightOut =>
-              exact
-                cicStage3_resolved_runtime_outputs_beq_convDecl_any_depth
-                  (CicStage3ResolvedNfRuntimeOutput.srt .kind) hRightOut
-                  DIndGArtifactTermTranslates.srt_kind hRight
-                  (by simpa using hBeq)
-          | defnStuck hName hNotWitness =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | appStuck hFn hArg =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | indGStuck hFamily =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | pi hDomain hBody =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | lam hDomain hBody =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-  | con hName =>
-      cases hSelf
-      cases hLeft with
-      | con hLeftName =>
-          cases hRightCanon with
-          | resolved hRightOut =>
-              exact
-                cicStage3_resolved_runtime_outputs_beq_convDecl_any_depth
-                  (CicStage3ResolvedNfRuntimeOutput.con hName) hRightOut
-                  (DIndGArtifactTermTranslates.con hLeftName) hRight
-                  (by simpa using hBeq)
-          | defnStuck hRightName hNotWitness =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | appStuck hFn hArg =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | indGStuck hFamily =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | pi hDomain hBody =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | lam hDomain hBody =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-  | witnessDefn =>
-      cases hSelf
-  | bad reason =>
-      cases hSelf
-      cases hLeft
-  | pi hDomainSelf hBodySelf ihDomain ihBody =>
-      cases hSelf
-      cases hLeft with
-      | pi hLeftDomain hLeftBody =>
-          cases hRightCanon with
-          | resolved hRightOut =>
-              exact
-                cicStage3_resolved_runtime_outputs_beq_convDecl_any_depth
-                  (CicStage3ResolvedNfRuntimeOutput.pi
-                    hDomainSelf hBodySelf)
-                  hRightOut
-                  (DIndGArtifactTermTranslates.pi hLeftDomain hLeftBody)
-                  hRight
-                  (by simpa [termAtom] using hBeq)
-          | defnStuck hName hNotWitness =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | appStuck hFn hArg =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | indGStuck hFamily =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | pi hRightDomain hRightBody =>
-              cases hRight with
-              | pi hRightDomainTrans hRightBodyTrans =>
-                    have hPayload := atom_beq_expr_binary_payload_true
-                      (tag := "Pi")
-                      (a := termAtom _) (b := termAtom _)
-                      (c := _) (d := _)
-                      (by
-                        change Metta.Atom.beq _ _ = true at hBeq
-                        simpa [termAtom, mExpr, mSym] using hBeq)
-                    exact
-                      convDecl_cong_pi_local
-                        (ihDomain rfl hRightDomain hLeftDomain
-                          hRightDomainTrans
-                          hPayload.1)
-                        (ihBody rfl hRightBody hLeftBody
-                          hRightBodyTrans
-                          hPayload.2)
-          | lam hRightDomain hRightBody =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-  | lam hDomainSelf hBodySelf ihDomain ihBody =>
-      cases hSelf
-      cases hLeft with
-      | lam hLeftDomain hLeftBody =>
-          cases hRightCanon with
-          | resolved hRightOut =>
-              exact
-                cicStage3_resolved_runtime_outputs_beq_convDecl_any_depth
-                  (CicStage3ResolvedNfRuntimeOutput.lam
-                    hDomainSelf hBodySelf)
-                  hRightOut
-                  (DIndGArtifactTermTranslates.lam hLeftDomain hLeftBody)
-                  hRight
-                  (by simpa [termAtom] using hBeq)
-          | defnStuck hName hNotWitness =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | appStuck hFn hArg =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | indGStuck hFamily =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | pi hRightDomain hRightBody =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | lam hRightDomain hRightBody =>
-              cases hRight with
-              | lam hRightDomainTrans hRightBodyTrans =>
-                    have hPayload := atom_beq_expr_binary_payload_true
-                      (tag := "Lam")
-                      (a := termAtom _) (b := termAtom _)
-                      (c := _) (d := _)
-                      (by
-                        change Metta.Atom.beq _ _ = true at hBeq
-                        simpa [termAtom, mExpr, mSym] using hBeq)
-                    exact
-                      convDecl_cong_lam_local
-                        (ihBody rfl hRightBody hLeftBody
-                          hRightBodyTrans
-                          hPayload.2)
-
 private theorem mExpr_beq_head_mismatch_false
     {tagLeft tagRight : String}
     {leftArgs rightArgs : List Metta.Atom}
@@ -77315,300 +74425,335 @@ private theorem mExpr_beq_head_mismatch_false
       simpa [mExpr, mSym] using hEq)
   exact hNe hHead
 
-private theorem cicStage3_canonical_beq_resolved_self_convDecl_any_depth
-    {n : Nat} {rawLeft rawRight rawRightOut : DIndGArtifactTerm}
-    {outLeft : Metta.Atom} {left right : ScopedTerm n}
-    (hLeftCanon : CicStage3CanonicalNfRuntimeReadout rawLeft outLeft)
-    (hRightSelf : CicStage3ResolvedNfRuntimeOutput rawRight rawRightOut)
-    (hSelf : rawRightOut = rawRight)
-    (hLeft :
-      DIndGArtifactTermTranslates
-        cicStage3RawNameTranslatesWithPropToType0Witness n rawLeft left)
-    (hRight :
-      DIndGArtifactTermTranslates
-        cicStage3RawNameTranslatesWithPropToType0Witness n rawRightOut right)
-    (hBeq : (outLeft == termAtom rawRightOut) = true) :
-    ConvDecl
-      (envOfSpecs
-        cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-      left right := by
-  induction hRightSelf generalizing n rawLeft outLeft left right with
+/-- The two signatures of a suspended definition lookup are observed
+separately. The input and comparison signatures can differ. -/
+private structure Stage3ComparisonProfile where
+  signature : DIndGArtifactSig
+  definitionSignature : DIndGArtifactSig
+  termComparison : ∀ {n : Nat} {rawLeft rawRight : DIndGArtifactTerm}
+      {left right : ScopedTerm n},
+    DIndGArtifactTermTranslates signature.nameTranslates n rawLeft left →
+    DIndGArtifactTermTranslates signature.nameTranslates n rawRight right →
+    (termAtom rawLeft == termAtom rawRight) = true → left = right
+
+private abbrev Stage3Translation (profile : Stage3ComparisonProfile) :=
+  DIndGArtifactTermTranslates profile.signature.nameTranslates
+
+private abbrev Stage3Conversion (profile : Stage3ComparisonProfile) {n : Nat} :
+    ScopedTerm n → ScopedTerm n → Prop :=
+  ConvDecl (envOfSpecs profile.signature.translatedSpecs)
+
+private def definitionReadout (profile : Stage3ComparisonProfile) (name : DeclName) :
+    Metta.Atom :=
+  mExpr "nf" [sigAtom profile.signature,
+    defBodyOfQueryAtom (sigAtom profile.definitionSignature) (declNameAtom name)]
+
+private theorem definitionReadout_eq_name {profile : Stage3ComparisonProfile}
+    {left right : DeclName}
+    (leftBounded : cicStage3RawNameWithPropToType0WitnessBounded left)
+    (rightBounded : cicStage3RawNameWithPropToType0WitnessBounded right)
+    (compared : (definitionReadout profile left == definitionReadout profile right) = true) :
+    left = right := by
+  change Metta.Atom.beq _ _ = true at compared
+  have payload := atom_beq_expr_binary_payload_true (tag := "nf") (by
+    simpa only [definitionReadout, mExpr, mSym] using compared)
+  have inner := atom_beq_expr_binary_payload_true (tag := "def-body-of") (by
+    simpa only [defBodyOfQueryAtom, mExpr, mSym] using payload.2)
+  exact cicStage3RawNameWithPropToType0WitnessBounded_eq_of_toString_eq
+    leftBounded rightBounded (declNameAtom_beq_true_to_string_eq inner.2)
+
+private def OutsideBinderFrames (value : Metta.Atom) : Prop :=
+  ∃ tag args, value = mExpr tag args ∧ tag ≠ "Pi" ∧ tag ≠ "Lam"
+
+/-- Leaves represent either a raw term or a suspended query. The latter
+observes the command and distinguishes a definition lookup from a term input. -/
+private inductive Stage3ReadoutLeaf (profile : Stage3ComparisonProfile) : {n : Nat} → Metta.Atom → ScopedTerm n → Prop where
+  | direct {n : Nat} {raw : DIndGArtifactTerm} {target : ScopedTerm n}
+      (translated : Stage3Translation profile n raw target)
+      (head : OutsideBinderFrames (termAtom raw)) :
+      Stage3ReadoutLeaf profile (termAtom raw) target
+  | definition {n : Nat} {name : DeclName} {target : ScopedTerm n}
+      (bounded : cicStage3RawNameWithPropToType0WitnessBounded name)
+      (translated : Stage3Translation profile n (.defn name) target) :
+      Stage3ReadoutLeaf profile (definitionReadout profile name) target
+  | computation {n : Nat} {raw : DIndGArtifactTerm} {target : ScopedTerm n}
+      (translated : Stage3Translation profile n raw target) :
+      Stage3ReadoutLeaf profile (nfQuery profile.signature raw) target
+
+private theorem Stage3ReadoutLeaf.outsideFrames {profile : Stage3ComparisonProfile} {n : Nat} {out : Metta.Atom}
+    {target : ScopedTerm n} (leaf : Stage3ReadoutLeaf profile out target) : OutsideBinderFrames out := by
+  cases leaf with
+  | direct _ head => exact head
+  | definition _ _ | computation _ => exact ⟨"nf", _, rfl, by decide, by decide⟩
+
+private theorem termAtom_comparison_head (raw : DIndGArtifactTerm) :
+    ∃ tag args, termAtom raw = mExpr tag args ∧ tag ≠ "nf" ∧ tag ≠ "def-body-of" := by
+  cases raw <;> simp only [termAtom] <;> exact ⟨_, _, rfl, by decide, by decide⟩
+
+private theorem termAtom_eq_command_refuted
+    {raw : DIndGArtifactTerm} {tag : String} {args : List Metta.Atom}
+    (command : tag = "nf" ∨ tag = "def-body-of")
+    (compared : (termAtom raw == mExpr tag args) = true ∨
+      (mExpr tag args == termAtom raw) = true) : False := by
+  obtain ⟨head, values, described, notNf, notBody⟩ := termAtom_comparison_head raw
+  have distinct : head ≠ tag := by
+    rcases command with rfl | rfl
+    · exact notNf
+    · exact notBody
+  rw [described] at compared
+  exact compared.elim (fun forward => mExpr_beq_head_mismatch_false forward distinct)
+    (fun backward => mExpr_beq_head_mismatch_false backward distinct.symm)
+
+private theorem computation_defn_comparison_refuted {profile : Stage3ComparisonProfile}
+    {raw : DIndGArtifactTerm} {name : DeclName}
+    (compared : (nfQuery profile.signature raw == definitionReadout profile name) = true ∨
+      (definitionReadout profile name == nfQuery profile.signature raw) = true) :
+    False := by
+  refine termAtom_eq_command_refuted (raw := raw)
+    (args := [sigAtom profile.definitionSignature, declNameAtom name]) (Or.inr rfl) ?_
+  rcases compared with forward | backward
+  · change Metta.Atom.beq _ _ = true at forward
+    exact Or.inl (atom_beq_expr_binary_payload_true (tag := "nf") (by
+      simpa only [nfQuery, definitionReadout, defBodyOfQueryAtom, mExpr, mSym] using forward)).2
+  · change Metta.Atom.beq _ _ = true at backward
+    exact Or.inr (atom_beq_expr_binary_payload_true (tag := "nf") (by
+      simpa only [nfQuery, definitionReadout, defBodyOfQueryAtom, mExpr, mSym] using backward)).2
+
+private theorem Stage3ReadoutLeaf.conversion {profile : Stage3ComparisonProfile} {n : Nat} {leftOut rightOut : Metta.Atom}
+    {left right : ScopedTerm n} (first : Stage3ReadoutLeaf profile leftOut left)
+    (second : Stage3ReadoutLeaf profile rightOut right) (compared : (leftOut == rightOut) = true) :
+    Stage3Conversion profile left right := by
+  cases first with
+  | direct translated _ =>
+      cases second with
+      | direct rightTranslated _ =>
+          cases profile.termComparison translated rightTranslated compared
+          exact .refl _
+      | definition _ _ | computation _ =>
+          exact False.elim (termAtom_eq_command_refuted (Or.inl rfl) (Or.inl compared))
+  | definition bounded translated =>
+      cases second with
+      | direct _ _ =>
+          exact False.elim (termAtom_eq_command_refuted (Or.inl rfl) (Or.inr compared))
+      | definition rightBounded rightTranslated =>
+          cases definitionReadout_eq_name bounded rightBounded compared
+          cases profile.termComparison translated rightTranslated (termAtom_beq_self_true _)
+          exact .refl _
+      | computation _ => exact False.elim (computation_defn_comparison_refuted (Or.inr compared))
+  | computation translated =>
+      cases second with
+      | direct _ _ =>
+          exact False.elim (termAtom_eq_command_refuted (Or.inl rfl) (Or.inr compared))
+      | definition _ _ => exact False.elim (computation_defn_comparison_refuted (Or.inl compared))
+      | computation rightTranslated =>
+          cases profile.termComparison translated rightTranslated
+            (nfQuery_beq_true_term_payload compared)
+          exact .refl _
+
+/-- A readout supplies a canonical leaf or a binder frame at its actual
+scope. Lambda annotations remain in the runtime value. The scoped term
+uses the binder body. -/
+private inductive Stage3ReadoutView (profile : Stage3ComparisonProfile) : {n : Nat} → Metta.Atom → ScopedTerm n → Prop where
+  | leaf {n : Nat} {value : Metta.Atom} {target : ScopedTerm n}
+      (view : Stage3ReadoutLeaf profile value target) :
+      Stage3ReadoutView profile value target
+  | pi {n : Nat} {domainOut bodyOut : Metta.Atom}
+      {domain : ScopedTerm n} {body : ScopedTerm (n + 1)}
+      (domainView : Stage3ReadoutView profile domainOut domain)
+      (bodyView : Stage3ReadoutView profile bodyOut body) :
+      Stage3ReadoutView profile (mExpr "Pi" [domainOut, bodyOut]) (.pi domain body)
+  | lam {n : Nat} (domainOut : Metta.Atom)
+      {bodyOut : Metta.Atom} {body : ScopedTerm (n + 1)}
+      (bodyView : Stage3ReadoutView profile bodyOut body) :
+      Stage3ReadoutView profile (mExpr "Lam" [domainOut, bodyOut]) (.lam body)
+
+private theorem variableReadoutView {profile : Stage3ComparisonProfile}
+    {n k : Nat} {target : ScopedTerm n}
+    (translated : Stage3Translation profile n (.var k) target) :
+    Stage3ReadoutView profile (termAtom (.var k)) target :=
+  .leaf (.direct translated ⟨"Var", [mNat k], by simp only [termAtom], by decide, by decide⟩)
+
+private theorem constantReadoutView {profile : Stage3ComparisonProfile}
+    {n : Nat} {name : DeclName} {target : ScopedTerm n}
+    (translated : Stage3Translation profile n (.con name) target) :
+    Stage3ReadoutView profile (termAtom (.con name)) target :=
+  .leaf (.direct translated
+    ⟨"Con", [declNameAtom name], by simp only [termAtom], by decide, by decide⟩)
+
+private theorem resolvedReadoutView {profile : Stage3ComparisonProfile}
+    {raw normalized : DIndGArtifactTerm}
+    (resolved : CicStage3ResolvedNfRuntimeOutput raw normalized) :
+    ∀ {n : Nat} {target : ScopedTerm n}, Stage3Translation profile n normalized target →
+      Stage3ReadoutView profile (termAtom normalized) target := by
+  induction resolved with
   | var k =>
-      cases hSelf
-      cases hRight with
-      | var hIndex =>
-          cases hLeftCanon with
-          | resolved hLeftOut =>
-              exact
-                cicStage3_resolved_runtime_outputs_beq_convDecl_any_depth
-                  hLeftOut (CicStage3ResolvedNfRuntimeOutput.var k)
-                  hLeft (DIndGArtifactTermTranslates.var hIndex)
-                  (by simpa using hBeq)
-          | defnStuck hName hNotWitness =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | appStuck hFn hArg =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | indGStuck hFamily =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | pi hDomain hBody =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | lam hDomain hBody =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
+      intro n target translated
+      exact variableReadoutView translated
   | srt sort =>
-      cases hSelf
-      cases sort
-      · cases hRight with
-        | srt_type =>
-          cases hLeftCanon with
-          | resolved hLeftOut =>
-              exact
-                cicStage3_resolved_runtime_outputs_beq_convDecl_any_depth
-                  hLeftOut (CicStage3ResolvedNfRuntimeOutput.srt .type)
-                  hLeft DIndGArtifactTermTranslates.srt_type
-                  (by simpa using hBeq)
-          | defnStuck hName hNotWitness =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | appStuck hFn hArg =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | indGStuck hFamily =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | pi hDomain hBody =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | lam hDomain hBody =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-      · cases hRight with
-        | srt_kind =>
-          cases hLeftCanon with
-          | resolved hLeftOut =>
-              exact
-                cicStage3_resolved_runtime_outputs_beq_convDecl_any_depth
-                  hLeftOut (CicStage3ResolvedNfRuntimeOutput.srt .kind)
-                  hLeft DIndGArtifactTermTranslates.srt_kind
-                  (by simpa using hBeq)
-          | defnStuck hName hNotWitness =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | appStuck hFn hArg =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | indGStuck hFamily =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | pi hDomain hBody =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | lam hDomain hBody =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-  | con hName =>
-      cases hSelf
-      cases hRight with
-      | con hRightName =>
-          cases hLeftCanon with
-          | resolved hLeftOut =>
-              exact
-                cicStage3_resolved_runtime_outputs_beq_convDecl_any_depth
-                  hLeftOut (CicStage3ResolvedNfRuntimeOutput.con hName)
-                  hLeft (DIndGArtifactTermTranslates.con hRightName)
-                  (by simpa using hBeq)
-          | defnStuck hLeftName hNotWitness =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | appStuck hFn hArg =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | indGStuck hFamily =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | pi hDomain hBody =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | lam hDomain hBody =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
+      intro n target translated
+      exact .leaf (.direct translated
+        ⟨"Srt", [sortAtom sort], by simp only [termAtom], by decide, by decide⟩)
+  | con bounded =>
+      intro n target translated
+      exact constantReadoutView translated
   | witnessDefn =>
-      cases hSelf
+      intro n target translated
+      change Stage3Translation profile n (.lam (.srt .type) (.lam (.srt .type) (.var 0))) target
+        at translated
+      cases translated with
+      | lam _ body =>
+          cases body with
+          | lam _ inner =>
+              simpa only [cicStage3RawIdentityWitness, termAtom] using
+                Stage3ReadoutView.lam (profile := profile) (termAtom (.srt .type))
+                  (.lam (termAtom (.srt .type)) (variableReadoutView inner))
   | bad reason =>
-      cases hSelf
-      cases hRight
-  | pi hDomainSelf hBodySelf ihDomain ihBody =>
-      cases hSelf
-      cases hRight with
-      | pi hRightDomain hRightBody =>
-          cases hLeftCanon with
-          | resolved hLeftOut =>
-              exact
-                cicStage3_resolved_runtime_outputs_beq_convDecl_any_depth
-                  hLeftOut
-                  (CicStage3ResolvedNfRuntimeOutput.pi
-                    hDomainSelf hBodySelf)
-                  hLeft
-                  (DIndGArtifactTermTranslates.pi
-                    hRightDomain hRightBody)
-                  (by simpa [termAtom] using hBeq)
-          | defnStuck hName hNotWitness =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | appStuck hFn hArg =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | indGStuck hFamily =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | pi hLeftDomain hLeftBody =>
-              cases hLeft with
-              | pi hLeftDomainTrans hLeftBodyTrans =>
-                  have hPayload := atom_beq_expr_binary_payload_true
-                    (tag := "Pi")
-                    (a := _) (b := _)
-                    (c := termAtom _) (d := termAtom _)
-                    (by
-                      change Metta.Atom.beq _ _ = true at hBeq
-                      simpa [termAtom, mExpr, mSym] using hBeq)
-                  exact
-                    convDecl_cong_pi_local
-                      (ihDomain hLeftDomain rfl hLeftDomainTrans
-                        hRightDomain hPayload.1)
-                      (ihBody hLeftBody rfl hLeftBodyTrans
-                        hRightBody hPayload.2)
-          | lam hLeftDomain hLeftBody =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-  | lam hDomainSelf hBodySelf ihDomain ihBody =>
-      cases hSelf
-      cases hRight with
-      | lam hRightDomain hRightBody =>
-          cases hLeftCanon with
-          | resolved hLeftOut =>
-              exact
-                cicStage3_resolved_runtime_outputs_beq_convDecl_any_depth
-                  hLeftOut
-                  (CicStage3ResolvedNfRuntimeOutput.lam
-                    hDomainSelf hBodySelf)
-                  hLeft
-                  (DIndGArtifactTermTranslates.lam
-                    hRightDomain hRightBody)
-                  (by simpa [termAtom] using hBeq)
-          | defnStuck hName hNotWitness =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | appStuck hFn hArg =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | indGStuck hFamily =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | pi hLeftDomain hLeftBody =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | lam hLeftDomain hLeftBody =>
-              cases hLeft with
-              | lam hLeftDomainTrans hLeftBodyTrans =>
-                  have hPayload := atom_beq_expr_binary_payload_true
-                    (tag := "Lam")
-                    (a := _) (b := _)
-                    (c := termAtom _) (d := termAtom _)
-                    (by
-                      change Metta.Atom.beq _ _ = true at hBeq
-                      simpa [termAtom, mExpr, mSym] using hBeq)
-                  exact
-                    convDecl_cong_lam_local
-                      (ihBody hLeftBody rfl hLeftBodyTrans
-                        hRightBody hPayload.2)
+      intro n target translated
+      cases translated
+  | pi hDomain hBody ihDomain ihBody =>
+      intro n target translated
+      cases translated with
+      | pi domain body =>
+          simpa only [termAtom] using Stage3ReadoutView.pi (profile := profile) (ihDomain domain) (ihBody body)
+  | lam hDomain hBody ihDomain ihBody =>
+      intro n target translated
+      cases translated with
+      | lam _ body =>
+          simpa only [termAtom] using Stage3ReadoutView.lam (profile := profile) (termAtom _) (ihBody body)
+
+private theorem Stage3ReadoutView.conversion {profile : Stage3ComparisonProfile} {n : Nat} {leftValue : Metta.Atom}
+    {left : ScopedTerm n} (first : Stage3ReadoutView profile leftValue left) :
+    ∀ {rightValue : Metta.Atom} {right : ScopedTerm n},
+      Stage3ReadoutView profile rightValue right → (leftValue == rightValue) = true →
+      Stage3Conversion profile left right := by
+  induction first with
+  | leaf leftLeaf =>
+      intro rightValue right second compared
+      cases second with
+      | leaf rightLeaf => exact leftLeaf.conversion rightLeaf compared
+      | pi domain body =>
+          obtain ⟨tag, args, valueEq, notPi, _⟩ := leftLeaf.outsideFrames
+          rw [valueEq] at compared
+          exact False.elim (mExpr_beq_head_mismatch_false compared notPi)
+      | lam domain body =>
+          obtain ⟨tag, args, valueEq, _, notLam⟩ := leftLeaf.outsideFrames
+          rw [valueEq] at compared
+          exact False.elim (mExpr_beq_head_mismatch_false compared notLam)
+  | pi domain body ihDomain ihBody =>
+      intro rightValue right second compared
+      cases second with
+      | leaf rightLeaf =>
+          obtain ⟨tag, args, valueEq, notPi, _⟩ := rightLeaf.outsideFrames
+          rw [valueEq] at compared
+          exact False.elim (mExpr_beq_head_mismatch_false compared notPi.symm)
+      | pi rightDomain rightBody =>
+          have payload := atom_beq_expr_binary_payload_true (tag := "Pi") (by
+            change Metta.Atom.beq _ _ = true at compared
+            simpa only [mExpr, mSym] using compared)
+          exact convDecl_cong_pi_local (ihDomain rightDomain payload.1) (ihBody rightBody payload.2)
+      | lam rightDomain rightBody =>
+          exact False.elim (mExpr_beq_head_mismatch_false compared (by decide))
+  | lam domain body ihBody =>
+      intro rightValue right second compared
+      cases second with
+      | leaf rightLeaf =>
+          obtain ⟨tag, args, valueEq, _, notLam⟩ := rightLeaf.outsideFrames
+          rw [valueEq] at compared
+          exact False.elim (mExpr_beq_head_mismatch_false compared notLam.symm)
+      | pi rightDomain rightBody =>
+          exact False.elim (mExpr_beq_head_mismatch_false compared (by decide))
+      | lam rightDomain rightBody =>
+          have payload := atom_beq_expr_binary_payload_true (tag := "Lam") (by
+            change Metta.Atom.beq _ _ = true at compared
+            simpa only [mExpr, mSym] using compared)
+          exact convDecl_cong_lam_local (ihBody rightBody payload.2)
+
+/-- An exact observed value keeps a scoped representative convertible
+to the input. The rule building that representation supplies its own
+translation and conversion evidence. -/
+private def Stage3ReadoutPlan (profile : Stage3ComparisonProfile)
+    (raw : DIndGArtifactTerm) (value : Metta.Atom) : Prop :=
+  ∀ {n : Nat} {target : ScopedTerm n}, Stage3Translation profile n raw target →
+    ∃ converted : ScopedTerm n,
+      Stage3Conversion profile target converted ∧ Stage3ReadoutView profile value converted
+
+private theorem Stage3ReadoutPlan.resolved {profile : Stage3ComparisonProfile}
+    {raw normalized : DIndGArtifactTerm}
+    (readout : CicStage3ResolvedNfRuntimeOutput raw normalized)
+    (normalize : ∀ {n : Nat} {target : ScopedTerm n}, Stage3Translation profile n raw target →
+      ∃ normal, Stage3Translation profile n normalized normal ∧ Stage3Conversion profile target normal) :
+    Stage3ReadoutPlan profile raw (termAtom normalized) := by
+  intro n target translated
+  obtain ⟨normal, normalTranslation, conversion⟩ := normalize translated
+  exact ⟨normal, conversion, resolvedReadoutView readout normalTranslation⟩
+
+private theorem Stage3ReadoutPlan.definition {profile : Stage3ComparisonProfile}
+    {name : DeclName} (bounded : cicStage3RawNameWithPropToType0WitnessBounded name) :
+    Stage3ReadoutPlan profile (.defn name) (definitionReadout profile name) :=
+  fun translated => ⟨_, .refl _, .leaf (.definition bounded translated)⟩
+
+private theorem Stage3ReadoutPlan.computation {profile : Stage3ComparisonProfile}
+    {raw : DIndGArtifactTerm} :
+    Stage3ReadoutPlan profile raw (nfQuery profile.signature raw) :=
+  fun translated => ⟨_, .refl _, .leaf (.computation translated)⟩
+
+private theorem Stage3ReadoutPlan.pi {profile : Stage3ComparisonProfile}
+    {rawDomain rawBody : DIndGArtifactTerm} {domainOut bodyOut : Metta.Atom}
+    (domainPlan : Stage3ReadoutPlan profile rawDomain domainOut)
+    (bodyPlan : Stage3ReadoutPlan profile rawBody bodyOut) :
+    Stage3ReadoutPlan profile (.pi rawDomain rawBody) (mExpr "Pi" [domainOut, bodyOut]) := by
+  intro n target translated
+  cases translated with
+  | pi domain body =>
+      obtain ⟨domain', domainConv, domainView⟩ := domainPlan domain
+      obtain ⟨body', bodyConv, bodyView⟩ := bodyPlan body
+      exact ⟨.pi domain' body', convDecl_cong_pi_local domainConv bodyConv, .pi domainView bodyView⟩
+
+private theorem Stage3ReadoutPlan.lam {profile : Stage3ComparisonProfile}
+    {rawDomain rawBody : DIndGArtifactTerm} {domainOut bodyOut : Metta.Atom}
+    (bodyPlan : Stage3ReadoutPlan profile rawBody bodyOut) :
+    Stage3ReadoutPlan profile (.lam rawDomain rawBody) (mExpr "Lam" [domainOut, bodyOut]) := by
+  intro n target translated
+  cases translated with
+  | lam domain body =>
+      obtain ⟨body', bodyConv, bodyView⟩ := bodyPlan body
+      exact ⟨.lam body', convDecl_cong_lam_local bodyConv, .lam domainOut bodyView⟩
+
+private theorem Stage3ReadoutPlan.compare {profile : Stage3ComparisonProfile}
+    {n : Nat} {rawLeft rawRight : DIndGArtifactTerm}
+    {outLeft outRight : Metta.Atom} {left right : ScopedTerm n}
+    (leftPlan : Stage3ReadoutPlan profile rawLeft outLeft)
+    (rightPlan : Stage3ReadoutPlan profile rawRight outRight)
+    (leftTranslation : Stage3Translation profile n rawLeft left)
+    (rightTranslation : Stage3Translation profile n rawRight right)
+    (compared : (outLeft == outRight) = true) :
+    Stage3Conversion profile left right := by
+  obtain ⟨left', leftConv, leftView⟩ := leftPlan leftTranslation
+  obtain ⟨right', rightConv, rightView⟩ := rightPlan rightTranslation
+  exact Relation.EqvGen.trans _ _ _ leftConv
+    (Relation.EqvGen.trans _ _ _ (leftView.conversion rightView compared)
+      (Relation.EqvGen.symm _ _ rightConv))
+
+private def witnessComparisonProfile : Stage3ComparisonProfile where
+  signature := cicStage3RawArtifactSigWithPropToType0Witness
+  definitionSignature := cicStage3RawArtifactSig
+  termComparison left right compared :=
+    dindg_translate_eq_of_termAtom_beq_withPropToType0Witness compared left right
+
+private theorem witnessReadoutPlan {raw : DIndGArtifactTerm} {out : Metta.Atom}
+    (observed : CicStage3CanonicalNfRuntimeReadout raw out) :
+    Stage3ReadoutPlan witnessComparisonProfile raw out := by
+  induction observed with
+  | resolved readout =>
+      refine Stage3ReadoutPlan.resolved readout ?_
+      intro n term translated
+      obtain ⟨normal, translation, reduction⟩ :=
+        cicStage3_resolved_nf_runtime_output_decl_reduction_exists readout translated
+      exact ⟨normal, translation, redStarDecl_implies_conv reduction⟩
+  | defnStuck bounded _ => exact Stage3ReadoutPlan.definition bounded
+  | appStuck _ _ | indGStuck _ => exact Stage3ReadoutPlan.computation
+  | pi _ _ domain body => exact Stage3ReadoutPlan.pi domain body
+  | lam _ _ _ body => exact Stage3ReadoutPlan.lam body
 
 private theorem cicStage3_canonical_beq_true_convDecl_any_depth
     {n : Nat} {rawLeft rawRight : DIndGArtifactTerm}
@@ -77626,357 +74771,30 @@ private theorem cicStage3_canonical_beq_true_convDecl_any_depth
       (envOfSpecs
         cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
       left right := by
-  induction hLeftCanon generalizing n rawRight outRight left right with
-  | resolved hLeftOut =>
-      rcases
-          cicStage3_resolved_nf_runtime_output_decl_reduction_exists
-            hLeftOut hLeft with
-        ⟨leftNf, hLeftNf, hLeftRed⟩
-      have hLeftSelf :
-          CicStage3ResolvedNfRuntimeOutput _ _ :=
-        cicStage3_resolved_nf_runtime_output_self hLeftOut
-      have hNfRight :
-          ConvDecl
-            (envOfSpecs
-              cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-            leftNf right :=
-        cicStage3_resolved_self_beq_canonical_convDecl_any_depth
-          hLeftSelf rfl hRightCanon hLeftNf hRight
-          (by simpa using hBeq)
-      exact
-        Relation.EqvGen.trans _ _ _
-          (redStarDecl_implies_conv hLeftRed) hNfRight
-  | defnStuck hLeftName hLeftNotWitness =>
-      cases hRightCanon with
-      | resolved hRightOut =>
-          rcases
-              cicStage3_resolved_nf_runtime_output_decl_reduction_exists
-                hRightOut hRight with
-            ⟨rightNf, hRightNf, hRightRed⟩
-          have hRightSelf :
-              CicStage3ResolvedNfRuntimeOutput _ _ :=
-            cicStage3_resolved_nf_runtime_output_self hRightOut
-          have hLeftNf :
-              ConvDecl
-                (envOfSpecs
-                  cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-                left rightNf :=
-            cicStage3_canonical_beq_resolved_self_convDecl_any_depth
-              (CicStage3CanonicalNfRuntimeReadout.defnStuck
-                hLeftName hLeftNotWitness)
-              hRightSelf rfl hLeft hRightNf
-              (by simpa using hBeq)
-          exact
-            Relation.EqvGen.trans _ _ _
-              hLeftNf
-              (Relation.EqvGen.symm _ _
-                (redStarDecl_implies_conv hRightRed))
-      | defnStuck hRightName hRightNotWitness =>
-          exact
-            cicStage3_nonWitness_defn_stuck_readout_beq_true_convDecl_any_depth
-              hLeftName hRightName
-              (by simpa using hBeq)
-              hLeft hRight
-      | appStuck hFn hArg =>
-          have hPayload := atom_beq_expr_binary_payload_true (tag := "nf")
-            (a := sigAtom cicStage3RawArtifactSigWithPropToType0Witness)
-            (b := defBodyOfQueryAtom (sigAtom cicStage3RawArtifactSig)
-              (declNameAtom _))
-            (c := sigAtom cicStage3RawArtifactSigWithPropToType0Witness)
-            (d := termAtom (.app _ _))
-            (by
-              change Metta.Atom.beq _ _ = true at hBeq
-              simpa [cicStage3NonWitnessDefnStuckReadout, nfQuery,
-                mExpr, mSym] using hBeq)
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [BEq.beq, instBEqAtom, defBodyOfQueryAtom, termAtom, mExpr, mSym]
-                using hPayload.2) (by decide))
-      | indGStuck hFamily =>
-          have hPayload := atom_beq_expr_binary_payload_true (tag := "nf")
-            (a := sigAtom cicStage3RawArtifactSigWithPropToType0Witness)
-            (b := defBodyOfQueryAtom (sigAtom cicStage3RawArtifactSig)
-              (declNameAtom _))
-            (c := sigAtom cicStage3RawArtifactSigWithPropToType0Witness)
-            (d := termAtom (.indG _ _ _ _ _ _))
-            (by
-              change Metta.Atom.beq _ _ = true at hBeq
-              simpa [cicStage3NonWitnessDefnStuckReadout, nfQuery,
-                mExpr, mSym] using hBeq)
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [BEq.beq, instBEqAtom, defBodyOfQueryAtom, termAtom, mExpr, mSym]
-                using hPayload.2) (by decide))
-      | pi hDomain hBody =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-      | lam hDomain hBody =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-  | appStuck hLeftFn hLeftArg =>
-      cases hRightCanon with
-      | resolved hRightOut =>
-          rcases
-              cicStage3_resolved_nf_runtime_output_decl_reduction_exists
-                hRightOut hRight with
-            ⟨rightNf, hRightNf, hRightRed⟩
-          have hRightSelf :
-              CicStage3ResolvedNfRuntimeOutput _ _ :=
-            cicStage3_resolved_nf_runtime_output_self hRightOut
-          have hLeftNf :
-              ConvDecl
-                (envOfSpecs
-                  cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-                left rightNf :=
-            cicStage3_canonical_beq_resolved_self_convDecl_any_depth
-              (CicStage3CanonicalNfRuntimeReadout.appStuck
-                hLeftFn hLeftArg)
-              hRightSelf rfl hLeft hRightNf
-              (by simpa using hBeq)
-          exact
-            Relation.EqvGen.trans _ _ _
-              hLeftNf
-              (Relation.EqvGen.symm _ _
-                (redStarDecl_implies_conv hRightRed))
-      | defnStuck hRightName hRightNotWitness =>
-          have hPayload := atom_beq_expr_binary_payload_true (tag := "nf")
-            (a := sigAtom cicStage3RawArtifactSigWithPropToType0Witness)
-            (b := termAtom (.app _ _))
-            (c := sigAtom cicStage3RawArtifactSigWithPropToType0Witness)
-            (d := defBodyOfQueryAtom (sigAtom cicStage3RawArtifactSig)
-              (declNameAtom _))
-            (by
-              change Metta.Atom.beq _ _ = true at hBeq
-              simpa [cicStage3NonWitnessDefnStuckReadout, nfQuery,
-                mExpr, mSym] using hBeq)
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [BEq.beq, instBEqAtom, defBodyOfQueryAtom, termAtom, mExpr, mSym]
-                using hPayload.2) (by decide))
-      | appStuck hRightFn hRightArg =>
-          exact
-            cicStage3_nfQuery_beq_true_translates_convDecl_any_depth
-              (sig := cicStage3RawArtifactSigWithPropToType0Witness)
-              (by simpa [nfQuery] using hBeq)
-              hLeft hRight
-      | indGStuck hRightFamily =>
-          exact
-            cicStage3_nfQuery_beq_true_translates_convDecl_any_depth
-              (sig := cicStage3RawArtifactSigWithPropToType0Witness)
-              (by simpa [nfQuery] using hBeq)
-              hLeft hRight
-      | pi hDomain hBody =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-      | lam hDomain hBody =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-  | indGStuck hLeftFamily =>
-      cases hRightCanon with
-      | resolved hRightOut =>
-          rcases
-              cicStage3_resolved_nf_runtime_output_decl_reduction_exists
-                hRightOut hRight with
-            ⟨rightNf, hRightNf, hRightRed⟩
-          have hRightSelf :
-              CicStage3ResolvedNfRuntimeOutput _ _ :=
-            cicStage3_resolved_nf_runtime_output_self hRightOut
-          have hLeftNf :
-              ConvDecl
-                (envOfSpecs
-                  cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-                left rightNf :=
-            cicStage3_canonical_beq_resolved_self_convDecl_any_depth
-              (CicStage3CanonicalNfRuntimeReadout.indGStuck
-                hLeftFamily)
-              hRightSelf rfl hLeft hRightNf
-              (by simpa using hBeq)
-          exact
-            Relation.EqvGen.trans _ _ _
-              hLeftNf
-              (Relation.EqvGen.symm _ _
-                (redStarDecl_implies_conv hRightRed))
-      | defnStuck hRightName hRightNotWitness =>
-          have hPayload := atom_beq_expr_binary_payload_true (tag := "nf")
-            (a := sigAtom cicStage3RawArtifactSigWithPropToType0Witness)
-            (b := termAtom (.indG _ _ _ _ _ _))
-            (c := sigAtom cicStage3RawArtifactSigWithPropToType0Witness)
-            (d := defBodyOfQueryAtom (sigAtom cicStage3RawArtifactSig)
-              (declNameAtom _))
-            (by
-              change Metta.Atom.beq _ _ = true at hBeq
-              simpa [cicStage3NonWitnessDefnStuckReadout, nfQuery,
-                mExpr, mSym] using hBeq)
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [BEq.beq, instBEqAtom, defBodyOfQueryAtom, termAtom, mExpr, mSym]
-                using hPayload.2) (by decide))
-      | appStuck hRightFn hRightArg =>
-          exact
-            cicStage3_nfQuery_beq_true_translates_convDecl_any_depth
-              (sig := cicStage3RawArtifactSigWithPropToType0Witness)
-              (by simpa [nfQuery] using hBeq)
-              hLeft hRight
-      | indGStuck hRightFamily =>
-          exact
-            cicStage3_nfQuery_beq_true_translates_convDecl_any_depth
-              (sig := cicStage3RawArtifactSigWithPropToType0Witness)
-              (by simpa [nfQuery] using hBeq)
-              hLeft hRight
-      | pi hDomain hBody =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-      | lam hDomain hBody =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-  | pi hLeftDomainCanon hLeftBodyCanon ihDomain ihBody =>
-      cases hRightCanon with
-      | resolved hRightOut =>
-          rcases
-              cicStage3_resolved_nf_runtime_output_decl_reduction_exists
-                hRightOut hRight with
-            ⟨rightNf, hRightNf, hRightRed⟩
-          have hRightSelf :
-              CicStage3ResolvedNfRuntimeOutput _ _ :=
-            cicStage3_resolved_nf_runtime_output_self hRightOut
-          have hLeftNf :
-              ConvDecl
-                (envOfSpecs
-                  cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-                left rightNf :=
-            cicStage3_canonical_beq_resolved_self_convDecl_any_depth
-              (CicStage3CanonicalNfRuntimeReadout.pi
-                hLeftDomainCanon hLeftBodyCanon)
-              hRightSelf rfl hLeft hRightNf
-              (by simpa using hBeq)
-          exact
-            Relation.EqvGen.trans _ _ _
-              hLeftNf
-              (Relation.EqvGen.symm _ _
-                (redStarDecl_implies_conv hRightRed))
-      | defnStuck hName hNotWitness =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-      | appStuck hFn hArg =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-      | indGStuck hFamily =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-      | pi hRightDomainCanon hRightBodyCanon =>
-          cases hLeft with
-          | pi hLeftDomain hLeftBody =>
-              cases hRight with
-              | pi hRightDomain hRightBody =>
-                  have hPayload := atom_beq_expr_binary_payload_true
-                    (tag := "Pi")
-                    (a := _) (b := _) (c := _) (d := _)
-                    (by
-                      change Metta.Atom.beq _ _ = true at hBeq
-                      simpa [mExpr, mSym] using hBeq)
-                  exact
-                    convDecl_cong_pi_local
-                      (ihDomain hRightDomainCanon hLeftDomain
-                        hRightDomain hPayload.1)
-                      (ihBody hRightBodyCanon hLeftBody
-                        hRightBody hPayload.2)
-      | lam hRightDomainCanon hRightBodyCanon =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-  | lam hLeftDomainCanon hLeftBodyCanon ihDomain ihBody =>
-      cases hRightCanon with
-      | resolved hRightOut =>
-          rcases
-              cicStage3_resolved_nf_runtime_output_decl_reduction_exists
-                hRightOut hRight with
-            ⟨rightNf, hRightNf, hRightRed⟩
-          have hRightSelf :
-              CicStage3ResolvedNfRuntimeOutput _ _ :=
-            cicStage3_resolved_nf_runtime_output_self hRightOut
-          have hLeftNf :
-              ConvDecl
-                (envOfSpecs
-                  cicStage3RawArtifactSigWithPropToType0Witness.translatedSpecs)
-                left rightNf :=
-            cicStage3_canonical_beq_resolved_self_convDecl_any_depth
-              (CicStage3CanonicalNfRuntimeReadout.lam
-                hLeftDomainCanon hLeftBodyCanon)
-              hRightSelf rfl hLeft hRightNf
-              (by simpa using hBeq)
-          exact
-            Relation.EqvGen.trans _ _ _
-              hLeftNf
-              (Relation.EqvGen.symm _ _
-                (redStarDecl_implies_conv hRightRed))
-      | defnStuck hName hNotWitness =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-      | appStuck hFn hArg =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-      | indGStuck hFamily =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-      | pi hRightDomainCanon hRightBodyCanon =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3NonWitnessDefnStuckReadout,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-      | lam hRightDomainCanon hRightBodyCanon =>
-          cases hLeft with
-          | lam hLeftDomain hLeftBody =>
-              cases hRight with
-              | lam hRightDomain hRightBody =>
-                  have hPayload := atom_beq_expr_binary_payload_true
-                    (tag := "Lam")
-                    (a := _) (b := _) (c := _) (d := _)
-                    (by
-                      change Metta.Atom.beq _ _ = true at hBeq
-                      simpa [mExpr, mSym] using hBeq)
-                  exact
-                    convDecl_cong_lam_local
-                      (ihBody hRightBodyCanon hLeftBody
-                        hRightBody hPayload.2)
+  exact Stage3ReadoutPlan.compare (witnessReadoutPlan hLeftCanon)
+    (witnessReadoutPlan hRightCanon) hLeft hRight hBeq
+
+/-- The witness definition and its explicit lambda body normalize to
+the same observed value, with both input translations constructed. -/
+example {n : Nat} :
+    Stage3Conversion witnessComparisonProfile
+      (.const cicStage3PropToType0WitnessName : ScopedTerm n)
+      (DeclarationEnv.liftClosed (n := n) cicStage3IdentityWitness) :=
+  Stage3ReadoutPlan.compare
+    (witnessReadoutPlan (.resolved .witnessDefn))
+    (witnessReadoutPlan (.resolved (.lam (.srt .type) (.lam (.srt .type) (.var 0)))))
+    (.defn (Or.inr (Or.inr ⟨rfl, rfl⟩))) cicStage3RawIdentityWitness_translates_any_depth
+    (termAtom_beq_self_true _)
+
+/-- A suspended term computation cannot stand in for a definition lookup. -/
+example (raw : DIndGArtifactTerm) (name : DeclName) :
+    ¬ ((nfQuery witnessComparisonProfile.signature raw ==
+      definitionReadout witnessComparisonProfile name) = true) :=
+  fun compared => computation_defn_comparison_refuted (Or.inl compared)
+
+example (domain body otherDomain otherBody : Metta.Atom) :
+    ¬ ((mExpr "Pi" [domain, body] == mExpr "Lam" [otherDomain, otherBody]) = true) :=
+  fun compared => mExpr_beq_head_mismatch_false compared (by decide)
 
 theorem convSoundWithPropToType0Witness_canonical_frontier_tail_convDecl_indG_indG_with_keys
     (fuel : Nat)
@@ -78891,634 +75709,37 @@ private theorem mettaEval_kernelDefControlEnv_cicStage3RawArtifactSig_con_z_conv
           (convReadoutAfterNxNamed binder
             cicStage3RawArtifactSig
             (.con `z) bodyAtom)).1 := by
-  dsimp
   let outerBinder := counterSuffix St.init.counter "nx"
-  let binder := counterSuffix St.init.counter "ny"
   let bodyAtom := termAtom (.con `z)
-  let bodyQuery := nfQuery cicStage3RawArtifactSig (.con `z)
-  let ambient : Metta.Bindings :=
-    [Metta.BindingRel.val outerBinder bodyAtom]
-  let template :=
-    mExpr "if"
-      [ mExpr "is-bad" [bodyAtom]
-      , mBool false
-      , mExpr "if"
-          [ mExpr "is-bad" [mVar binder]
-          , mBool false
-          , mExpr "==" [bodyAtom, mVar binder] ] ]
-  let target := mExpr "let" [mVar binder, bodyQuery, template]
-  let stAtom : St := { counter := st.counter + 8, world := st.world }
-  let stRoot : St := { counter := stAtom.counter + 1, world := stAtom.world }
-  let rootBnd :=
-    (renameBindings (counterSuffix stAtom.counter)
-      (letRuleBindings binder bodyAtom template)).reverse ++ ambient
-  let root := mExpr "unify" [bodyAtom, mVar binder, template, mSym "Empty"]
-  have hStatic : st.world.selfExtra = [] := by
-    simpa [hWorld] using (show St.init.world.selfExtra = [] by rfl)
-  have hImports : st.world.selfImports = [] := by
-    simpa [hWorld] using (show St.init.world.selfImports = [] by rfl)
-  have hTypes := kernelDefControlEnvTypeWorld_of_world_eq_init hWorld
-  have hOuterBinderNe : outerBinder ≠ binder := by
-    intro h
-    have h' : "nx" = "ny" := (counterSuffix_injective St.init.counter) h
-    contradiction
-  have hBinderOuterNe : binder ≠ outerBinder := fun h => hOuterBinderNe h.symm
-  have hBodyClosed : bodyAtom.vars = [] := by
-    simpa [bodyAtom] using termAtom_vars_nil (.con `z)
-  have hAmbientClosed : ClosedValueBindings ambient := by
-    simpa [ambient] using
-      ClosedValueBindings.val hBodyClosed ClosedValueBindings.nil
-  have hTargetInst :
-      Metta.instantiate ambient target = target := by
-    have hSig :
-          Metta.Subst.apply
-              [(outerBinder, bodyAtom)]
-          (sigAtom cicStage3RawArtifactSig) =
-          sigAtom cicStage3RawArtifactSig := by
-      exact Metta.Subst.apply_of_closed _ _
-        (sigAtom_vars_nil cicStage3RawArtifactSig)
-    have hRaw :
-          Metta.Subst.apply
-              [(outerBinder, bodyAtom)]
-          (termAtom (.con `z)) =
-          termAtom (.con `z) := by
-      exact Metta.Subst.apply_of_closed _ _
-        (termAtom_vars_nil (.con `z))
-    have hBody :
-          Metta.Subst.apply
-              [(outerBinder, bodyAtom)] bodyAtom =
-          bodyAtom := by
-      exact Metta.Subst.apply_of_closed _ bodyAtom
-        hBodyClosed
-    rw [hAmbientClosed.instantiate_eq_subst_apply]
-    simp [target, ambient, bodyQuery, nfQuery, template, binder, outerBinder,
-      Metta.bindingsToSubst, Metta.Subst.apply,
-      Metta.Subst.lookup, mExpr, mSym, mVar, mBool, hSig, hRaw, hBody,
-      hBinderOuterNe]
+  let next : St := { counter := st.counter + 8, world := st.world }
   have hBodyUnify : Metta.Bindings.unifyValues [bodyAtom, bodyAtom] = some [] := by
-    have hdecomp : Metta.Unify.decomposeEq bodyAtom bodyAtom = some [] := by
+    have hdec : Metta.Unify.decomposeEq bodyAtom bodyAtom = some [] := by
       simp [bodyAtom, termAtom, declNameAtom, Metta.Unify.decomposeEq,
         Metta.Unify.decomposeList, mExpr, mSym]
     have hrounds : ∀ rounds,
         Metta.Unify.unifyRounds rounds [(bodyAtom, bodyAtom)] [] = some [] := by
       intro rounds
-      cases rounds <;> simp [Metta.Unify.unifyRounds, Metta.Unify.decomposeAll, hdecomp]
+      cases rounds <;> simp [Metta.Unify.unifyRounds, Metta.Unify.decomposeAll, hdec]
     simp only [Metta.Bindings.unifyValues, List.map, List.sum]
     exact hrounds _
-  have hAtom :
-      mettaEval kernelDefControlEnv (fuel + 7) st ambient bodyQuery =
-        ([(bodyAtom, ambient)], stAtom) := by
-    simpa [bodyQuery, bodyAtom, ambient, stAtom, Nat.add_assoc] using
-      mettaEval_kernelDefControlEnv_nf_con_body_eq_state_singleton_closed
-        (fuel + 4) st cicStage3RawArtifactSig `z outerBinder bodyAtom
-        hStatic hImports hTypes hBodyClosed (termAtom_not_var (.con `z)) hBodyUnify
-        (by
-          intro v hv heq
-          rcases hv with rfl | rfl <;>
-            (have hc := congrArg String.toList heq; simp [outerBinder, counterSuffix] at hc))
-  obtain ⟨hPlan, hArguments, hScope⟩ :=
-    kernelDefControlEnv_let_retained_singleton_arguments
-      (.con `z) bodyQuery (fuel + 7) st stAtom outerBinder binder
-      hTypes hBinderOuterNe
-      (by simp [bodyQuery, nfQuery, sigAtom_vars_nil, termAtom_vars_nil,
-        mExpr, mSym, Metta.Atom.vars]) hBodyUnify hAtom
-  have hNoErr :
-      (([mVar binder, bodyAtom, template].zip
-          [mVar binder, bodyQuery, template]).find?
-        (fun ho : Metta.Atom × Metta.Atom => (ho.1 == emptyA || ho.1.isError) && ho.1 != ho.2)) = none := by
-    have hBodyNoErr : bodyAtom.isError = false := by
-      simpa [bodyAtom] using termAtom_isError_false (.con `z)
-    have hVarNoErr : (mVar binder).isError = false := by
-      rfl
-    have hTemplateNoErr : template.isError = false := by
-      simp [template, mExpr, mSym, Metta.Atom.isError]
-    simp [List.find?, hBodyNoErr, hVarNoErr,
-      bodyAtom, bodyQuery, template, mExpr, mSym]
-  have hBodyNonVar : ∀ w, bodyAtom ≠ Metta.Atom.var w := by
-    intro w
-    simpa [bodyAtom] using termAtom_not_var (.con `z) w
-  have hTemplateNonVar : ∀ w, template ≠ Metta.Atom.var w := by
-    intro w
-    simp [template, mExpr, mSym]
-  have hPatternFresh :
-      counterSuffix stAtom.counter "pattern" ≠ binder := by
-    intro h
-    have hc := congrArg String.toList h
-    simp [binder, counterSuffix] at hc
-  have hAmbientKeys :
-      ∀ x, x ∈ bindingValueKeys ambient → x = outerBinder := by
-    intro x hx
-    simpa [ambient, outerBinder, bindingValueKeys] using hx
-  have hFreshKeys :
-      ∀ {v : String}, v = "template" ∨ v = "atom" ∨ v = "pattern" →
-        counterSuffix stAtom.counter v ≠ outerBinder := by
-    intro v hv h
-    rcases hv with rfl | rfl | rfl
-    · have hc := congrArg String.toList h
-      simp [outerBinder, counterSuffix] at hc
-    · have hc := congrArg String.toList h
-      simp [outerBinder, counterSuffix] at hc
-    · have hc := congrArg String.toList h
-      simp [outerBinder, counterSuffix] at hc
-  have hBinderPatternNe : binder ≠ counterSuffix stAtom.counter "pattern" :=
-    hPatternFresh.symm
-  have hAtomFresh :
-      counterSuffix stAtom.counter "atom" ≠ binder := by
-    intro h
-    have hc := congrArg String.toList h
-    simp [binder, counterSuffix] at hc
-  have hTemplateFresh :
-      counterSuffix stAtom.counter "template" ≠ binder := by
-    intro h
-    have hc := congrArg String.toList h
-    simp [binder, counterSuffix] at hc
-  have hBinderAtomNe : binder ≠ counterSuffix stAtom.counter "atom" :=
-    hAtomFresh.symm
-  have hBinderTemplateNe : binder ≠ counterSuffix stAtom.counter "template" :=
-    hTemplateFresh.symm
-  have hTemplateAtom :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" := by
-    intro h
-    have h' : "template" = "atom" := (counterSuffix_injective stAtom.counter) h
-    contradiction
-  have hTemplatePattern :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "template" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
-  have hAtomTemplate :
-      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "template" := by
-    intro h
-    exact hTemplateAtom h.symm
-  have hAtomPattern :
-      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "atom" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
-  have hPatternTemplate :
-      counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "template" := by
-    intro h
-    exact hTemplatePattern h.symm
-  have hPatternAtom :
-      counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "atom" := by
-    intro h
-    exact hAtomPattern h.symm
-  have hTemplateOuter :
-      counterSuffix stAtom.counter "template" ≠ outerBinder :=
-    hFreshKeys (v := "template") (Or.inl rfl)
-  have hAtomOuter :
-      counterSuffix stAtom.counter "atom" ≠ outerBinder :=
-    hFreshKeys (v := "atom") (Or.inr (Or.inl rfl))
-  have hPatternOuter :
-      counterSuffix stAtom.counter "pattern" ≠ outerBinder :=
-    hFreshKeys (v := "pattern") (Or.inr (Or.inr rfl))
-  have hOuterTemplate : outerBinder ≠ counterSuffix stAtom.counter "template" :=
-    hTemplateOuter.symm
-  have hOuterAtom : outerBinder ≠ counterSuffix stAtom.counter "atom" :=
-    hAtomOuter.symm
-  have hOuterPattern : outerBinder ≠ counterSuffix stAtom.counter "pattern" :=
-    hPatternOuter.symm
-  have hMerge :
-      Metta.Bindings.merge ambient
-          (renameBindings (counterSuffix stAtom.counter)
-            (letRuleBindings binder bodyAtom template)) = [rootBnd] := by
-    let f := counterSuffix stAtom.counter
-    let templateKey := f "template"
-    let atomKey := f "atom"
-    let patternKey := f "pattern"
-    let withTemplate : Metta.Bindings :=
-      Metta.BindingRel.val templateKey template :: ambient
-    let withAtom : Metta.Bindings :=
-      Metta.BindingRel.val atomKey bodyAtom :: withTemplate
-    let candidate : Metta.Bindings :=
-      Metta.BindingRel.eq patternKey binder :: withAtom
-    have hPatternBinder : patternKey ≠ binder := by
-      simpa [patternKey, f] using hPatternFresh
-    have hAtomKeyBinder : atomKey ≠ binder := by
-      simpa [atomKey, f] using hAtomFresh
-    have hTemplateKeyBinder : templateKey ≠ binder := by
-      simpa [templateKey, f] using hTemplateFresh
-    have hAmbientValues : ValueBindings ambient := by
-      exact hAmbientClosed.toValueBindings
-    have hTemplateNotKey : templateKey ∉ bindingValueKeys ambient := by
-      simp [templateKey, f, ambient, bindingValueKeys, hTemplateOuter]
-    have hFirst :
-        Metta.Bindings.merge ambient
-            [Metta.BindingRel.val templateKey template] = [withTemplate] := by
-      simpa [withTemplate] using
-        hAmbientValues.merge_singleton_val_eq_of_not_key
-          hTemplateNonVar hTemplateNotKey
-    have hWithTemplateValues : ValueBindings withTemplate :=
-      ValueBindings.val hAmbientValues
-    have hAtomNotKey : atomKey ∉ bindingValueKeys withTemplate := by
-      simp [atomKey, templateKey, f, withTemplate, ambient, bindingValueKeys,
-        hAtomTemplate, hAtomOuter]
-    have hSecond :
-        Metta.Bindings.merge withTemplate
-            [Metta.BindingRel.val atomKey bodyAtom] = [withAtom] := by
-      simpa [withAtom] using
-        hWithTemplateValues.merge_singleton_val_eq_of_not_key
-          hBodyNonVar hAtomNotKey
-    have hstepPattern0 :
-        Metta.Bindings.eqStep candidate [patternKey] = [patternKey, binder] := by
-      simp [candidate, withAtom, withTemplate, ambient, Metta.Bindings.eqStep,
-        hPatternBinder, hPatternBinder.symm]
-    have hstepPattern :
-        Metta.Bindings.eqStep candidate [patternKey, binder] =
-          [patternKey, binder] := by
-      simp [candidate, withAtom, withTemplate, ambient, Metta.Bindings.eqStep,
-        hPatternBinder, hPatternBinder.symm]
-    have heqClassPattern :
-        Metta.Bindings.eqClass candidate patternKey = [patternKey, binder] := by
-      simp [Metta.Bindings.eqClass, candidate, withAtom, withTemplate, ambient,
-        Metta.Bindings.eqClassAux, hstepPattern0, hstepPattern]
-    have horder : Metta.Bindings.eqVarsInOrder candidate = [binder, patternKey] := by
-      simp [candidate, withAtom, withTemplate, ambient,
-        Metta.Bindings.eqVarsInOrder, hPatternBinder]
-    have hclassPattern :
-        Metta.Bindings.eqClassOrdered candidate patternKey = [binder, patternKey] := by
-      simp [Metta.Bindings.eqClassOrdered, horder, heqClassPattern,
-        hPatternBinder, hPatternBinder.symm]
-    have hvaluesPattern :
-        Metta.Bindings.classValues candidate patternKey = [] := by
-      have hlookupBinder :
-          Metta.Bindings.lookupVal candidate binder = none :=
-        lookupVal_none_of_not_mem_keys (by
-          simp [candidate, withAtom, withTemplate, ambient, atomKey, templateKey,
-            f, bindingValueKeys, hBinderAtomNe, hBinderTemplateNe,
-            hBinderOuterNe])
-      have hlookupPattern :
-          Metta.Bindings.lookupVal candidate patternKey = none :=
-        lookupVal_none_of_not_mem_keys (by
-          simp [candidate, withAtom, withTemplate, ambient, atomKey, templateKey,
-            patternKey, f, bindingValueKeys, hPatternAtom, hPatternTemplate,
-            hPatternOuter])
-      rw [Metta.Bindings.classValues, hclassPattern]
-      simp [hlookupBinder, hlookupPattern]
-    have hThird :
-        Metta.Bindings.merge withAtom [Metta.BindingRel.eq patternKey binder] =
-          [candidate] := by
-      simpa [candidate] using
-        merge_singleton_eq_eq_of_valueless_class hPatternBinder hvaluesPattern
-          (ValueBindings.eq_not_mem (ValueBindings.val hWithTemplateValues))
-    have hFirstStep :
-        Metta.Bindings.mergeOne [ambient]
-            (Metta.BindingRel.val templateKey template) = [withTemplate] := by
-      simpa [Metta.Bindings.merge] using hFirst
-    have hSecondStep :
-        Metta.Bindings.mergeOne [withTemplate]
-            (Metta.BindingRel.val atomKey bodyAtom) = [withAtom] := by
-      simpa [Metta.Bindings.merge] using hSecond
-    have hThirdStep :
-        Metta.Bindings.mergeOne [withAtom]
-            (Metta.BindingRel.eq patternKey binder) = [candidate] := by
-      simpa [Metta.Bindings.merge] using hThird
-    simp only [letRuleBindings, renameBindings, Metta.Bindings.merge,
-      List.foldl_cons, List.foldl_nil]
-    rw [hFirstStep, hSecondStep, hThirdStep]
-    simp [rootBnd, candidate, withAtom, withTemplate, f,
-      templateKey, atomKey, patternKey, letRuleBindings, renameBindings]
-  have hRoot :
-      interpretFuel kernelDefControlEnv (fuel + 7 + 1) stAtom
-          [{ stack := atomToStack
-              (Metta.Atom.expr
-                [Metta.Atom.sym "eval",
-                  mExpr "let" [mVar binder, bodyAtom, template]]) [],
-             bnd := ambient }] [] =
-        ([(root, rootBnd)], stRoot) := by
-    have hStaticAtom : stAtom.world.selfExtra = [] := by
-      simpa [stAtom] using hStatic
-    have hImportsAtom : stAtom.world.selfImports = [] := by
-      simpa [stAtom] using hImports
-    have hTargetRoot :
-        Metta.instantiate ambient (mExpr "let" [mVar binder, bodyAtom, template]) =
-          mExpr "let" [mVar binder, bodyAtom, template] := by
-      have hBody :
-          Metta.Subst.apply
-              [(outerBinder, bodyAtom)] bodyAtom =
-            bodyAtom := by
-        exact Metta.Subst.apply_of_closed _ bodyAtom
-          hBodyClosed
-      rw [hAmbientClosed.instantiate_eq_subst_apply]
-      simp [ambient, template, outerBinder, binder,
-        Metta.bindingsToSubst, Metta.Subst.apply, Metta.Subst.lookup,
-        mExpr, mSym, mVar, mBool, hBody, hBinderOuterNe]
-    have hPatternBody : counterSuffix stAtom.counter "pattern" ∉ bodyAtom.vars := by
-      simp [bodyAtom, termAtom_vars_nil]
-    have hPatternTemplateVar :
-        counterSuffix stAtom.counter "pattern" ∉ template.vars := by
-      simp [template, bodyAtom, termAtom_vars_nil, mExpr, mSym, mVar,
-        mBool, Metta.Atom.vars, hPatternFresh]
-    have hAtomBody : counterSuffix stAtom.counter "atom" ∉ bodyAtom.vars := by
-      simp [bodyAtom, termAtom_vars_nil]
-    have hAtomTemplateVar :
-        counterSuffix stAtom.counter "atom" ∉ template.vars := by
-      simp [template, bodyAtom, termAtom_vars_nil, mExpr, mSym, mVar,
-        mBool, Metta.Atom.vars, hAtomFresh]
-    have hTemplateBody :
-        counterSuffix stAtom.counter "template" ∉ bodyAtom.vars := by
-      simp [bodyAtom, termAtom_vars_nil]
-    have hTemplateTemplateVar :
-        counterSuffix stAtom.counter "template" ∉ template.vars := by
-      simp [template, bodyAtom, termAtom_vars_nil, mExpr, mSym, mVar,
-        mBool, Metta.Atom.vars, hTemplateFresh]
-    have hCompat :
-        LegacyFresheningCompatible []
-          (mExpr "let" [mVar binder, bodyAtom, template]) ambient stAtom.counter
-          letRulePair.1 letRulePair.2 := by
-      apply legacyFresheningCompatible_of_no_collision
-      simp [freshenRule_eq_renBy, letRulePair, ambient, outerBinder,
-        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy,
-        Metta.Minimal.queryOpAvoid, Metta.Bindings.vars,
-        Metta.Minimal.liveStackVars, mExpr, mSym, mVar,
-        Metta.Atom.vars, hPatternFresh, hAtomFresh, hTemplateFresh,
-        hFreshKeys, hPatternBody, hPatternTemplateVar, hAtomBody,
-        hAtomTemplateVar, hTemplateBody, hTemplateTemplateVar]
-    let p := counterSuffix stAtom.counter "pattern"
-    let a := counterSuffix stAtom.counter "atom"
-    let t := counterSuffix stAtom.counter "template"
-    let b : Metta.Bindings :=
-      [ Metta.BindingRel.eq p binder
-      , Metta.BindingRel.val a bodyAtom
-      , Metta.BindingRel.val t template
-      , Metta.BindingRel.val outerBinder bodyAtom ]
-    have hstepA : Metta.Bindings.eqStep b [a] = [a] := by
-      simp [b, Metta.Bindings.eqStep, p, a, hPatternAtom,
-        hBinderAtomNe]
-    have hstepT : Metta.Bindings.eqStep b [t] = [t] := by
-      simp [b, Metta.Bindings.eqStep, p, t, hPatternTemplate,
-        hBinderTemplateNe]
-    have hstepP0 : Metta.Bindings.eqStep b [p] = [p, binder] := by
-      simp [b, Metta.Bindings.eqStep, p, hPatternFresh, hBinderPatternNe]
-    have hstepP : Metta.Bindings.eqStep b [p, binder] = [p, binder] := by
-      simp [b, Metta.Bindings.eqStep, p, hPatternFresh, hBinderPatternNe]
-    have hstepBinder0 : Metta.Bindings.eqStep b [binder] = [binder, p] := by
-      simp [b, Metta.Bindings.eqStep, p, hPatternFresh]
-    have hstepBinder : Metta.Bindings.eqStep b [binder, p] = [binder, p] := by
-      simp [b, Metta.Bindings.eqStep, p, hPatternFresh, hBinderPatternNe]
-    have heqClassA : Metta.Bindings.eqClass b a = [a] := by
-      simp [Metta.Bindings.eqClass, b, Metta.Bindings.eqClassAux, hstepA]
-    have heqClassT : Metta.Bindings.eqClass b t = [t] := by
-      simp [Metta.Bindings.eqClass, b, Metta.Bindings.eqClassAux, hstepT]
-    have heqClassP : Metta.Bindings.eqClass b p = [p, binder] := by
-      simp [Metta.Bindings.eqClass, b, Metta.Bindings.eqClassAux,
-        hstepP0, hstepP]
-    have heqClassBinder : Metta.Bindings.eqClass b binder = [binder, p] := by
-      simp [Metta.Bindings.eqClass, b, Metta.Bindings.eqClassAux,
-        hstepBinder0, hstepBinder]
-    have horder : Metta.Bindings.eqVarsInOrder b = [binder, p] := by
-      simp [b, Metta.Bindings.eqVarsInOrder, p, hPatternFresh]
-    have hclassA : Metta.Bindings.eqClassOrdered b a = [a] := by
-      simp [Metta.Bindings.eqClassOrdered, horder, heqClassA,
-        p, a, hPatternAtom, hBinderAtomNe]
-    have hclassT : Metta.Bindings.eqClassOrdered b t = [t] := by
-      simp [Metta.Bindings.eqClassOrdered, horder, heqClassT,
-        p, t, hPatternTemplate, hBinderTemplateNe]
-    have hclassP : Metta.Bindings.eqClassOrdered b p = [binder, p] := by
-      simp [Metta.Bindings.eqClassOrdered, horder, heqClassP,
-        p, hPatternFresh, hBinderPatternNe]
-    have hclassBinder :
-        Metta.Bindings.eqClassOrdered b binder = [binder, p] := by
-      simp [Metta.Bindings.eqClassOrdered, horder, heqClassBinder,
-        p, hPatternFresh, hBinderPatternNe]
-    have hvaluesA : Metta.Bindings.classValues b a = [bodyAtom] := by
-      rw [Metta.Bindings.classValues, hclassA]
-      simp [Metta.Bindings.lookupVal, b, a, t,
-        ]
-    have hvaluesT : Metta.Bindings.classValues b t = [template] := by
-      rw [Metta.Bindings.classValues, hclassT]
-      simp [Metta.Bindings.lookupVal, b, a, t, hTemplateAtom,
-        ]
-    have hvaluesP : Metta.Bindings.classValues b p = [] := by
-      have hlookupP : Metta.Bindings.lookupVal b p = none :=
-        lookupVal_none_of_not_mem_keys (by
-          simp [b, p, a, t, bindingValueKeys, hPatternAtom, hPatternTemplate,
-            hPatternOuter])
-      have hlookupBinder : Metta.Bindings.lookupVal b binder = none :=
-        lookupVal_none_of_not_mem_keys (by
-          simp [b, a, t, bindingValueKeys, hBinderAtomNe,
-            hBinderTemplateNe, hBinderOuterNe])
-      rw [Metta.Bindings.classValues, hclassP]
-      simp [hlookupP, hlookupBinder]
-    have hvaluesBinder : Metta.Bindings.classValues b binder = [] := by
-      have hlookupP : Metta.Bindings.lookupVal b p = none :=
-        lookupVal_none_of_not_mem_keys (by
-          simp [b, p, a, t, bindingValueKeys, hPatternAtom, hPatternTemplate,
-            hPatternOuter])
-      have hlookupBinder : Metta.Bindings.lookupVal b binder = none :=
-        lookupVal_none_of_not_mem_keys (by
-          simp [b, a, t, bindingValueKeys, hBinderAtomNe,
-            hBinderTemplateNe, hBinderOuterNe])
-      rw [Metta.Bindings.classValues, hclassBinder]
-      simp [hlookupP, hlookupBinder]
-    have hresolveA : Metta.Bindings.resolve b a = some bodyAtom := by
-      apply Bindings.resolve_eq_closed_class_value hclassA hvaluesA hBodyClosed
-      simp [b, Metta.Bindings.resolutionFuel,
-        Metta.Bindings.relationResolutionFuel, Metta.Atom.size]
-      omega
-    have hTemplateVars : template.vars = [binder, binder] := by
-      simp [template, bodyAtom, termAtom_vars_nil, mExpr, mSym, mVar, mBool,
-        Metta.Atom.vars]
-    have hrepresentativeBinder :
-        Metta.Bindings.eqRepresentative b binder = binder := by
-      simp [Metta.Bindings.eqRepresentative, hclassBinder]
-    have htemplateAux :
-        Metta.Bindings.resolveAtomAux b
-            (Metta.Bindings.resolutionFuel b (mVar t)).pred [t] template =
-          some template := by
-      apply Bindings.resolveAtomAux_inert
-      · intro x hx
-        have hx' : x = binder := by simpa [hTemplateVars] using hx
-        subst x
-        exact hvaluesBinder
-      · intro x hx
-        have hx' : x = binder := by simpa [hTemplateVars] using hx
-        subst x
-        exact hrepresentativeBinder
-      · intro x hx y hy
-        have hx' : x = binder := by simpa [hTemplateVars] using hx
-        subst x
-        rw [hclassBinder] at hy
-        simp at hy
-        simp only [List.mem_singleton]
-        rcases hy with rfl | rfl
-        · exact hBinderTemplateNe
-        · exact hPatternTemplate
-      · simp [b, Metta.Bindings.resolutionFuel,
-          Metta.Bindings.relationResolutionFuel, mVar, Metta.Atom.size]
-        omega
-    have hresolveT : Metta.Bindings.resolve b t = some template :=
-      Bindings.resolve_eq_nonvar_class_value hclassT hvaluesT
-        hTemplateNonVar htemplateAux
-    have hrepresentativeP : Metta.Bindings.eqRepresentative b p = binder := by
-      simp [Metta.Bindings.eqRepresentative, hclassP]
-    have hresolveP : Metta.Bindings.resolve b p = some (mVar binder) := by
-      apply Bindings.resolve_eq_representative_of_valueless_class
-        hclassP (by simp) hvaluesP hrepresentativeP
-    have hresolveBinder :
-        Metta.Bindings.resolve b binder = some (mVar binder) := by
-      apply Bindings.resolve_eq_representative_of_valueless_class
-        hclassBinder (by simp) hvaluesBinder hrepresentativeBinder
-    have hRootBndEq : rootBnd = b := by
-      simp [rootBnd, b, p, a, t, ambient, letRuleBindings, renameBindings]
-    have hFreshRhs :
-        (freshenRule stAtom.counter letRulePair.1 letRulePair.2).2 =
-          mExpr "unify" [mVar a, mVar p, mVar t, mSym "Empty"] := by
-      rw [freshenRule_eq_renBy]
-      simp [letRulePair, p, a, t,
-        Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening.renBy,
-        mExpr, mSym, mVar]
-    have hResult :
-        Metta.instantiate rootBnd
-            (freshenRule stAtom.counter letRulePair.1 letRulePair.2).2 =
-          root := by
-      rw [hRootBndEq, hFreshRhs]
-      simp [root, bodyAtom, template, Metta.instantiate,
-        Metta.Bindings.resolveAtom, hresolveA, hresolveT, hresolveP,
-        mExpr, mSym, mVar, mBool]
-    have hRootStable :
-        Metta.instantiate rootBnd root = root := by
-      have hBodyResolve : Metta.Bindings.resolveAtom b bodyAtom = bodyAtom := by
-        simpa [Metta.instantiate] using
-          Metta.instantiate_of_closed b bodyAtom hBodyClosed
-      have hTemplateResolve : Metta.Bindings.resolveAtom b template = template := by
-        simp [template, Metta.Bindings.resolveAtom, hBodyResolve, hresolveBinder,
-          mExpr, mSym, mVar, mBool]
-      rw [hRootBndEq]
-      simp [root, Metta.instantiate, Metta.Bindings.resolveAtom,
-        hBodyResolve, hTemplateResolve, hresolveBinder,
-        mExpr, mSym, mVar]
-    have hLoop :
-        Metta.Bindings.hasLoop rootBnd = false := by
-      have hstepOuter : Metta.Bindings.eqStep b [outerBinder] = [outerBinder] := by
-        simp [b, Metta.Bindings.eqStep, p, hPatternOuter, hBinderOuterNe]
-      have heqClassOuter :
-          Metta.Bindings.eqClass b outerBinder = [outerBinder] := by
-        simp [Metta.Bindings.eqClass, b, Metta.Bindings.eqClassAux, hstepOuter]
-      have hclassOuter :
-          Metta.Bindings.eqClassOrdered b outerBinder = [outerBinder] := by
-        simp [Metta.Bindings.eqClassOrdered, horder, heqClassOuter,
-          p, hPatternOuter, hBinderOuterNe]
-      have hvaluesOuter :
-          Metta.Bindings.classValues b outerBinder =
-            [bodyAtom] := by
-        rw [Metta.Bindings.classValues, hclassOuter]
-        simp [Metta.Bindings.lookupVal, b, a, t, hOuterAtom,
-          hOuterTemplate]
-      have hauxOuter :
-          Metta.Bindings.resolveAtomAux b
-              (Metta.Bindings.resolutionFuel b (mVar outerBinder)).pred
-              [outerBinder] bodyAtom = some bodyAtom := by
-        apply Bindings.resolveAtomAux_of_closed b bodyAtom _ [outerBinder]
-          hBodyClosed
-        simp [b, Metta.Bindings.resolutionFuel,
-          Metta.Bindings.relationResolutionFuel]
-        omega
-      have hresolveOuter :
-          Metta.Bindings.resolve b outerBinder = some bodyAtom := by
-        exact Bindings.resolve_eq_nonvar_first_class_value
-          hclassOuter hvaluesOuter hBodyNonVar hauxOuter
-      have hdirect : b.any (fun r => match r with
-          | Metta.BindingRel.val x (Metta.Atom.var y) => x == y
-          | Metta.BindingRel.eq x y => x == y
-          | _ => false) = false := by
-        simp [b, p, a, t, template, mExpr, mSym, mVar, mBool,
-          hPatternFresh]
-        constructor <;> (cases h : bodyAtom with
-          | var y => exact False.elim (hBodyNonVar y h)
-          | sym _ => rfl
-          | expr _ => rfl
-          | gnd _ => rfl)
-      have hloop : Metta.Bindings.hasLoop b = false := by
-        apply Bindings.hasLoop_false_of_resolveAtomAux_some hdirect
-        intro x hx
-        have hxCases :
-            x = p ∨ x = binder ∨ x = a ∨ x = t ∨ x = binder ∨
-              x = outerBinder := by
-          simpa [b, Metta.Bindings.vars, hBodyClosed, hTemplateVars] using hx
-        rcases hxCases with rfl | rfl | rfl | rfl | rfl | rfl
-        · exact Bindings.resolveAtomAux_some_of_resolve_some hresolveP
-        · exact Bindings.resolveAtomAux_some_of_resolve_some hresolveBinder
-        · exact Bindings.resolveAtomAux_some_of_resolve_some hresolveA
-        · exact Bindings.resolveAtomAux_some_of_resolve_some hresolveT
-        · exact Bindings.resolveAtomAux_some_of_resolve_some hresolveBinder
-        · exact Bindings.resolveAtomAux_some_of_resolve_some hresolveOuter
-      rw [hRootBndEq]
-      exact hloop
-    simpa [root, rootBnd, stAtom, stRoot, bodyAtom,
-      ambient, template, binder, outerBinder, Nat.add_assoc] using
-      interpretFuel_kernelDefControlEnv_let_root_eq_with_keyed_ambient
-        (fuel := fuel + 7) (st := stAtom)
-        binder bodyAtom template ambient hStaticAtom hImportsAtom
-        hBodyNonVar hTemplateNonVar
-        (by simp [bodyAtom, termAtom_vars_nil])
-        (by simp [template, bodyAtom, termAtom_vars_nil, mExpr, mSym, mVar,
-          mBool, Metta.Atom.vars, hTemplateFresh])
-        (by simp [bodyAtom, termAtom_vars_nil])
-        (by simp [bodyAtom, termAtom_vars_nil])
-        (by simp [template, bodyAtom, termAtom_vars_nil, mExpr, mSym, mVar,
-          mBool, Metta.Atom.vars, hPatternFresh])
-        (by simp [template, bodyAtom, termAtom_vars_nil, mExpr, mSym, mVar,
-          mBool, Metta.Atom.vars, hAtomFresh])
-        hPatternFresh hAtomFresh hTemplateFresh hMerge
-        hTargetRoot hCompat hResult hRootStable hLoop
-  have hRootNotNR : (root == notReducibleA) = false := by
-    rfl
-  have hRootNotSelf :
-      (root == mExpr "let" [mVar binder, bodyAtom, template]) = false := by
-    rfl
-  have hRetention :
-      restrictBnd (expectedApplicationRetentionScope ambient [mVar binder, bodyQuery, template])
-        ((Metta.Bindings.merge ambient rootBnd).head?.getD rootBnd) = ambient := by
-    change expectedApplicationRetentionScope ambient [mVar binder, bodyQuery, template] =
-      [binder, binder, binder, outerBinder] at hScope
-    rw [hScope]
-    exact restrict_merge_reversed_letRuleBindings_with_singleton
-      (counterSuffix stAtom.counter) (counterSuffix_injective stAtom.counter)
-      binder outerBinder bodyAtom template hBinderOuterNe
-      hPatternFresh hAtomFresh hTemplateFresh
-      (hFreshKeys (Or.inr (Or.inr rfl))) (hFreshKeys (Or.inr (Or.inl rfl)))
-      (hFreshKeys (Or.inl rfl)) hBodyClosed hBodyNonVar hTemplateNonVar hBodyUnify
-  have hFreshET : ∀ counter {v : String}, v = "e" ∨ v = "t" →
-      ∀ x, x = outerBinder ∨ x = binder → counterSuffix counter v ≠ x := by
-    intro counter v hv x hx heq
-    rcases hv with rfl | rfl <;> rcases hx with rfl | rfl <;>
-      (have hc := congrArg String.toList heq; simp [outerBinder, binder, counterSuffix] at hc)
-  obtain ⟨finalBnd, hFinalAmbient⟩ :=
-    mettaEval_kernelDefControlEnv_conv_after_ny_unify_true_from_supported
-      (.con `z) (by
-        intro badVar
-        simp [termAtom, declNameAtom, mExpr, mSym, mVar, Metta.matchAtoms,
-          Metta.matchAtomsWith, Metta.matchAll])
-      fuel stRoot binder ambient (fun x => x = outerBinder ∨ x = binder)
-      (by simpa [stRoot, stAtom] using hWorld) hAmbientClosed
-      (by simp [ambient, Metta.Bindings.vars, hBodyClosed, hBinderOuterNe])
-      (Or.inr rfl)
-      (by intro x hx; left; simpa [ambient, bindingValueKeys] using hx)
-      (hFreshET (stRoot.counter + 2)) (hFreshET (stRoot.counter + 5))
-  have hFinal :
-      (mBool true, finalBnd) ∈
-        (mettaEval kernelDefControlEnv (fuel + 7) stRoot
-          (restrictBnd (expectedApplicationRetentionScope ambient [mVar binder, bodyQuery, template])
-            ((Metta.Bindings.merge ambient rootBnd).head?.getD rootBnd)) root).1 := by
-    rw [hRetention]
-    simpa [root, template, bodyAtom, convReadoutAfterNxNy] using hFinalAmbient
-  have hmem :=
-    mettaEval_ternary_expr_mem_of_instantiated_quoted_eval_quoted_and_root_eval_bnd
-      (env := kernelDefControlEnv) (fuel := fuel + 7)
-      (st := st) (stAtom := stAtom) (stRoot := stRoot)
-      (bnd := ambient)
-      (op := "let") (hOpNotError := by decide)
-      (pattern := mVar binder) (atom := bodyQuery)
-      (template := template) (pattern' := mVar binder) (atom' := bodyQuery)
-      (template' := template) (atomEval := bodyAtom) (root := root)
-      (final := mBool true) (partBnd := ambient) (rootBnd := rootBnd) (finalBnd := finalBnd)
-      hTargetInst hPlan hArguments hNoErr hRoot hRootNotNR hRootNotSelf hFinal
-      (by simp [mBool, Metta.Atom.isError])
-  exact ⟨_, by
-    simpa [target, convReadoutAfterNxNamed, bodyQuery, template, root, rootBnd,
-      nfQuery, bodyAtom, binder, outerBinder, ambient, stAtom, stRoot,
-      mExpr, mSym, mVar, mBool, Nat.add_assoc] using hmem⟩
+  have hEval :=
+    mettaEval_kernelDefControlEnv_nf_con_body_eq_state_singleton_closed
+      (fuel + 4) st cicStage3RawArtifactSig `z outerBinder bodyAtom
+      (by rw [hWorld]; rfl) (by rw [hWorld]; rfl)
+      (kernelDefControlEnvTypeWorld_of_world_eq_init hWorld)
+      (termAtom_vars_nil (.con `z)) (termAtom_not_var (.con `z)) hBodyUnify
+      (by
+        intro name member equal
+        rcases member with rfl | rfl <;>
+          (have chars := congrArg String.toList equal
+           simp [outerBinder, counterSuffix] at chars))
+  exact mettaEval_kernelDefControlEnv_namedConversion_of_singleton
+    fuel st next cicStage3RawArtifactSig (.con `z) hWorld rfl
+    (by
+      intro badVar
+      simp [termAtom, declNameAtom, mExpr, mSym, mVar, Metta.matchAtoms,
+        Metta.matchAtomsWith, Metta.matchAll])
+    hBodyUnify hEval
 
 private theorem mettaEval_kernelDefControlEnv_cicStage3RawArtifactSig_con_z_conv_after_nx_unify_true_exists_bnd_named_fresh
     (fuel : Nat) (st : St)
@@ -79814,8 +76035,9 @@ private theorem mettaEval_kernelDefControlEnv_cicStage3RawArtifactSig_indG_zero_
   have hFresh :
       RenamedBindingKeysFreshForPayloads (counterSuffix stAtom.counter)
         (letRuleBindings binder bodyAtom template) := by
+    apply (letRuleBindings_rename_fresh_iff _ _ _ _).mpr
     intro key hkey
-    simp [letRuleBindings, bindingRuleKeys] at hkey
+    simp at hkey
     have hKeyNe : counterSuffix stAtom.counter key ≠ binder := by
       rcases hkey with rfl | rfl | rfl
       · exact hTemplateNe
@@ -79826,24 +76048,15 @@ private theorem mettaEval_kernelDefControlEnv_cicStage3RawArtifactSig_indG_zero_
       · exact hTemplateOtherNe
       · exact hAtomOtherNe
       · exact hPatternOtherNe
-    constructor
-    · intro x a hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with hmem | hmem
-      · rcases hmem with ⟨rfl, rfl⟩
-        simp [template, convReadoutAfterNxNamed, sigAtom_vars_nil,
-          termAtom_vars_nil (.con `z), mExpr, mSym, mVar,
-          mBool, Metta.Atom.vars, hKeyNe, hKeyOtherNe]
-      · rcases hmem with ⟨rfl, rfl⟩
-        simpa [bodyAtom] using
-          (by
-            rw [termAtom_vars_nil (.con `z)]
-            simp : counterSuffix stAtom.counter key ∉
-              (termAtom (.con `z)).vars)
-    · intro x y hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with ⟨rfl, rfl⟩
-      exact hKeyNe
+    refine ⟨?_, ?_, hKeyNe⟩
+    · simpa [bodyAtom] using
+        (by
+          rw [termAtom_vars_nil (.con `z)]
+          simp : counterSuffix stAtom.counter key ∉
+            (termAtom (.con `z)).vars)
+    · simp [template, convReadoutAfterNxNamed, sigAtom_vars_nil,
+        termAtom_vars_nil (.con `z), mExpr, mSym, mVar,
+        mBool, Metta.Atom.vars, hKeyNe, hKeyOtherNe]
   have hRoot :
       interpretFuel kernelDefControlEnv (fuel + 9 + 1) stAtom
           [evalItemNil (mExpr "let" [mVar binder, bodyAtom, template])] [] =
@@ -81026,1022 +77239,6 @@ theorem cicStage3CanonicalDefnStuckReadoutForSig_beq_true_name_eq
       hLeftName hRightName
       (declNameAtom_beq_true_to_string_eq hBodyPayload.2)
 
-
-private theorem cicStage3RawArtifactSig_canonical_defn_stuck_readout_beq_true_convDecl_any_depth
-    {n : Nat} {leftName rightName : DeclName}
-    {left right : ScopedTerm n}
-    (hLeftName :
-      cicStage3RawNameWithPropToType0WitnessBounded leftName)
-    (hRightName :
-      cicStage3RawNameWithPropToType0WitnessBounded rightName)
-    (hEq :
-      (cicStage3CanonicalDefnStuckReadoutForSig
-          cicStage3RawArtifactSig leftName ==
-        cicStage3CanonicalDefnStuckReadoutForSig
-          cicStage3RawArtifactSig rightName) = true)
-    (hLeft :
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates n (.defn leftName) left)
-    (hRight :
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates n (.defn rightName) right) :
-    ConvDecl (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-      left right := by
-  have hNameEq : leftName = rightName :=
-    cicStage3CanonicalDefnStuckReadoutForSig_beq_true_name_eq
-      cicStage3RawArtifactSig hLeftName hRightName hEq
-  subst rightName
-  have hTermEq : left = right :=
-    dindg_translate_unique_cicStage3RawArtifactSig hLeft hRight
-  subst right
-  exact Relation.EqvGen.refl left
-
-private theorem cicStage3RawArtifactSig_resolved_self_beq_canonicalForSig_convDecl_any_depth
-    {n : Nat} {rawLeft rawLeftOut rawRight : DIndGArtifactTerm}
-    {outRight : Metta.Atom} {left right : ScopedTerm n}
-    (hLeftSelf : CicStage3ResolvedNfRuntimeOutput rawLeft rawLeftOut)
-    (hSelf : rawLeftOut = rawLeft)
-    (hRightCanon : CicStage3CanonicalNfRuntimeReadoutForSig cicStage3RawArtifactSig rawRight outRight)
-    (hLeft :
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates n rawLeftOut left)
-    (hRight :
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates n rawRight right)
-    (hBeq : (termAtom rawLeftOut == outRight) = true) :
-    ConvDecl
-      (envOfSpecs
-        cicStage3RawArtifactSig.translatedSpecs)
-      left right := by
-  induction hLeftSelf generalizing n rawRight outRight left right with
-  | var k =>
-      cases hSelf
-      cases hLeft with
-      | var hIndex =>
-          cases hRightCanon with
-          | resolved hRightOut =>
-              exact
-                cicStage3RawArtifactSig_resolved_runtime_outputs_beq_convDecl_any_depth
-                  (CicStage3ResolvedNfRuntimeOutput.var k) hRightOut
-                  (DIndGArtifactTermTranslates.var hIndex) hRight
-                  (by simpa using hBeq)
-          | defnStuck hName hNotWitness =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | appStuck hFn hArg =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | indGStuck hFamily =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | pi hDomain hBody =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | lam hDomain hBody =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-  | srt sort =>
-      cases hSelf
-      cases sort
-      · cases hLeft with
-        | srt_type =>
-          cases hRightCanon with
-          | resolved hRightOut =>
-              exact
-                cicStage3RawArtifactSig_resolved_runtime_outputs_beq_convDecl_any_depth
-                  (CicStage3ResolvedNfRuntimeOutput.srt .type) hRightOut
-                  DIndGArtifactTermTranslates.srt_type hRight
-                  (by simpa using hBeq)
-          | defnStuck hName hNotWitness =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | appStuck hFn hArg =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | indGStuck hFamily =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | pi hDomain hBody =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | lam hDomain hBody =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-      · cases hLeft with
-        | srt_kind =>
-          cases hRightCanon with
-          | resolved hRightOut =>
-              exact
-                cicStage3RawArtifactSig_resolved_runtime_outputs_beq_convDecl_any_depth
-                  (CicStage3ResolvedNfRuntimeOutput.srt .kind) hRightOut
-                  DIndGArtifactTermTranslates.srt_kind hRight
-                  (by simpa using hBeq)
-          | defnStuck hName hNotWitness =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | appStuck hFn hArg =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | indGStuck hFamily =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | pi hDomain hBody =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | lam hDomain hBody =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-  | con hName =>
-      cases hSelf
-      cases hLeft with
-      | con hLeftName =>
-          cases hRightCanon with
-          | resolved hRightOut =>
-              exact
-                cicStage3RawArtifactSig_resolved_runtime_outputs_beq_convDecl_any_depth
-                  (CicStage3ResolvedNfRuntimeOutput.con hName) hRightOut
-                  (DIndGArtifactTermTranslates.con hLeftName) hRight
-                  (by simpa using hBeq)
-          | defnStuck hRightName hNotWitness =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | appStuck hFn hArg =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | indGStuck hFamily =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | pi hDomain hBody =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | lam hDomain hBody =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-  | witnessDefn =>
-      cases hSelf
-  | bad reason =>
-      cases hSelf
-      cases hLeft
-  | pi hDomainSelf hBodySelf ihDomain ihBody =>
-      cases hSelf
-      cases hLeft with
-      | pi hLeftDomain hLeftBody =>
-          cases hRightCanon with
-          | resolved hRightOut =>
-              exact
-                cicStage3RawArtifactSig_resolved_runtime_outputs_beq_convDecl_any_depth
-                  (CicStage3ResolvedNfRuntimeOutput.pi
-                    hDomainSelf hBodySelf)
-                  hRightOut
-                  (DIndGArtifactTermTranslates.pi hLeftDomain hLeftBody)
-                  hRight
-                  (by simpa [termAtom] using hBeq)
-          | defnStuck hName hNotWitness =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | appStuck hFn hArg =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | indGStuck hFamily =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | pi hRightDomain hRightBody =>
-              cases hRight with
-              | pi hRightDomainTrans hRightBodyTrans =>
-                    have hPayload := atom_beq_expr_binary_payload_true
-                      (tag := "Pi")
-                      (a := termAtom _) (b := termAtom _)
-                      (c := _) (d := _)
-                      (by
-                        change Metta.Atom.beq _ _ = true at hBeq
-                        simpa [termAtom, mExpr, mSym] using hBeq)
-                    exact
-                      convDecl_cong_pi_local
-                        (ihDomain rfl hRightDomain hLeftDomain
-                          hRightDomainTrans
-                          hPayload.1)
-                        (ihBody rfl hRightBody hLeftBody
-                          hRightBodyTrans
-                          hPayload.2)
-          | lam hRightDomain hRightBody =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-  | lam hDomainSelf hBodySelf ihDomain ihBody =>
-      cases hSelf
-      cases hLeft with
-      | lam hLeftDomain hLeftBody =>
-          cases hRightCanon with
-          | resolved hRightOut =>
-              exact
-                cicStage3RawArtifactSig_resolved_runtime_outputs_beq_convDecl_any_depth
-                  (CicStage3ResolvedNfRuntimeOutput.lam
-                    hDomainSelf hBodySelf)
-                  hRightOut
-                  (DIndGArtifactTermTranslates.lam hLeftDomain hLeftBody)
-                  hRight
-                  (by simpa [termAtom] using hBeq)
-          | defnStuck hName hNotWitness =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | appStuck hFn hArg =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | indGStuck hFamily =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | pi hRightDomain hRightBody =>
-              exfalso
-              have hHead := atom_beq_expr_head_true (by
-                change Metta.Atom.beq _ _ = true at hBeq
-                simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                  defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym, mNat] using hBeq)
-              exact nomatch hHead
-          | lam hRightDomain hRightBody =>
-              cases hRight with
-              | lam hRightDomainTrans hRightBodyTrans =>
-                    have hPayload := atom_beq_expr_binary_payload_true
-                      (tag := "Lam")
-                      (a := termAtom _) (b := termAtom _)
-                      (c := _) (d := _)
-                      (by
-                        change Metta.Atom.beq _ _ = true at hBeq
-                        simpa [termAtom, mExpr, mSym] using hBeq)
-                    exact
-                      convDecl_cong_lam_local
-                        (ihBody rfl hRightBody hLeftBody
-                          hRightBodyTrans
-                          hPayload.2)
-
-private theorem cicStage3RawArtifactSig_canonicalForSig_beq_resolved_self_convDecl_any_depth
-    {n : Nat} {rawLeft rawRight rawRightOut : DIndGArtifactTerm}
-    {outLeft : Metta.Atom} {left right : ScopedTerm n}
-    (hLeftCanon : CicStage3CanonicalNfRuntimeReadoutForSig cicStage3RawArtifactSig rawLeft outLeft)
-    (hRightSelf : CicStage3ResolvedNfRuntimeOutput rawRight rawRightOut)
-    (hSelf : rawRightOut = rawRight)
-    (hLeft :
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates n rawLeft left)
-    (hRight :
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates n rawRightOut right)
-    (hBeq : (outLeft == termAtom rawRightOut) = true) :
-    ConvDecl
-      (envOfSpecs
-        cicStage3RawArtifactSig.translatedSpecs)
-      left right := by
-  induction hRightSelf generalizing n rawLeft outLeft left right with
-  | var k =>
-      cases hSelf
-      cases hRight with
-      | var hIndex =>
-          cases hLeftCanon with
-          | resolved hLeftOut =>
-              exact
-                cicStage3RawArtifactSig_resolved_runtime_outputs_beq_convDecl_any_depth
-                  hLeftOut (CicStage3ResolvedNfRuntimeOutput.var k)
-                  hLeft (DIndGArtifactTermTranslates.var hIndex)
-                  (by simpa using hBeq)
-          | defnStuck hName hNotWitness =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | appStuck hFn hArg =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | indGStuck hFamily =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | pi hDomain hBody =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | lam hDomain hBody =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-  | srt sort =>
-      cases hSelf
-      cases sort
-      · cases hRight with
-        | srt_type =>
-          cases hLeftCanon with
-          | resolved hLeftOut =>
-              exact
-                cicStage3RawArtifactSig_resolved_runtime_outputs_beq_convDecl_any_depth
-                  hLeftOut (CicStage3ResolvedNfRuntimeOutput.srt .type)
-                  hLeft DIndGArtifactTermTranslates.srt_type
-                  (by simpa using hBeq)
-          | defnStuck hName hNotWitness =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | appStuck hFn hArg =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | indGStuck hFamily =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | pi hDomain hBody =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | lam hDomain hBody =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-      · cases hRight with
-        | srt_kind =>
-          cases hLeftCanon with
-          | resolved hLeftOut =>
-              exact
-                cicStage3RawArtifactSig_resolved_runtime_outputs_beq_convDecl_any_depth
-                  hLeftOut (CicStage3ResolvedNfRuntimeOutput.srt .kind)
-                  hLeft DIndGArtifactTermTranslates.srt_kind
-                  (by simpa using hBeq)
-          | defnStuck hName hNotWitness =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | appStuck hFn hArg =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | indGStuck hFamily =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | pi hDomain hBody =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | lam hDomain hBody =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-  | con hName =>
-      cases hSelf
-      cases hRight with
-      | con hRightName =>
-          cases hLeftCanon with
-          | resolved hLeftOut =>
-              exact
-                cicStage3RawArtifactSig_resolved_runtime_outputs_beq_convDecl_any_depth
-                  hLeftOut (CicStage3ResolvedNfRuntimeOutput.con hName)
-                  hLeft (DIndGArtifactTermTranslates.con hRightName)
-                  (by simpa using hBeq)
-          | defnStuck hLeftName hNotWitness =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | appStuck hFn hArg =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | indGStuck hFamily =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | pi hDomain hBody =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | lam hDomain hBody =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-  | witnessDefn =>
-      cases hSelf
-  | bad reason =>
-      cases hSelf
-      cases hRight
-  | pi hDomainSelf hBodySelf ihDomain ihBody =>
-      cases hSelf
-      cases hRight with
-      | pi hRightDomain hRightBody =>
-          cases hLeftCanon with
-          | resolved hLeftOut =>
-              exact
-                cicStage3RawArtifactSig_resolved_runtime_outputs_beq_convDecl_any_depth
-                  hLeftOut
-                  (CicStage3ResolvedNfRuntimeOutput.pi
-                    hDomainSelf hBodySelf)
-                  hLeft
-                  (DIndGArtifactTermTranslates.pi
-                    hRightDomain hRightBody)
-                  (by simpa [termAtom] using hBeq)
-          | defnStuck hName hNotWitness =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | appStuck hFn hArg =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | indGStuck hFamily =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | pi hLeftDomain hLeftBody =>
-              cases hLeft with
-              | pi hLeftDomainTrans hLeftBodyTrans =>
-                  have hPayload := atom_beq_expr_binary_payload_true
-                    (tag := "Pi")
-                    (a := _) (b := _)
-                    (c := termAtom _) (d := termAtom _)
-                    (by
-                      change Metta.Atom.beq _ _ = true at hBeq
-                      simpa [termAtom, mExpr, mSym] using hBeq)
-                  exact
-                    convDecl_cong_pi_local
-                      (ihDomain hLeftDomain rfl hLeftDomainTrans
-                        hRightDomain hPayload.1)
-                      (ihBody hLeftBody rfl hLeftBodyTrans
-                        hRightBody hPayload.2)
-          | lam hLeftDomain hLeftBody =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-  | lam hDomainSelf hBodySelf ihDomain ihBody =>
-      cases hSelf
-      cases hRight with
-      | lam hRightDomain hRightBody =>
-          cases hLeftCanon with
-          | resolved hLeftOut =>
-              exact
-                cicStage3RawArtifactSig_resolved_runtime_outputs_beq_convDecl_any_depth
-                  hLeftOut
-                  (CicStage3ResolvedNfRuntimeOutput.lam
-                    hDomainSelf hBodySelf)
-                  hLeft
-                  (DIndGArtifactTermTranslates.lam
-                    hRightDomain hRightBody)
-                  (by simpa [termAtom] using hBeq)
-          | defnStuck hName hNotWitness =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | appStuck hFn hArg =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | indGStuck hFamily =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | pi hLeftDomain hLeftBody =>
-              exact False.elim
-                (mExpr_beq_head_mismatch_false (by
-                  simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                    defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                    mNat] using hBeq) (by decide))
-          | lam hLeftDomain hLeftBody =>
-              cases hLeft with
-              | lam hLeftDomainTrans hLeftBodyTrans =>
-                  have hPayload := atom_beq_expr_binary_payload_true
-                    (tag := "Lam")
-                    (a := _) (b := _)
-                    (c := termAtom _) (d := termAtom _)
-                    (by
-                      change Metta.Atom.beq _ _ = true at hBeq
-                      simpa [termAtom, mExpr, mSym] using hBeq)
-                  exact
-                    convDecl_cong_lam_local
-                      (ihBody hLeftBody rfl hLeftBodyTrans
-                        hRightBody hPayload.2)
-
-private theorem cicStage3RawArtifactSig_canonicalForSig_beq_true_convDecl_any_depth
-    {n : Nat} {rawLeft rawRight : DIndGArtifactTerm}
-    {outLeft outRight : Metta.Atom} {left right : ScopedTerm n}
-    (hLeftCanon : CicStage3CanonicalNfRuntimeReadoutForSig cicStage3RawArtifactSig rawLeft outLeft)
-    (hRightCanon : CicStage3CanonicalNfRuntimeReadoutForSig cicStage3RawArtifactSig rawRight outRight)
-    (hLeft :
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates n rawLeft left)
-    (hRight :
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates n rawRight right)
-    (hBeq : (outLeft == outRight) = true) :
-    ConvDecl
-      (envOfSpecs
-        cicStage3RawArtifactSig.translatedSpecs)
-      left right := by
-  induction hLeftCanon generalizing n rawRight outRight left right with
-  | resolved hLeftOut =>
-      rcases
-          cicStage3_resolved_nf_runtime_output_decl_reduction_exists_primary
-            hLeftOut hLeft with
-        ⟨leftNf, hLeftNf, hLeftRed⟩
-      have hLeftSelf :
-          CicStage3ResolvedNfRuntimeOutput _ _ :=
-        cicStage3_resolved_nf_runtime_output_self hLeftOut
-      have hNfRight :
-          ConvDecl
-            (envOfSpecs
-              cicStage3RawArtifactSig.translatedSpecs)
-            leftNf right :=
-        cicStage3RawArtifactSig_resolved_self_beq_canonicalForSig_convDecl_any_depth
-          hLeftSelf rfl hRightCanon hLeftNf hRight
-          (by simpa using hBeq)
-      exact
-        Relation.EqvGen.trans _ _ _
-          (redStarDecl_implies_conv hLeftRed) hNfRight
-  | defnStuck hLeftName hLeftNotWitness =>
-      cases hRightCanon with
-      | resolved hRightOut =>
-          rcases
-              cicStage3_resolved_nf_runtime_output_decl_reduction_exists_primary
-                hRightOut hRight with
-            ⟨rightNf, hRightNf, hRightRed⟩
-          have hRightSelf :
-              CicStage3ResolvedNfRuntimeOutput _ _ :=
-            cicStage3_resolved_nf_runtime_output_self hRightOut
-          have hLeftNf :
-              ConvDecl
-                (envOfSpecs
-                  cicStage3RawArtifactSig.translatedSpecs)
-                left rightNf :=
-            cicStage3RawArtifactSig_canonicalForSig_beq_resolved_self_convDecl_any_depth
-              (CicStage3CanonicalNfRuntimeReadoutForSig.defnStuck
-                hLeftName hLeftNotWitness)
-              hRightSelf rfl hLeft hRightNf
-              (by simpa using hBeq)
-          exact
-            Relation.EqvGen.trans _ _ _
-              hLeftNf
-              (Relation.EqvGen.symm _ _
-                (redStarDecl_implies_conv hRightRed))
-      | defnStuck hRightName hRightNotWitness =>
-          exact
-            cicStage3RawArtifactSig_canonical_defn_stuck_readout_beq_true_convDecl_any_depth
-              hLeftName hRightName
-              (by simpa using hBeq)
-              hLeft hRight
-      | appStuck hFn hArg =>
-          have hPayload := atom_beq_expr_binary_payload_true (tag := "nf")
-            (a := sigAtom cicStage3RawArtifactSig)
-            (b := defBodyOfQueryAtom (sigAtom cicStage3RawArtifactSig)
-              (declNameAtom _))
-            (c := sigAtom cicStage3RawArtifactSig)
-            (d := termAtom (.app _ _))
-            (by
-              change Metta.Atom.beq _ _ = true at hBeq
-              simpa [cicStage3CanonicalDefnStuckReadoutForSig, nfQuery,
-                mExpr, mSym] using hBeq)
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [BEq.beq, instBEqAtom, defBodyOfQueryAtom, termAtom, mExpr, mSym]
-                using hPayload.2) (by decide))
-      | indGStuck hFamily =>
-          have hPayload := atom_beq_expr_binary_payload_true (tag := "nf")
-            (a := sigAtom cicStage3RawArtifactSig)
-            (b := defBodyOfQueryAtom (sigAtom cicStage3RawArtifactSig)
-              (declNameAtom _))
-            (c := sigAtom cicStage3RawArtifactSig)
-            (d := termAtom (.indG _ _ _ _ _ _))
-            (by
-              change Metta.Atom.beq _ _ = true at hBeq
-              simpa [cicStage3CanonicalDefnStuckReadoutForSig, nfQuery,
-                mExpr, mSym] using hBeq)
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [BEq.beq, instBEqAtom, defBodyOfQueryAtom, termAtom, mExpr, mSym]
-                using hPayload.2) (by decide))
-      | pi hDomain hBody =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-      | lam hDomain hBody =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-  | appStuck hLeftFn hLeftArg =>
-      cases hRightCanon with
-      | resolved hRightOut =>
-          rcases
-              cicStage3_resolved_nf_runtime_output_decl_reduction_exists_primary
-                hRightOut hRight with
-            ⟨rightNf, hRightNf, hRightRed⟩
-          have hRightSelf :
-              CicStage3ResolvedNfRuntimeOutput _ _ :=
-            cicStage3_resolved_nf_runtime_output_self hRightOut
-          have hLeftNf :
-              ConvDecl
-                (envOfSpecs
-                  cicStage3RawArtifactSig.translatedSpecs)
-                left rightNf :=
-            cicStage3RawArtifactSig_canonicalForSig_beq_resolved_self_convDecl_any_depth
-              (CicStage3CanonicalNfRuntimeReadoutForSig.appStuck
-                hLeftFn hLeftArg)
-              hRightSelf rfl hLeft hRightNf
-              (by simpa using hBeq)
-          exact
-            Relation.EqvGen.trans _ _ _
-              hLeftNf
-              (Relation.EqvGen.symm _ _
-                (redStarDecl_implies_conv hRightRed))
-      | defnStuck hRightName hRightNotWitness =>
-          have hPayload := atom_beq_expr_binary_payload_true (tag := "nf")
-            (a := sigAtom cicStage3RawArtifactSig)
-            (b := termAtom (.app _ _))
-            (c := sigAtom cicStage3RawArtifactSig)
-            (d := defBodyOfQueryAtom (sigAtom cicStage3RawArtifactSig)
-              (declNameAtom _))
-            (by
-              change Metta.Atom.beq _ _ = true at hBeq
-              simpa [cicStage3CanonicalDefnStuckReadoutForSig, nfQuery,
-                mExpr, mSym] using hBeq)
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [BEq.beq, instBEqAtom, defBodyOfQueryAtom, termAtom, mExpr, mSym]
-                using hPayload.2) (by decide))
-      | appStuck hRightFn hRightArg =>
-          exact
-            cicStage3_nfQuery_beq_true_translates_convDecl_primary
-              (sig := cicStage3RawArtifactSig)
-              (by simpa [nfQuery] using hBeq)
-              hLeft hRight
-      | indGStuck hRightFamily =>
-          exact
-            cicStage3_nfQuery_beq_true_translates_convDecl_primary
-              (sig := cicStage3RawArtifactSig)
-              (by simpa [nfQuery] using hBeq)
-              hLeft hRight
-      | pi hDomain hBody =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-      | lam hDomain hBody =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-  | indGStuck hLeftFamily =>
-      cases hRightCanon with
-      | resolved hRightOut =>
-          rcases
-              cicStage3_resolved_nf_runtime_output_decl_reduction_exists_primary
-                hRightOut hRight with
-            ⟨rightNf, hRightNf, hRightRed⟩
-          have hRightSelf :
-              CicStage3ResolvedNfRuntimeOutput _ _ :=
-            cicStage3_resolved_nf_runtime_output_self hRightOut
-          have hLeftNf :
-              ConvDecl
-                (envOfSpecs
-                  cicStage3RawArtifactSig.translatedSpecs)
-                left rightNf :=
-            cicStage3RawArtifactSig_canonicalForSig_beq_resolved_self_convDecl_any_depth
-              (CicStage3CanonicalNfRuntimeReadoutForSig.indGStuck
-                hLeftFamily)
-              hRightSelf rfl hLeft hRightNf
-              (by simpa using hBeq)
-          exact
-            Relation.EqvGen.trans _ _ _
-              hLeftNf
-              (Relation.EqvGen.symm _ _
-                (redStarDecl_implies_conv hRightRed))
-      | defnStuck hRightName hRightNotWitness =>
-          have hPayload := atom_beq_expr_binary_payload_true (tag := "nf")
-            (a := sigAtom cicStage3RawArtifactSig)
-            (b := termAtom (.indG _ _ _ _ _ _))
-            (c := sigAtom cicStage3RawArtifactSig)
-            (d := defBodyOfQueryAtom (sigAtom cicStage3RawArtifactSig)
-              (declNameAtom _))
-            (by
-              change Metta.Atom.beq _ _ = true at hBeq
-              simpa [cicStage3CanonicalDefnStuckReadoutForSig, nfQuery,
-                mExpr, mSym] using hBeq)
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [BEq.beq, instBEqAtom, defBodyOfQueryAtom, termAtom, mExpr, mSym]
-                using hPayload.2) (by decide))
-      | appStuck hRightFn hRightArg =>
-          exact
-            cicStage3_nfQuery_beq_true_translates_convDecl_primary
-              (sig := cicStage3RawArtifactSig)
-              (by simpa [nfQuery] using hBeq)
-              hLeft hRight
-      | indGStuck hRightFamily =>
-          exact
-            cicStage3_nfQuery_beq_true_translates_convDecl_primary
-              (sig := cicStage3RawArtifactSig)
-              (by simpa [nfQuery] using hBeq)
-              hLeft hRight
-      | pi hDomain hBody =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-      | lam hDomain hBody =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-  | pi hLeftDomainCanon hLeftBodyCanon ihDomain ihBody =>
-      cases hRightCanon with
-      | resolved hRightOut =>
-          rcases
-              cicStage3_resolved_nf_runtime_output_decl_reduction_exists_primary
-                hRightOut hRight with
-            ⟨rightNf, hRightNf, hRightRed⟩
-          have hRightSelf :
-              CicStage3ResolvedNfRuntimeOutput _ _ :=
-            cicStage3_resolved_nf_runtime_output_self hRightOut
-          have hLeftNf :
-              ConvDecl
-                (envOfSpecs
-                  cicStage3RawArtifactSig.translatedSpecs)
-                left rightNf :=
-            cicStage3RawArtifactSig_canonicalForSig_beq_resolved_self_convDecl_any_depth
-              (CicStage3CanonicalNfRuntimeReadoutForSig.pi
-                hLeftDomainCanon hLeftBodyCanon)
-              hRightSelf rfl hLeft hRightNf
-              (by simpa using hBeq)
-          exact
-            Relation.EqvGen.trans _ _ _
-              hLeftNf
-              (Relation.EqvGen.symm _ _
-                (redStarDecl_implies_conv hRightRed))
-      | defnStuck hName hNotWitness =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-      | appStuck hFn hArg =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-      | indGStuck hFamily =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-      | pi hRightDomainCanon hRightBodyCanon =>
-          cases hLeft with
-          | pi hLeftDomain hLeftBody =>
-              cases hRight with
-              | pi hRightDomain hRightBody =>
-                  have hPayload := atom_beq_expr_binary_payload_true
-                    (tag := "Pi")
-                    (a := _) (b := _) (c := _) (d := _)
-                    (by
-                      change Metta.Atom.beq _ _ = true at hBeq
-                      simpa [mExpr, mSym] using hBeq)
-                  exact
-                    convDecl_cong_pi_local
-                      (ihDomain hRightDomainCanon hLeftDomain
-                        hRightDomain hPayload.1)
-                      (ihBody hRightBodyCanon hLeftBody
-                        hRightBody hPayload.2)
-      | lam hRightDomainCanon hRightBodyCanon =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-  | lam hLeftDomainCanon hLeftBodyCanon ihDomain ihBody =>
-      cases hRightCanon with
-      | resolved hRightOut =>
-          rcases
-              cicStage3_resolved_nf_runtime_output_decl_reduction_exists_primary
-                hRightOut hRight with
-            ⟨rightNf, hRightNf, hRightRed⟩
-          have hRightSelf :
-              CicStage3ResolvedNfRuntimeOutput _ _ :=
-            cicStage3_resolved_nf_runtime_output_self hRightOut
-          have hLeftNf :
-              ConvDecl
-                (envOfSpecs
-                  cicStage3RawArtifactSig.translatedSpecs)
-                left rightNf :=
-            cicStage3RawArtifactSig_canonicalForSig_beq_resolved_self_convDecl_any_depth
-              (CicStage3CanonicalNfRuntimeReadoutForSig.lam
-                hLeftDomainCanon hLeftBodyCanon)
-              hRightSelf rfl hLeft hRightNf
-              (by simpa using hBeq)
-          exact
-            Relation.EqvGen.trans _ _ _
-              hLeftNf
-              (Relation.EqvGen.symm _ _
-                (redStarDecl_implies_conv hRightRed))
-      | defnStuck hName hNotWitness =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-      | appStuck hFn hArg =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-      | indGStuck hFamily =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-      | pi hRightDomainCanon hRightBodyCanon =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, cicStage3CanonicalDefnStuckReadoutForSig,
-                defBodyOfQueryAtom, sortAtom, declNameAtom, mExpr, mSym,
-                mNat] using hBeq) (by decide))
-      | lam hRightDomainCanon hRightBodyCanon =>
-          cases hLeft with
-          | lam hLeftDomain hLeftBody =>
-              cases hRight with
-              | lam hRightDomain hRightBody =>
-                  have hPayload := atom_beq_expr_binary_payload_true
-                    (tag := "Lam")
-                    (a := _) (b := _) (c := _) (d := _)
-                    (by
-                      change Metta.Atom.beq _ _ = true at hBeq
-                      simpa [mExpr, mSym] using hBeq)
-                  exact
-                    convDecl_cong_lam_local
-                      (ihBody hRightBodyCanon hLeftBody
-                        hRightBody hPayload.2)
 
 theorem cicStage3RawArtifactSig_frontier_tail_convDecl_defn_defn_with_keys
     (fuel : Nat) {leftName rightName : DeclName}
@@ -84183,27 +79380,19 @@ private theorem mettaEval_kernelDefControlEnv_primary_nf_def_let_body_eq_named_g
   have hFresh :
       RenamedBindingKeysFreshForPayloads (counterSuffix stAtom.counter)
         (letRuleBindings binder bodyAtom template) := by
+    apply (letRuleBindings_rename_fresh_iff _ _ _ _).mpr
     intro key hkey
-    simp [letRuleBindings, bindingRuleKeys] at hkey
+    simp at hkey
     have hKeyNe : counterSuffix stAtom.counter key ≠ binder := by
       rcases hkey with rfl | rfl | rfl
       · exact hTemplateNe
       · exact hAtomNe
       · exact hPatternNe
-    constructor
-    · intro x a hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with hmem | hmem
-      · rcases hmem with ⟨rfl, rfl⟩
-        simp [template, sigAtom_vars_nil, mExpr, mSym, mVar,
-          Metta.Atom.vars, hKeyNe]
-      · rcases hmem with ⟨rfl, rfl⟩
-        simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
-          declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
-    · intro x y hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with ⟨rfl, rfl⟩
-      exact hKeyNe
+    refine ⟨?_, ?_, hKeyNe⟩
+    · simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
+        declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+    · simp [template, sigAtom_vars_nil, mExpr, mSym, mVar,
+        Metta.Atom.vars, hKeyNe]
   have hRoot :
       interpretFuel kernelDefControlEnv (fuel + 5 + 1) stAtom
           [evalItemNil (mExpr "let" [mVar binder, bodyAtom, template])] [] =
@@ -84727,463 +79916,36 @@ theorem cicStage3RawArtifactSig_conv_tail_true_primaryReadout_beq_true_keyed_amb
         hRightReadout)
       hEqIncomingClosed hEqMem'
 
-private theorem cicStage3RawArtifactSig_indG_zero_iota_beq_primaryReadout_convDecl_any_depth
-    {n : Nat} {rawRight : DIndGArtifactTerm} {outRight : Metta.Atom}
-    {left right : ScopedTerm n}
-    (hRightReadout :
-      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawRight outRight)
-    (hLeft :
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates n
-        cicStage3IndGZeroRaw left)
-    (hRight :
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates n rawRight right)
-    (hBeq : (termAtom (.con `z) == outRight) = true) :
-    ConvDecl
-      (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-      left right := by
-  cases hRightReadout with
-  | resolved hRightOut =>
-      rcases
-          cicStage3_resolved_nf_runtime_output_decl_reduction_exists_primary
-            hRightOut hRight with
-        ⟨rightNf, hRightNf, hRightRed⟩
-      have hConResolved : CicStage3ResolvedNfTerm (.con `z) :=
-        CicStage3ResolvedNfTerm.con (by
-          simp [cicStage3RawNameWithPropToType0WitnessBounded])
-      have hRightResolved :
-          CicStage3ResolvedNfTerm _ :=
-        cicStage3_resolved_nf_runtime_output_resolved hRightOut
-      have hRawEq :=
-        termAtom_beq_injective_on_cicStage3_resolved
-          hConResolved hRightResolved hBeq
-      subst_vars
-      have hLeftEq :
-          left = DeclarationEnv.liftClosed (n := n) natZeroTerm :=
-        dindg_translate_unique_cicStage3RawArtifactSig
-          hLeft
-          cicStage3_indG_zero_raw_translates_liftClosed_nat_zero_primary
-      have hRightEq :
-          rightNf = DeclarationEnv.liftClosed (n := n) natZeroTerm :=
-        dindg_translate_unique_cicStage3RawArtifactSig
-          hRightNf
-          cicStage3_con_z_translates_liftClosed_nat_zero_primary
-      subst left
-      subst rightNf
-      exact Relation.EqvGen.symm _ _ (redStarDecl_implies_conv hRightRed)
-  | defnStuck hName hNotWitness =>
-      exact False.elim
-        (mExpr_beq_head_mismatch_false (by
-          simpa [termAtom, cicStage3CanonicalDefnStuckReadoutForSig,
-            defBodyOfQueryAtom, declNameAtom, mExpr, mSym] using hBeq)
-          (by decide))
-  | appStuck hFn hArg =>
-      exact False.elim
-        (mExpr_beq_head_mismatch_false (by
-          simpa [termAtom, nfQuery, declNameAtom, mExpr, mSym] using hBeq)
-          (by decide))
-  | indGStuck hFamily =>
-      exact False.elim
-        (mExpr_beq_head_mismatch_false (by
-          simpa [termAtom, nfQuery, declNameAtom, mExpr, mSym] using hBeq)
-          (by decide))
-  | indGZeroIota =>
-      have hLeftEq :
-          left = DeclarationEnv.liftClosed (n := n) natZeroTerm :=
-        dindg_translate_unique_cicStage3RawArtifactSig
-          hLeft
-          cicStage3_indG_zero_raw_translates_liftClosed_nat_zero_primary
-      have hRightEq :
-          right = DeclarationEnv.liftClosed (n := n) natZeroTerm :=
-        dindg_translate_unique_cicStage3RawArtifactSig
-          hRight
-          cicStage3_indG_zero_raw_translates_liftClosed_nat_zero_primary
-      subst left
-      subst right
-      exact Relation.EqvGen.refl _
-  | pi hDomain hBody =>
-      exact False.elim
-        (mExpr_beq_head_mismatch_false (by
-          simpa [termAtom, declNameAtom, mExpr, mSym] using hBeq)
-          (by decide))
-  | lam hDomain hBody =>
-      exact False.elim
-        (mExpr_beq_head_mismatch_false (by
-          simpa [termAtom, declNameAtom, mExpr, mSym] using hBeq)
-          (by decide))
+private def primaryComparisonProfile : Stage3ComparisonProfile where
+  signature := cicStage3RawArtifactSig
+  definitionSignature := cicStage3RawArtifactSig
+  termComparison left right compared :=
+    dindg_translate_eq_of_termAtom_beq_withPropToType0Witness compared
+      (dindg_translate_to_withPropToType0Witness left)
+      (dindg_translate_to_withPropToType0Witness right)
 
-private theorem cicStage3RawArtifactSig_primaryReadout_beq_indG_zero_iota_convDecl_any_depth
-    {n : Nat} {rawLeft : DIndGArtifactTerm} {outLeft : Metta.Atom}
-    {left right : ScopedTerm n}
-    (hLeftReadout :
-      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawLeft outLeft)
-    (hLeft :
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates n rawLeft left)
-    (hRight :
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates n
-        cicStage3IndGZeroRaw right)
-    (hBeq : (outLeft == termAtom (.con `z)) = true) :
-    ConvDecl
-      (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-      left right := by
-  cases hLeftReadout with
-  | resolved hLeftOut =>
-      rcases
-          cicStage3_resolved_nf_runtime_output_decl_reduction_exists_primary
-            hLeftOut hLeft with
-        ⟨leftNf, hLeftNf, hLeftRed⟩
-      have hLeftResolved :
-          CicStage3ResolvedNfTerm _ :=
-        cicStage3_resolved_nf_runtime_output_resolved hLeftOut
-      have hConResolved : CicStage3ResolvedNfTerm (.con `z) :=
-        CicStage3ResolvedNfTerm.con (by
-          simp [cicStage3RawNameWithPropToType0WitnessBounded])
-      have hRawEq :=
-        termAtom_beq_injective_on_cicStage3_resolved
-          hLeftResolved hConResolved hBeq
-      subst_vars
-      have hLeftEq :
-          leftNf = DeclarationEnv.liftClosed (n := n) natZeroTerm :=
-        dindg_translate_unique_cicStage3RawArtifactSig
-          hLeftNf
-          cicStage3_con_z_translates_liftClosed_nat_zero_primary
-      have hRightEq :
-          right = DeclarationEnv.liftClosed (n := n) natZeroTerm :=
-        dindg_translate_unique_cicStage3RawArtifactSig
-          hRight
-          cicStage3_indG_zero_raw_translates_liftClosed_nat_zero_primary
-      subst leftNf
-      subst right
-      exact redStarDecl_implies_conv hLeftRed
-  | defnStuck hName hNotWitness =>
-      exact False.elim
-        (mExpr_beq_head_mismatch_false (by
-          simpa [termAtom, cicStage3CanonicalDefnStuckReadoutForSig,
-            defBodyOfQueryAtom, declNameAtom, mExpr, mSym] using hBeq)
-          (by decide))
-  | appStuck hFn hArg =>
-      exact False.elim
-        (mExpr_beq_head_mismatch_false (by
-          simpa [termAtom, nfQuery, declNameAtom, mExpr, mSym] using hBeq)
-          (by decide))
-  | indGStuck hFamily =>
-      exact False.elim
-        (mExpr_beq_head_mismatch_false (by
-          simpa [termAtom, nfQuery, declNameAtom, mExpr, mSym] using hBeq)
-          (by decide))
+private theorem primaryReadoutPlan {raw : DIndGArtifactTerm} {out : Metta.Atom}
+    (observed : CicStage3RawArtifactSigPrimaryNfRuntimeReadout raw out) :
+    Stage3ReadoutPlan primaryComparisonProfile raw out := by
+  induction observed with
+  | resolved readout =>
+      refine Stage3ReadoutPlan.resolved readout ?_
+      intro n term translated
+      obtain ⟨normal, translation, reduction⟩ :=
+        cicStage3_resolved_nf_runtime_output_decl_reduction_exists_primary readout translated
+      exact ⟨normal, translation, redStarDecl_implies_conv reduction⟩
+  | defnStuck bounded _ => exact Stage3ReadoutPlan.definition bounded
+  | appStuck _ _ | indGStuck _ => exact Stage3ReadoutPlan.computation
   | indGZeroIota =>
-      have hLeftEq :
-          left = DeclarationEnv.liftClosed (n := n) natZeroTerm :=
-        dindg_translate_unique_cicStage3RawArtifactSig
-          hLeft
-          cicStage3_indG_zero_raw_translates_liftClosed_nat_zero_primary
-      have hRightEq :
-          right = DeclarationEnv.liftClosed (n := n) natZeroTerm :=
-        dindg_translate_unique_cicStage3RawArtifactSig
-          hRight
-          cicStage3_indG_zero_raw_translates_liftClosed_nat_zero_primary
-      subst left
-      subst right
-      exact Relation.EqvGen.refl _
-  | pi hDomain hBody =>
-      exact False.elim
-        (mExpr_beq_head_mismatch_false (by
-          simpa [termAtom, declNameAtom, mExpr, mSym] using hBeq)
-          (by decide))
-  | lam hDomain hBody =>
-      exact False.elim
-        (mExpr_beq_head_mismatch_false (by
-          simpa [termAtom, declNameAtom, mExpr, mSym] using hBeq)
-          (by decide))
-
-private theorem cicStage3RawArtifactSig_resolved_self_beq_primaryReadout_convDecl_any_depth
-    {n : Nat} {rawLeft rawLeftOut rawRight : DIndGArtifactTerm}
-    {outRight : Metta.Atom} {left right : ScopedTerm n}
-    (hLeftSelf : CicStage3ResolvedNfRuntimeOutput rawLeft rawLeftOut)
-    (hSelf : rawLeftOut = rawLeft)
-    (hRightReadout :
-      CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawRight outRight)
-    (hLeft :
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates n rawLeftOut left)
-    (hRight :
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates n rawRight right)
-    (hBeq : (termAtom rawLeftOut == outRight) = true) :
-    ConvDecl
-      (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-      left right := by
-  induction hLeftSelf generalizing n rawRight outRight left right with
-  | var k =>
-      cases hRightReadout with
-      | resolved hRightOut =>
-          exact
-            cicStage3RawArtifactSig_resolved_self_beq_canonicalForSig_convDecl_any_depth
-              (CicStage3ResolvedNfRuntimeOutput.var k) rfl
-              (CicStage3CanonicalNfRuntimeReadoutForSig.resolved
-                (sig := cicStage3RawArtifactSig) hRightOut)
-              hLeft hRight hBeq
-      | defnStuck hName hNotWitness =>
-          exact
-            cicStage3RawArtifactSig_resolved_self_beq_canonicalForSig_convDecl_any_depth
-              (CicStage3ResolvedNfRuntimeOutput.var k) rfl
-              (CicStage3CanonicalNfRuntimeReadoutForSig.defnStuck
-                (sig := cicStage3RawArtifactSig) hName hNotWitness)
-              hLeft hRight hBeq
-      | appStuck hFn hArg =>
-          exact
-            cicStage3RawArtifactSig_resolved_self_beq_canonicalForSig_convDecl_any_depth
-              (CicStage3ResolvedNfRuntimeOutput.var k) rfl
-              (CicStage3CanonicalNfRuntimeReadoutForSig.appStuck
-                (sig := cicStage3RawArtifactSig) hFn hArg)
-              hLeft hRight hBeq
-      | indGStuck hFamily =>
-          exact
-            cicStage3RawArtifactSig_resolved_self_beq_canonicalForSig_convDecl_any_depth
-              (CicStage3ResolvedNfRuntimeOutput.var k) rfl
-              (CicStage3CanonicalNfRuntimeReadoutForSig.indGStuck
-                (sig := cicStage3RawArtifactSig) hFamily)
-              hLeft hRight hBeq
-      | indGZeroIota =>
-          exact
-            cicStage3RawArtifactSig_primaryReadout_beq_indG_zero_iota_convDecl_any_depth
-              (CicStage3RawArtifactSigPrimaryNfRuntimeReadout.resolved
-                (cicStage3_resolved_nf_runtime_output_self
-                  (CicStage3ResolvedNfRuntimeOutput.var k)))
-              hLeft hRight hBeq
-      | pi hDomain hBody =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, mExpr, mSym, mNat] using hBeq)
-              (by decide))
-      | lam hDomain hBody =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, mExpr, mSym, mNat] using hBeq)
-              (by decide))
-  | srt sort =>
-      cases hRightReadout with
-      | resolved hRightOut =>
-          exact
-            cicStage3RawArtifactSig_resolved_self_beq_canonicalForSig_convDecl_any_depth
-              (CicStage3ResolvedNfRuntimeOutput.srt sort) rfl
-              (CicStage3CanonicalNfRuntimeReadoutForSig.resolved
-                (sig := cicStage3RawArtifactSig) hRightOut)
-              hLeft hRight hBeq
-      | defnStuck hName hNotWitness =>
-          exact
-            cicStage3RawArtifactSig_resolved_self_beq_canonicalForSig_convDecl_any_depth
-              (CicStage3ResolvedNfRuntimeOutput.srt sort) rfl
-              (CicStage3CanonicalNfRuntimeReadoutForSig.defnStuck
-                (sig := cicStage3RawArtifactSig) hName hNotWitness)
-              hLeft hRight hBeq
-      | appStuck hFn hArg =>
-          exact
-            cicStage3RawArtifactSig_resolved_self_beq_canonicalForSig_convDecl_any_depth
-              (CicStage3ResolvedNfRuntimeOutput.srt sort) rfl
-              (CicStage3CanonicalNfRuntimeReadoutForSig.appStuck
-                (sig := cicStage3RawArtifactSig) hFn hArg)
-              hLeft hRight hBeq
-      | indGStuck hFamily =>
-          exact
-            cicStage3RawArtifactSig_resolved_self_beq_canonicalForSig_convDecl_any_depth
-              (CicStage3ResolvedNfRuntimeOutput.srt sort) rfl
-              (CicStage3CanonicalNfRuntimeReadoutForSig.indGStuck
-                (sig := cicStage3RawArtifactSig) hFamily)
-              hLeft hRight hBeq
-      | indGZeroIota =>
-          exact
-            cicStage3RawArtifactSig_primaryReadout_beq_indG_zero_iota_convDecl_any_depth
-              (CicStage3RawArtifactSigPrimaryNfRuntimeReadout.resolved
-                (cicStage3_resolved_nf_runtime_output_self
-                  (CicStage3ResolvedNfRuntimeOutput.srt sort)))
-              hLeft hRight hBeq
-      | pi hDomain hBody =>
-          cases sort <;>
-            exact False.elim
-              (mExpr_beq_head_mismatch_false (by
-                simpa [termAtom, sortAtom, mExpr, mSym] using hBeq)
-                (by decide))
-      | lam hDomain hBody =>
-          cases sort <;>
-            exact False.elim
-              (mExpr_beq_head_mismatch_false (by
-                simpa [termAtom, sortAtom, mExpr, mSym] using hBeq)
-                (by decide))
-  | con hName =>
-      cases hRightReadout with
-      | resolved hRightOut =>
-          exact
-            cicStage3RawArtifactSig_resolved_self_beq_canonicalForSig_convDecl_any_depth
-              (CicStage3ResolvedNfRuntimeOutput.con hName) rfl
-              (CicStage3CanonicalNfRuntimeReadoutForSig.resolved
-                (sig := cicStage3RawArtifactSig) hRightOut)
-              hLeft hRight hBeq
-      | defnStuck hRightName hNotWitness =>
-          exact
-            cicStage3RawArtifactSig_resolved_self_beq_canonicalForSig_convDecl_any_depth
-              (CicStage3ResolvedNfRuntimeOutput.con hName) rfl
-              (CicStage3CanonicalNfRuntimeReadoutForSig.defnStuck
-                (sig := cicStage3RawArtifactSig) hRightName hNotWitness)
-              hLeft hRight hBeq
-      | appStuck hFn hArg =>
-          exact
-            cicStage3RawArtifactSig_resolved_self_beq_canonicalForSig_convDecl_any_depth
-              (CicStage3ResolvedNfRuntimeOutput.con hName) rfl
-              (CicStage3CanonicalNfRuntimeReadoutForSig.appStuck
-                (sig := cicStage3RawArtifactSig) hFn hArg)
-              hLeft hRight hBeq
-      | indGStuck hFamily =>
-          exact
-            cicStage3RawArtifactSig_resolved_self_beq_canonicalForSig_convDecl_any_depth
-              (CicStage3ResolvedNfRuntimeOutput.con hName) rfl
-              (CicStage3CanonicalNfRuntimeReadoutForSig.indGStuck
-                (sig := cicStage3RawArtifactSig) hFamily)
-              hLeft hRight hBeq
-      | indGZeroIota =>
-          exact
-            cicStage3RawArtifactSig_primaryReadout_beq_indG_zero_iota_convDecl_any_depth
-              (CicStage3RawArtifactSigPrimaryNfRuntimeReadout.resolved
-                (cicStage3_resolved_nf_runtime_output_self
-                  (CicStage3ResolvedNfRuntimeOutput.con hName)))
-              hLeft hRight hBeq
-      | pi hDomain hBody =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, declNameAtom, mExpr, mSym] using hBeq)
-              (by decide))
-      | lam hDomain hBody =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, declNameAtom, mExpr, mSym] using hBeq)
-              (by decide))
-  | witnessDefn =>
-      cases hSelf
-  | bad reason =>
-      cases hLeft
-  | pi hDomainSelf hBodySelf ihDomain ihBody =>
-      cases hSelf
-      cases hRightReadout with
-      | resolved hRightOut =>
-          exact
-            cicStage3RawArtifactSig_resolved_self_beq_canonicalForSig_convDecl_any_depth
-              (CicStage3ResolvedNfRuntimeOutput.pi hDomainSelf hBodySelf) rfl
-              (CicStage3CanonicalNfRuntimeReadoutForSig.resolved
-                (sig := cicStage3RawArtifactSig) hRightOut)
-              hLeft hRight hBeq
-      | defnStuck hName hNotWitness =>
-          exact
-            cicStage3RawArtifactSig_resolved_self_beq_canonicalForSig_convDecl_any_depth
-              (CicStage3ResolvedNfRuntimeOutput.pi hDomainSelf hBodySelf) rfl
-              (CicStage3CanonicalNfRuntimeReadoutForSig.defnStuck
-                (sig := cicStage3RawArtifactSig) hName hNotWitness)
-              hLeft hRight hBeq
-      | appStuck hFn hArg =>
-          exact
-            cicStage3RawArtifactSig_resolved_self_beq_canonicalForSig_convDecl_any_depth
-              (CicStage3ResolvedNfRuntimeOutput.pi hDomainSelf hBodySelf) rfl
-              (CicStage3CanonicalNfRuntimeReadoutForSig.appStuck
-                (sig := cicStage3RawArtifactSig) hFn hArg)
-              hLeft hRight hBeq
-      | indGStuck hFamily =>
-          exact
-            cicStage3RawArtifactSig_resolved_self_beq_canonicalForSig_convDecl_any_depth
-              (CicStage3ResolvedNfRuntimeOutput.pi hDomainSelf hBodySelf) rfl
-              (CicStage3CanonicalNfRuntimeReadoutForSig.indGStuck
-                (sig := cicStage3RawArtifactSig) hFamily)
-              hLeft hRight hBeq
-      | indGZeroIota =>
-          exact
-            cicStage3RawArtifactSig_primaryReadout_beq_indG_zero_iota_convDecl_any_depth
-              (CicStage3RawArtifactSigPrimaryNfRuntimeReadout.resolved
-                (cicStage3_resolved_nf_runtime_output_self
-                  (CicStage3ResolvedNfRuntimeOutput.pi hDomainSelf hBodySelf)))
-              hLeft hRight hBeq
-      | pi hRightDomain hRightBody =>
-          cases hLeft with
-          | pi hLeftDomain hLeftBody =>
-              cases hRight with
-              | pi hRightDomainTr hRightBodyTr =>
-                  have hPayload := atom_beq_expr_binary_payload_true
-                    (tag := "Pi")
-                    (a := termAtom _) (b := termAtom _)
-                    (c := _) (d := _)
-                    (by
-                      change Metta.Atom.beq _ _ = true at hBeq
-                      simpa [termAtom, mExpr, mSym] using hBeq)
-                  exact
-                    convDecl_cong_pi_local
-                      (ihDomain rfl hRightDomain hLeftDomain
-                        hRightDomainTr hPayload.1)
-                      (ihBody rfl hRightBody hLeftBody
-                        hRightBodyTr hPayload.2)
-      | lam hRightDomain hRightBody =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, mExpr, mSym] using hBeq)
-              (by decide))
-  | lam hDomainSelf hBodySelf ihDomain ihBody =>
-      cases hSelf
-      cases hRightReadout with
-      | resolved hRightOut =>
-          exact
-            cicStage3RawArtifactSig_resolved_self_beq_canonicalForSig_convDecl_any_depth
-              (CicStage3ResolvedNfRuntimeOutput.lam hDomainSelf hBodySelf) rfl
-              (CicStage3CanonicalNfRuntimeReadoutForSig.resolved
-                (sig := cicStage3RawArtifactSig) hRightOut)
-              hLeft hRight hBeq
-      | defnStuck hName hNotWitness =>
-          exact
-            cicStage3RawArtifactSig_resolved_self_beq_canonicalForSig_convDecl_any_depth
-              (CicStage3ResolvedNfRuntimeOutput.lam hDomainSelf hBodySelf) rfl
-              (CicStage3CanonicalNfRuntimeReadoutForSig.defnStuck
-                (sig := cicStage3RawArtifactSig) hName hNotWitness)
-              hLeft hRight hBeq
-      | appStuck hFn hArg =>
-          exact
-            cicStage3RawArtifactSig_resolved_self_beq_canonicalForSig_convDecl_any_depth
-              (CicStage3ResolvedNfRuntimeOutput.lam hDomainSelf hBodySelf) rfl
-              (CicStage3CanonicalNfRuntimeReadoutForSig.appStuck
-                (sig := cicStage3RawArtifactSig) hFn hArg)
-              hLeft hRight hBeq
-      | indGStuck hFamily =>
-          exact
-            cicStage3RawArtifactSig_resolved_self_beq_canonicalForSig_convDecl_any_depth
-              (CicStage3ResolvedNfRuntimeOutput.lam hDomainSelf hBodySelf) rfl
-              (CicStage3CanonicalNfRuntimeReadoutForSig.indGStuck
-                (sig := cicStage3RawArtifactSig) hFamily)
-              hLeft hRight hBeq
-      | indGZeroIota =>
-          exact
-            cicStage3RawArtifactSig_primaryReadout_beq_indG_zero_iota_convDecl_any_depth
-              (CicStage3RawArtifactSigPrimaryNfRuntimeReadout.resolved
-                (cicStage3_resolved_nf_runtime_output_self
-                  (CicStage3ResolvedNfRuntimeOutput.lam hDomainSelf hBodySelf)))
-              hLeft hRight hBeq
-      | pi hRightDomain hRightBody =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, mExpr, mSym] using hBeq)
-              (by decide))
-      | lam hRightDomain hRightBody =>
-          cases hLeft with
-          | lam hLeftDomain hLeftBody =>
-              cases hRight with
-              | lam hRightDomainTr hRightBodyTr =>
-                  have hPayload := atom_beq_expr_binary_payload_true
-                    (tag := "Lam")
-                    (a := termAtom _) (b := termAtom _)
-                    (c := _) (d := _)
-                    (by
-                      change Metta.Atom.beq _ _ = true at hBeq
-                      simpa [termAtom, mExpr, mSym] using hBeq)
-                  exact
-                    convDecl_cong_lam_local
-                      (ihBody rfl hRightBody hLeftBody
-                        hRightBodyTr hPayload.2)
+      intro n term translated
+      let normal := DeclarationEnv.liftClosed (n := n) RecursorDecl.natZeroTerm
+      have translation : Stage3Translation primaryComparisonProfile n (.con `z) normal :=
+        cicStage3_con_z_translates_liftClosed_nat_zero_primary
+      exact ⟨normal,
+        cicStage3RawArtifactSig_indG_zero_iota_convDecl_any_depth translated translation,
+        constantReadoutView translation⟩
+  | pi _ _ domain body => exact Stage3ReadoutPlan.pi domain body
+  | lam _ _ _ body => exact Stage3ReadoutPlan.lam body
 
 private theorem cicStage3RawArtifactSig_primaryReadout_beq_true_convDecl_any_depth
     {n : Nat} {rawLeft rawRight : DIndGArtifactTerm}
@@ -85202,395 +79964,8 @@ private theorem cicStage3RawArtifactSig_primaryReadout_beq_true_convDecl_any_dep
     ConvDecl
       (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
       left right := by
-  induction hLeftReadout generalizing n rawRight outRight left right with
-  | resolved hLeftOut =>
-      rcases
-          cicStage3_resolved_nf_runtime_output_decl_reduction_exists_primary
-            hLeftOut hLeft with
-        ⟨leftNf, hLeftNf, hLeftRed⟩
-      have hLeftSelf :
-          CicStage3ResolvedNfRuntimeOutput _ _ :=
-        cicStage3_resolved_nf_runtime_output_self hLeftOut
-      have hNfRight :
-          ConvDecl
-            (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-            leftNf right :=
-        cicStage3RawArtifactSig_resolved_self_beq_primaryReadout_convDecl_any_depth
-          hLeftSelf rfl hRightReadout hLeftNf hRight (by simpa using hBeq)
-      exact
-        Relation.EqvGen.trans _ _ _
-          (redStarDecl_implies_conv hLeftRed) hNfRight
-  | defnStuck hLeftName hLeftNotWitness =>
-      cases hRightReadout with
-      | resolved hRightOut =>
-          exact
-            cicStage3RawArtifactSig_canonicalForSig_beq_true_convDecl_any_depth
-              (CicStage3CanonicalNfRuntimeReadoutForSig.defnStuck
-                (sig := cicStage3RawArtifactSig)
-                hLeftName hLeftNotWitness)
-              (CicStage3CanonicalNfRuntimeReadoutForSig.resolved
-                (sig := cicStage3RawArtifactSig) hRightOut)
-              hLeft hRight hBeq
-      | defnStuck hRightName hRightNotWitness =>
-          exact
-            cicStage3RawArtifactSig_canonicalForSig_beq_true_convDecl_any_depth
-              (CicStage3CanonicalNfRuntimeReadoutForSig.defnStuck
-                (sig := cicStage3RawArtifactSig)
-                hLeftName hLeftNotWitness)
-              (CicStage3CanonicalNfRuntimeReadoutForSig.defnStuck
-                (sig := cicStage3RawArtifactSig)
-                hRightName hRightNotWitness)
-              hLeft hRight hBeq
-      | appStuck hFn hArg =>
-          exact
-            cicStage3RawArtifactSig_canonicalForSig_beq_true_convDecl_any_depth
-              (CicStage3CanonicalNfRuntimeReadoutForSig.defnStuck
-                (sig := cicStage3RawArtifactSig)
-                hLeftName hLeftNotWitness)
-              (CicStage3CanonicalNfRuntimeReadoutForSig.appStuck
-                (sig := cicStage3RawArtifactSig) hFn hArg)
-              hLeft hRight hBeq
-      | indGStuck hFamily =>
-          exact
-            cicStage3RawArtifactSig_canonicalForSig_beq_true_convDecl_any_depth
-              (CicStage3CanonicalNfRuntimeReadoutForSig.defnStuck
-                (sig := cicStage3RawArtifactSig)
-                hLeftName hLeftNotWitness)
-              (CicStage3CanonicalNfRuntimeReadoutForSig.indGStuck
-                (sig := cicStage3RawArtifactSig) hFamily)
-              hLeft hRight hBeq
-      | indGZeroIota =>
-          exact
-            cicStage3RawArtifactSig_primaryReadout_beq_indG_zero_iota_convDecl_any_depth
-              (CicStage3RawArtifactSigPrimaryNfRuntimeReadout.defnStuck
-                hLeftName hLeftNotWitness)
-              hLeft hRight hBeq
-      | pi hDomain hBody =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, cicStage3CanonicalDefnStuckReadoutForSig,
-                defBodyOfQueryAtom, declNameAtom, mExpr, mSym] using hBeq)
-              (by decide))
-      | lam hDomain hBody =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, cicStage3CanonicalDefnStuckReadoutForSig,
-                defBodyOfQueryAtom, declNameAtom, mExpr, mSym] using hBeq)
-              (by decide))
-  | appStuck hLeftFn hLeftArg =>
-      cases hRightReadout with
-      | resolved hRightOut =>
-          exact
-            cicStage3RawArtifactSig_canonicalForSig_beq_true_convDecl_any_depth
-              (CicStage3CanonicalNfRuntimeReadoutForSig.appStuck
-                (sig := cicStage3RawArtifactSig) hLeftFn hLeftArg)
-              (CicStage3CanonicalNfRuntimeReadoutForSig.resolved
-                (sig := cicStage3RawArtifactSig) hRightOut)
-              hLeft hRight hBeq
-      | defnStuck hRightName hRightNotWitness =>
-          exact
-            cicStage3RawArtifactSig_canonicalForSig_beq_true_convDecl_any_depth
-              (CicStage3CanonicalNfRuntimeReadoutForSig.appStuck
-                (sig := cicStage3RawArtifactSig) hLeftFn hLeftArg)
-              (CicStage3CanonicalNfRuntimeReadoutForSig.defnStuck
-                (sig := cicStage3RawArtifactSig)
-                hRightName hRightNotWitness)
-              hLeft hRight hBeq
-      | appStuck hRightFn hRightArg =>
-          exact
-            cicStage3RawArtifactSig_canonicalForSig_beq_true_convDecl_any_depth
-              (CicStage3CanonicalNfRuntimeReadoutForSig.appStuck
-                (sig := cicStage3RawArtifactSig) hLeftFn hLeftArg)
-              (CicStage3CanonicalNfRuntimeReadoutForSig.appStuck
-                (sig := cicStage3RawArtifactSig) hRightFn hRightArg)
-              hLeft hRight hBeq
-      | indGStuck hFamily =>
-          exact
-            cicStage3RawArtifactSig_canonicalForSig_beq_true_convDecl_any_depth
-              (CicStage3CanonicalNfRuntimeReadoutForSig.appStuck
-                (sig := cicStage3RawArtifactSig) hLeftFn hLeftArg)
-              (CicStage3CanonicalNfRuntimeReadoutForSig.indGStuck
-                (sig := cicStage3RawArtifactSig) hFamily)
-              hLeft hRight hBeq
-      | indGZeroIota =>
-          exact
-            cicStage3RawArtifactSig_primaryReadout_beq_indG_zero_iota_convDecl_any_depth
-              (CicStage3RawArtifactSigPrimaryNfRuntimeReadout.appStuck
-                hLeftFn hLeftArg)
-              hLeft hRight hBeq
-      | pi hDomain hBody =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, mExpr, mSym] using hBeq)
-              (by decide))
-      | lam hDomain hBody =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, mExpr, mSym] using hBeq)
-              (by decide))
-  | indGStuck hLeftFamily =>
-      cases hRightReadout with
-      | resolved hRightOut =>
-          exact
-            cicStage3RawArtifactSig_canonicalForSig_beq_true_convDecl_any_depth
-              (CicStage3CanonicalNfRuntimeReadoutForSig.indGStuck
-                (sig := cicStage3RawArtifactSig) hLeftFamily)
-              (CicStage3CanonicalNfRuntimeReadoutForSig.resolved
-                (sig := cicStage3RawArtifactSig) hRightOut)
-              hLeft hRight hBeq
-      | defnStuck hRightName hRightNotWitness =>
-          exact
-            cicStage3RawArtifactSig_canonicalForSig_beq_true_convDecl_any_depth
-              (CicStage3CanonicalNfRuntimeReadoutForSig.indGStuck
-                (sig := cicStage3RawArtifactSig) hLeftFamily)
-              (CicStage3CanonicalNfRuntimeReadoutForSig.defnStuck
-                (sig := cicStage3RawArtifactSig)
-                hRightName hRightNotWitness)
-              hLeft hRight hBeq
-      | appStuck hRightFn hRightArg =>
-          exact
-            cicStage3RawArtifactSig_canonicalForSig_beq_true_convDecl_any_depth
-              (CicStage3CanonicalNfRuntimeReadoutForSig.indGStuck
-                (sig := cicStage3RawArtifactSig) hLeftFamily)
-              (CicStage3CanonicalNfRuntimeReadoutForSig.appStuck
-                (sig := cicStage3RawArtifactSig) hRightFn hRightArg)
-              hLeft hRight hBeq
-      | indGStuck hRightFamily =>
-          exact
-            cicStage3RawArtifactSig_canonicalForSig_beq_true_convDecl_any_depth
-              (CicStage3CanonicalNfRuntimeReadoutForSig.indGStuck
-                (sig := cicStage3RawArtifactSig) hLeftFamily)
-              (CicStage3CanonicalNfRuntimeReadoutForSig.indGStuck
-                (sig := cicStage3RawArtifactSig) hRightFamily)
-              hLeft hRight hBeq
-      | indGZeroIota =>
-          exact
-            cicStage3RawArtifactSig_primaryReadout_beq_indG_zero_iota_convDecl_any_depth
-              (CicStage3RawArtifactSigPrimaryNfRuntimeReadout.indGStuck
-                hLeftFamily)
-              hLeft hRight hBeq
-      | pi hDomain hBody =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, mExpr, mSym] using hBeq)
-              (by decide))
-      | lam hDomain hBody =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, mExpr, mSym] using hBeq)
-              (by decide))
-  | indGZeroIota =>
-      exact
-        cicStage3RawArtifactSig_indG_zero_iota_beq_primaryReadout_convDecl_any_depth
-          hRightReadout hLeft hRight hBeq
-  | pi hLeftDomainReadout hLeftBodyReadout ihDomain ihBody =>
-      cases hRightReadout with
-      | resolved hRightOut =>
-          rcases
-              cicStage3_resolved_nf_runtime_output_decl_reduction_exists_primary
-                hRightOut hRight with
-            ⟨rightNf, hRightNf, hRightRed⟩
-          have hRightSelf :
-              CicStage3ResolvedNfRuntimeOutput _ _ :=
-            cicStage3_resolved_nf_runtime_output_self hRightOut
-          have hLeftNf :
-              ConvDecl
-                (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-                left rightNf := by
-            cases hRightSelf with
-            | var k =>
-                exact False.elim
-                  (mExpr_beq_head_mismatch_false (by
-                    simpa [termAtom, mExpr, mSym, mNat] using hBeq)
-                    (by decide))
-            | srt sort =>
-                cases sort <;>
-                  exact False.elim
-                    (mExpr_beq_head_mismatch_false (by
-                      simpa [termAtom, sortAtom, mExpr, mSym] using hBeq)
-                      (by decide))
-            | con hName =>
-                exact False.elim
-                  (mExpr_beq_head_mismatch_false (by
-                    simpa [termAtom, declNameAtom, mExpr, mSym] using hBeq)
-                    (by decide))
-            | bad reason =>
-                cases hRightNf
-            | pi hRightDomainSelf hRightBodySelf =>
-                cases hLeft with
-                | pi hLeftDomain hLeftBody =>
-                    cases hRightNf with
-                    | pi hRightDomain hRightBody =>
-                        have hPayload := atom_beq_expr_binary_payload_true
-                          (tag := "Pi")
-                          (a := _) (b := _) (c := _) (d := _)
-                          (by
-                            change Metta.Atom.beq _ _ = true at hBeq
-                            simpa [termAtom, mExpr, mSym] using hBeq)
-                        exact
-                          convDecl_cong_pi_local
-                            (ihDomain
-                              (CicStage3RawArtifactSigPrimaryNfRuntimeReadout.resolved
-                                hRightDomainSelf)
-                              hLeftDomain hRightDomain hPayload.1)
-                            (ihBody
-                              (CicStage3RawArtifactSigPrimaryNfRuntimeReadout.resolved
-                                hRightBodySelf)
-                              hLeftBody hRightBody hPayload.2)
-            | lam hRightDomainSelf hRightBodySelf =>
-                exact False.elim
-                  (mExpr_beq_head_mismatch_false (by
-                    simpa [termAtom, mExpr, mSym] using hBeq)
-                    (by decide))
-          exact
-            Relation.EqvGen.trans _ _ _
-              hLeftNf
-              (Relation.EqvGen.symm _ _
-                (redStarDecl_implies_conv hRightRed))
-      | defnStuck hName hNotWitness =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, cicStage3CanonicalDefnStuckReadoutForSig,
-                defBodyOfQueryAtom, declNameAtom, mExpr, mSym] using hBeq)
-              (by decide))
-      | appStuck hFn hArg =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, mExpr, mSym] using hBeq)
-              (by decide))
-      | indGStuck hFamily =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, mExpr, mSym] using hBeq)
-              (by decide))
-      | indGZeroIota =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, declNameAtom, mExpr, mSym] using hBeq)
-              (by decide))
-      | pi hRightDomainReadout hRightBodyReadout =>
-          cases hLeft with
-          | pi hLeftDomain hLeftBody =>
-              cases hRight with
-              | pi hRightDomain hRightBody =>
-                  have hPayload := atom_beq_expr_binary_payload_true
-                    (tag := "Pi")
-                    (a := _) (b := _) (c := _) (d := _)
-                    (by
-                      change Metta.Atom.beq _ _ = true at hBeq
-                      simpa [mExpr, mSym] using hBeq)
-                  exact
-                    convDecl_cong_pi_local
-                      (ihDomain hRightDomainReadout hLeftDomain
-                        hRightDomain hPayload.1)
-                      (ihBody hRightBodyReadout hLeftBody
-                        hRightBody hPayload.2)
-      | lam hRightDomainReadout hRightBodyReadout =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [mExpr, mSym] using hBeq)
-              (by decide))
-  | lam hLeftDomainReadout hLeftBodyReadout ihDomain ihBody =>
-      cases hRightReadout with
-      | resolved hRightOut =>
-          rcases
-              cicStage3_resolved_nf_runtime_output_decl_reduction_exists_primary
-                hRightOut hRight with
-            ⟨rightNf, hRightNf, hRightRed⟩
-          have hRightSelf :
-              CicStage3ResolvedNfRuntimeOutput _ _ :=
-            cicStage3_resolved_nf_runtime_output_self hRightOut
-          have hLeftNf :
-              ConvDecl
-                (envOfSpecs cicStage3RawArtifactSig.translatedSpecs)
-                left rightNf := by
-            cases hRightSelf with
-            | var k =>
-                exact False.elim
-                  (mExpr_beq_head_mismatch_false (by
-                    simpa [termAtom, mExpr, mSym, mNat] using hBeq)
-                    (by decide))
-            | srt sort =>
-                cases sort <;>
-                  exact False.elim
-                    (mExpr_beq_head_mismatch_false (by
-                      simpa [termAtom, sortAtom, mExpr, mSym] using hBeq)
-                      (by decide))
-            | con hName =>
-                exact False.elim
-                  (mExpr_beq_head_mismatch_false (by
-                    simpa [termAtom, declNameAtom, mExpr, mSym] using hBeq)
-                    (by decide))
-            | bad reason =>
-                cases hRightNf
-            | pi hRightDomainSelf hRightBodySelf =>
-                exact False.elim
-                  (mExpr_beq_head_mismatch_false (by
-                    simpa [termAtom, mExpr, mSym] using hBeq)
-                    (by decide))
-            | lam hRightDomainSelf hRightBodySelf =>
-                cases hLeft with
-                | lam hLeftDomain hLeftBody =>
-                    cases hRightNf with
-                    | lam hRightDomain hRightBody =>
-                        have hPayload := atom_beq_expr_binary_payload_true
-                          (tag := "Lam")
-                          (a := _) (b := _) (c := _) (d := _)
-                          (by
-                            change Metta.Atom.beq _ _ = true at hBeq
-                            simpa [termAtom, mExpr, mSym] using hBeq)
-                        exact
-                          convDecl_cong_lam_local
-                            (ihBody
-                              (CicStage3RawArtifactSigPrimaryNfRuntimeReadout.resolved
-                                hRightBodySelf)
-                              hLeftBody hRightBody hPayload.2)
-          exact
-            Relation.EqvGen.trans _ _ _
-              hLeftNf
-              (Relation.EqvGen.symm _ _
-                (redStarDecl_implies_conv hRightRed))
-      | defnStuck hName hNotWitness =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, cicStage3CanonicalDefnStuckReadoutForSig,
-                defBodyOfQueryAtom, declNameAtom, mExpr, mSym] using hBeq)
-              (by decide))
-      | appStuck hFn hArg =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, mExpr, mSym] using hBeq)
-              (by decide))
-      | indGStuck hFamily =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, nfQuery, mExpr, mSym] using hBeq)
-              (by decide))
-      | indGZeroIota =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [termAtom, declNameAtom, mExpr, mSym] using hBeq)
-              (by decide))
-      | pi hRightDomainReadout hRightBodyReadout =>
-          exact False.elim
-            (mExpr_beq_head_mismatch_false (by
-              simpa [mExpr, mSym] using hBeq)
-              (by decide))
-      | lam hRightDomainReadout hRightBodyReadout =>
-          cases hLeft with
-          | lam hLeftDomain hLeftBody =>
-              cases hRight with
-              | lam hRightDomain hRightBody =>
-                  have hPayload := atom_beq_expr_binary_payload_true
-                    (tag := "Lam")
-                    (a := _) (b := _) (c := _) (d := _)
-                    (by
-                      change Metta.Atom.beq _ _ = true at hBeq
-                      simpa [mExpr, mSym] using hBeq)
-                  exact
-                    convDecl_cong_lam_local
-                      (ihBody hRightBodyReadout hLeftBody
-                        hRightBody hPayload.2)
+  exact Stage3ReadoutPlan.compare (primaryReadoutPlan hLeftReadout)
+    (primaryReadoutPlan hRightReadout) hLeft hRight hBeq
 
 def ConvSoundCicStage3RawArtifactSigNamedReadoutFuel : Prop :=
   namedReadoutHasFuel cicStage3RawArtifactSig 4
@@ -88911,6 +83286,40 @@ theorem infer_srt_type_core_eval_sound :
       DIndGArtifactTermTranslates.srt_type
       DIndGArtifactTermTranslates.srt_kind
 
+/-- A closed normalization query reads its recorded root computation in
+the reached state. The root result differs from the not-reducible marker
+and the original query. -/
+private theorem nfQuery_root_eval_mem_of_quoted_args
+    (fuel : Nat) (st stRoot : St)
+    (sig : DIndGArtifactSig) (raw : DIndGArtifactTerm)
+    (root out : Metta.Atom) (rootBnd outBnd : Metta.Bindings)
+    (types : KernelDefControlEnvTypeWorld st.world)
+    (step : interpretFuel kernelDefControlEnv (fuel + 1) st
+        [evalItemNil (nfQuery sig raw)] [] = ([(root, rootBnd)], stRoot))
+    (notReducible : (root == notReducibleA) = false)
+    (notSelf : (root == nfQuery sig raw) = false)
+    (output : (out, outBnd) ∈ (mettaEval kernelDefControlEnv (fuel + 1) st [] (nfQuery sig raw)).1) :
+    ∃ finalBnd, (out, finalBnd) ∈ (mettaEval kernelDefControlEnv fuel stRoot [] root).1 := by
+  have unchanged :
+      (([sigAtom sig, termAtom raw].zip [sigAtom sig, termAtom raw]).find?
+        (fun entry : Metta.Atom × Metta.Atom =>
+          (entry.1 == emptyA || entry.1.isError) && entry.1 != entry.2)) = none := by
+    simp [sigAtom_isError_false, termAtom_isError_false]
+  obtain ⟨bindings, member⟩ :=
+    mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
+      kernelDefControlEnv fuel st stRoot "nf" (sigAtom sig) (termAtom raw) root out rootBnd outBnd
+      (kernelDefControlEnv_nf_recursionNeutralPolicy st (sigAtom sig) (termAtom raw) types.nf)
+      (by simp [Metta.Atom.isError]) unchanged
+      (by simpa only [nfQuery, mExpr, mSym] using step) notReducible
+      (by simpa only [nfQuery, mExpr, mSym] using notSelf)
+      (by simpa only [nfQuery, mExpr, mSym] using output)
+  have empty :
+      restrictBnd ([sigAtom sig, termAtom raw].flatMap Metta.Atom.vars)
+        ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+    simpa [List.flatMap, sigAtom_vars_nil, termAtom_vars_nil] using
+      restrictBnd_nil_vars ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+  exact ⟨bindings, empty ▸ member⟩
+
 private theorem cicStage3RawArtifactSig_primary_nf_defn_output_mem_implies_fresh_root_output_mem
     {fuel : Nat} {st : St} {name : DeclName} {out : Metta.Atom}
     (hWorld : st.world = St.init.world)
@@ -88959,13 +83368,6 @@ private theorem cicStage3RawArtifactSig_primary_nf_defn_output_mem_implies_fresh
       interpretFuel_kernelDefControlEnv_nf_def_root_eq
         (fuel := fuel) (st := st)
         cicStage3RawArtifactSig name hStatic hImports
-  have hNoErr :
-      (([sigAtom cicStage3RawArtifactSig,
-          termAtom (.defn name)].zip
-        [sigAtom cicStage3RawArtifactSig,
-          termAtom (.defn name)]).find?
-        (fun ho : Metta.Atom × Metta.Atom => (ho.1 == emptyA || ho.1.isError) && ho.1 != ho.2)) = none := by
-    simp [sigAtom_isError_false, termAtom_isError_false]
   have hRootNotNR : (root == notReducibleA) = false := by
     rw [hRootEq]
     rfl
@@ -88976,35 +83378,12 @@ private theorem cicStage3RawArtifactSig_primary_nf_defn_output_mem_implies_fresh
   rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
   dsimp at hActual
   subst actual
-  rcases
-      mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
-        (env := kernelDefControlEnv) (fuel := fuel) (st := st)
-        (stRoot := stRoot) (op := "nf")
-        (x := sigAtom cicStage3RawArtifactSig)
-        (y := termAtom (.defn name))
-        (root := root) (final := out) (rootBnd := rootBnd)
-        (outBnd := outBnd)
-        (hPolicy := kernelDefControlEnv_nf_recursionNeutralPolicy st
-          (sigAtom cicStage3RawArtifactSig) (termAtom (.defn name)) hTypes.nf)
-        (hApplicationNotError := by simp [Metta.Atom.isError])
-        (hNoErr := hNoErr)
-        (hRoot := by simpa [nfQuery, mExpr, mSym] using hRoot)
-        (hRootNotNotReducible := hRootNotNR)
-        (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
-        (hmem := by simpa [nfQuery, mExpr, mSym] using hPair) with
-    ⟨finalBnd, hFinal⟩
-  have hOuterBndNil :
-      restrictBnd
-          (([sigAtom cicStage3RawArtifactSig,
-              termAtom (.defn name)]).flatMap Metta.Atom.vars)
-          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
-    simpa [List.flatMap,
-      sigAtom_vars_nil cicStage3RawArtifactSig,
-      termAtom_vars_nil (.defn name)] using
-      restrictBnd_nil_vars
-        ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+  obtain ⟨finalBnd, hFinal⟩ :=
+    nfQuery_root_eval_mem_of_quoted_args fuel st stRoot
+      cicStage3RawArtifactSig (.defn name) root out rootBnd outBnd
+      hTypes (by simpa only [Nat.add_assoc] using hRoot)
+      hRootNotNR hRootNotSelf (by simpa only [Nat.add_assoc] using hPair)
   refine ⟨finalBnd, ?_⟩
-  rw [hOuterBndNil] at hFinal
   rw [hRootEq] at hFinal
   simpa [stRoot, binder, counter] using hFinal
 
@@ -91085,27 +85464,19 @@ private theorem cicStage3RawArtifactSig_primary_nf_defn_fresh_root_output_isErro
   have hFresh :
       RenamedBindingKeysFreshForPayloads (counterSuffix stAtom.counter)
         (letRuleBindings binder bodyAtom template) := by
+    apply (letRuleBindings_rename_fresh_iff _ _ _ _).mpr
     intro key hkey
-    simp [letRuleBindings, bindingRuleKeys] at hkey
+    simp at hkey
     have hKeyNe : counterSuffix stAtom.counter key ≠ binder := by
       rcases hkey with rfl | rfl | rfl
       · exact hTemplateNe
       · exact hAtomNe
       · exact hPatternNe
-    constructor
-    · intro x a hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with hmem | hmem
-      · rcases hmem with ⟨rfl, rfl⟩
-        simp [template, sigAtom_vars_nil, mExpr, mSym, mVar,
-          Metta.Atom.vars, hKeyNe]
-      · rcases hmem with ⟨rfl, rfl⟩
-        simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
-          declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
-    · intro x y hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with ⟨rfl, rfl⟩
-      exact hKeyNe
+    refine ⟨?_, ?_, hKeyNe⟩
+    · simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
+        declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+    · simp [template, sigAtom_vars_nil, mExpr, mSym, mVar,
+        Metta.Atom.vars, hKeyNe]
   have hRoot :
       interpretFuel kernelDefControlEnv (1 + 1) stAtom
           [evalItemNil (mExpr "let" [mVar binder, bodyAtom, template])] [] =
@@ -91146,24 +85517,18 @@ private theorem cicStage3RawArtifactSig_primary_nf_defn_fresh_root_output_isErro
   have hBinderTemplateNe : binder ≠ counterSuffix stAtom.counter "template" :=
     hTemplateNe.symm
   have hTemplateAtom :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" := by
-    intro h
-    have h' : "template" = "atom" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hTemplatePattern :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "template" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hAtomTemplate :
       counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "template" := by
     intro h
     exact hTemplateAtom h.symm
   have hAtomPattern :
-      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "atom" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hPatternTemplate :
       counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "template" := by
     intro h
@@ -91280,27 +85645,19 @@ private theorem cicStage3RawArtifactSig_primary_nf_defn_fresh_root_output_isErro
   have hFresh :
       RenamedBindingKeysFreshForPayloads (counterSuffix stAtom.counter)
         (letRuleBindings binder bodyAtom template) := by
+    apply (letRuleBindings_rename_fresh_iff _ _ _ _).mpr
     intro key hkey
-    simp [letRuleBindings, bindingRuleKeys] at hkey
+    simp at hkey
     have hKeyNe : counterSuffix stAtom.counter key ≠ binder := by
       rcases hkey with rfl | rfl | rfl
       · exact hTemplateNe
       · exact hAtomNe
       · exact hPatternNe
-    constructor
-    · intro x a hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with hmem | hmem
-      · rcases hmem with ⟨rfl, rfl⟩
-        simp [template, sigAtom_vars_nil, mExpr, mSym, mVar,
-          Metta.Atom.vars, hKeyNe]
-      · rcases hmem with ⟨rfl, rfl⟩
-        simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
-          declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
-    · intro x y hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with ⟨rfl, rfl⟩
-      exact hKeyNe
+    refine ⟨?_, ?_, hKeyNe⟩
+    · simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
+        declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+    · simp [template, sigAtom_vars_nil, mExpr, mSym, mVar,
+        Metta.Atom.vars, hKeyNe]
   have hRoot :
       interpretFuel kernelDefControlEnv (2 + 1) stAtom
           [evalItemNil (mExpr "let" [mVar binder, bodyAtom, template])] [] =
@@ -91341,24 +85698,18 @@ private theorem cicStage3RawArtifactSig_primary_nf_defn_fresh_root_output_isErro
   have hBinderTemplateNe : binder ≠ counterSuffix stAtom.counter "template" :=
     hTemplateNe.symm
   have hTemplateAtom :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" := by
-    intro h
-    have h' : "template" = "atom" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hTemplatePattern :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "template" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hAtomTemplate :
       counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "template" := by
     intro h
     exact hTemplateAtom h.symm
   have hAtomPattern :
-      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "atom" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hPatternTemplate :
       counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "template" := by
     intro h
@@ -91481,27 +85832,19 @@ private theorem cicStage3RawArtifactSig_primary_nf_defn_fresh_root_output_isErro
   have hFresh :
       RenamedBindingKeysFreshForPayloads (counterSuffix stAtom.counter)
         (letRuleBindings binder bodyAtom template) := by
+    apply (letRuleBindings_rename_fresh_iff _ _ _ _).mpr
     intro key hkey
-    simp [letRuleBindings, bindingRuleKeys] at hkey
+    simp at hkey
     have hKeyNe : counterSuffix stAtom.counter key ≠ binder := by
       rcases hkey with rfl | rfl | rfl
       · exact hTemplateNe
       · exact hAtomNe
       · exact hPatternNe
-    constructor
-    · intro x a hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with hmem | hmem
-      · rcases hmem with ⟨rfl, rfl⟩
-        simp [template, sigAtom_vars_nil, mExpr, mSym, mVar,
-          Metta.Atom.vars, hKeyNe]
-      · rcases hmem with ⟨rfl, rfl⟩
-        simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
-          declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
-    · intro x y hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with ⟨rfl, rfl⟩
-      exact hKeyNe
+    refine ⟨?_, ?_, hKeyNe⟩
+    · simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
+        declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+    · simp [template, sigAtom_vars_nil, mExpr, mSym, mVar,
+        Metta.Atom.vars, hKeyNe]
   have hRoot :
       interpretFuel kernelDefControlEnv (fuelBase + 2 + 1) stAtom
           [evalItemNil (mExpr "let" [mVar binder, bodyAtom, template])] [] =
@@ -91543,24 +85886,18 @@ private theorem cicStage3RawArtifactSig_primary_nf_defn_fresh_root_output_isErro
   have hBinderTemplateNe : binder ≠ counterSuffix stAtom.counter "template" :=
     hTemplateNe.symm
   have hTemplateAtom :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" := by
-    intro h
-    have h' : "template" = "atom" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hTemplatePattern :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "template" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hAtomTemplate :
       counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "template" := by
     intro h
     exact hTemplateAtom h.symm
   have hAtomPattern :
-      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "atom" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hPatternTemplate :
       counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "template" := by
     intro h
@@ -92116,50 +86453,19 @@ private theorem cicStage3RawArtifactSig_primary_nf_srt_runtime_output_isError_of
       simpa [root, rootBnd, stRoot] using
         interpretFuel_kernelDefControlEnv_nf_srt_root_eq
           (fuel := 0) (st := st) cicStage3RawArtifactSig sort hStatic hImports
-    have hNoErr :
-        (([sigAtom cicStage3RawArtifactSig,
-            termAtom (.srt sort)].zip
-          [sigAtom cicStage3RawArtifactSig,
-            termAtom (.srt sort)]).find?
-          (fun ho : Metta.Atom × Metta.Atom => (ho.1 == emptyA || ho.1.isError) && ho.1 != ho.2)) =
-          none := by
-      simp [sigAtom_isError_false, termAtom_isError_false]
     have hRootNotNR : (root == notReducibleA) = false := by
       simpa [root] using termAtom_beq_notReducible_false (.srt sort)
     have hRootNotSelf :
         (root == nfQuery cicStage3RawArtifactSig (.srt sort)) = false := by
       cases sort <;> simp [root, nfQuery, termAtom, sortAtom, mExpr, mSym] <;> rfl
-    rcases
-        mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
-          (env := kernelDefControlEnv) (fuel := 0)
-          (st := st) (stRoot := stRoot) (op := "nf")
-          (x := sigAtom cicStage3RawArtifactSig)
-          (y := termAtom (.srt sort))
-          (root := root) (final := out) (rootBnd := rootBnd)
-          (outBnd := outBnd)
-          (hPolicy := kernelDefControlEnv_nf_recursionNeutralPolicy st
-            (sigAtom cicStage3RawArtifactSig) (termAtom (.srt sort)) hTypes.nf)
-          (hApplicationNotError := by simp [Metta.Atom.isError])
-          (hNoErr := hNoErr)
-          (hRoot := by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using hRoot)
-          (hRootNotNotReducible := hRootNotNR)
-          (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
-          (hmem := by simpa [nfQuery, mExpr, mSym] using hPair) with
-      ⟨finalBnd, hFinal⟩
+    obtain ⟨finalBnd, hFinal⟩ :=
+      nfQuery_root_eval_mem_of_quoted_args 0 st stRoot
+        cicStage3RawArtifactSig (.srt sort) root out rootBnd outBnd
+        hTypes hRoot
+        hRootNotNR hRootNotSelf hPair
     have hValue :
         out ∈
           (mettaEval kernelDefControlEnv 0 stRoot [] root).1.map (·.1) := by
-      have hBndNil :
-          restrictBnd
-              (([sigAtom cicStage3RawArtifactSig,
-                  termAtom (.srt sort)]).flatMap Metta.Atom.vars)
-              ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
-        simpa [List.flatMap,
-          sigAtom_vars_nil cicStage3RawArtifactSig,
-          termAtom_vars_nil (.srt sort)] using
-          restrictBnd_nil_vars
-            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
-      rw [hBndNil] at hFinal
       exact List.mem_map.mpr ⟨(out, finalBnd), hFinal, rfl⟩
     exact mettaEval_zero_output_isError hValue
   · rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
@@ -92180,47 +86486,16 @@ private theorem cicStage3RawArtifactSig_primary_nf_srt_runtime_output_isError_of
       simpa [root, rootBnd, stRoot] using
         interpretFuel_kernelDefControlEnv_nf_srt_root_eq
           (fuel := 1) (st := st) cicStage3RawArtifactSig sort hStatic hImports
-    have hNoErr :
-        (([sigAtom cicStage3RawArtifactSig,
-            termAtom (.srt sort)].zip
-          [sigAtom cicStage3RawArtifactSig,
-            termAtom (.srt sort)]).find?
-          (fun ho : Metta.Atom × Metta.Atom => (ho.1 == emptyA || ho.1.isError) && ho.1 != ho.2)) =
-          none := by
-      simp [sigAtom_isError_false, termAtom_isError_false]
     have hRootNotNR : (root == notReducibleA) = false := by
       simpa [root] using termAtom_beq_notReducible_false (.srt sort)
     have hRootNotSelf :
         (root == nfQuery cicStage3RawArtifactSig (.srt sort)) = false := by
       cases sort <;> simp [root, nfQuery, termAtom, sortAtom, mExpr, mSym] <;> rfl
-    rcases
-        mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
-          (env := kernelDefControlEnv) (fuel := 1)
-          (st := st) (stRoot := stRoot) (op := "nf")
-          (x := sigAtom cicStage3RawArtifactSig)
-          (y := termAtom (.srt sort))
-          (root := root) (final := out) (rootBnd := rootBnd)
-          (outBnd := outBnd)
-          (hPolicy := kernelDefControlEnv_nf_recursionNeutralPolicy st
-            (sigAtom cicStage3RawArtifactSig) (termAtom (.srt sort)) hTypes.nf)
-          (hApplicationNotError := by simp [Metta.Atom.isError])
-          (hNoErr := hNoErr)
-          (hRoot := by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using hRoot)
-          (hRootNotNotReducible := hRootNotNR)
-          (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
-          (hmem := by simpa [nfQuery, mExpr, mSym] using hPair) with
-      ⟨finalBnd, hFinal⟩
-    have hBndNil :
-        restrictBnd
-            (([sigAtom cicStage3RawArtifactSig,
-                termAtom (.srt sort)]).flatMap Metta.Atom.vars)
-            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
-      simpa [List.flatMap,
-        sigAtom_vars_nil cicStage3RawArtifactSig,
-        termAtom_vars_nil (.srt sort)] using
-        restrictBnd_nil_vars
-          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
-    rw [hBndNil] at hFinal
+    obtain ⟨finalBnd, hFinal⟩ :=
+      nfQuery_root_eval_mem_of_quoted_args 1 st stRoot
+        cicStage3RawArtifactSig (.srt sort) root out rootBnd outBnd
+        hTypes hRoot
+        hRootNotNR hRootNotSelf hPair
     exact
       mettaEval_kernelDefControlEnv_termAtom_srt_output_isError_fuel_one
         (st := stRoot) (sort := sort)
@@ -92262,51 +86537,20 @@ private theorem cicStage3RawArtifactSig_primary_nf_var_runtime_output_isError_of
       simpa [root, rootBnd, stRoot] using
         interpretFuel_kernelDefControlEnv_nf_var_root_eq
           (fuel := 0) (st := st) cicStage3RawArtifactSig index hStatic hImports
-    have hNoErr :
-        (([sigAtom cicStage3RawArtifactSig,
-            termAtom (.var index)].zip
-          [sigAtom cicStage3RawArtifactSig,
-            termAtom (.var index)]).find?
-          (fun ho : Metta.Atom × Metta.Atom => (ho.1 == emptyA || ho.1.isError) && ho.1 != ho.2)) =
-          none := by
-      simp [sigAtom_isError_false, termAtom_isError_false]
     have hRootNotNR : (root == notReducibleA) = false := by
       simpa [root] using termAtom_beq_notReducible_false (.var index)
     have hRootNotSelf :
         (root == nfQuery cicStage3RawArtifactSig (.var index)) = false := by
       simp [root, nfQuery, termAtom, mExpr, mSym, mNat]
       rfl
-    rcases
-        mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
-          (env := kernelDefControlEnv) (fuel := 0)
-          (st := st) (stRoot := stRoot) (op := "nf")
-          (x := sigAtom cicStage3RawArtifactSig)
-          (y := termAtom (.var index))
-          (root := root) (final := out) (rootBnd := rootBnd)
-          (outBnd := outBnd)
-          (hPolicy := kernelDefControlEnv_nf_recursionNeutralPolicy st
-            (sigAtom cicStage3RawArtifactSig) (termAtom (.var index)) hTypes.nf)
-          (hApplicationNotError := by simp [Metta.Atom.isError])
-          (hNoErr := hNoErr)
-          (hRoot := by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using hRoot)
-          (hRootNotNotReducible := hRootNotNR)
-          (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
-          (hmem := by simpa [nfQuery, mExpr, mSym] using hPair) with
-      ⟨finalBnd, hFinal⟩
+    obtain ⟨finalBnd, hFinal⟩ :=
+      nfQuery_root_eval_mem_of_quoted_args 0 st stRoot
+        cicStage3RawArtifactSig (.var index) root out rootBnd outBnd
+        hTypes hRoot
+        hRootNotNR hRootNotSelf hPair
     have hValue :
         out ∈
           (mettaEval kernelDefControlEnv 0 stRoot [] root).1.map (·.1) := by
-      have hBndNil :
-          restrictBnd
-              (([sigAtom cicStage3RawArtifactSig,
-                  termAtom (.var index)]).flatMap Metta.Atom.vars)
-              ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
-        simpa [List.flatMap,
-          sigAtom_vars_nil cicStage3RawArtifactSig,
-          termAtom_vars_nil (.var index)] using
-          restrictBnd_nil_vars
-            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
-      rw [hBndNil] at hFinal
       exact List.mem_map.mpr ⟨(out, finalBnd), hFinal, rfl⟩
     exact mettaEval_zero_output_isError hValue
   · rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
@@ -92327,48 +86571,17 @@ private theorem cicStage3RawArtifactSig_primary_nf_var_runtime_output_isError_of
       simpa [root, rootBnd, stRoot] using
         interpretFuel_kernelDefControlEnv_nf_var_root_eq
           (fuel := 1) (st := st) cicStage3RawArtifactSig index hStatic hImports
-    have hNoErr :
-        (([sigAtom cicStage3RawArtifactSig,
-            termAtom (.var index)].zip
-          [sigAtom cicStage3RawArtifactSig,
-            termAtom (.var index)]).find?
-          (fun ho : Metta.Atom × Metta.Atom => (ho.1 == emptyA || ho.1.isError) && ho.1 != ho.2)) =
-          none := by
-      simp [sigAtom_isError_false, termAtom_isError_false]
     have hRootNotNR : (root == notReducibleA) = false := by
       simpa [root] using termAtom_beq_notReducible_false (.var index)
     have hRootNotSelf :
         (root == nfQuery cicStage3RawArtifactSig (.var index)) = false := by
       simp [root, nfQuery, termAtom, mExpr, mSym, mNat]
       rfl
-    rcases
-        mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
-          (env := kernelDefControlEnv) (fuel := 1)
-          (st := st) (stRoot := stRoot) (op := "nf")
-          (x := sigAtom cicStage3RawArtifactSig)
-          (y := termAtom (.var index))
-          (root := root) (final := out) (rootBnd := rootBnd)
-          (outBnd := outBnd)
-          (hPolicy := kernelDefControlEnv_nf_recursionNeutralPolicy st
-            (sigAtom cicStage3RawArtifactSig) (termAtom (.var index)) hTypes.nf)
-          (hApplicationNotError := by simp [Metta.Atom.isError])
-          (hNoErr := hNoErr)
-          (hRoot := by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using hRoot)
-          (hRootNotNotReducible := hRootNotNR)
-          (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
-          (hmem := by simpa [nfQuery, mExpr, mSym] using hPair) with
-      ⟨finalBnd, hFinal⟩
-    have hBndNil :
-        restrictBnd
-            (([sigAtom cicStage3RawArtifactSig,
-                termAtom (.var index)]).flatMap Metta.Atom.vars)
-            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
-      simpa [List.flatMap,
-        sigAtom_vars_nil cicStage3RawArtifactSig,
-        termAtom_vars_nil (.var index)] using
-        restrictBnd_nil_vars
-          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
-    rw [hBndNil] at hFinal
+    obtain ⟨finalBnd, hFinal⟩ :=
+      nfQuery_root_eval_mem_of_quoted_args 1 st stRoot
+        cicStage3RawArtifactSig (.var index) root out rootBnd outBnd
+        hTypes hRoot
+        hRootNotNR hRootNotSelf hPair
     exact
       mettaEval_kernelDefControlEnv_termAtom_var_output_isError_fuel_one
         (st := stRoot) (k := index)
@@ -92410,51 +86623,20 @@ private theorem cicStage3RawArtifactSig_primary_nf_con_runtime_output_isError_of
       simpa [root, rootBnd, stRoot] using
         interpretFuel_kernelDefControlEnv_nf_con_root_eq
           (fuel := 0) (st := st) cicStage3RawArtifactSig name hStatic hImports
-    have hNoErr :
-        (([sigAtom cicStage3RawArtifactSig,
-            termAtom (.con name)].zip
-          [sigAtom cicStage3RawArtifactSig,
-            termAtom (.con name)]).find?
-          (fun ho : Metta.Atom × Metta.Atom => (ho.1 == emptyA || ho.1.isError) && ho.1 != ho.2)) =
-          none := by
-      simp [sigAtom_isError_false, termAtom_isError_false]
     have hRootNotNR : (root == notReducibleA) = false := by
       simpa [root] using termAtom_beq_notReducible_false (.con name)
     have hRootNotSelf :
         (root == nfQuery cicStage3RawArtifactSig (.con name)) = false := by
       simp [root, nfQuery, termAtom, declNameAtom, mExpr, mSym]
       rfl
-    rcases
-        mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
-          (env := kernelDefControlEnv) (fuel := 0)
-          (st := st) (stRoot := stRoot) (op := "nf")
-          (x := sigAtom cicStage3RawArtifactSig)
-          (y := termAtom (.con name))
-          (root := root) (final := out) (rootBnd := rootBnd)
-          (outBnd := outBnd)
-          (hPolicy := kernelDefControlEnv_nf_recursionNeutralPolicy st
-            (sigAtom cicStage3RawArtifactSig) (termAtom (.con name)) hTypes.nf)
-          (hApplicationNotError := by simp [Metta.Atom.isError])
-          (hNoErr := hNoErr)
-          (hRoot := by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using hRoot)
-          (hRootNotNotReducible := hRootNotNR)
-          (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
-          (hmem := by simpa [nfQuery, mExpr, mSym] using hPair) with
-      ⟨finalBnd, hFinal⟩
+    obtain ⟨finalBnd, hFinal⟩ :=
+      nfQuery_root_eval_mem_of_quoted_args 0 st stRoot
+        cicStage3RawArtifactSig (.con name) root out rootBnd outBnd
+        hTypes hRoot
+        hRootNotNR hRootNotSelf hPair
     have hValue :
         out ∈
           (mettaEval kernelDefControlEnv 0 stRoot [] root).1.map (·.1) := by
-      have hBndNil :
-          restrictBnd
-              (([sigAtom cicStage3RawArtifactSig,
-                  termAtom (.con name)]).flatMap Metta.Atom.vars)
-              ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
-        simpa [List.flatMap,
-          sigAtom_vars_nil cicStage3RawArtifactSig,
-          termAtom_vars_nil (.con name)] using
-          restrictBnd_nil_vars
-            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
-      rw [hBndNil] at hFinal
       exact List.mem_map.mpr ⟨(out, finalBnd), hFinal, rfl⟩
     exact mettaEval_zero_output_isError hValue
   · rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
@@ -92475,48 +86657,17 @@ private theorem cicStage3RawArtifactSig_primary_nf_con_runtime_output_isError_of
       simpa [root, rootBnd, stRoot] using
         interpretFuel_kernelDefControlEnv_nf_con_root_eq
           (fuel := 1) (st := st) cicStage3RawArtifactSig name hStatic hImports
-    have hNoErr :
-        (([sigAtom cicStage3RawArtifactSig,
-            termAtom (.con name)].zip
-          [sigAtom cicStage3RawArtifactSig,
-            termAtom (.con name)]).find?
-          (fun ho : Metta.Atom × Metta.Atom => (ho.1 == emptyA || ho.1.isError) && ho.1 != ho.2)) =
-          none := by
-      simp [sigAtom_isError_false, termAtom_isError_false]
     have hRootNotNR : (root == notReducibleA) = false := by
       simpa [root] using termAtom_beq_notReducible_false (.con name)
     have hRootNotSelf :
         (root == nfQuery cicStage3RawArtifactSig (.con name)) = false := by
       simp [root, nfQuery, termAtom, declNameAtom, mExpr, mSym]
       rfl
-    rcases
-        mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
-          (env := kernelDefControlEnv) (fuel := 1)
-          (st := st) (stRoot := stRoot) (op := "nf")
-          (x := sigAtom cicStage3RawArtifactSig)
-          (y := termAtom (.con name))
-          (root := root) (final := out) (rootBnd := rootBnd)
-          (outBnd := outBnd)
-          (hPolicy := kernelDefControlEnv_nf_recursionNeutralPolicy st
-            (sigAtom cicStage3RawArtifactSig) (termAtom (.con name)) hTypes.nf)
-          (hApplicationNotError := by simp [Metta.Atom.isError])
-          (hNoErr := hNoErr)
-          (hRoot := by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using hRoot)
-          (hRootNotNotReducible := hRootNotNR)
-          (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
-          (hmem := by simpa [nfQuery, mExpr, mSym] using hPair) with
-      ⟨finalBnd, hFinal⟩
-    have hBndNil :
-        restrictBnd
-            (([sigAtom cicStage3RawArtifactSig,
-                termAtom (.con name)]).flatMap Metta.Atom.vars)
-            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
-      simpa [List.flatMap,
-        sigAtom_vars_nil cicStage3RawArtifactSig,
-        termAtom_vars_nil (.con name)] using
-        restrictBnd_nil_vars
-          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
-    rw [hBndNil] at hFinal
+    obtain ⟨finalBnd, hFinal⟩ :=
+      nfQuery_root_eval_mem_of_quoted_args 1 st stRoot
+        cicStage3RawArtifactSig (.con name) root out rootBnd outBnd
+        hTypes hRoot
+        hRootNotNR hRootNotSelf hPair
     exact
       mettaEval_kernelDefControlEnv_termAtom_con_output_isError_fuel_one
         (st := stRoot) (name := name)
@@ -92892,14 +87043,6 @@ private theorem cicStage3RawArtifactSig_primary_nf_indG_zero_iota_runtime_output
     simpa [root, rootBnd, stRoot, Nat.add_assoc] using
       interpretFuel_kernelDefControlEnv_nf_indG_zero_iota_root_eq
         (fuel := 1) (st := st) cicStage3RawArtifactSig hStatic hImports
-  have hNoErr :
-      (([sigAtom cicStage3RawArtifactSig,
-          termAtom cicStage3IndGZeroRawRuntime].zip
-        [sigAtom cicStage3RawArtifactSig,
-          termAtom cicStage3IndGZeroRawRuntime]).find?
-        (fun ho : Metta.Atom × Metta.Atom => (ho.1 == emptyA || ho.1.isError) && ho.1 != ho.2)) =
-        none := by
-    simp [sigAtom_isError_false, termAtom_isError_false]
   have hRootNotNR : (root == notReducibleA) = false := by
     simpa [root, nfIndGZeroIotaReadout] using
       termAtom_beq_notReducible_false (.con `z)
@@ -92918,38 +87061,13 @@ private theorem cicStage3RawArtifactSig_primary_nf_indG_zero_iota_runtime_output
           [sigAtom cicStage3RawArtifactSig,
             termAtom cicStage3IndGZeroRawRuntime]) = false
     rfl
-  rcases
-      mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
-        (env := kernelDefControlEnv) (fuel := 1)
-        (st := st) (stRoot := stRoot) (op := "nf")
-        (x := sigAtom cicStage3RawArtifactSig)
-        (y := termAtom cicStage3IndGZeroRawRuntime)
-        (root := root) (final := out) (rootBnd := rootBnd)
-        (outBnd := outBnd)
-        (hPolicy := kernelDefControlEnv_nf_recursionNeutralPolicy st
-          (sigAtom cicStage3RawArtifactSig)
-          (termAtom cicStage3IndGZeroRawRuntime) hTypes.nf)
-        (hApplicationNotError := by simp [Metta.Atom.isError])
-        (hNoErr := hNoErr)
-        (hRoot := by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using hRoot)
-        (hRootNotNotReducible := hRootNotNR)
-        (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
-        (hmem := by simpa [nfQuery, mExpr, mSym] using hPair) with
-    ⟨finalBnd, hFinal⟩
+  obtain ⟨finalBnd, hFinal⟩ :=
+    nfQuery_root_eval_mem_of_quoted_args 1 st stRoot
+      cicStage3RawArtifactSig cicStage3IndGZeroRawRuntime root out rootBnd outBnd
+      hTypes hRoot
+      hRootNotNR hRootNotSelf hPair
   have hRootClosed : root.vars = [] := by
     simpa [root, nfIndGZeroIotaReadout] using termAtom_vars_nil (.con `z)
-  have hBndNil :
-      restrictBnd
-          (([sigAtom cicStage3RawArtifactSig,
-              termAtom cicStage3IndGZeroRawRuntime]).flatMap
-            Metta.Atom.vars)
-          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
-    simpa [List.flatMap,
-      sigAtom_vars_nil cicStage3RawArtifactSig,
-      termAtom_vars_nil cicStage3IndGZeroRawRuntime] using
-      restrictBnd_nil_vars
-        ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
-  rw [hBndNil] at hFinal
   exact
     mettaEval_kernelDefControlEnv_termAtom_con_output_isError_fuel_one
       (st := stRoot) (name := `z)
@@ -93610,1309 +87728,417 @@ private theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOn
       cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_nonError_indG
         (by omega) hWorld hTrans hOut hNoErr
 
-private theorem cicStage3RawArtifactSig_primary_nf_pi_runtime_nonError_false_of_one_le_lt_three
-    {fuel : Nat} {st : St}
-    {rawDomain rawBody : DIndGArtifactTerm} {out : Metta.Atom}
-    (hFuel : 1 ≤ fuel)
-    (hLtThree : fuel < 3)
-    (hWorld : st.world = St.init.world)
-    (hOut :
-      out ∈
-        (mettaEval kernelDefControlEnv fuel st []
-          (nfQuery cicStage3RawArtifactSig
-            (.pi rawDomain rawBody))).1.map (·.1))
-    (hNoErr : (out == emptyA || out.isError) = false) :
-    False := by
-  have hCases : fuel = 1 ∨ fuel = 2 := by omega
-  have hImports : st.world.selfImports = [] := by
-    rw [hWorld]
-    rfl
-  have hTypes : KernelDefControlEnvTypeWorld st.world :=
-    kernelDefControlEnvTypeWorld_of_world_eq_init hWorld
-  rcases hCases with rfl | rfl
-  · rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
-    dsimp at hActual
-    subst actual
-    let root := nfPiReadout cicStage3RawArtifactSig rawDomain rawBody
-    let rootBnd :=
-      (renameBindings (counterSuffix (st.counter + nfPiCandidatePre.length))
-        (nfPiRuleBindings cicStage3RawArtifactSig rawDomain rawBody)).reverse
-    let stRoot : St :=
-      { counter := st.counter + nfPiCandidatePre.length + 5,
-        world := st.world }
-    have hStatic : st.world.selfExtra = [] := by
-      rw [hWorld]
-      rfl
-    have hRoot :
-        interpretFuel kernelDefControlEnv (0 + 1) st
-            [evalItemNil
-              (nfQuery cicStage3RawArtifactSig
-                (.pi rawDomain rawBody))] [] =
-          ([(root, rootBnd)], stRoot) := by
-      simpa [root, rootBnd, stRoot] using
-        interpretFuel_kernelDefControlEnv_nf_pi_root_eq
-          (fuel := 0) (st := st)
-          cicStage3RawArtifactSig rawDomain rawBody hStatic hImports
-    have hOuterNoErr :
-        (([sigAtom cicStage3RawArtifactSig,
-            termAtom (.pi rawDomain rawBody)].zip
-          [sigAtom cicStage3RawArtifactSig,
-            termAtom (.pi rawDomain rawBody)]).find?
-          (fun ho : Metta.Atom × Metta.Atom =>
-            (ho.1 == emptyA || ho.1.isError) && ho.1 != ho.2)) = none := by
-      simp [sigAtom_isError_false, termAtom_isError_false]
-    have hRootNotNR : (root == notReducibleA) = false := by
-      simp [root, nfPiReadout, notReducibleA, mExpr, mSym]
-      rfl
-    have hRootNotSelf :
-        (root == nfQuery cicStage3RawArtifactSig
-          (.pi rawDomain rawBody)) = false := by
-      simp [root, nfPiReadout, nfQuery, termAtom, mExpr, mSym]
-      rfl
-    rcases
-        mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
-          (env := kernelDefControlEnv) (fuel := 0)
-          (st := st) (stRoot := stRoot) (op := "nf")
-          (x := sigAtom cicStage3RawArtifactSig)
-          (y := termAtom (.pi rawDomain rawBody))
-          (root := root) (final := out) (rootBnd := rootBnd)
-          (outBnd := outBnd)
-          (hPolicy := kernelDefControlEnv_nf_recursionNeutralPolicy st
-            (sigAtom cicStage3RawArtifactSig)
-            (termAtom (.pi rawDomain rawBody)) hTypes.nf)
-          (hApplicationNotError := by simp [Metta.Atom.isError])
-          (hNoErr := hOuterNoErr)
-          (hRoot := by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using hRoot)
-          (hRootNotNotReducible := hRootNotNR)
-          (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
-          (hmem := by simpa [nfQuery, mExpr, mSym] using hPair) with
-      ⟨finalBnd, hFinal⟩
-    have hBndNil :
-        restrictBnd
-            (([sigAtom cicStage3RawArtifactSig,
-                termAtom (.pi rawDomain rawBody)]).flatMap
-              Metta.Atom.vars)
-            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
-      simpa [List.flatMap,
-        sigAtom_vars_nil cicStage3RawArtifactSig,
-        termAtom_vars_nil (.pi rawDomain rawBody)] using
-        restrictBnd_nil_vars
-          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
-    rw [hBndNil] at hFinal
-    have hValue :
-        out ∈
-          (mettaEval kernelDefControlEnv 0 stRoot [] root).1.map (·.1) :=
-      List.mem_map.mpr ⟨(out, finalBnd), hFinal, rfl⟩
-    have hErr := mettaEval_zero_output_isError hValue
-    rw [(Bool.or_eq_false_iff.mp hNoErr).2] at hErr
-    cases hErr
-  · rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
-    dsimp at hActual
-    subst actual
-    let root := nfPiReadout cicStage3RawArtifactSig rawDomain rawBody
-    let rootBnd :=
-      (renameBindings (counterSuffix (st.counter + nfPiCandidatePre.length))
-        (nfPiRuleBindings cicStage3RawArtifactSig rawDomain rawBody)).reverse
-    let stRoot : St :=
-      { counter := st.counter + nfPiCandidatePre.length + 5,
-        world := st.world }
-    have hStatic : st.world.selfExtra = [] := by
-      rw [hWorld]
-      rfl
-    have hStRootWorld : stRoot.world = St.init.world := by
-      simpa [stRoot] using hWorld
-    have hRoot :
-        interpretFuel kernelDefControlEnv (1 + 1) st
-            [evalItemNil
-              (nfQuery cicStage3RawArtifactSig
-                (.pi rawDomain rawBody))] [] =
-          ([(root, rootBnd)], stRoot) := by
-      simpa [root, rootBnd, stRoot] using
-        interpretFuel_kernelDefControlEnv_nf_pi_root_eq
-          (fuel := 1) (st := st)
-          cicStage3RawArtifactSig rawDomain rawBody hStatic hImports
-    have hOuterNoErr :
-        (([sigAtom cicStage3RawArtifactSig,
-            termAtom (.pi rawDomain rawBody)].zip
-          [sigAtom cicStage3RawArtifactSig,
-            termAtom (.pi rawDomain rawBody)]).find?
-          (fun ho : Metta.Atom × Metta.Atom =>
-            (ho.1 == emptyA || ho.1.isError) && ho.1 != ho.2)) = none := by
-      simp [sigAtom_isError_false, termAtom_isError_false]
-    have hRootNotNR : (root == notReducibleA) = false := by
-      simp [root, nfPiReadout, notReducibleA, mExpr, mSym]
-      rfl
-    have hRootNotSelf :
-        (root == nfQuery cicStage3RawArtifactSig
-          (.pi rawDomain rawBody)) = false := by
-      simp [root, nfPiReadout, nfQuery, termAtom, mExpr, mSym]
-      rfl
-    rcases
-        mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
-          (env := kernelDefControlEnv) (fuel := 1)
-          (st := st) (stRoot := stRoot) (op := "nf")
-          (x := sigAtom cicStage3RawArtifactSig)
-          (y := termAtom (.pi rawDomain rawBody))
-          (root := root) (final := out) (rootBnd := rootBnd)
-          (outBnd := outBnd)
-          (hPolicy := kernelDefControlEnv_nf_recursionNeutralPolicy st
-            (sigAtom cicStage3RawArtifactSig)
-            (termAtom (.pi rawDomain rawBody)) hTypes.nf)
-          (hApplicationNotError := by simp [Metta.Atom.isError])
-          (hNoErr := hOuterNoErr)
-          (hRoot := by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using hRoot)
-          (hRootNotNotReducible := hRootNotNR)
-          (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
-          (hmem := by simpa [nfQuery, mExpr, mSym] using hPair) with
-      ⟨finalBnd, hFinal⟩
-    have hBndNil :
-        restrictBnd
-            (([sigAtom cicStage3RawArtifactSig,
-                termAtom (.pi rawDomain rawBody)]).flatMap
-              Metta.Atom.vars)
-            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
-      simpa [List.flatMap,
-        sigAtom_vars_nil cicStage3RawArtifactSig,
-        termAtom_vars_nil (.pi rawDomain rawBody)] using
-        restrictBnd_nil_vars
-          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
-    rw [hBndNil] at hFinal
-    rcases
-        mettaEval_binary_eval_args_pair_nonterminal_notReducible_state_pred_before_closed
-          kernelDefControlEnv 0 stRoot
-          "Pi"
-          (nfQuery cicStage3RawArtifactSig rawDomain)
-          (nfQuery cicStage3RawArtifactSig rawBody)
-          out finalBnd
-          (fun st0 => st0.world = St.init.world)
-          (nfQuery_vars_nil cicStage3RawArtifactSig rawDomain)
-          (nfQuery_vars_nil cicStage3RawArtifactSig rawBody)
-          (kernelDefControlEnv_Pi_recursionNeutralPolicy stRoot
-            (nfQuery cicStage3RawArtifactSig rawDomain)
-            (nfQuery cicStage3RawArtifactSig rawBody)
-            (by simpa [stRoot] using hTypes.pi))
-          (by simp [Metta.Atom.isError])
-          hNoErr
-          (by
-            rw [mettaEval_zero_world]
-            exact hStRootWorld)
-          (by
-            intro acc0 _domainOut _domainBnd _hDomainMem hAccWorld
-            rw [mettaEval_zero_world]
-            exact hAccWorld)
-          (by
-            intro acc0 domainOut bodyOut hAccWorld
-            have hStaticAcc : acc0.2.world.selfExtra = [] := by
-              rw [hAccWorld]
-              rfl
-            have hImportsAcc : acc0.2.world.selfImports = [] := by
-              rw [hAccWorld]
-              rfl
-            simpa [evalItemNil, mExpr, mSym] using
-              interpretFuel_kernelDefControlEnv_eval_Pi_atoms_notReducible_eq_state
-                0 acc0.2 domainOut bodyOut hStaticAcc hImportsAcc)
-          (by
-            simpa [root, nfPiReadout, nfQuery, mExpr, mSym] using hFinal) with
-      ⟨domainOut, domainBnd, hDomainMem, _stBeforeBody, bodyOut,
-        _bodyBnd, _hBeforeBodyWorld, _hBodyMem, hChildNoErr, _hOutEq⟩
-    have hChildNoErrs :=
-      nf_binary_readout_arg_find_none_noerr
-        cicStage3RawArtifactSig rawDomain rawBody
-        domainOut bodyOut hChildNoErr
-    have hDomainValue :
-        domainOut ∈
-          (mettaEval kernelDefControlEnv 0 stRoot []
-            (nfQuery cicStage3RawArtifactSig rawDomain)).1.map (·.1) :=
-      List.mem_map.mpr ⟨(domainOut, domainBnd), hDomainMem, rfl⟩
-    have hDomainErr := mettaEval_zero_output_isError hDomainValue
-    rw [hChildNoErrs.1] at hDomainErr
-    cases hDomainErr
+/-- Once the outer query has dispatched, a binary readout requires a
+successful first-operand evaluation. The root and application premises
+retain the actual state and rule at each transition. -/
+private theorem nfQuery_binary_readout_nonError_false_of_one_le_lt_three
+    (sig : DIndGArtifactSig) (raw domain body : DIndGArtifactTerm)
+    (head : String) (st stRoot : St) (rootBnd : Metta.Bindings)
+    (world : st.world = St.init.world) (rootWorld : stRoot.world = St.init.world)
+    (rootStep : ∀ fuel : Nat,
+      interpretFuel kernelDefControlEnv (fuel + 1) st [evalItemNil (nfQuery sig raw)] [] =
+        ([(mExpr head [nfQuery sig domain, nfQuery sig body], rootBnd)], stRoot))
+    (continuation :
+      (mExpr head [nfQuery sig domain, nfQuery sig body] == notReducibleA) = false)
+    (different :
+      (mExpr head [nfQuery sig domain, nfQuery sig body] == nfQuery sig raw) = false)
+    (applicationOK :
+      (Metta.Atom.expr [Metta.Atom.sym head, nfQuery sig domain, nfQuery sig body]).isError = false)
+    (policy : RecursionNeutralApplicationPolicy kernelDefControlEnv stRoot.world
+      head [nfQuery sig domain, nfQuery sig body] [true, true] false)
+    (readoutStep : ∀ (state : St) (first second : Atom),
+      state.world = St.init.world →
+      interpretFuel kernelDefControlEnv (0 + 1) state
+          [evalItemNil (mExpr head [first, second])] [] =
+        ([(notReducibleA, [])], state))
+    {fuel : Nat} {out : Atom} (positive : 1 ≤ fuel) (small : fuel < 3)
+    (observed : out ∈ (mettaEval kernelDefControlEnv fuel st [] (nfQuery sig raw)).1.map (·.1))
+    (noError : (out == emptyA || out.isError) = false) : False := by
+  let root := mExpr head [nfQuery sig domain, nfQuery sig body]
+  have reached (cost : Nat)
+      (present : out ∈ (mettaEval kernelDefControlEnv (cost + 1) st [] (nfQuery sig raw)).1.map (·.1)) :
+      ∃ bindings, (out, bindings) ∈ (mettaEval kernelDefControlEnv cost stRoot [] root).1 := by
+    obtain ⟨⟨actual, bindings⟩, member, rfl⟩ := List.mem_map.mp present
+    exact nfQuery_root_eval_mem_of_quoted_args cost st stRoot sig raw root actual rootBnd bindings
+      (kernelDefControlEnvTypeWorld_of_world_eq_init world) (rootStep cost)
+      continuation different member
+  have casesFuel : fuel = 1 ∨ fuel = 2 := by omega
+  rcases casesFuel with rfl | rfl
+  · obtain ⟨bindings, member⟩ := reached 0 observed
+    have value : out ∈ (mettaEval kernelDefControlEnv 0 stRoot [] root).1.map (·.1) :=
+      List.mem_map.mpr ⟨(out, bindings), member, rfl⟩
+    have error := mettaEval_zero_output_isError value
+    exact Bool.noConfusion ((Bool.or_eq_false_iff.mp noError).2.symm.trans error)
+  · obtain ⟨bindings, member⟩ := reached 1 observed
+    obtain ⟨first, firstBindings, firstMember, _, second, _, _, _, operands, _⟩ :=
+      mettaEval_binary_eval_args_pair_nonterminal_notReducible_state_pred_before_closed
+        kernelDefControlEnv 0 stRoot head (nfQuery sig domain) (nfQuery sig body) out bindings
+        (fun state => state.world = St.init.world)
+        (nfQuery_vars_nil sig domain) (nfQuery_vars_nil sig body) policy
+        applicationOK noError
+        (by rw [mettaEval_zero_world]; exact rootWorld)
+        (by
+          intro accumulator _ _ _ before
+          rw [mettaEval_zero_world]
+          exact before)
+        (fun accumulator first second before => readoutStep accumulator.2 first second before)
+        (by simpa only [root, mExpr, mSym] using member)
+    have noOperandErrors := nf_binary_readout_arg_find_none_noerr sig domain body first second operands
+    have firstValue :
+        first ∈ (mettaEval kernelDefControlEnv 0 stRoot [] (nfQuery sig domain)).1.map (·.1) :=
+      List.mem_map.mpr ⟨(first, firstBindings), firstMember, rfl⟩
+    exact Bool.noConfusion (noOperandErrors.1.symm.trans (mettaEval_zero_output_isError firstValue))
 
-private theorem cicStage3RawArtifactSig_primary_nf_lam_runtime_nonError_false_of_one_le_lt_three
-    {fuel : Nat} {st : St}
-    {rawDomain rawBody : DIndGArtifactTerm} {out : Metta.Atom}
-    (hFuel : 1 ≤ fuel)
-    (hLtThree : fuel < 3)
-    (hWorld : st.world = St.init.world)
-    (hOut :
-      out ∈
-        (mettaEval kernelDefControlEnv fuel st []
-          (nfQuery cicStage3RawArtifactSig
-            (.lam rawDomain rawBody))).1.map (·.1))
-    (hNoErr : (out == emptyA || out.isError) = false) :
-    False := by
-  have hCases : fuel = 1 ∨ fuel = 2 := by omega
-  have hImports : st.world.selfImports = [] := by
-    rw [hWorld]
+
+/-- The root computation and local execution laws for reading a binary binder.
+The plan keeps the reached state and its actual freshened bindings. -/
+private structure BinderNfPlan (domain body : DIndGArtifactTerm) where
+  term : DIndGArtifactTerm
+  head : String
+  bindings : St → Metta.Bindings
+  reached : St → St
+  reachedWorld : ∀ st, (reached st).world = st.world
+  rootStep : ∀ (fuel : Nat) (st : St), st.world.selfExtra = [] → st.world.selfImports = [] →
+    interpretFuel kernelDefControlEnv (fuel + 1) st
+        [evalItemNil (nfQuery cicStage3RawArtifactSig term)] [] =
+      ([(mExpr head [nfQuery cicStage3RawArtifactSig domain, nfQuery cicStage3RawArtifactSig body],
+        bindings st)], reached st)
+  rootNotReducible :
+    (mExpr head [nfQuery cicStage3RawArtifactSig domain, nfQuery cicStage3RawArtifactSig body] ==
+      notReducibleA) = false
+  rootNotQuery :
+    (mExpr head [nfQuery cicStage3RawArtifactSig domain, nfQuery cicStage3RawArtifactSig body] ==
+      nfQuery cicStage3RawArtifactSig term) = false
+  policy : ∀ (st : St), KernelDefControlEnvTypeWorld st.world →
+    RecursionNeutralApplicationPolicy kernelDefControlEnv st.world head
+      [nfQuery cicStage3RawArtifactSig domain, nfQuery cicStage3RawArtifactSig body] [true, true] false
+  applicationNotError : ∀ (left right : Metta.Atom),
+    (Metta.Atom.expr [.sym head, left, right]).isError = false
+  finish : ∀ (fuel : Nat) (st : St) (left right : Metta.Atom),
+    st.world.selfExtra = [] → st.world.selfImports = [] →
+    interpretFuel kernelDefControlEnv (fuel + 1) st
+      [evalItemNil (Metta.Atom.expr [.sym head, left, right])] [] = ([(notReducibleA, [])], st)
+  readout : ∀ {left right : Metta.Atom},
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout domain left →
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout body right →
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout term (Metta.Atom.expr [.sym head, left, right])
+
+private def piNfPlan (domain body : DIndGArtifactTerm) : BinderNfPlan domain body where
+  term := .pi domain body
+  head := "Pi"
+  bindings := fun st =>
+    (renameBindings (counterSuffix (st.counter + nfPiCandidatePre.length))
+      (nfPiRuleBindings cicStage3RawArtifactSig domain body)).reverse
+  reached := fun st => { counter := st.counter + nfPiCandidatePre.length + 5, world := st.world }
+  reachedWorld := fun _ => rfl
+  rootStep := fun _ _ static imports =>
+    interpretFuel_kernelDefControlEnv_nf_pi_root_eq cicStage3RawArtifactSig domain body static imports
+  rootNotReducible := by
+    simp [notReducibleA, mExpr, mSym]
     rfl
-  have hTypes : KernelDefControlEnvTypeWorld st.world :=
-    kernelDefControlEnvTypeWorld_of_world_eq_init hWorld
-  rcases hCases with rfl | rfl
-  · rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
-    dsimp at hActual
-    subst actual
-    let root := nfLamReadout cicStage3RawArtifactSig rawDomain rawBody
-    let rootBnd :=
-      (renameBindings (counterSuffix (st.counter + nfLamCandidatePre.length))
-        (nfLamRuleBindings cicStage3RawArtifactSig rawDomain rawBody)).reverse
-    let stRoot : St :=
-      { counter := st.counter + nfLamCandidatePre.length + 4,
-        world := st.world }
-    have hStatic : st.world.selfExtra = [] := by
-      rw [hWorld]
-      rfl
-    have hRoot :
-        interpretFuel kernelDefControlEnv (0 + 1) st
-            [evalItemNil
-              (nfQuery cicStage3RawArtifactSig
-                (.lam rawDomain rawBody))] [] =
-          ([(root, rootBnd)], stRoot) := by
-      simpa [root, rootBnd, stRoot] using
-        interpretFuel_kernelDefControlEnv_nf_lam_root_eq
-          (fuel := 0) (st := st)
-          cicStage3RawArtifactSig rawDomain rawBody hStatic hImports
-    have hOuterNoErr :
-        (([sigAtom cicStage3RawArtifactSig,
-            termAtom (.lam rawDomain rawBody)].zip
-          [sigAtom cicStage3RawArtifactSig,
-            termAtom (.lam rawDomain rawBody)]).find?
-          (fun ho : Metta.Atom × Metta.Atom =>
-            (ho.1 == emptyA || ho.1.isError) && ho.1 != ho.2)) = none := by
-      simp [sigAtom_isError_false, termAtom_isError_false]
-    have hRootNotNR : (root == notReducibleA) = false := by
-      simp [root, nfLamReadout, notReducibleA, mExpr, mSym]
-      rfl
-    have hRootNotSelf :
-        (root == nfQuery cicStage3RawArtifactSig
-          (.lam rawDomain rawBody)) = false := by
-      simp [root, nfLamReadout, nfQuery, termAtom, mExpr, mSym]
-      rfl
-    rcases
-        mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
-          (env := kernelDefControlEnv) (fuel := 0)
-          (st := st) (stRoot := stRoot) (op := "nf")
-          (x := sigAtom cicStage3RawArtifactSig)
-          (y := termAtom (.lam rawDomain rawBody))
-          (root := root) (final := out) (rootBnd := rootBnd)
-          (outBnd := outBnd)
-          (hPolicy := kernelDefControlEnv_nf_recursionNeutralPolicy st
-            (sigAtom cicStage3RawArtifactSig)
-            (termAtom (.lam rawDomain rawBody)) hTypes.nf)
-          (hApplicationNotError := by simp [Metta.Atom.isError])
-          (hNoErr := hOuterNoErr)
-          (hRoot := by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using hRoot)
-          (hRootNotNotReducible := hRootNotNR)
-          (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
-          (hmem := by simpa [nfQuery, mExpr, mSym] using hPair) with
-      ⟨finalBnd, hFinal⟩
-    have hBndNil :
-        restrictBnd
-            (([sigAtom cicStage3RawArtifactSig,
-                termAtom (.lam rawDomain rawBody)]).flatMap
-              Metta.Atom.vars)
-            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
-      simpa [List.flatMap,
-        sigAtom_vars_nil cicStage3RawArtifactSig,
-        termAtom_vars_nil (.lam rawDomain rawBody)] using
-        restrictBnd_nil_vars
-          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
-    rw [hBndNil] at hFinal
-    have hValue :
-        out ∈
-          (mettaEval kernelDefControlEnv 0 stRoot [] root).1.map (·.1) :=
-      List.mem_map.mpr ⟨(out, finalBnd), hFinal, rfl⟩
-    have hErr := mettaEval_zero_output_isError hValue
-    rw [(Bool.or_eq_false_iff.mp hNoErr).2] at hErr
-    cases hErr
-  · rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
-    dsimp at hActual
-    subst actual
-    let root := nfLamReadout cicStage3RawArtifactSig rawDomain rawBody
-    let rootBnd :=
-      (renameBindings (counterSuffix (st.counter + nfLamCandidatePre.length))
-        (nfLamRuleBindings cicStage3RawArtifactSig rawDomain rawBody)).reverse
-    let stRoot : St :=
-      { counter := st.counter + nfLamCandidatePre.length + 4,
-        world := st.world }
-    have hStatic : st.world.selfExtra = [] := by
-      rw [hWorld]
-      rfl
-    have hStRootWorld : stRoot.world = St.init.world := by
-      simpa [stRoot] using hWorld
-    have hRoot :
-        interpretFuel kernelDefControlEnv (1 + 1) st
-            [evalItemNil
-              (nfQuery cicStage3RawArtifactSig
-                (.lam rawDomain rawBody))] [] =
-          ([(root, rootBnd)], stRoot) := by
-      simpa [root, rootBnd, stRoot] using
-        interpretFuel_kernelDefControlEnv_nf_lam_root_eq
-          (fuel := 1) (st := st)
-          cicStage3RawArtifactSig rawDomain rawBody hStatic hImports
-    have hOuterNoErr :
-        (([sigAtom cicStage3RawArtifactSig,
-            termAtom (.lam rawDomain rawBody)].zip
-          [sigAtom cicStage3RawArtifactSig,
-            termAtom (.lam rawDomain rawBody)]).find?
-          (fun ho : Metta.Atom × Metta.Atom =>
-            (ho.1 == emptyA || ho.1.isError) && ho.1 != ho.2)) = none := by
-      simp [sigAtom_isError_false, termAtom_isError_false]
-    have hRootNotNR : (root == notReducibleA) = false := by
-      simp [root, nfLamReadout, notReducibleA, mExpr, mSym]
-      rfl
-    have hRootNotSelf :
-        (root == nfQuery cicStage3RawArtifactSig
-          (.lam rawDomain rawBody)) = false := by
-      simp [root, nfLamReadout, nfQuery, termAtom, mExpr, mSym]
-      rfl
-    rcases
-        mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
-          (env := kernelDefControlEnv) (fuel := 1)
-          (st := st) (stRoot := stRoot) (op := "nf")
-          (x := sigAtom cicStage3RawArtifactSig)
-          (y := termAtom (.lam rawDomain rawBody))
-          (root := root) (final := out) (rootBnd := rootBnd)
-          (outBnd := outBnd)
-          (hPolicy := kernelDefControlEnv_nf_recursionNeutralPolicy st
-            (sigAtom cicStage3RawArtifactSig)
-            (termAtom (.lam rawDomain rawBody)) hTypes.nf)
-          (hApplicationNotError := by simp [Metta.Atom.isError])
-          (hNoErr := hOuterNoErr)
-          (hRoot := by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using hRoot)
-          (hRootNotNotReducible := hRootNotNR)
-          (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
-          (hmem := by simpa [nfQuery, mExpr, mSym] using hPair) with
-      ⟨finalBnd, hFinal⟩
-    have hBndNil :
-        restrictBnd
-            (([sigAtom cicStage3RawArtifactSig,
-                termAtom (.lam rawDomain rawBody)]).flatMap
-              Metta.Atom.vars)
-            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
-      simpa [List.flatMap,
-        sigAtom_vars_nil cicStage3RawArtifactSig,
-        termAtom_vars_nil (.lam rawDomain rawBody)] using
-        restrictBnd_nil_vars
-          ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
-    rw [hBndNil] at hFinal
-    rcases
-        mettaEval_binary_eval_args_pair_nonterminal_notReducible_state_pred_before_closed
-          kernelDefControlEnv 0 stRoot
-          "Lam"
-          (nfQuery cicStage3RawArtifactSig rawDomain)
-          (nfQuery cicStage3RawArtifactSig rawBody)
-          out finalBnd
-          (fun st0 => st0.world = St.init.world)
-          (nfQuery_vars_nil cicStage3RawArtifactSig rawDomain)
-          (nfQuery_vars_nil cicStage3RawArtifactSig rawBody)
-          (kernelDefControlEnv_Lam_recursionNeutralPolicy stRoot
-            (nfQuery cicStage3RawArtifactSig rawDomain)
-            (nfQuery cicStage3RawArtifactSig rawBody)
-            (by simpa [stRoot] using hTypes.lam))
-          (by simp [Metta.Atom.isError])
-          hNoErr
-          (by
-            rw [mettaEval_zero_world]
-            exact hStRootWorld)
-          (by
-            intro acc0 _domainOut _domainBnd _hDomainMem hAccWorld
-            rw [mettaEval_zero_world]
-            exact hAccWorld)
-          (by
-            intro acc0 domainOut bodyOut hAccWorld
-            have hStaticAcc : acc0.2.world.selfExtra = [] := by
-              rw [hAccWorld]
-              rfl
-            have hImportsAcc : acc0.2.world.selfImports = [] := by
-              rw [hAccWorld]
-              rfl
-            simpa [evalItemNil, mExpr, mSym] using
-              interpretFuel_kernelDefControlEnv_eval_Lam_atoms_notReducible_eq_state
-                0 acc0.2 domainOut bodyOut hStaticAcc hImportsAcc)
-          (by
-            simpa [root, nfLamReadout, nfQuery, mExpr, mSym] using hFinal) with
-      ⟨domainOut, domainBnd, hDomainMem, _stBeforeBody, bodyOut,
-        _bodyBnd, _hBeforeBodyWorld, _hBodyMem, hChildNoErr, _hOutEq⟩
-    have hChildNoErrs :=
-      nf_binary_readout_arg_find_none_noerr
-        cicStage3RawArtifactSig rawDomain rawBody
-        domainOut bodyOut hChildNoErr
-    have hDomainValue :
-        domainOut ∈
-          (mettaEval kernelDefControlEnv 0 stRoot []
-            (nfQuery cicStage3RawArtifactSig rawDomain)).1.map (·.1) :=
-      List.mem_map.mpr ⟨(domainOut, domainBnd), hDomainMem, rfl⟩
-    have hDomainErr := mettaEval_zero_output_isError hDomainValue
-    rw [hChildNoErrs.1] at hDomainErr
-    cases hDomainErr
+  rootNotQuery := by
+    simp [nfQuery, termAtom, mExpr, mSym]
+    rfl
+  policy := fun st types => kernelDefControlEnv_Pi_recursionNeutralPolicy st _ _ types.pi
+  applicationNotError := by intros; simp [Metta.Atom.isError]
+  finish := fun fuel st left right static imports =>
+    interpretFuel_kernelDefControlEnv_eval_Pi_atoms_notReducible_eq_state fuel st left right static imports
+  readout := fun left right => .pi left right
+
+private def lamNfPlan (domain body : DIndGArtifactTerm) : BinderNfPlan domain body where
+  term := .lam domain body
+  head := "Lam"
+  bindings := fun st =>
+    (renameBindings (counterSuffix (st.counter + nfLamCandidatePre.length))
+      (nfLamRuleBindings cicStage3RawArtifactSig domain body)).reverse
+  reached := fun st => { counter := st.counter + nfLamCandidatePre.length + 4, world := st.world }
+  reachedWorld := fun _ => rfl
+  rootStep := fun _ _ static imports =>
+    interpretFuel_kernelDefControlEnv_nf_lam_root_eq cicStage3RawArtifactSig domain body static imports
+  rootNotReducible := by
+    simp [notReducibleA, mExpr, mSym]
+    rfl
+  rootNotQuery := by
+    simp [nfQuery, termAtom, mExpr, mSym]
+    rfl
+  policy := fun st types => kernelDefControlEnv_Lam_recursionNeutralPolicy st _ _ types.lam
+  applicationNotError := by intros; simp [Metta.Atom.isError]
+  finish := fun fuel st left right static imports =>
+    interpretFuel_kernelDefControlEnv_eval_Lam_atoms_notReducible_eq_state fuel st left right static imports
+  readout := fun left right => .lam left right
+
+private abbrev NfRecursiveReadout (raw : DIndGArtifactTerm) : Prop :=
+  ∀ {n fuel : Nat} {st : St} {term : ScopedTerm n} {out : Metta.Atom},
+    1 ≤ fuel →
+    st.world = St.init.world →
+    DIndGArtifactTermTranslates cicStage3RawArtifactSig.nameTranslates n raw term →
+    out ∈ (mettaEval kernelDefControlEnv fuel st [] (nfQuery cicStage3RawArtifactSig raw)).1.map (·.1) →
+    (out == emptyA || out.isError) = false →
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout raw out
+
+private abbrev NfRecursiveWorld (raw : DIndGArtifactTerm) : Prop :=
+  ∀ {n fuel : Nat} {st : St} {term : ScopedTerm n},
+    1 ≤ fuel →
+    st.world = St.init.world →
+    DIndGArtifactTermTranslates cicStage3RawArtifactSig.nameTranslates n raw term →
+    ((mettaEval kernelDefControlEnv fuel st [] (nfQuery cicStage3RawArtifactSig raw)).2).world = St.init.world
+
+private theorem initialWorld_reads {world : World} (same : world = St.init.world) :
+    world.selfExtra = [] ∧ world.selfImports = [] := by
+  subst world
+  exact ⟨rfl, rfl⟩
+
+private theorem BinderNfPlan.reaches_initial_world {domain body : DIndGArtifactTerm}
+    (plan : BinderNfPlan domain body) {st : St} (same : st.world = St.init.world) :
+    (plan.reached st).world = St.init.world :=
+  (plan.reachedWorld st).trans same
+
+private theorem BinderNfPlan.extract {domain body : DIndGArtifactTerm}
+    (plan : BinderNfPlan domain body)
+    (domainRead : NfRecursiveReadout domain) (bodyRead : NfRecursiveReadout body)
+    (domainWorld : NfRecursiveWorld domain) (bodyWorld : NfRecursiveWorld body)
+    {domainDepth bodyDepth fuel : Nat} {st : St} {out : Metta.Atom}
+    {domainTerm : ScopedTerm domainDepth} {bodyTerm : ScopedTerm bodyDepth}
+    (hDomain : DIndGArtifactTermTranslates cicStage3RawArtifactSig.nameTranslates domainDepth domain domainTerm)
+    (hBody : DIndGArtifactTermTranslates cicStage3RawArtifactSig.nameTranslates bodyDepth body bodyTerm)
+    (hFuel : 3 ≤ fuel) (hWorld : st.world = St.init.world)
+    (hOut : out ∈ (mettaEval kernelDefControlEnv fuel st [] (nfQuery cicStage3RawArtifactSig plan.term)).1.map (·.1))
+    (hNoErr : (out == emptyA || out.isError) = false) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout plan.term out := by
+  rcases Nat.exists_eq_add_of_le (show 2 ≤ fuel by omega) with ⟨innerFuel, hFuelEq⟩
+  have hFuelEq' : fuel = innerFuel + 2 := by omega
+  have hInnerFuel : 1 ≤ innerFuel := by omega
+  let root := mExpr plan.head [nfQuery cicStage3RawArtifactSig domain, nfQuery cicStage3RawArtifactSig body]
+  let stRoot := plan.reached st
+  have hStRootWorld := plan.reaches_initial_world hWorld
+  have types := kernelDefControlEnvTypeWorld_of_world_eq_init hWorld
+  have rootTypes := kernelDefControlEnvTypeWorld_of_world_eq_init hStRootWorld
+  obtain ⟨static, imports⟩ := initialWorld_reads hWorld
+  rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
+  dsimp at hActual
+  subst actual
+  rw [hFuelEq'] at hPair
+  obtain ⟨finalBnd, hFinal⟩ :=
+    nfQuery_root_eval_mem_of_quoted_args (innerFuel + 1) st stRoot
+      cicStage3RawArtifactSig plan.term root out (plan.bindings st) outBnd types
+      (plan.rootStep (innerFuel + 1) st static imports) plan.rootNotReducible plan.rootNotQuery
+      (by simpa only [Nat.add_assoc] using hPair)
+  rcases mettaEval_binary_eval_args_pair_nonterminal_notReducible_state_pred_before_closed
+      kernelDefControlEnv innerFuel stRoot plan.head
+      (nfQuery cicStage3RawArtifactSig domain) (nfQuery cicStage3RawArtifactSig body)
+      out finalBnd (fun state => state.world = St.init.world)
+      (nfQuery_vars_nil cicStage3RawArtifactSig domain) (nfQuery_vars_nil cicStage3RawArtifactSig body)
+      (plan.policy stRoot rootTypes) (plan.applicationNotError _ _) hNoErr
+      (domainWorld hInnerFuel hStRootWorld hDomain)
+      (by intro acc _ _ _ same; exact bodyWorld hInnerFuel same hBody)
+      (by
+        intro acc left right same
+        obtain ⟨static, imports⟩ := initialWorld_reads same
+        exact plan.finish innerFuel acc.2 left right static imports)
+      (by simpa only [root, mExpr, mSym] using hFinal) with
+    ⟨left, leftBnd, leftMem, stBeforeBody, right, rightBnd, beforeBodyWorld, rightMem, checks, outEq⟩
+  have children := nf_binary_readout_arg_find_none_nonterminal
+    cicStage3RawArtifactSig domain body left right checks
+  have leftRead := domainRead hInnerFuel hStRootWorld hDomain
+    (List.mem_map.mpr ⟨(left, leftBnd), leftMem, rfl⟩) children.1
+  have rightRead := bodyRead hInnerFuel beforeBodyWorld hBody
+    (List.mem_map.mpr ⟨(right, rightBnd), rightMem, rfl⟩) children.2
+  subst out
+  exact plan.readout leftRead rightRead
+
+private theorem BinderNfPlan.extractPositive {domain body : DIndGArtifactTerm}
+    (plan : BinderNfPlan domain body)
+    (domainRead : NfRecursiveReadout domain) (bodyRead : NfRecursiveReadout body)
+    (domainWorld : NfRecursiveWorld domain) (bodyWorld : NfRecursiveWorld body)
+    {domainDepth bodyDepth fuel : Nat} {st : St} {out : Metta.Atom}
+    {domainTerm : ScopedTerm domainDepth} {bodyTerm : ScopedTerm bodyDepth}
+    (hDomain : DIndGArtifactTermTranslates cicStage3RawArtifactSig.nameTranslates domainDepth domain domainTerm)
+    (hBody : DIndGArtifactTermTranslates cicStage3RawArtifactSig.nameTranslates bodyDepth body bodyTerm)
+    (hFuel : 1 ≤ fuel) (hWorld : st.world = St.init.world)
+    (hOut : out ∈ (mettaEval kernelDefControlEnv fuel st [] (nfQuery cicStage3RawArtifactSig plan.term)).1.map (·.1))
+    (hNoErr : (out == emptyA || out.isError) = false) :
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout plan.term out := by
+  by_cases small : fuel < 3
+  · have same := plan.reaches_initial_world hWorld
+    obtain ⟨static, imports⟩ := initialWorld_reads hWorld
+    exact (nfQuery_binary_readout_nonError_false_of_one_le_lt_three
+      cicStage3RawArtifactSig plan.term domain body plan.head st (plan.reached st) (plan.bindings st)
+      hWorld same (fun depth => plan.rootStep depth st static imports) plan.rootNotReducible plan.rootNotQuery
+      (plan.applicationNotError _ _) (plan.policy _ (kernelDefControlEnvTypeWorld_of_world_eq_init same))
+      (fun state left right world =>
+        plan.finish 0 state left right (initialWorld_reads world).1 (initialWorld_reads world).2)
+      hFuel small hOut hNoErr).elim
+  exact plan.extract domainRead bodyRead domainWorld bodyWorld hDomain hBody (by omega) hWorld hOut hNoErr
+
+private theorem BinderNfPlan.evalWorld {domain body : DIndGArtifactTerm}
+    (plan : BinderNfPlan domain body) (domainWorld : NfRecursiveWorld domain) (bodyWorld : NfRecursiveWorld body)
+    {domainDepth bodyDepth fuel : Nat} {st : St}
+    {domainTerm : ScopedTerm domainDepth} {bodyTerm : ScopedTerm bodyDepth}
+    (hDomain : DIndGArtifactTermTranslates cicStage3RawArtifactSig.nameTranslates domainDepth domain domainTerm)
+    (hBody : DIndGArtifactTermTranslates cicStage3RawArtifactSig.nameTranslates bodyDepth body bodyTerm)
+    (hFuel : 1 ≤ fuel) (hWorld : st.world = St.init.world) :
+    ((mettaEval kernelDefControlEnv fuel st [] (nfQuery cicStage3RawArtifactSig plan.term)).2).world =
+      St.init.world := by
+  by_cases hFuelOne : fuel = 1
+  · subst fuel
+    rw [mettaEval_fuel_one_world]
+    exact hWorld
+  rcases Nat.exists_eq_add_of_le (show 2 ≤ fuel by omega) with ⟨fuelBase, hFuelEq⟩
+  have amount : fuel = fuelBase + 2 := by omega
+  subst fuel
+  let root := mExpr plan.head [nfQuery cicStage3RawArtifactSig domain, nfQuery cicStage3RawArtifactSig body]
+  let stRoot := plan.reached st
+  let rootBnd := plan.bindings st
+  have hStRootWorld := plan.reaches_initial_world hWorld
+  have types := kernelDefControlEnvTypeWorld_of_world_eq_init hWorld
+  have rootTypes := kernelDefControlEnvTypeWorld_of_world_eq_init hStRootWorld
+  obtain ⟨static, imports⟩ := initialWorld_reads hWorld
+  have outerNoErr :
+      (([sigAtom cicStage3RawArtifactSig, termAtom plan.term].zip
+        [sigAtom cicStage3RawArtifactSig, termAtom plan.term]).find?
+        (fun pair : Metta.Atom × Metta.Atom =>
+          (pair.1 == emptyA || pair.1.isError) && pair.1 != pair.2)) = none := by
+    simp [sigAtom_isError_false, termAtom_isError_false]
+  have outer := by
+    refine mettaEval_binary_expr_state_pred_of_quoted_args_and_root_eval
+      kernelDefControlEnv (fuelBase + 1) st stRoot "nf"
+      (sigAtom cicStage3RawArtifactSig) (termAtom plan.term) root rootBnd
+      (fun state => state.world = St.init.world)
+      (kernelDefControlEnv_nf_recursionNeutralPolicy st
+        (sigAtom cicStage3RawArtifactSig) (termAtom plan.term) types.nf)
+      (by simp [Metta.Atom.isError]) outerNoErr
+      (by simpa only [root, rootBnd, stRoot, nfQuery, mExpr, mSym] using
+        plan.rootStep (fuelBase + 1) st static imports)
+      plan.rootNotReducible
+      (by simpa only [root, nfQuery, mExpr, mSym] using plan.rootNotQuery) ?_
+    have emptyBindings : restrictBnd
+        (([sigAtom cicStage3RawArtifactSig, termAtom plan.term]).flatMap Metta.Atom.vars)
+        ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
+      simpa [List.flatMap, sigAtom_vars_nil cicStage3RawArtifactSig, termAtom_vars_nil plan.term] using
+        restrictBnd_nil_vars ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
+    rw [emptyBindings]
+    by_cases hBaseZero : fuelBase = 0
+    · subst fuelBase
+      rw [mettaEval_fuel_one_world]
+      exact hStRootWorld
+    have hInnerFuel : 1 ≤ fuelBase := by omega
+    simpa only [root, mExpr, mSym] using
+      mettaEval_binary_expr_state_pred_of_eval_args_and_notReducible_root_closed
+        kernelDefControlEnv fuelBase stRoot plan.head
+        (nfQuery cicStage3RawArtifactSig domain) (nfQuery cicStage3RawArtifactSig body)
+        (fun state => state.world = St.init.world)
+        (nfQuery_vars_nil cicStage3RawArtifactSig domain) (nfQuery_vars_nil cicStage3RawArtifactSig body)
+        (plan.policy stRoot rootTypes) (plan.applicationNotError _ _)
+        (domainWorld hInnerFuel hStRootWorld hDomain)
+        (by
+          intro acc part member same
+          obtain ⟨_, _, _, shape⟩ := mettaEval_binary_first_arg_parts_mem
+            kernelDefControlEnv fuelBase ([] : List String) stRoot
+            (nfQuery cicStage3RawArtifactSig domain) part member
+          cases shape
+          simpa [restrictBnd_nil_vars] using bodyWorld hInnerFuel same hBody)
+        (by
+          intro acc left right same
+          obtain ⟨static, imports⟩ := initialWorld_reads same
+          exact plan.finish fuelBase acc.2 left right static imports)
+  simpa only [nfQuery, mExpr, mSym, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using outer
+
+
+
 
 private theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_nonError_pi_of_positive_recursive
     {rawDomain rawBody : DIndGArtifactTerm}
-    (hDomainExtract :
-      ∀ {n fuel : Nat} {st : St}
-          {term : ScopedTerm n} {out : Metta.Atom},
-        1 ≤ fuel →
-        st.world = St.init.world →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSig.nameTranslates n rawDomain term →
-        out ∈
-          (mettaEval kernelDefControlEnv fuel st []
-            (nfQuery cicStage3RawArtifactSig rawDomain)).1.map (·.1) →
-        (out == emptyA || out.isError) = false →
-        CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawDomain out)
-    (hBodyExtract :
-      ∀ {n fuel : Nat} {st : St}
-          {term : ScopedTerm n} {out : Metta.Atom},
-        1 ≤ fuel →
-        st.world = St.init.world →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSig.nameTranslates n rawBody term →
-        out ∈
-          (mettaEval kernelDefControlEnv fuel st []
-            (nfQuery cicStage3RawArtifactSig rawBody)).1.map (·.1) →
-        (out == emptyA || out.isError) = false →
-        CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawBody out)
-    (hDomainWorld :
-      ∀ {n fuel : Nat} {st : St} {term : ScopedTerm n},
-        1 ≤ fuel →
-        st.world = St.init.world →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSig.nameTranslates n rawDomain term →
-        ((mettaEval kernelDefControlEnv fuel st []
-          (nfQuery cicStage3RawArtifactSig rawDomain)).2).world =
-          St.init.world)
-    (hBodyWorld :
-      ∀ {n fuel : Nat} {st : St} {term : ScopedTerm n},
-        1 ≤ fuel →
-        st.world = St.init.world →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSig.nameTranslates n rawBody term →
-        ((mettaEval kernelDefControlEnv fuel st []
-          (nfQuery cicStage3RawArtifactSig rawBody)).2).world =
-          St.init.world)
-    {n fuel : Nat} {st : St}
-    {term : ScopedTerm n} {out : Metta.Atom}
-    (hFuel : 3 ≤ fuel)
-    (hWorld : st.world = St.init.world)
-    (hTrans :
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates n
-        (.pi rawDomain rawBody) term)
-    (hOut :
-      out ∈
-        (mettaEval kernelDefControlEnv fuel st []
-          (nfQuery cicStage3RawArtifactSig
-            (.pi rawDomain rawBody))).1.map (·.1))
+    (hDomainExtract : NfRecursiveReadout rawDomain) (hBodyExtract : NfRecursiveReadout rawBody)
+    (hDomainWorld : NfRecursiveWorld rawDomain) (hBodyWorld : NfRecursiveWorld rawBody)
+    {n fuel : Nat} {st : St} {term : ScopedTerm n} {out : Metta.Atom}
+    (hFuel : 3 ≤ fuel) (hWorld : st.world = St.init.world)
+    (hTrans : DIndGArtifactTermTranslates cicStage3RawArtifactSig.nameTranslates n
+      (.pi rawDomain rawBody) term)
+    (hOut : out ∈ (mettaEval kernelDefControlEnv fuel st []
+      (nfQuery cicStage3RawArtifactSig (.pi rawDomain rawBody))).1.map (·.1))
     (hNoErr : (out == emptyA || out.isError) = false) :
-    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
-      (.pi rawDomain rawBody) out := by
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.pi rawDomain rawBody) out := by
   cases hTrans with
   | pi hDomain hBody =>
-      rcases Nat.exists_eq_add_of_le (show 2 ≤ fuel by omega) with
-        ⟨innerFuel, hFuelEq⟩
-      have hFuelEq' : fuel = innerFuel + 2 := by omega
-      have hInnerFuel : 1 ≤ innerFuel := by omega
-      let root := nfPiReadout cicStage3RawArtifactSig rawDomain rawBody
-      let rootBnd :=
-        (renameBindings (counterSuffix (st.counter + nfPiCandidatePre.length))
-          (nfPiRuleBindings cicStage3RawArtifactSig rawDomain rawBody)).reverse
-      let stRoot : St :=
-        { counter := st.counter + nfPiCandidatePre.length + 5,
-          world := st.world }
-      have hStatic : st.world.selfExtra = [] := by
-        rw [hWorld]
-        rfl
-      have hImports : st.world.selfImports = [] := by
-        rw [hWorld]
-        rfl
-      have hTypes : KernelDefControlEnvTypeWorld st.world :=
-        kernelDefControlEnvTypeWorld_of_world_eq_init hWorld
-      have hStRootWorld : stRoot.world = St.init.world := by
-        simpa [stRoot] using hWorld
-      have hRoot :
-          interpretFuel kernelDefControlEnv (innerFuel + 1 + 1) st
-              [evalItemNil
-                (nfQuery cicStage3RawArtifactSig
-                  (.pi rawDomain rawBody))] [] =
-            ([(root, rootBnd)], stRoot) := by
-        simpa [root, rootBnd, stRoot, Nat.add_assoc] using
-          interpretFuel_kernelDefControlEnv_nf_pi_root_eq
-            (fuel := innerFuel + 1) (st := st)
-            cicStage3RawArtifactSig rawDomain rawBody hStatic hImports
-      have hOuterNoErr :
-          (([sigAtom cicStage3RawArtifactSig,
-              termAtom (.pi rawDomain rawBody)].zip
-            [sigAtom cicStage3RawArtifactSig,
-              termAtom (.pi rawDomain rawBody)]).find?
-            (fun ho : Metta.Atom × Metta.Atom =>
-              (ho.1 == emptyA || ho.1.isError) && ho.1 != ho.2)) = none := by
-        simp [sigAtom_isError_false, termAtom_isError_false]
-      have hRootNotNR : (root == notReducibleA) = false := by
-        simp [root, nfPiReadout, notReducibleA, mExpr, mSym]
-        rfl
-      have hRootNotSelf :
-          (root == nfQuery cicStage3RawArtifactSig
-            (.pi rawDomain rawBody)) = false := by
-        simp [root, nfPiReadout, nfQuery, termAtom, mExpr, mSym]
-        rfl
-      rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
-      dsimp at hActual
-      subst actual
-      rw [hFuelEq'] at hPair
-      rcases
-          mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
-            (env := kernelDefControlEnv) (fuel := innerFuel + 1)
-            (st := st) (stRoot := stRoot) (op := "nf")
-            (x := sigAtom cicStage3RawArtifactSig)
-            (y := termAtom (.pi rawDomain rawBody))
-            (root := root) (final := out) (rootBnd := rootBnd)
-            (outBnd := outBnd)
-            (hPolicy := kernelDefControlEnv_nf_recursionNeutralPolicy st
-              (sigAtom cicStage3RawArtifactSig)
-              (termAtom (.pi rawDomain rawBody)) hTypes.nf)
-            (hApplicationNotError := by simp [Metta.Atom.isError])
-            (hNoErr := hOuterNoErr)
-            (hRoot := by simpa [nfQuery, mExpr, mSym, Nat.add_assoc] using hRoot)
-            (hRootNotNotReducible := hRootNotNR)
-            (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
-            (hmem := by simpa [nfQuery, mExpr, mSym, Nat.add_assoc] using hPair) with
-        ⟨finalBnd, hFinal⟩
-      have hOuterBndNil :
-          restrictBnd
-              (([sigAtom cicStage3RawArtifactSig,
-                  termAtom (.pi rawDomain rawBody)]).flatMap
-                Metta.Atom.vars)
-              ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
-        simpa [List.flatMap,
-          sigAtom_vars_nil cicStage3RawArtifactSig,
-          termAtom_vars_nil (.pi rawDomain rawBody)] using
-          restrictBnd_nil_vars
-            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
-      rw [hOuterBndNil] at hFinal
-      rcases
-          mettaEval_binary_eval_args_pair_nonterminal_notReducible_state_pred_before_closed
-            kernelDefControlEnv innerFuel stRoot
-            "Pi"
-            (nfQuery cicStage3RawArtifactSig rawDomain)
-            (nfQuery cicStage3RawArtifactSig rawBody)
-            out finalBnd
-            (fun st0 => st0.world = St.init.world)
-            (nfQuery_vars_nil cicStage3RawArtifactSig rawDomain)
-            (nfQuery_vars_nil cicStage3RawArtifactSig rawBody)
-            (kernelDefControlEnv_Pi_recursionNeutralPolicy stRoot
-              (nfQuery cicStage3RawArtifactSig rawDomain)
-              (nfQuery cicStage3RawArtifactSig rawBody)
-              (by simpa [stRoot] using hTypes.pi))
-            (by simp [Metta.Atom.isError])
-            hNoErr
-            (hDomainWorld hInnerFuel hStRootWorld hDomain)
-            (by
-              intro acc0 _domainOut _domainBnd _hDomainMem hAccWorld
-              exact hBodyWorld hInnerFuel hAccWorld hBody)
-            (by
-              intro acc0 domainOut bodyOut hAccWorld
-              have hStaticAcc : acc0.2.world.selfExtra = [] := by
-                rw [hAccWorld]
-                rfl
-              have hImportsAcc : acc0.2.world.selfImports = [] := by
-                rw [hAccWorld]
-                rfl
-              simpa [evalItemNil, mExpr, mSym] using
-                interpretFuel_kernelDefControlEnv_eval_Pi_atoms_notReducible_eq_state
-                  innerFuel acc0.2 domainOut bodyOut hStaticAcc hImportsAcc)
-            (by
-              simpa [root, nfPiReadout, nfQuery, mExpr, mSym] using hFinal) with
-        ⟨domainOut, domainBnd, hDomainMem, stBeforeBody, bodyOut,
-          bodyBnd, hBeforeBodyWorld, hBodyMem, hChildNoErr, hOutEq⟩
-      have hChildNoErrs :=
-        nf_binary_readout_arg_find_none_nonterminal
-          cicStage3RawArtifactSig rawDomain rawBody
-          domainOut bodyOut hChildNoErr
-      have hDomainValue :
-          domainOut ∈
-            (mettaEval kernelDefControlEnv innerFuel stRoot []
-              (nfQuery cicStage3RawArtifactSig rawDomain)).1.map (·.1) :=
-        List.mem_map.mpr ⟨(domainOut, domainBnd), hDomainMem, rfl⟩
-      have hBodyValue :
-          bodyOut ∈
-            (mettaEval kernelDefControlEnv innerFuel stBeforeBody []
-              (nfQuery cicStage3RawArtifactSig rawBody)).1.map (·.1) :=
-        List.mem_map.mpr ⟨(bodyOut, bodyBnd), hBodyMem, rfl⟩
-      have hDomainReadout :
-          CicStage3RawArtifactSigPrimaryNfRuntimeReadout
-            rawDomain domainOut :=
-        hDomainExtract hInnerFuel hStRootWorld hDomain
-          hDomainValue hChildNoErrs.1
-      have hBodyReadout :
-          CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawBody bodyOut :=
-        hBodyExtract hInnerFuel hBeforeBodyWorld hBody
-          hBodyValue hChildNoErrs.2
-      subst out
-      exact CicStage3RawArtifactSigPrimaryNfRuntimeReadout.pi
-        hDomainReadout hBodyReadout
+    exact (piNfPlan rawDomain rawBody).extract hDomainExtract hBodyExtract hDomainWorld hBodyWorld
+      hDomain hBody hFuel hWorld hOut hNoErr
 
 private theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_nonError_lam_of_positive_recursive
     {rawDomain rawBody : DIndGArtifactTerm}
-    (hDomainExtract :
-      ∀ {n fuel : Nat} {st : St}
-          {term : ScopedTerm n} {out : Metta.Atom},
-        1 ≤ fuel →
-        st.world = St.init.world →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSig.nameTranslates n rawDomain term →
-        out ∈
-          (mettaEval kernelDefControlEnv fuel st []
-            (nfQuery cicStage3RawArtifactSig rawDomain)).1.map (·.1) →
-        (out == emptyA || out.isError) = false →
-        CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawDomain out)
-    (hBodyExtract :
-      ∀ {n fuel : Nat} {st : St}
-          {term : ScopedTerm n} {out : Metta.Atom},
-        1 ≤ fuel →
-        st.world = St.init.world →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSig.nameTranslates n rawBody term →
-        out ∈
-          (mettaEval kernelDefControlEnv fuel st []
-            (nfQuery cicStage3RawArtifactSig rawBody)).1.map (·.1) →
-        (out == emptyA || out.isError) = false →
-        CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawBody out)
-    (hDomainWorld :
-      ∀ {n fuel : Nat} {st : St} {term : ScopedTerm n},
-        1 ≤ fuel →
-        st.world = St.init.world →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSig.nameTranslates n rawDomain term →
-        ((mettaEval kernelDefControlEnv fuel st []
-          (nfQuery cicStage3RawArtifactSig rawDomain)).2).world =
-          St.init.world)
-    (hBodyWorld :
-      ∀ {n fuel : Nat} {st : St} {term : ScopedTerm n},
-        1 ≤ fuel →
-        st.world = St.init.world →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSig.nameTranslates n rawBody term →
-        ((mettaEval kernelDefControlEnv fuel st []
-          (nfQuery cicStage3RawArtifactSig rawBody)).2).world =
-          St.init.world)
-    {n fuel : Nat} {st : St}
-    {term : ScopedTerm n} {out : Metta.Atom}
-    (hFuel : 3 ≤ fuel)
-    (hWorld : st.world = St.init.world)
-    (hTrans :
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates n
-        (.lam rawDomain rawBody) term)
-    (hOut :
-      out ∈
-        (mettaEval kernelDefControlEnv fuel st []
-          (nfQuery cicStage3RawArtifactSig
-            (.lam rawDomain rawBody))).1.map (·.1))
+    (hDomainExtract : NfRecursiveReadout rawDomain) (hBodyExtract : NfRecursiveReadout rawBody)
+    (hDomainWorld : NfRecursiveWorld rawDomain) (hBodyWorld : NfRecursiveWorld rawBody)
+    {n fuel : Nat} {st : St} {term : ScopedTerm n} {out : Metta.Atom}
+    (hFuel : 3 ≤ fuel) (hWorld : st.world = St.init.world)
+    (hTrans : DIndGArtifactTermTranslates cicStage3RawArtifactSig.nameTranslates n
+      (.lam rawDomain rawBody) term)
+    (hOut : out ∈ (mettaEval kernelDefControlEnv fuel st []
+      (nfQuery cicStage3RawArtifactSig (.lam rawDomain rawBody))).1.map (·.1))
     (hNoErr : (out == emptyA || out.isError) = false) :
-    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
-      (.lam rawDomain rawBody) out := by
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.lam rawDomain rawBody) out := by
   cases hTrans with
   | lam hDomain hBody =>
-      rcases Nat.exists_eq_add_of_le (show 2 ≤ fuel by omega) with
-        ⟨innerFuel, hFuelEq⟩
-      have hFuelEq' : fuel = innerFuel + 2 := by omega
-      have hInnerFuel : 1 ≤ innerFuel := by omega
-      let root := nfLamReadout cicStage3RawArtifactSig rawDomain rawBody
-      let rootBnd :=
-        (renameBindings (counterSuffix (st.counter + nfLamCandidatePre.length))
-          (nfLamRuleBindings cicStage3RawArtifactSig rawDomain rawBody)).reverse
-      let stRoot : St :=
-        { counter := st.counter + nfLamCandidatePre.length + 4,
-          world := st.world }
-      have hStatic : st.world.selfExtra = [] := by
-        rw [hWorld]
-        rfl
-      have hImports : st.world.selfImports = [] := by
-        rw [hWorld]
-        rfl
-      have hTypes : KernelDefControlEnvTypeWorld st.world :=
-        kernelDefControlEnvTypeWorld_of_world_eq_init hWorld
-      have hStRootWorld : stRoot.world = St.init.world := by
-        simpa [stRoot] using hWorld
-      have hRoot :
-          interpretFuel kernelDefControlEnv (innerFuel + 1 + 1) st
-              [evalItemNil
-                (nfQuery cicStage3RawArtifactSig
-                  (.lam rawDomain rawBody))] [] =
-            ([(root, rootBnd)], stRoot) := by
-        simpa [root, rootBnd, stRoot, Nat.add_assoc] using
-          interpretFuel_kernelDefControlEnv_nf_lam_root_eq
-            (fuel := innerFuel + 1) (st := st)
-            cicStage3RawArtifactSig rawDomain rawBody hStatic hImports
-      have hOuterNoErr :
-          (([sigAtom cicStage3RawArtifactSig,
-              termAtom (.lam rawDomain rawBody)].zip
-            [sigAtom cicStage3RawArtifactSig,
-              termAtom (.lam rawDomain rawBody)]).find?
-            (fun ho : Metta.Atom × Metta.Atom =>
-              (ho.1 == emptyA || ho.1.isError) && ho.1 != ho.2)) = none := by
-        simp [sigAtom_isError_false, termAtom_isError_false]
-      have hRootNotNR : (root == notReducibleA) = false := by
-        simp [root, nfLamReadout, notReducibleA, mExpr, mSym]
-        rfl
-      have hRootNotSelf :
-          (root == nfQuery cicStage3RawArtifactSig
-            (.lam rawDomain rawBody)) = false := by
-        simp [root, nfLamReadout, nfQuery, termAtom, mExpr, mSym]
-        rfl
-      rcases List.mem_map.mp hOut with ⟨⟨actual, outBnd⟩, hPair, hActual⟩
-      dsimp at hActual
-      subst actual
-      rw [hFuelEq'] at hPair
-      rcases
-          mettaEval_binary_expr_pair_mem_implies_root_eval_mem_of_quoted_args_and_root_eval_eq_bnd
-            (env := kernelDefControlEnv) (fuel := innerFuel + 1)
-            (st := st) (stRoot := stRoot) (op := "nf")
-            (x := sigAtom cicStage3RawArtifactSig)
-            (y := termAtom (.lam rawDomain rawBody))
-            (root := root) (final := out) (rootBnd := rootBnd)
-            (outBnd := outBnd)
-            (hPolicy := kernelDefControlEnv_nf_recursionNeutralPolicy st
-              (sigAtom cicStage3RawArtifactSig)
-              (termAtom (.lam rawDomain rawBody)) hTypes.nf)
-            (hApplicationNotError := by simp [Metta.Atom.isError])
-            (hNoErr := hOuterNoErr)
-            (hRoot := by simpa [nfQuery, mExpr, mSym, Nat.add_assoc] using hRoot)
-            (hRootNotNotReducible := hRootNotNR)
-            (hRootNotSelf := by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
-            (hmem := by simpa [nfQuery, mExpr, mSym, Nat.add_assoc] using hPair) with
-        ⟨finalBnd, hFinal⟩
-      have hOuterBndNil :
-          restrictBnd
-              (([sigAtom cicStage3RawArtifactSig,
-                  termAtom (.lam rawDomain rawBody)]).flatMap
-                Metta.Atom.vars)
-              ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) = [] := by
-        simpa [List.flatMap,
-          sigAtom_vars_nil cicStage3RawArtifactSig,
-          termAtom_vars_nil (.lam rawDomain rawBody)] using
-          restrictBnd_nil_vars
-            ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
-      rw [hOuterBndNil] at hFinal
-      rcases
-          mettaEval_binary_eval_args_pair_nonterminal_notReducible_state_pred_before_closed
-            kernelDefControlEnv innerFuel stRoot
-            "Lam"
-            (nfQuery cicStage3RawArtifactSig rawDomain)
-            (nfQuery cicStage3RawArtifactSig rawBody)
-            out finalBnd
-            (fun st0 => st0.world = St.init.world)
-            (nfQuery_vars_nil cicStage3RawArtifactSig rawDomain)
-            (nfQuery_vars_nil cicStage3RawArtifactSig rawBody)
-            (kernelDefControlEnv_Lam_recursionNeutralPolicy stRoot
-              (nfQuery cicStage3RawArtifactSig rawDomain)
-              (nfQuery cicStage3RawArtifactSig rawBody)
-              (by simpa [stRoot] using hTypes.lam))
-            (by simp [Metta.Atom.isError])
-            hNoErr
-            (hDomainWorld hInnerFuel hStRootWorld hDomain)
-            (by
-              intro acc0 _domainOut _domainBnd _hDomainMem hAccWorld
-              exact hBodyWorld hInnerFuel hAccWorld hBody)
-            (by
-              intro acc0 domainOut bodyOut hAccWorld
-              have hStaticAcc : acc0.2.world.selfExtra = [] := by
-                rw [hAccWorld]
-                rfl
-              have hImportsAcc : acc0.2.world.selfImports = [] := by
-                rw [hAccWorld]
-                rfl
-              simpa [evalItemNil, mExpr, mSym] using
-                interpretFuel_kernelDefControlEnv_eval_Lam_atoms_notReducible_eq_state
-                  innerFuel acc0.2 domainOut bodyOut hStaticAcc hImportsAcc)
-            (by
-              simpa [root, nfLamReadout, nfQuery, mExpr, mSym] using hFinal) with
-        ⟨domainOut, domainBnd, hDomainMem, stBeforeBody, bodyOut,
-          bodyBnd, hBeforeBodyWorld, hBodyMem, hChildNoErr, hOutEq⟩
-      have hChildNoErrs :=
-        nf_binary_readout_arg_find_none_nonterminal
-          cicStage3RawArtifactSig rawDomain rawBody
-          domainOut bodyOut hChildNoErr
-      have hDomainValue :
-          domainOut ∈
-            (mettaEval kernelDefControlEnv innerFuel stRoot []
-              (nfQuery cicStage3RawArtifactSig rawDomain)).1.map (·.1) :=
-        List.mem_map.mpr ⟨(domainOut, domainBnd), hDomainMem, rfl⟩
-      have hBodyValue :
-          bodyOut ∈
-            (mettaEval kernelDefControlEnv innerFuel stBeforeBody []
-              (nfQuery cicStage3RawArtifactSig rawBody)).1.map (·.1) :=
-        List.mem_map.mpr ⟨(bodyOut, bodyBnd), hBodyMem, rfl⟩
-      have hDomainReadout :
-          CicStage3RawArtifactSigPrimaryNfRuntimeReadout
-            rawDomain domainOut :=
-        hDomainExtract hInnerFuel hStRootWorld hDomain
-          hDomainValue hChildNoErrs.1
-      have hBodyReadout :
-          CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawBody bodyOut :=
-        hBodyExtract hInnerFuel hBeforeBodyWorld hBody
-          hBodyValue hChildNoErrs.2
-      subst out
-      exact CicStage3RawArtifactSigPrimaryNfRuntimeReadout.lam
-        hDomainReadout hBodyReadout
+    exact (lamNfPlan rawDomain rawBody).extract hDomainExtract hBodyExtract hDomainWorld hBodyWorld
+      hDomain hBody hFuel hWorld hOut hNoErr
 
 private theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_pi_of_positive_recursive
     {rawDomain rawBody : DIndGArtifactTerm}
-    (hDomainExtract :
-      ∀ {n fuel : Nat} {st : St}
-          {term : ScopedTerm n} {out : Metta.Atom},
-        1 ≤ fuel →
-        st.world = St.init.world →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSig.nameTranslates n rawDomain term →
-        out ∈
-          (mettaEval kernelDefControlEnv fuel st []
-            (nfQuery cicStage3RawArtifactSig rawDomain)).1.map (·.1) →
-        (out == emptyA || out.isError) = false →
-        CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawDomain out)
-    (hBodyExtract :
-      ∀ {n fuel : Nat} {st : St}
-          {term : ScopedTerm n} {out : Metta.Atom},
-        1 ≤ fuel →
-        st.world = St.init.world →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSig.nameTranslates n rawBody term →
-        out ∈
-          (mettaEval kernelDefControlEnv fuel st []
-            (nfQuery cicStage3RawArtifactSig rawBody)).1.map (·.1) →
-        (out == emptyA || out.isError) = false →
-        CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawBody out)
-    (hDomainWorld :
-      ∀ {n fuel : Nat} {st : St} {term : ScopedTerm n},
-        1 ≤ fuel →
-        st.world = St.init.world →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSig.nameTranslates n rawDomain term →
-        ((mettaEval kernelDefControlEnv fuel st []
-          (nfQuery cicStage3RawArtifactSig rawDomain)).2).world =
-          St.init.world)
-    (hBodyWorld :
-      ∀ {n fuel : Nat} {st : St} {term : ScopedTerm n},
-        1 ≤ fuel →
-        st.world = St.init.world →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSig.nameTranslates n rawBody term →
-        ((mettaEval kernelDefControlEnv fuel st []
-          (nfQuery cicStage3RawArtifactSig rawBody)).2).world =
-          St.init.world)
-    {n fuel : Nat} {st : St}
-    {term : ScopedTerm n} {out : Metta.Atom}
-    (hFuel : 1 ≤ fuel)
-    (hWorld : st.world = St.init.world)
-    (hTrans :
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates n
-        (.pi rawDomain rawBody) term)
-    (hOut :
-      out ∈
-        (mettaEval kernelDefControlEnv fuel st []
-          (nfQuery cicStage3RawArtifactSig
-            (.pi rawDomain rawBody))).1.map (·.1))
+    (hDomainExtract : NfRecursiveReadout rawDomain) (hBodyExtract : NfRecursiveReadout rawBody)
+    (hDomainWorld : NfRecursiveWorld rawDomain) (hBodyWorld : NfRecursiveWorld rawBody)
+    {n fuel : Nat} {st : St} {term : ScopedTerm n} {out : Metta.Atom}
+    (hFuel : 1 ≤ fuel) (hWorld : st.world = St.init.world)
+    (hTrans : DIndGArtifactTermTranslates cicStage3RawArtifactSig.nameTranslates n
+      (.pi rawDomain rawBody) term)
+    (hOut : out ∈ (mettaEval kernelDefControlEnv fuel st []
+      (nfQuery cicStage3RawArtifactSig (.pi rawDomain rawBody))).1.map (·.1))
     (hNoErr : (out == emptyA || out.isError) = false) :
-    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
-      (.pi rawDomain rawBody) out := by
-  by_cases hLtThree : fuel < 3
-  · exact False.elim
-      (cicStage3RawArtifactSig_primary_nf_pi_runtime_nonError_false_of_one_le_lt_three
-        hFuel hLtThree hWorld hOut hNoErr)
-  · exact
-      cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_nonError_pi_of_positive_recursive
-        hDomainExtract hBodyExtract hDomainWorld hBodyWorld
-        (by omega) hWorld hTrans hOut hNoErr
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.pi rawDomain rawBody) out := by
+  cases hTrans with
+  | pi hDomain hBody =>
+    exact (piNfPlan rawDomain rawBody).extractPositive hDomainExtract hBodyExtract hDomainWorld hBodyWorld
+      hDomain hBody hFuel hWorld hOut hNoErr
 
 private theorem cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geOne_nonError_lam_of_positive_recursive
     {rawDomain rawBody : DIndGArtifactTerm}
-    (hDomainExtract :
-      ∀ {n fuel : Nat} {st : St}
-          {term : ScopedTerm n} {out : Metta.Atom},
-        1 ≤ fuel →
-        st.world = St.init.world →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSig.nameTranslates n rawDomain term →
-        out ∈
-          (mettaEval kernelDefControlEnv fuel st []
-            (nfQuery cicStage3RawArtifactSig rawDomain)).1.map (·.1) →
-        (out == emptyA || out.isError) = false →
-        CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawDomain out)
-    (hBodyExtract :
-      ∀ {n fuel : Nat} {st : St}
-          {term : ScopedTerm n} {out : Metta.Atom},
-        1 ≤ fuel →
-        st.world = St.init.world →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSig.nameTranslates n rawBody term →
-        out ∈
-          (mettaEval kernelDefControlEnv fuel st []
-            (nfQuery cicStage3RawArtifactSig rawBody)).1.map (·.1) →
-        (out == emptyA || out.isError) = false →
-        CicStage3RawArtifactSigPrimaryNfRuntimeReadout rawBody out)
-    (hDomainWorld :
-      ∀ {n fuel : Nat} {st : St} {term : ScopedTerm n},
-        1 ≤ fuel →
-        st.world = St.init.world →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSig.nameTranslates n rawDomain term →
-        ((mettaEval kernelDefControlEnv fuel st []
-          (nfQuery cicStage3RawArtifactSig rawDomain)).2).world =
-          St.init.world)
-    (hBodyWorld :
-      ∀ {n fuel : Nat} {st : St} {term : ScopedTerm n},
-        1 ≤ fuel →
-        st.world = St.init.world →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSig.nameTranslates n rawBody term →
-        ((mettaEval kernelDefControlEnv fuel st []
-          (nfQuery cicStage3RawArtifactSig rawBody)).2).world =
-          St.init.world)
-    {n fuel : Nat} {st : St}
-    {term : ScopedTerm n} {out : Metta.Atom}
-    (hFuel : 1 ≤ fuel)
-    (hWorld : st.world = St.init.world)
-    (hTrans :
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates n
-        (.lam rawDomain rawBody) term)
-    (hOut :
-      out ∈
-        (mettaEval kernelDefControlEnv fuel st []
-          (nfQuery cicStage3RawArtifactSig
-            (.lam rawDomain rawBody))).1.map (·.1))
+    (hDomainExtract : NfRecursiveReadout rawDomain) (hBodyExtract : NfRecursiveReadout rawBody)
+    (hDomainWorld : NfRecursiveWorld rawDomain) (hBodyWorld : NfRecursiveWorld rawBody)
+    {n fuel : Nat} {st : St} {term : ScopedTerm n} {out : Metta.Atom}
+    (hFuel : 1 ≤ fuel) (hWorld : st.world = St.init.world)
+    (hTrans : DIndGArtifactTermTranslates cicStage3RawArtifactSig.nameTranslates n
+      (.lam rawDomain rawBody) term)
+    (hOut : out ∈ (mettaEval kernelDefControlEnv fuel st []
+      (nfQuery cicStage3RawArtifactSig (.lam rawDomain rawBody))).1.map (·.1))
     (hNoErr : (out == emptyA || out.isError) = false) :
-    CicStage3RawArtifactSigPrimaryNfRuntimeReadout
-      (.lam rawDomain rawBody) out := by
-  by_cases hLtThree : fuel < 3
-  · exact False.elim
-      (cicStage3RawArtifactSig_primary_nf_lam_runtime_nonError_false_of_one_le_lt_three
-        hFuel hLtThree hWorld hOut hNoErr)
-  · exact
-      cicStage3RawArtifactSig_primary_nf_value_runtime_extraction_geThree_nonError_lam_of_positive_recursive
-        hDomainExtract hBodyExtract hDomainWorld hBodyWorld
-        (by omega) hWorld hTrans hOut hNoErr
+    CicStage3RawArtifactSigPrimaryNfRuntimeReadout (.lam rawDomain rawBody) out := by
+  cases hTrans with
+  | lam hDomain hBody =>
+    exact (lamNfPlan rawDomain rawBody).extractPositive hDomainExtract hBodyExtract hDomainWorld hBodyWorld
+      hDomain hBody hFuel hWorld hOut hNoErr
 
 private theorem cicStage3RawArtifactSig_primary_nf_query_world_geOne_pi_of_recursive
     {rawDomain rawBody : DIndGArtifactTerm}
-    (hDomainWorld :
-      ∀ {n fuel : Nat} {st : St} {term : ScopedTerm n},
-        1 ≤ fuel →
-        st.world = St.init.world →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSig.nameTranslates n rawDomain term →
-        ((mettaEval kernelDefControlEnv fuel st []
-          (nfQuery cicStage3RawArtifactSig rawDomain)).2).world =
-          St.init.world)
-    (hBodyWorld :
-      ∀ {n fuel : Nat} {st : St} {term : ScopedTerm n},
-        1 ≤ fuel →
-        st.world = St.init.world →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSig.nameTranslates n rawBody term →
-        ((mettaEval kernelDefControlEnv fuel st []
-          (nfQuery cicStage3RawArtifactSig rawBody)).2).world =
-          St.init.world)
+    (hDomainWorld : NfRecursiveWorld rawDomain) (hBodyWorld : NfRecursiveWorld rawBody)
     {n fuel : Nat} {st : St} {term : ScopedTerm n}
-    (hFuel : 1 ≤ fuel)
-    (hWorld : st.world = St.init.world)
-    (hTrans :
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates n
-        (.pi rawDomain rawBody) term) :
+    (hFuel : 1 ≤ fuel) (hWorld : st.world = St.init.world)
+    (hTrans : DIndGArtifactTermTranslates cicStage3RawArtifactSig.nameTranslates n
+      (.pi rawDomain rawBody) term) :
     ((mettaEval kernelDefControlEnv fuel st []
-      (nfQuery cicStage3RawArtifactSig
-        (.pi rawDomain rawBody))).2).world =
-      St.init.world := by
-  have hTypes : KernelDefControlEnvTypeWorld st.world :=
-    kernelDefControlEnvTypeWorld_of_world_eq_init hWorld
+      (nfQuery cicStage3RawArtifactSig (.pi rawDomain rawBody))).2).world = St.init.world := by
   cases hTrans with
   | pi hDomain hBody =>
-      by_cases hFuelOne : fuel = 1
-      · subst fuel
-        rw [mettaEval_fuel_one_world]
-        exact hWorld
-      · rcases Nat.exists_eq_add_of_le (show 2 ≤ fuel by omega) with
-          ⟨fuelBase, hFuelEq⟩
-        have hFuelEq' : fuel = fuelBase + 2 := by omega
-        subst fuel
-        let root := nfPiReadout cicStage3RawArtifactSig rawDomain rawBody
-        let rootBnd :=
-          (renameBindings (counterSuffix (st.counter + nfPiCandidatePre.length))
-            (nfPiRuleBindings cicStage3RawArtifactSig rawDomain rawBody)).reverse
-        let stRoot : St :=
-          { counter := st.counter + nfPiCandidatePre.length + 5,
-            world := st.world }
-        have hStatic : st.world.selfExtra = [] := by
-          rw [hWorld]
-          rfl
-        have hImports : st.world.selfImports = [] := by
-          rw [hWorld]
-          rfl
-        have hStRootWorld : stRoot.world = St.init.world := by
-          simpa [stRoot] using hWorld
-        have hRoot :
-            interpretFuel kernelDefControlEnv (fuelBase + 1 + 1) st
-                [evalItemNil
-                  (nfQuery cicStage3RawArtifactSig
-                    (.pi rawDomain rawBody))] [] =
-              ([(root, rootBnd)], stRoot) := by
-          simpa [root, rootBnd, stRoot, Nat.add_assoc] using
-            interpretFuel_kernelDefControlEnv_nf_pi_root_eq
-              (fuel := fuelBase + 1) (st := st)
-              cicStage3RawArtifactSig rawDomain rawBody hStatic hImports
-        have hOuterNoErr :
-            (([sigAtom cicStage3RawArtifactSig,
-                termAtom (.pi rawDomain rawBody)].zip
-              [sigAtom cicStage3RawArtifactSig,
-                termAtom (.pi rawDomain rawBody)]).find?
-              (fun ho : Metta.Atom × Metta.Atom =>
-                (ho.1 == emptyA || ho.1.isError) && ho.1 != ho.2)) = none := by
-          simp [sigAtom_isError_false, termAtom_isError_false]
-        have hRootNotNR : (root == notReducibleA) = false := by
-          simp [root, nfPiReadout, notReducibleA, mExpr, mSym]
-          rfl
-        have hRootNotSelf :
-            (root == nfQuery cicStage3RawArtifactSig
-              (.pi rawDomain rawBody)) = false := by
-          simp [root, nfPiReadout, nfQuery, termAtom, mExpr, mSym]
-          rfl
-        have hOuterWorld := by
-          refine
-            mettaEval_binary_expr_state_pred_of_quoted_args_and_root_eval
-              kernelDefControlEnv (fuelBase + 1) st stRoot "nf"
-              (sigAtom cicStage3RawArtifactSig)
-              (termAtom (.pi rawDomain rawBody))
-              root rootBnd
-              (fun st0 => st0.world = St.init.world)
-              (kernelDefControlEnv_nf_recursionNeutralPolicy st
-                (sigAtom cicStage3RawArtifactSig)
-                (termAtom (.pi rawDomain rawBody)) hTypes.nf)
-              (by simp [Metta.Atom.isError])
-              hOuterNoErr
-              (by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym,
-                  Nat.add_assoc] using hRoot)
-              hRootNotNR
-              (by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
-              ?_
-          have hOuterBndNil :
-              restrictBnd
-                  (([sigAtom cicStage3RawArtifactSig,
-                      termAtom (.pi rawDomain rawBody)]).flatMap
-                    Metta.Atom.vars)
-                  ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) =
-                [] := by
-            simpa [List.flatMap,
-              sigAtom_vars_nil cicStage3RawArtifactSig,
-              termAtom_vars_nil (.pi rawDomain rawBody)] using
-              restrictBnd_nil_vars
-                ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
-          rw [hOuterBndNil]
-          by_cases hBaseZero : fuelBase = 0
-          · subst fuelBase
-            rw [mettaEval_fuel_one_world]
-            exact hStRootWorld
-          · have hInnerFuel : 1 ≤ fuelBase := by omega
-            simpa [root, nfPiReadout, nfQuery, mExpr, mSym] using
-              mettaEval_binary_expr_state_pred_of_eval_args_and_notReducible_root_closed
-                kernelDefControlEnv fuelBase stRoot
-                "Pi"
-                (nfQuery cicStage3RawArtifactSig rawDomain)
-                (nfQuery cicStage3RawArtifactSig rawBody)
-                (fun st0 => st0.world = St.init.world)
-                (nfQuery_vars_nil cicStage3RawArtifactSig rawDomain)
-                (nfQuery_vars_nil cicStage3RawArtifactSig rawBody)
-                (kernelDefControlEnv_Pi_recursionNeutralPolicy stRoot
-                  (nfQuery cicStage3RawArtifactSig rawDomain)
-                  (nfQuery cicStage3RawArtifactSig rawBody)
-                  (by simpa [stRoot] using hTypes.pi))
-                (by simp [Metta.Atom.isError])
-                (hDomainWorld hInnerFuel hStRootWorld hDomain)
-                (by
-                  intro acc0 part hPart hAccWorld
-                  rcases
-                      mettaEval_binary_first_arg_parts_mem
-                        kernelDefControlEnv fuelBase ([] : List String)
-                        stRoot (nfQuery cicStage3RawArtifactSig rawDomain)
-                        part hPart with
-                    ⟨_domainOut, _domainBnd, _hDomainMem, hPartEq⟩
-                  cases hPartEq
-                  simpa [restrictBnd_nil_vars] using
-                    hBodyWorld hInnerFuel hAccWorld hBody)
-                (by
-                  intro acc0 domainOut bodyOut hAccWorld
-                  have hStaticAcc : acc0.2.world.selfExtra = [] := by
-                    rw [hAccWorld]
-                    rfl
-                  have hImportsAcc : acc0.2.world.selfImports = [] := by
-                    rw [hAccWorld]
-                    rfl
-                  simpa [evalItemNil, mExpr, mSym] using
-                    interpretFuel_kernelDefControlEnv_eval_Pi_atoms_notReducible_eq_state
-                      fuelBase acc0.2 domainOut bodyOut hStaticAcc hImportsAcc)
-        simpa [nfQuery, mExpr, mSym, Nat.add_assoc, Nat.add_comm,
-          Nat.add_left_comm] using hOuterWorld
+    exact (piNfPlan rawDomain rawBody).evalWorld hDomainWorld hBodyWorld hDomain hBody hFuel hWorld
 
 private theorem cicStage3RawArtifactSig_primary_nf_query_world_geOne_lam_of_recursive
     {rawDomain rawBody : DIndGArtifactTerm}
-    (hDomainWorld :
-      ∀ {n fuel : Nat} {st : St} {term : ScopedTerm n},
-        1 ≤ fuel →
-        st.world = St.init.world →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSig.nameTranslates n rawDomain term →
-        ((mettaEval kernelDefControlEnv fuel st []
-          (nfQuery cicStage3RawArtifactSig rawDomain)).2).world =
-          St.init.world)
-    (hBodyWorld :
-      ∀ {n fuel : Nat} {st : St} {term : ScopedTerm n},
-        1 ≤ fuel →
-        st.world = St.init.world →
-        DIndGArtifactTermTranslates
-          cicStage3RawArtifactSig.nameTranslates n rawBody term →
-        ((mettaEval kernelDefControlEnv fuel st []
-          (nfQuery cicStage3RawArtifactSig rawBody)).2).world =
-          St.init.world)
+    (hDomainWorld : NfRecursiveWorld rawDomain) (hBodyWorld : NfRecursiveWorld rawBody)
     {n fuel : Nat} {st : St} {term : ScopedTerm n}
-    (hFuel : 1 ≤ fuel)
-    (hWorld : st.world = St.init.world)
-    (hTrans :
-      DIndGArtifactTermTranslates
-        cicStage3RawArtifactSig.nameTranslates n
-        (.lam rawDomain rawBody) term) :
+    (hFuel : 1 ≤ fuel) (hWorld : st.world = St.init.world)
+    (hTrans : DIndGArtifactTermTranslates cicStage3RawArtifactSig.nameTranslates n
+      (.lam rawDomain rawBody) term) :
     ((mettaEval kernelDefControlEnv fuel st []
-      (nfQuery cicStage3RawArtifactSig
-        (.lam rawDomain rawBody))).2).world =
-      St.init.world := by
-  have hTypes : KernelDefControlEnvTypeWorld st.world :=
-    kernelDefControlEnvTypeWorld_of_world_eq_init hWorld
+      (nfQuery cicStage3RawArtifactSig (.lam rawDomain rawBody))).2).world = St.init.world := by
   cases hTrans with
   | lam hDomain hBody =>
-      by_cases hFuelOne : fuel = 1
-      · subst fuel
-        rw [mettaEval_fuel_one_world]
-        exact hWorld
-      · rcases Nat.exists_eq_add_of_le (show 2 ≤ fuel by omega) with
-          ⟨fuelBase, hFuelEq⟩
-        have hFuelEq' : fuel = fuelBase + 2 := by omega
-        subst fuel
-        let root := nfLamReadout cicStage3RawArtifactSig rawDomain rawBody
-        let rootBnd :=
-          (renameBindings (counterSuffix (st.counter + nfLamCandidatePre.length))
-            (nfLamRuleBindings cicStage3RawArtifactSig rawDomain rawBody)).reverse
-        let stRoot : St :=
-          { counter := st.counter + nfLamCandidatePre.length + 4,
-            world := st.world }
-        have hStatic : st.world.selfExtra = [] := by
-          rw [hWorld]
-          rfl
-        have hImports : st.world.selfImports = [] := by
-          rw [hWorld]
-          rfl
-        have hStRootWorld : stRoot.world = St.init.world := by
-          simpa [stRoot] using hWorld
-        have hRoot :
-            interpretFuel kernelDefControlEnv (fuelBase + 1 + 1) st
-                [evalItemNil
-                  (nfQuery cicStage3RawArtifactSig
-                    (.lam rawDomain rawBody))] [] =
-              ([(root, rootBnd)], stRoot) := by
-          simpa [root, rootBnd, stRoot, Nat.add_assoc] using
-            interpretFuel_kernelDefControlEnv_nf_lam_root_eq
-              (fuel := fuelBase + 1) (st := st)
-              cicStage3RawArtifactSig rawDomain rawBody hStatic hImports
-        have hOuterNoErr :
-            (([sigAtom cicStage3RawArtifactSig,
-                termAtom (.lam rawDomain rawBody)].zip
-              [sigAtom cicStage3RawArtifactSig,
-                termAtom (.lam rawDomain rawBody)]).find?
-              (fun ho : Metta.Atom × Metta.Atom =>
-                (ho.1 == emptyA || ho.1.isError) && ho.1 != ho.2)) = none := by
-          simp [sigAtom_isError_false, termAtom_isError_false]
-        have hRootNotNR : (root == notReducibleA) = false := by
-          simp [root, nfLamReadout, notReducibleA, mExpr, mSym]
-          rfl
-        have hRootNotSelf :
-            (root == nfQuery cicStage3RawArtifactSig
-              (.lam rawDomain rawBody)) = false := by
-          simp [root, nfLamReadout, nfQuery, termAtom, mExpr, mSym]
-          rfl
-        have hOuterWorld := by
-          refine
-            mettaEval_binary_expr_state_pred_of_quoted_args_and_root_eval
-              kernelDefControlEnv (fuelBase + 1) st stRoot "nf"
-              (sigAtom cicStage3RawArtifactSig)
-              (termAtom (.lam rawDomain rawBody))
-              root rootBnd
-              (fun st0 => st0.world = St.init.world)
-              (kernelDefControlEnv_nf_recursionNeutralPolicy st
-                (sigAtom cicStage3RawArtifactSig)
-                (termAtom (.lam rawDomain rawBody)) hTypes.nf)
-              (by simp [Metta.Atom.isError])
-              hOuterNoErr
-              (by simpa [root, rootBnd, stRoot, nfQuery, mExpr, mSym,
-                  Nat.add_assoc] using hRoot)
-              hRootNotNR
-              (by simpa [nfQuery, mExpr, mSym] using hRootNotSelf)
-              ?_
-          have hOuterBndNil :
-              restrictBnd
-                  (([sigAtom cicStage3RawArtifactSig,
-                      termAtom (.lam rawDomain rawBody)]).flatMap
-                    Metta.Atom.vars)
-                  ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd) =
-                [] := by
-            simpa [List.flatMap,
-              sigAtom_vars_nil cicStage3RawArtifactSig,
-              termAtom_vars_nil (.lam rawDomain rawBody)] using
-              restrictBnd_nil_vars
-                ((Metta.Bindings.merge [] rootBnd).head?.getD rootBnd)
-          rw [hOuterBndNil]
-          by_cases hBaseZero : fuelBase = 0
-          · subst fuelBase
-            rw [mettaEval_fuel_one_world]
-            exact hStRootWorld
-          · have hInnerFuel : 1 ≤ fuelBase := by omega
-            simpa [root, nfLamReadout, nfQuery, mExpr, mSym] using
-              mettaEval_binary_expr_state_pred_of_eval_args_and_notReducible_root_closed
-                kernelDefControlEnv fuelBase stRoot
-                "Lam"
-                (nfQuery cicStage3RawArtifactSig rawDomain)
-                (nfQuery cicStage3RawArtifactSig rawBody)
-                (fun st0 => st0.world = St.init.world)
-                (nfQuery_vars_nil cicStage3RawArtifactSig rawDomain)
-                (nfQuery_vars_nil cicStage3RawArtifactSig rawBody)
-                (kernelDefControlEnv_Lam_recursionNeutralPolicy stRoot
-                  (nfQuery cicStage3RawArtifactSig rawDomain)
-                  (nfQuery cicStage3RawArtifactSig rawBody)
-                  (by simpa [stRoot] using hTypes.lam))
-                (by simp [Metta.Atom.isError])
-                (hDomainWorld hInnerFuel hStRootWorld hDomain)
-                (by
-                  intro acc0 part hPart hAccWorld
-                  rcases
-                      mettaEval_binary_first_arg_parts_mem
-                        kernelDefControlEnv fuelBase ([] : List String)
-                        stRoot (nfQuery cicStage3RawArtifactSig rawDomain)
-                        part hPart with
-                    ⟨_domainOut, _domainBnd, _hDomainMem, hPartEq⟩
-                  cases hPartEq
-                  simpa [restrictBnd_nil_vars] using
-                    hBodyWorld hInnerFuel hAccWorld hBody)
-                (by
-                  intro acc0 domainOut bodyOut hAccWorld
-                  have hStaticAcc : acc0.2.world.selfExtra = [] := by
-                    rw [hAccWorld]
-                    rfl
-                  have hImportsAcc : acc0.2.world.selfImports = [] := by
-                    rw [hAccWorld]
-                    rfl
-                  simpa [evalItemNil, mExpr, mSym] using
-                    interpretFuel_kernelDefControlEnv_eval_Lam_atoms_notReducible_eq_state
-                      fuelBase acc0.2 domainOut bodyOut hStaticAcc hImportsAcc)
-        simpa [nfQuery, mExpr, mSym, Nat.add_assoc, Nat.add_comm,
-          Nat.add_left_comm] using hOuterWorld
+    exact (lamNfPlan rawDomain rawBody).evalWorld hDomainWorld hBodyWorld hDomain hBody hFuel hWorld
 
 private theorem cicStage3RawArtifactSig_primary_nf_query_world_geOne_app_any_depth
     {rawFn rawArg : DIndGArtifactTerm}
@@ -95807,27 +89033,19 @@ private theorem cicStage3RawArtifactSig_primary_nf_defn_fresh_root_world_of_two_
   have hFresh :
       RenamedBindingKeysFreshForPayloads (counterSuffix stAtom.counter)
         (letRuleBindings binder bodyAtom template) := by
+    apply (letRuleBindings_rename_fresh_iff _ _ _ _).mpr
     intro key hkey
-    simp [letRuleBindings, bindingRuleKeys] at hkey
+    simp at hkey
     have hKeyNe : counterSuffix stAtom.counter key ≠ binder := by
       rcases hkey with rfl | rfl | rfl
       · exact hTemplateNe
       · exact hAtomNe
       · exact hPatternNe
-    constructor
-    · intro x a hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with hmem | hmem
-      · rcases hmem with ⟨rfl, rfl⟩
-        simp [template, sigAtom_vars_nil, mExpr, mSym, mVar,
-          Metta.Atom.vars, hKeyNe]
-      · rcases hmem with ⟨rfl, rfl⟩
-        simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
-          declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
-    · intro x y hmem
-      simp [letRuleBindings] at hmem
-      rcases hmem with ⟨rfl, rfl⟩
-      exact hKeyNe
+    refine ⟨?_, ?_, hKeyNe⟩
+    · simp [bodyAtom, defBodyOfQueryAtom, sigAtom_vars_nil,
+        declNameAtom_vars_nil, mExpr, mSym, Metta.Atom.vars]
+    · simp [template, sigAtom_vars_nil, mExpr, mSym, mVar,
+        Metta.Atom.vars, hKeyNe]
   have hRoot :
       interpretFuel kernelDefControlEnv (fuelBase + 1 + 1) stAtom
           [evalItemNil (mExpr "let" [mVar binder, bodyAtom, template])] [] =
@@ -95853,24 +89071,18 @@ private theorem cicStage3RawArtifactSig_primary_nf_defn_fresh_root_world_of_two_
   have hBinderTemplateNe : binder ≠ counterSuffix stAtom.counter "template" :=
     hTemplateNe.symm
   have hTemplateAtom :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" := by
-    intro h
-    have h' : "template" = "atom" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "atom" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hTemplatePattern :
-      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "template" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "template" ≠ counterSuffix stAtom.counter "pattern" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hAtomTemplate :
       counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "template" := by
     intro h
     exact hTemplateAtom h.symm
   have hAtomPattern :
-      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" := by
-    intro h
-    have h' : "atom" = "pattern" := (counterSuffix_injective stAtom.counter) h
-    contradiction
+      counterSuffix stAtom.counter "atom" ≠ counterSuffix stAtom.counter "pattern" :=
+    (counterSuffix_injective stAtom.counter).ne (by decide)
   have hPatternTemplate :
       counterSuffix stAtom.counter "pattern" ≠ counterSuffix stAtom.counter "template" := by
     intro h

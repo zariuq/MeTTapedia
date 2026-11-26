@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.UnificationWithLevels.TreeFibre.CodomainReading
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.UnificationWithLevels.TreeFibre.ThroughLater
 
@@ -70,8 +71,7 @@ variable {S : Setting Head L}
 variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R) (heads : HeadPreserving S.R)
   (algebra : CumulativeAlgebra S.R) (rigid : ∀ name, S.roles name = .rigid)
   (complete : AlgorithmicComplete S.R S.roles)
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
   (declared : DeclaredTypesFormed S.R)
 
 include facts roots heads algebra rigid complete headTypingUnique declared in
@@ -323,8 +323,7 @@ def depNarrowSolve (algebra : CumulativeAlgebra S.R) {Θ : Context S.R} {e : Equ
 variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R) (heads : HeadPreserving S.R)
   (algebra : CumulativeAlgebra S.R) (rigid : ∀ name, S.roles name = .rigid)
   (complete : AlgorithmicComplete S.R S.roles)
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
   (declared : DeclaredTypesFormed S.R)
 
 omit [DecidableRel S.R.cumulative] in
@@ -586,8 +585,7 @@ theorem dep_misfitHead_refutes {Θ : Context S.R} {e : Equation (TotalTerm Θ)} 
 
 variable [DecidableRel S.R.cumulative] (glb : Head → Head → Option Head)
   (spec : ∀ {a b g : Head}, glb a b = some g → IsGlb S.R g a b)
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
   (declared : DeclaredTypesFormed S.R)
   (total : ∀ {a b : Head}, S.R.isUniverse a → S.R.isUniverse b → ∃ g, glb a b = some g)
 

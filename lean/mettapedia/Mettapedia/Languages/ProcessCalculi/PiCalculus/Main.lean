@@ -55,49 +55,9 @@ theorem nonRF_admin_correspondence_umbrella_fresh {N : Finset String}
     (nuListenerBody seedListenerBody : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
     (xr yr : Name) (Pr : Process) (n v : String)
     (hfresh : EncodingFresh P) :
-    (∃ Trep, Nonempty ((encode (.replicate xr yr Pr) n v) ⇝ᵈ* Trep) ∧
-      Trep ≈ᵈ{N}
-        (rhoPar
-          (rhoInput (piNameToRhoName xr) yr (encode Pr (n ++ "_rep") v))
-          (encode (.replicate xr yr Pr) n v))) ∧
-    (∃ Tnu Tseed TrepNu,
-      fullEncode (.nu x P) =
-        rhoPar (encode (.nu x P) "n_init" "v_init")
-          (nameServer "ns_x" "ns_z" "v_init" "ns_seed") ∧
-      Nonempty
-        ((.collection .hashBag
-          [rhoPar (encode (.nu x P) "n_init" "v_init")
-             (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody]),
-           rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-             (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody]),
-           encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"] none) ⇝ᵈ*
-          (.collection .hashBag [Tnu, Tseed, TrepNu] none)) ∧
-      (.collection .hashBag [Tnu, Tseed] none ≡
-        .collection .hashBag [Tseed, Tnu] none) ∧
-      WeakRestrictedBisimD N Tnu
-        (.collection .hashBag
-          [Mettapedia.Languages.ProcessCalculi.RhoCalculus.semanticCommSubst nuListenerBody (.fvar "n_init"),
-           rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
-      WeakRestrictedBisimD N Tseed
-        (.collection .hashBag
-          [Mettapedia.Languages.ProcessCalculi.RhoCalculus.semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
-           rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
-           dropOperation "ns_x"] none) ∧
-      WeakRestrictedBisimD N TrepNu
-        (rhoPar
-          (rhoInput (piNameToRhoName "ns_x") "_drop" (encode .nil ("n_init" ++ "_rep") "v_init"))
-          (encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"))) ∧
-    BackwardAdminReflection.WeakBackwardOutcome N
-      (rhoPar (encode (.nu x P) "n_init" "v_init")
-        (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody])) ∧
-    BackwardAdminReflection.WeakBackwardOutcome N
-      (rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-        (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody])) ∧
-    BackwardAdminReflection.WeakBackwardOutcome N
-      (encode (.replicate xr yr Pr) n v) := by
-  simpa using
-    (BackwardAdminReflection.full_nonRF_admin_correspondence_bidir_fresh
-      (N := N) x P nuListenerBody seedListenerBody xr yr Pr n v hfresh)
+    BackwardAdminReflection.NonRFAdminOutcome N x P nuListenerBody seedListenerBody xr yr Pr n v :=
+  BackwardAdminReflection.full_nonRF_admin_correspondence_bidir_fresh
+    (N := N) x P nuListenerBody seedListenerBody xr yr Pr n v hfresh
 
 /-- Observation-set weakening for the freshness-threaded non-RF admin umbrella:
 if the package holds at `Nsup`, it holds at any subset `N ⊆ Nsup`. -/
@@ -108,68 +68,9 @@ theorem nonRF_admin_correspondence_umbrella_fresh_of_obsSuperset
     (nuListenerBody seedListenerBody : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
     (xr yr : Name) (Pr : Process) (n v : String)
     (hfresh : EncodingFresh P) :
-    (∃ Trep, Nonempty ((encode (.replicate xr yr Pr) n v) ⇝ᵈ* Trep) ∧
-      Trep ≈ᵈ{N}
-        (rhoPar
-          (rhoInput (piNameToRhoName xr) yr (encode Pr (n ++ "_rep") v))
-          (encode (.replicate xr yr Pr) n v))) ∧
-    (∃ Tnu Tseed TrepNu,
-      fullEncode (.nu x P) =
-        rhoPar (encode (.nu x P) "n_init" "v_init")
-          (nameServer "ns_x" "ns_z" "v_init" "ns_seed") ∧
-      Nonempty
-        ((.collection .hashBag
-          [rhoPar (encode (.nu x P) "n_init" "v_init")
-             (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody]),
-           rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-             (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody]),
-           encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"] none) ⇝ᵈ*
-          (.collection .hashBag [Tnu, Tseed, TrepNu] none)) ∧
-      (.collection .hashBag [Tnu, Tseed] none ≡
-        .collection .hashBag [Tseed, Tnu] none) ∧
-      WeakRestrictedBisimD N Tnu
-        (.collection .hashBag
-          [Mettapedia.Languages.ProcessCalculi.RhoCalculus.semanticCommSubst nuListenerBody (.fvar "n_init"),
-           rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
-      WeakRestrictedBisimD N Tseed
-        (.collection .hashBag
-          [Mettapedia.Languages.ProcessCalculi.RhoCalculus.semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
-           rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
-           dropOperation "ns_x"] none) ∧
-      WeakRestrictedBisimD N TrepNu
-        (rhoPar
-          (rhoInput (piNameToRhoName "ns_x") "_drop" (encode .nil ("n_init" ++ "_rep") "v_init"))
-          (encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"))) ∧
-    BackwardAdminReflection.WeakBackwardOutcome N
-      (rhoPar (encode (.nu x P) "n_init" "v_init")
-        (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody])) ∧
-    BackwardAdminReflection.WeakBackwardOutcome N
-      (rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-        (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody])) ∧
-    BackwardAdminReflection.WeakBackwardOutcome N
-      (encode (.replicate xr yr Pr) n v) := by
-  have hsup :=
-    nonRF_admin_correspondence_umbrella_fresh
-      (N := Nsup) x P nuListenerBody seedListenerBody xr yr Pr n v hfresh
-  rcases hsup with ⟨hrep, hcombo, hnuOut, hseedOut, hrepOut⟩
-  refine ⟨?_, ?_, ?_, ?_, ?_⟩
-  · rcases hrep with ⟨Trep, hstar, hbisim⟩
-    exact ⟨Trep, hstar,
-      Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD.mono hbisim hsub⟩
-  · rcases hcombo with ⟨Tnu, Tseed, TrepNu, hfull, hstar, hswap, hbNu, hbSeed, hbRepNu⟩
-    exact ⟨Tnu, Tseed, TrepNu, hfull, hstar, hswap,
-      Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD.mono hbNu hsub,
-      Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD.mono hbSeed hsub,
-      Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD.mono hbRepNu hsub⟩
-  · exact
-      BackwardAdminReflection.WeakBackwardOutcome.mono
-        hnuOut hsub
-  · exact
-      BackwardAdminReflection.WeakBackwardOutcome.mono
-        hseedOut hsub
-  · exact
-      BackwardAdminReflection.WeakBackwardOutcome.mono
-        hrepOut hsub
+    BackwardAdminReflection.NonRFAdminOutcome N x P nuListenerBody seedListenerBody xr yr Pr n v :=
+  (nonRF_admin_correspondence_umbrella_fresh
+    (N := Nsup) x P nuListenerBody seedListenerBody xr yr Pr n v hfresh).mono hsub
 
 /-- Calculus-level non-RF administrative correspondence package with explicit
 freshness threading: forward admin closure + backward outcomes for ν/seed/replicate
@@ -180,47 +81,8 @@ theorem calculus_correspondence_nonRF_admin_package_fresh_umbrella
     (nuListenerBody seedListenerBody : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
     (xr yr : Name) (Pr : Process) (n v : String)
     (hfresh : EncodingFresh P) :
-    (∃ Trep, Nonempty ((encode (.replicate xr yr Pr) n v) ⇝ᵈ* Trep) ∧
-      Trep ≈ᵈ{N}
-        (rhoPar
-          (rhoInput (piNameToRhoName xr) yr (encode Pr (n ++ "_rep") v))
-          (encode (.replicate xr yr Pr) n v))) ∧
-    (∃ Tnu Tseed TrepNu,
-      fullEncode (.nu x P) =
-        rhoPar (encode (.nu x P) "n_init" "v_init")
-          (nameServer "ns_x" "ns_z" "v_init" "ns_seed") ∧
-      Nonempty
-        ((.collection .hashBag
-          [rhoPar (encode (.nu x P) "n_init" "v_init")
-             (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody]),
-           rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-             (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody]),
-           encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"] none) ⇝ᵈ*
-          (.collection .hashBag [Tnu, Tseed, TrepNu] none)) ∧
-      (.collection .hashBag [Tnu, Tseed] none ≡
-        .collection .hashBag [Tseed, Tnu] none) ∧
-      WeakRestrictedBisimD N Tnu
-        (.collection .hashBag
-          [Mettapedia.Languages.ProcessCalculi.RhoCalculus.semanticCommSubst nuListenerBody (.fvar "n_init"),
-           rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
-      WeakRestrictedBisimD N Tseed
-        (.collection .hashBag
-          [Mettapedia.Languages.ProcessCalculi.RhoCalculus.semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
-           rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
-           dropOperation "ns_x"] none) ∧
-      WeakRestrictedBisimD N TrepNu
-        (rhoPar
-          (rhoInput (piNameToRhoName "ns_x") "_drop" (encode .nil ("n_init" ++ "_rep") "v_init"))
-          (encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"))) ∧
-    BackwardAdminReflection.WeakBackwardOutcome N
-      (rhoPar (encode (.nu x P) "n_init" "v_init")
-        (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody])) ∧
-    BackwardAdminReflection.WeakBackwardOutcome N
-      (rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-        (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody])) ∧
-    BackwardAdminReflection.WeakBackwardOutcome N
-      (encode (.replicate xr yr Pr) n v) := by
-  exact nonRF_admin_correspondence_umbrella_fresh
+    BackwardAdminReflection.NonRFAdminOutcome N x P nuListenerBody seedListenerBody xr yr Pr n v :=
+  nonRF_admin_correspondence_umbrella_fresh
     (N := N) x P nuListenerBody seedListenerBody xr yr Pr n v hfresh
 
 /-- Complete pre-OSLF calculus correspondence package:
@@ -254,59 +116,11 @@ theorem calculus_correspondence_prelude_complete_package_umbrella
       BackwardAdminReflection.EncodedSCStepSource N src →
       Nonempty
         (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt) →
-      (∃ tgt' canon,
-        Nonempty
-          (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt') ∧
-        BackwardAdminReflection.AdminCanonicalTarget src canon ∧
-        Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' canon)
+      BackwardAdminReflection.AdminProgress N src
       ∨
-      (∃ P0 P1 n0 v0 tgt',
-        Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P0 n0 v0) ∧
-        Nonempty (P0 ⇝ P1) ∧
-        Nonempty
-          (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar (encode P0 n0 v0) tgt') ∧
-        Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' (encode P1 n0 v0)))
+      BackwardAdminReflection.ReflectedPiStep N src)
     ∧
-    ((∃ Trep, Nonempty ((encode (.replicate xr yr Pr) n v) ⇝ᵈ* Trep) ∧
-      Trep ≈ᵈ{N}
-        (rhoPar
-          (rhoInput (piNameToRhoName xr) yr (encode Pr (n ++ "_rep") v))
-          (encode (.replicate xr yr Pr) n v))) ∧
-    (∃ Tnu Tseed TrepNu,
-      fullEncode (.nu x P) =
-        rhoPar (encode (.nu x P) "n_init" "v_init")
-          (nameServer "ns_x" "ns_z" "v_init" "ns_seed") ∧
-      Nonempty
-        ((.collection .hashBag
-          [rhoPar (encode (.nu x P) "n_init" "v_init")
-             (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody]),
-           rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-             (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody]),
-           encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"] none) ⇝ᵈ*
-          (.collection .hashBag [Tnu, Tseed, TrepNu] none)) ∧
-      (.collection .hashBag [Tnu, Tseed] none ≡
-        .collection .hashBag [Tseed, Tnu] none) ∧
-      WeakRestrictedBisimD N Tnu
-        (.collection .hashBag
-          [Mettapedia.Languages.ProcessCalculi.RhoCalculus.semanticCommSubst nuListenerBody (.fvar "n_init"),
-           rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
-      WeakRestrictedBisimD N Tseed
-        (.collection .hashBag
-          [Mettapedia.Languages.ProcessCalculi.RhoCalculus.semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
-           rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
-           dropOperation "ns_x"] none) ∧
-      WeakRestrictedBisimD N TrepNu
-        (rhoPar
-          (rhoInput (piNameToRhoName "ns_x") "_drop" (encode .nil ("n_init" ++ "_rep") "v_init"))
-          (encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"))) ∧
-    BackwardAdminReflection.WeakBackwardOutcome N
-      (rhoPar (encode (.nu x P) "n_init" "v_init")
-        (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody])) ∧
-    BackwardAdminReflection.WeakBackwardOutcome N
-      (rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-        (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody])) ∧
-    BackwardAdminReflection.WeakBackwardOutcome N
-      (encode (.replicate xr yr Pr) n v)) := by
+    BackwardAdminReflection.NonRFAdminOutcome N x P nuListenerBody seedListenerBody xr yr Pr n v := by
   refine ⟨?_, ?_, ?_, ?_⟩
   · intro P0 P1 h hrf hsafe n0 v0
     exact Mettapedia.Languages.ProcessCalculi.PiCalculus.EncodingMorphism.prop4_forward
@@ -349,18 +163,9 @@ abbrev CalcBackwardStarPartitionClause (N : Finset String) : Prop :=
     BackwardAdminReflection.EncodedSCStepSource N src →
     Nonempty
       (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt) →
-    (∃ tgt' canon,
-      Nonempty
-        (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt') ∧
-      BackwardAdminReflection.AdminCanonicalTarget src canon ∧
-      Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' canon)
+    BackwardAdminReflection.AdminProgress N src
     ∨
-    (∃ P0 P1 n0 v0 tgt',
-      Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P0 n0 v0) ∧
-      Nonempty (P0 ⇝ P1) ∧
-      Nonempty
-        (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar (encode P0 n0 v0) tgt') ∧
-      Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' (encode P1 n0 v0))
+    BackwardAdminReflection.ReflectedPiStep N src
 
 /-- Trace-sensitive + target-sensitive star-level backward decomposition clause
 used by the canonical pre-OSLF calculus export. -/
@@ -371,34 +176,17 @@ abbrev CalcBackwardStarTraceTargetSensitiveClause (N : Finset String) : Prop :=
       (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt) →
     src = tgt
     ∨
-    (∃ mid,
-      Nonempty
-        (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerived src mid) ∧
-      Nonempty
-        (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar mid tgt) ∧
-      ((∃ tgt' canon,
-        Nonempty
-          (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt') ∧
-        BackwardAdminReflection.AdminCanonicalTarget src canon ∧
-        Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' canon)
+    BackwardAdminReflection.DerivedTraceHead src tgt (fun mid =>
+      (BackwardAdminReflection.AdminProgress N src
       ∨
       (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
-        ∃ P0 P1 n0 v0 tgt',
-          Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P0 n0 v0) ∧
-          Nonempty (P0 ⇝ P1) ∧
-          Nonempty
-            (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar (encode P0 n0 v0) tgt') ∧
-          Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' (encode P1 n0 v0))))
+        BackwardAdminReflection.ReflectedPiStep N src)))
 
 /-- RF multi-step trace reflection clause: admin-progress or RF trace branch. -/
 abbrev CalcBackwardRFTraceClause (N : Finset String) : Prop :=
   ∀ {src : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern},
     BackwardAdminReflection.EncodedRFTraceSource N src →
-      (∃ tgt canon,
-        Nonempty
-          (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt) ∧
-        BackwardAdminReflection.AdminCanonicalTarget src canon ∧
-        Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt canon)
+      BackwardAdminReflection.AdminProgress N src
       ∨
       (∃ P Q n v T,
         src = encode P n v ∧
@@ -415,46 +203,7 @@ abbrev CalcNonRFAdminFreshClause
     (nuListenerBody seedListenerBody : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern)
     (xr yr : Name) (Pr : Process) (n v : String)
     (_hfresh : EncodingFresh P) : Prop :=
-  ((∃ Trep, Nonempty ((encode (.replicate xr yr Pr) n v) ⇝ᵈ* Trep) ∧
-    Trep ≈ᵈ{N}
-      (rhoPar
-        (rhoInput (piNameToRhoName xr) yr (encode Pr (n ++ "_rep") v))
-        (encode (.replicate xr yr Pr) n v))) ∧
-  (∃ Tnu Tseed TrepNu,
-    fullEncode (.nu x P) =
-      rhoPar (encode (.nu x P) "n_init" "v_init")
-        (nameServer "ns_x" "ns_z" "v_init" "ns_seed") ∧
-    Nonempty
-      ((.collection .hashBag
-        [rhoPar (encode (.nu x P) "n_init" "v_init")
-           (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody]),
-         rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-           (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody]),
-         encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"] none) ⇝ᵈ*
-        (.collection .hashBag [Tnu, Tseed, TrepNu] none)) ∧
-    (.collection .hashBag [Tnu, Tseed] none ≡
-      .collection .hashBag [Tseed, Tnu] none) ∧
-    WeakRestrictedBisimD N Tnu
-      (.collection .hashBag
-        [Mettapedia.Languages.ProcessCalculi.RhoCalculus.semanticCommSubst nuListenerBody (.fvar "n_init"),
-         rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
-    WeakRestrictedBisimD N Tseed
-      (.collection .hashBag
-        [Mettapedia.Languages.ProcessCalculi.RhoCalculus.semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
-         rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
-         dropOperation "ns_x"] none) ∧
-    WeakRestrictedBisimD N TrepNu
-      (rhoPar
-        (rhoInput (piNameToRhoName "ns_x") "_drop" (encode .nil ("n_init" ++ "_rep") "v_init"))
-        (encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"))) ∧
-  BackwardAdminReflection.WeakBackwardOutcome N
-    (rhoPar (encode (.nu x P) "n_init" "v_init")
-      (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody])) ∧
-  BackwardAdminReflection.WeakBackwardOutcome N
-    (rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-      (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody])) ∧
-  BackwardAdminReflection.WeakBackwardOutcome N
-    (encode (.replicate xr yr Pr) n v))
+  BackwardAdminReflection.NonRFAdminOutcome N x P nuListenerBody seedListenerBody xr yr Pr n v
 
 /-- User-observation disciplined non-RF admin umbrella: adds reserved-name
 disjointness for the full-encode machinery. -/
@@ -694,24 +443,11 @@ theorem calculus_correspondence_prelude_langMorphism_shape_trace_sensitive
         (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt) →
       src = tgt
       ∨
-      (∃ mid,
-        Nonempty
-          (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerived src mid) ∧
-        Nonempty
-          (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar mid tgt) ∧
-        ((∃ tgt' canon,
-          Nonempty
-            (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt') ∧
-          BackwardAdminReflection.AdminCanonicalTarget src canon ∧
-          Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' canon)
+      BackwardAdminReflection.DerivedTraceHead src tgt (fun mid =>
+      (BackwardAdminReflection.AdminProgress N src
         ∨
         (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
-          ∃ P0 P1 n0 v0 tgt',
-            Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P0 n0 v0) ∧
-            Nonempty (P0 ⇝ P1) ∧
-            Nonempty
-              (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar (encode P0 n0 v0) tgt') ∧
-            Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' (encode P1 n0 v0))))) := by
+          BackwardAdminReflection.ReflectedPiStep N src)))) := by
   let hpkg := calculus_correspondence_prelude_complete_package_struct
     (N := N) x P nuListenerBody seedListenerBody xr yr Pr n v hfresh
   refine ⟨?_, ?_, ?_⟩
@@ -746,44 +482,22 @@ theorem calculus_correspondence_prelude_langMorphism_shape_branch_sensitive
       BackwardAdminReflection.EncodedSCStepSource N src →
       Nonempty
         (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerived src tgt) →
-      (∃ tgt' canon,
-        Nonempty
-          (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt') ∧
-        BackwardAdminReflection.AdminCanonicalTarget src canon ∧
-        Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' canon)
+      BackwardAdminReflection.AdminProgress N src
       ∨
       (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src tgt) ∧
-        ∃ P0 P1 n0 v0 tgt',
-          Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P0 n0 v0) ∧
-          Nonempty (P0 ⇝ P1) ∧
-          Nonempty
-            (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar (encode P0 n0 v0) tgt') ∧
-          Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' (encode P1 n0 v0)))
+        BackwardAdminReflection.ReflectedPiStep N src))
     ∧
     (∀ {src tgt : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern},
       BackwardAdminReflection.EncodedSCStepSource N src →
       Nonempty
         (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt) →
-      (∃ tgt' canon,
-        Nonempty
-          (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt') ∧
-        BackwardAdminReflection.AdminCanonicalTarget src canon ∧
-        Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' canon)
+      BackwardAdminReflection.AdminProgress N src
       ∨
       (src = tgt
         ∨
-        (∃ mid,
-          Nonempty
-            (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerived src mid) ∧
-          Nonempty
-            (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar mid tgt) ∧
-          (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
-            ∃ P0 P1 n0 v0 tgt',
-              Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P0 n0 v0) ∧
-              Nonempty (P0 ⇝ P1) ∧
-              Nonempty
-                (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar (encode P0 n0 v0) tgt') ∧
-              Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' (encode P1 n0 v0))))) := by
+        BackwardAdminReflection.DerivedTraceHead src tgt (fun mid =>
+      (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
+            BackwardAdminReflection.ReflectedPiStep N src)))) := by
   let hpkg := calculus_correspondence_prelude_complete_package_struct
     (N := N) x P nuListenerBody seedListenerBody xr yr Pr n v hfresh
   refine ⟨?_, ?_, ?_⟩
@@ -821,19 +535,10 @@ theorem calculus_correspondence_prelude_langMorphism_shape_branch_sensitive_outc
       BackwardAdminReflection.EncodedSCStepSource N src →
       Nonempty
         (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerived src tgt) →
-      (∃ tgt' canon,
-        Nonempty
-          (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt') ∧
-        BackwardAdminReflection.AdminCanonicalTarget src canon ∧
-        Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' canon)
+      BackwardAdminReflection.AdminProgress N src
       ∨
       (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src tgt) ∧
-        ∃ P0 P1 n0 v0 tgt',
-          Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P0 n0 v0) ∧
-          Nonempty (P0 ⇝ P1) ∧
-          Nonempty
-            (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar (encode P0 n0 v0) tgt') ∧
-          Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' (encode P1 n0 v0)))
+        BackwardAdminReflection.ReflectedPiStep N src))
     ∧
     (∀ {src tgt : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern},
       BackwardAdminReflection.EncodedSCStepSource N src →
@@ -877,44 +582,22 @@ theorem calculus_correspondence_prelude_langMorphism_shape_branch_sensitive_from
       BackwardAdminReflection.EncodedSCStepSource N src →
       Nonempty
         (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerived src tgt) →
-      (∃ tgt' canon,
-        Nonempty
-          (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt') ∧
-        BackwardAdminReflection.AdminCanonicalTarget src canon ∧
-        Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' canon)
+      BackwardAdminReflection.AdminProgress N src
       ∨
       (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src tgt) ∧
-        ∃ P0 P1 n0 v0 tgt',
-          Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P0 n0 v0) ∧
-          Nonempty (P0 ⇝ P1) ∧
-          Nonempty
-            (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar (encode P0 n0 v0) tgt') ∧
-          Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' (encode P1 n0 v0)))
+        BackwardAdminReflection.ReflectedPiStep N src))
     ∧
     (∀ {src tgt : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern},
       BackwardAdminReflection.EncodedSCStepSource N src →
       Nonempty
         (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt) →
-      (∃ tgt' canon,
-        Nonempty
-          (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt') ∧
-        BackwardAdminReflection.AdminCanonicalTarget src canon ∧
-        Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' canon)
+      BackwardAdminReflection.AdminProgress N src
       ∨
       (src = tgt
         ∨
-        (∃ mid,
-          Nonempty
-            (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerived src mid) ∧
-          Nonempty
-            (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar mid tgt) ∧
-          (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
-            ∃ P0 P1 n0 v0 tgt',
-              Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P0 n0 v0) ∧
-              Nonempty (P0 ⇝ P1) ∧
-              Nonempty
-                (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar (encode P0 n0 v0) tgt') ∧
-              Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' (encode P1 n0 v0))))) := by
+        BackwardAdminReflection.DerivedTraceHead src tgt (fun mid =>
+      (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
+            BackwardAdminReflection.ReflectedPiStep N src)))) := by
   have hPkgSup :=
     calculus_correspondence_prelude_langMorphism_shape_branch_sensitive
       (N := Nsup) x P nuListenerBody seedListenerBody xr yr Pr n v hfresh
@@ -961,19 +644,10 @@ theorem calculus_correspondence_prelude_langMorphism_shape_branch_sensitive_outc
       BackwardAdminReflection.EncodedSCStepSource N src →
       Nonempty
         (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerived src tgt) →
-      (∃ tgt' canon,
-        Nonempty
-          (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt') ∧
-        BackwardAdminReflection.AdminCanonicalTarget src canon ∧
-        Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' canon)
+      BackwardAdminReflection.AdminProgress N src
       ∨
       (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src tgt) ∧
-        ∃ P0 P1 n0 v0 tgt',
-          Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P0 n0 v0) ∧
-          Nonempty (P0 ⇝ P1) ∧
-          Nonempty
-            (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar (encode P0 n0 v0) tgt') ∧
-          Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' (encode P1 n0 v0)))
+        BackwardAdminReflection.ReflectedPiStep N src))
     ∧
     (∀ {src tgt : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern},
       BackwardAdminReflection.EncodedSCStepSource N src →
@@ -1034,24 +708,11 @@ theorem calculus_correspondence_prelude_langMorphism_shape_trace_sensitive_from_
         (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt) →
       src = tgt
       ∨
-      (∃ mid,
-        Nonempty
-          (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerived src mid) ∧
-        Nonempty
-          (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar mid tgt) ∧
-        ((∃ tgt' canon,
-          Nonempty
-            (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt') ∧
-          BackwardAdminReflection.AdminCanonicalTarget src canon ∧
-          Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' canon)
+      BackwardAdminReflection.DerivedTraceHead src tgt (fun mid =>
+      (BackwardAdminReflection.AdminProgress N src
         ∨
         (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
-          ∃ P0 P1 n0 v0 tgt',
-            Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P0 n0 v0) ∧
-            Nonempty (P0 ⇝ P1) ∧
-            Nonempty
-              (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar (encode P0 n0 v0) tgt') ∧
-            Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' (encode P1 n0 v0))))) := by
+          BackwardAdminReflection.ReflectedPiStep N src)))) := by
   have hPkgSup :=
     calculus_correspondence_prelude_langMorphism_shape_trace_sensitive
       (N := Nsup) x P nuListenerBody seedListenerBody xr yr Pr n v hfresh
@@ -1116,18 +777,9 @@ theorem calculus_correspondence_prelude_complete_package_userObs
       BackwardAdminReflection.EncodedSCStepSource N src →
       Nonempty
         (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt) →
-      (∃ tgt' canon,
-        Nonempty
-          (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt') ∧
-        BackwardAdminReflection.AdminCanonicalTarget src canon ∧
-        Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' canon)
+      BackwardAdminReflection.AdminProgress N src
       ∨
-      (∃ P0 P1 n0 v0 tgt',
-        Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P0 n0 v0) ∧
-        Nonempty (P0 ⇝ P1) ∧
-        Nonempty
-          (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar (encode P0 n0 v0) tgt') ∧
-        Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' (encode P1 n0 v0)))
+      BackwardAdminReflection.ReflectedPiStep N src)
     ∧
     ((∃ Trep, Nonempty ((encode (.replicate xr yr Pr) n v) ⇝ᵈ* Trep) ∧
       Trep ≈ᵈ{N}
@@ -1486,17 +1138,9 @@ theorem calculus_backward_simulation_full_general
         (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt)) :
     src = tgt
     ∨
-    (∃ tgt' canon,
-      Nonempty
-        (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar src tgt') ∧
-      BackwardAdminReflection.AdminCanonicalTarget src canon ∧
-      Mettapedia.Languages.ProcessCalculi.PiCalculus.WeakRestrictedBisimD N tgt' canon)
+    BackwardAdminReflection.AdminProgress N src
     ∨
-    (∃ mid,
-      Nonempty
-        (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerived src mid) ∧
-      Nonempty
-        (Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu.ReducesDerivedStar mid tgt) ∧
+    BackwardAdminReflection.DerivedTraceHead src tgt (fun mid =>
       Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
       ∃ P P' n v tgt',
         Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P n v) ∧

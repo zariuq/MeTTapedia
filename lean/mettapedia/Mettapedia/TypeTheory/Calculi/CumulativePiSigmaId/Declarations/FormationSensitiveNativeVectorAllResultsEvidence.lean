@@ -1,6 +1,8 @@
 import Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.FormationSensitiveNativeVectorAllResults
 import Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax
 import Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorReplayTemplates
+import Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts
+import Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts
 
 /-! Generated finite evidence; independently replayed by the checking companion. -/
 
@@ -16,593 +18,20 @@ private abbrev C (n : Nat) := StructuralConversionCode.Code Tower.Head NativeVec
 private abbrev T (n : Nat) := StructuralTypingReplay.Code Tower.Head C n
 private abbrev X (n : Nat) := StructuralTypingReplay.ContextCode Tower.Head C n
 
-private def e53 : T 2 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d3b434f6728366c60c60) (replay_e0b4cd7d4f5470728848) (replay_87427d3bb5db02e83042)
-
-private def e54 : T 1 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a8a040a7dc522e2a057b) (replay_5a68ee9128a498498c58) (e53)
-
-private def e61 : T 2 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e7afc61b162c474cee28) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f27530831649330ef53a) (replay_67648559da2b4f1cdeb2) (replay_0f2dd1205a90f8a9be11)
-
-private def e75 : T 2 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e12ca69c4e9e56abe06b) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c11f892d8ff03ba1dddc) (e61) (replay_06e957bf163fa838af72)
-
-private def e95 : T 6 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_545fb4a3c03c82a175c1) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a1b0b0b3b0ddf0f66dc0) (replay_fb92de9ad2d284eba393) (replay_fb92de9ad2d284eba393)
-
-private def e96 : T 6 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5b5fbd485bc823ecfe93) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a00b8c8444bea058b778) (e95) (replay_fb92de9ad2d284eba393)
-
-private def e107 : T 7 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9f9a03288a6b4e36d75e) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b2c38f14d55661a483f) (replay_e197ee63c3c9ea3d9b51) (replay_c7c8c241dc8829eb3368)
-
-private def e130 : T 7 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_02622304141c4f3f2ef4) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_84694f68cb6df114afa7) (e107) (replay_7d06d2df84b8bc22b63d)
-
-private def e131 : T 6 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (e96) (e130)
-
-private def e132 : T 5 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (replay_bf3f7acfa265bdb54010) (e131)
-
-private def e133 : T 4 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_926d1059d18a7acb855f) (replay_f89a0d3fd4af1bf7786d) (e132)
-
-private def e134 : T 3 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (replay_d6d38e78195867038cfc) (e133)
-
-private def e138 : T 6 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ea1e125d0ec89812d6af) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a00b8c8444bea058b778) (e95) (replay_fb92de9ad2d284eba393)
-
-private def e139 : T 5 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_bf3f7acfa265bdb54010) (e138)
-
-private def e140 : T 4 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (replay_909a1aacbbe83fd007eb) (e139)
-
-private def e141 : T 3 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b5fcf8a047e56612b09d) (e134) (e140)
-
-private def e142 : T 2 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_145482549cab95f9be25) (e75) (e141)
-
-private def e143 : T 1 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3b69fc5965686a991caa) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4119145459c228af2ee2) (e54) (e142)
-
-private def e144 : T 0 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_061870f2805e00b0bc08) (replay_7a268c731e7a9afff236) (e143)
-
-private def e145 : T 4 :=
-.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a5f313e17bf6f92fda5d) (e144)
-
-private def e146 : T 4 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_134b6fb901b45973d3cc) (e145) (replay_f89a0d3fd4af1bf7786d)
-
-private def e148 : T 5 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d3b434f6728366c60c60) (replay_bf3f7acfa265bdb54010) (replay_ff33acd87c5b03c2f11e)
-
-private def e149 : T 4 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a8a040a7dc522e2a057b) (replay_909a1aacbbe83fd007eb) (e148)
-
-private def e150 : T 5 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a8a040a7dc522e2a057b) (e148) (replay_ff33acd87c5b03c2f11e)
-
-private def e151 : T 4 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3b69fc5965686a991caa) (e149) (e150)
-
-private def e152 : T 4 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5b33b9fe7931fd8258ae) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_76dc3e2382c3319235d6) (e146) (e151)
-
-private def e162 : T 8 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_364e906c32a1fece265a) (replay_cf26163fe59a0dbcc31b)
-
-private def e163 : T 7 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (replay_d46b9e98b3e6a82d2405) (e162)
-
-private def e164 : T 6 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_926d1059d18a7acb855f) (replay_fb92de9ad2d284eba393) (e163)
-
-private def e165 : T 5 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (replay_c51a69238051ce6df937) (e164)
-
-private def e167 : T 7 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_d46b9e98b3e6a82d2405) (replay_364e906c32a1fece265a)
-
-private def e168 : T 6 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (replay_811c48c79398f6d0dc39) (e167)
-
-private def e169 : T 5 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b5fcf8a047e56612b09d) (e165) (e168)
-
-private def e170 : T 4 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_145482549cab95f9be25) (replay_9a8c52ee0ece732b2898) (e169)
-
-private def e171 : C 4 :=
-.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9725e8a1d7cc252e4b48)
-
-private def e172 : C 4 :=
-.trans (e171) (e171)
-
-private def e175 : S 4 :=
-.betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6eb023f151e9373cf9ce) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_82a2893d012540d0191a)
-
-private def e177 : S 4 :=
-.congAppFun (e175) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9c85be851750b97e18c4)
-
-private def e179 : S 4 :=
-.congPiDom (e177) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d8ca52afad2c41f0f5b6)
-
-private def e180 : C 4 :=
-.single (e179)
-
-private def e182 : C 4 :=
-.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_03110f5c19bf7d6858ca)
-
-private def e183 : C 4 :=
-.trans (e180) (e182)
-
-private def e184 : C 4 :=
-.trans (e172) (e183)
-
-private def e185 : C 4 :=
-.trans (e182) (e182)
-
-private def e186 : C 4 :=
-.trans (e184) (e185)
-
-private def e187 : S 4 :=
-.betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5978e1f6d4b31cb31598) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9c85be851750b97e18c4)
-
-private def e188 : S 4 :=
-.congPiDom (e187) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d8ca52afad2c41f0f5b6)
-
-private def e189 : C 4 :=
-.single (e188)
-
-private def e191 : C 4 :=
-.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6c7e1957e491aa7700d3)
-
-private def e192 : C 4 :=
-.trans (e189) (e191)
-
-private def e193 : C 4 :=
-.trans (e186) (e192)
-
-private def e194 : C 4 :=
-.trans (e191) (e191)
-
-private def e195 : C 4 :=
-.trans (e194) (e191)
-
-private def e200 : S 8 :=
-.betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6eb2ca94a69500429c03) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e93106dbc2bfff46a368)
-
-private def e202 : S 8 :=
-.congAppFun (e200) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9c4e10a7ef594a772e44)
-
-private def e204 : S 8 :=
-.congPiDom (e202) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c4424e1bf70b466bc36b)
-
-private def e205 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e16481ee968b916985a1) (e204)
-
-private def e206 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_987df36b061ff751f22f) (e205)
-
-private def e207 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_02c898a5fa9dca7e390e) (e206)
-
-private def e209 : S 5 :=
-.congPiDom (e207) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_585fb9b3c0c9ed71e68d)
-
-private def e210 : S 4 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (e209)
-
-private def e211 : C 4 :=
-.single (e210)
-
-private def e213 : C 4 :=
-.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e338820d8be943fbdcc1)
-
-private def e214 : C 4 :=
-.trans (e211) (e213)
-
-private def e215 : C 4 :=
-.trans (e194) (e214)
-
-private def e216 : C 4 :=
-.trans (e215) (e213)
-
-private def e218 : S 8 :=
-.betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9c4e10a7ef594a772e44)
-
-private def e219 : S 8 :=
-.congPiDom (e218) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c4424e1bf70b466bc36b)
-
-private def e220 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e16481ee968b916985a1) (e219)
-
-private def e221 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_987df36b061ff751f22f) (e220)
-
-private def e222 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_02c898a5fa9dca7e390e) (e221)
-
-private def e223 : S 5 :=
-.congPiDom (e222) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_585fb9b3c0c9ed71e68d)
-
-private def e224 : S 4 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (e223)
-
-private def e225 : C 4 :=
-.single (e224)
-
-private def e227 : C 4 :=
-.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1123f76cb4ba10c4458b)
-
-private def e228 : C 4 :=
-.trans (e225) (e227)
-
-private def e229 : C 4 :=
-.trans (e216) (e228)
-
-private def e230 : C 4 :=
-.trans (e227) (e227)
-
-private def e231 : C 4 :=
-.trans (e227) (e230)
-
-private def e234 : S 9 :=
-.betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5b15989a49ccca91be68) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_44030ca211a2a92d0431)
-
-private def e236 : S 9 :=
-.congAppFun (e234) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_93ab7058ba75994f43b7)
-
-private def e237 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (e236)
-
-private def e238 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e16481ee968b916985a1) (e237)
-
-private def e239 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_987df36b061ff751f22f) (e238)
-
-private def e240 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_02c898a5fa9dca7e390e) (e239)
-
-private def e241 : S 5 :=
-.congPiDom (e240) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_585fb9b3c0c9ed71e68d)
-
-private def e242 : S 4 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (e241)
-
-private def e243 : C 4 :=
-.single (e242)
-
-private def e245 : C 4 :=
-.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_73d02ebce0a649ec1c82)
-
-private def e246 : C 4 :=
-.trans (e243) (e245)
-
-private def e247 : C 4 :=
-.trans (e231) (e246)
-
-private def e248 : C 4 :=
-.trans (e245) (e245)
-
-private def e249 : C 4 :=
-.trans (e248) (e245)
-
-private def e250 : C 4 :=
-.trans (e249) (e245)
-
-private def e251 : C 4 :=
-.trans (e250) (e245)
-
-private def e252 : C 4 :=
-.trans (e247) (e251)
-
-private def e254 : S 9 :=
-.betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b74e03acbfc24aeb10e) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_93ab7058ba75994f43b7)
-
-private def e255 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (e254)
-
-private def e256 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e16481ee968b916985a1) (e255)
-
-private def e257 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_987df36b061ff751f22f) (e256)
-
-private def e258 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_02c898a5fa9dca7e390e) (e257)
-
-private def e259 : S 5 :=
-.congPiDom (e258) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_585fb9b3c0c9ed71e68d)
-
-private def e260 : S 4 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (e259)
-
-private def e261 : C 4 :=
-.single (e260)
-
-private def e263 : C 4 :=
-.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f546828750150b3e63cb)
-
-private def e264 : C 4 :=
-.trans (e261) (e263)
-
-private def e265 : C 4 :=
-.trans (e252) (e264)
-
-private def e266 : C 4 :=
-.trans (e229) (e265)
-
-private def e267 : C 4 :=
-.trans (e195) (e266)
-
-private def e268 : C 4 :=
-.trans (e191) (e267)
-
-private def e269 : C 4 :=
-.trans (e191) (e268)
-
-private def e270 : C 4 :=
-.trans (e263) (e263)
-
-private def e271 : C 4 :=
-.trans (e270) (e263)
-
-private def e275 : S 8 :=
-.betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6eb2ca94a69500429c03) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f53fa47f7bbcf2b1a226)
-
-private def e276 : S 8 :=
-.congAppFun (e275) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9c4e10a7ef594a772e44)
-
-private def e277 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d64c30b5d3d809a06ed9) (e276)
-
-private def e278 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_545fb4a3c03c82a175c1) (e277)
-
-private def e279 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2215ac1cab4d57eec91a) (e278)
-
-private def e280 : S 4 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (e279)
-
-private def e281 : C 4 :=
-.single (e280)
-
-private def e283 : C 4 :=
-.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7f8f78d08d7ee16ea1f3)
-
-private def e284 : C 4 :=
-.trans (e281) (e283)
-
-private def e285 : C 4 :=
-.trans (e270) (e284)
-
-private def e286 : C 4 :=
-.trans (e285) (e283)
-
-private def e287 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d64c30b5d3d809a06ed9) (e218)
-
-private def e288 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_545fb4a3c03c82a175c1) (e287)
-
-private def e289 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2215ac1cab4d57eec91a) (e288)
-
-private def e290 : S 4 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (e289)
-
-private def e291 : C 4 :=
-.single (e290)
-
-private def e293 : C 4 :=
-.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_45d871966da4c8500660)
-
-private def e294 : C 4 :=
-.trans (e291) (e293)
-
-private def e295 : C 4 :=
-.trans (e286) (e294)
-
-private def e296 : C 4 :=
-.trans (e271) (e295)
-
-private def e297 : C 4 :=
-.trans (e263) (e296)
-
-private def e298 : C 4 :=
-.trans (e269) (e297)
-
-private def e299 : C 4 :=
-.trans (e193) (e298)
-
-private def e300 : S 4 :=
-.head (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9)
-
-private def e301 : S 4 :=
-.congPiDom (e300) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_8285f5653fa68f00f7c1)
-
-private def e302 : C 4 :=
-.single (e301)
-
-private def e303 : C 4 :=
-.trans (e293) (e293)
-
-private def e304 : C 4 :=
-.trans (e303) (e293)
-
-private def e305 : S 8 :=
-.head (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9)
-
-private def e306 : S 8 :=
-.congPiDom (e305) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8)
-
-private def e307 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e16481ee968b916985a1) (e306)
-
-private def e308 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_987df36b061ff751f22f) (e307)
-
-private def e309 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_02c898a5fa9dca7e390e) (e308)
-
-private def e311 : S 5 :=
-.congPiDom (e309) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7bd55015fee84cb4f634)
-
-private def e312 : S 4 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (e311)
-
-private def e313 : C 4 :=
-.single (e312)
-
-private def e314 : S 9 :=
-.head (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9)
-
-private def e315 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (e314)
-
-private def e316 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e16481ee968b916985a1) (e315)
-
-private def e317 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_987df36b061ff751f22f) (e316)
-
-private def e318 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_02c898a5fa9dca7e390e) (e317)
-
-private def e319 : S 5 :=
-.congPiDom (e318) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7bd55015fee84cb4f634)
-
-private def e320 : S 4 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (e319)
-
-private def e321 : C 4 :=
-.single (e320)
-
-private def e322 : C 4 :=
-.trans (e313) (e321)
-
-private def e323 : C 4 :=
-.trans (e304) (e322)
-
-private def e324 : C 4 :=
-.trans (e293) (e323)
-
-private def e325 : C 4 :=
-.trans (e293) (e324)
-
-private def e326 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d64c30b5d3d809a06ed9) (e305)
-
-private def e327 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_545fb4a3c03c82a175c1) (e326)
-
-private def e328 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2215ac1cab4d57eec91a) (e327)
-
-private def e329 : S 4 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (e328)
-
-private def e330 : C 4 :=
-.single (e329)
-
-private def e331 : C 4 :=
-.trans (e304) (e330)
-
-private def e332 : C 4 :=
-.trans (e293) (e331)
-
-private def e333 : C 4 :=
-.trans (e325) (e332)
-
-private def e334 : C 4 :=
-.trans (e302) (e333)
-
-private def e335 : C 4 :=
-.trans (e304) (e303)
-
-private def e336 : C 4 :=
-.trans (e293) (e335)
-
-private def e337 : C 4 :=
-.trans (e293) (e336)
-
-private def e338 : C 4 :=
-.trans (e304) (e293)
-
-private def e339 : C 4 :=
-.trans (e293) (e338)
-
-private def e340 : C 4 :=
-.trans (e337) (e339)
-
-private def e341 : C 4 :=
-.trans (e293) (e340)
-
-private def e342 : C 4 :=
-.symm (e341)
-
-private def e343 : C 4 :=
-.trans (e334) (e342)
-
-private def e344 : C 4 :=
-.trans (e299) (e343)
-
-private def e345 : T 4 :=
-.convert (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9725e8a1d7cc252e4b48) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4119145459c228af2ee2) (e152) (e170) (e344)
-
-private def e349 : T 4 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_8285f5653fa68f00f7c1) (e345) (replay_74ee98dff50bb31e1ba0)
-
-private def e355 : T 7 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_4ec057243fb248f73891) (replay_364e906c32a1fece265a)
-
-private def e356 : T 6 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (replay_629e69ece1b1fb7e3753) (e355)
-
-private def e357 : T 5 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_926d1059d18a7acb855f) (replay_088a7fed4563d6a06e7a) (e356)
-
-private def e358 : T 4 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (replay_909a1aacbbe83fd007eb) (e357)
-
-private def e361 : T 8 :=
-.sigmaForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_534aece673191f529e08) (replay_07c41680d17703d7171f)
-
 private def e362 : T 8 :=
-.cumul (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (e361)
-
-private def e363 : T 7 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (e355) (e362)
-
-private def e364 : T 6 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_926d1059d18a7acb855f) (e356) (e363)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_6562d93d6c87394cce14 8 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_534aece673191f529e08) (replay_07c41680d17703d7171f)
 
 private def e365 : T 5 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (e357) (e364)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_3d4333af0ad21e3b2bf8 5 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (replay_b7955d87d66cc2356da8) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_926d1059d18a7acb855f) (replay_46d87b945667e8b9c6f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (replay_0263d1c79861444bbc2b) (e362)
 
 private def e366 : T 4 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (e358) (e365)
-
-private def e367 : T 4 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1307b628e74cbf939cd4) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_fd75b7ede071eab44538) (e349) (e366)
+.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (replay_3dba47e0d66dd5881da1) (e365)
 
 private def e368 : T 4 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7090374f1485408a1741) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3f8fd0cbbad6bfbc5baa) (e367) (replay_f89a0d3fd4af1bf7786d)
-
-private def e369 : T 4 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5d2fe1eb531662373187) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5978e1f6d4b31cb31598) (e368) (replay_f89a0d3fd4af1bf7786d)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_abc997f471525f0ec2c2 4 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7090374f1485408a1741) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3f8fd0cbbad6bfbc5baa) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1307b628e74cbf939cd4) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_fd75b7ede071eab44538) (replay_6c7163c1b19e471e9892) (e366) (replay_f89a0d3fd4af1bf7786d)
 
 private def e370 : T 4 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (e369) (replay_bf3f7acfa265bdb54010)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_96c410b2c04018d2df28 4 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5d2fe1eb531662373187) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5978e1f6d4b31cb31598) (e368) (replay_f89a0d3fd4af1bf7786d) (replay_bf3f7acfa265bdb54010)
 
 private def e371 : T 3 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (replay_be261adb759aa3486f8c) (e370)
@@ -613,14 +42,8 @@ private def e372 : T 2 :=
 private def e373 : T 1 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f2fe31c8ad7fb9f469ad) (replay_2ec113d8b40f7f163a79) (e372)
 
-private def e374 : T 0 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_533cc6ec801233d934bf) (replay_7a268c731e7a9afff236) (e373)
-
 private def e389 : T 5 :=
-.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a5f313e17bf6f92fda5d) (e144)
-
-private def e390 : T 5 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5978e1f6d4b31cb31598) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_8bdce492097ea624b89b) (e389) (replay_088a7fed4563d6a06e7a)
+.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a5f313e17bf6f92fda5d) (replay_2b3d36bec0f47f4acb62)
 
 private def e391 : T 6 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d3b434f6728366c60c60) (replay_629e69ece1b1fb7e3753) (replay_4ec057243fb248f73891)
@@ -629,10 +52,7 @@ private def e392 : T 5 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a8a040a7dc522e2a057b) (replay_c51a69238051ce6df937) (e391)
 
 private def e401 : T 7 :=
-.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a5f313e17bf6f92fda5d) (e144)
-
-private def e402 : T 7 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d064c25dd26291905510) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_8f8988b4fd8ce91cc6b6) (e401) (replay_e197ee63c3c9ea3d9b51)
+.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a5f313e17bf6f92fda5d) (replay_2b3d36bec0f47f4acb62)
 
 private def e408 : T 8 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d3b434f6728366c60c60) (replay_3e07c8af8123696e3523) (replay_cf26163fe59a0dbcc31b)
@@ -643,11 +63,8 @@ private def e409 : T 7 :=
 private def e410 : T 8 :=
 .lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a8a040a7dc522e2a057b) (e408) (replay_cf26163fe59a0dbcc31b)
 
-private def e411 : T 7 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3b69fc5965686a991caa) (e409) (e410)
-
 private def e412 : T 7 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_debcbb0588f5a27f3f27) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6063f25f00d066965c89) (e402) (e411)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_17a6b16386a9978ede13 7 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_debcbb0588f5a27f3f27) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6063f25f00d066965c89) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d064c25dd26291905510) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_8f8988b4fd8ce91cc6b6) (e401) (replay_e197ee63c3c9ea3d9b51) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3b69fc5965686a991caa) (e409) (e410)
 
 private def e423 : T 11 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_e78213c920befa21e944) (replay_bbeadd6fb074304dde2a)
@@ -661,17 +78,11 @@ private def e425 : T 9 :=
 private def e426 : T 8 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (replay_b0145ff60fc18bc29654) (e425)
 
-private def e428 : T 10 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_2dfd9dc2004aaef0d010) (replay_e78213c920befa21e944)
-
 private def e429 : T 9 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (replay_ccd89ba91d77b76699f4) (e428)
-
-private def e430 : T 8 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b5fcf8a047e56612b09d) (e426) (e429)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8704404f73c273f28b55 9 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (replay_ccd89ba91d77b76699f4) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_2dfd9dc2004aaef0d010) (replay_e78213c920befa21e944)
 
 private def e431 : T 7 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_145482549cab95f9be25) (replay_4ec057243fb248f73891) (e430)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8704404f73c273f28b55 7 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_145482549cab95f9be25) (replay_4ec057243fb248f73891) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b5fcf8a047e56612b09d) (e426) (e429)
 
 private def e432 : C 7 :=
 .refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ac52c5a0191db9338aca)
@@ -739,20 +150,11 @@ private def e463 : S 11 :=
 private def e465 : S 11 :=
 .congPiDom (e463) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0ef0593734668aa8fe0a)
 
-private def e466 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_da1a29837588e24ff5b2) (e465)
-
-private def e467 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_62e2c1e2e15bb0cda87a) (e466)
-
 private def e468 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_56760c9c60918cbf3d6f) (e467)
-
-private def e470 : S 8 :=
-.congPiDom (e468) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_eae5c5c5a36788bc8114)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_cf81173829721d0a9eca e465
 
 private def e471 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d064c25dd26291905510) (e470)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_45e7d6dba26a066ba7a3 e468
 
 private def e472 : C 7 :=
 .single (e471)
@@ -775,20 +177,11 @@ private def e479 : S 11 :=
 private def e480 : S 11 :=
 .congPiDom (e479) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0ef0593734668aa8fe0a)
 
-private def e481 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_da1a29837588e24ff5b2) (e480)
-
-private def e482 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_62e2c1e2e15bb0cda87a) (e481)
-
 private def e483 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_56760c9c60918cbf3d6f) (e482)
-
-private def e484 : S 8 :=
-.congPiDom (e483) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_eae5c5c5a36788bc8114)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_cf81173829721d0a9eca e480
 
 private def e485 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d064c25dd26291905510) (e484)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_45e7d6dba26a066ba7a3 e483
 
 private def e486 : C 7 :=
 .single (e485)
@@ -817,20 +210,11 @@ private def e497 : S 12 :=
 private def e498 : S 11 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9528e48ce4f30ad868d8) (e497)
 
-private def e499 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_da1a29837588e24ff5b2) (e498)
-
-private def e500 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_62e2c1e2e15bb0cda87a) (e499)
-
 private def e501 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_56760c9c60918cbf3d6f) (e500)
-
-private def e502 : S 8 :=
-.congPiDom (e501) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_eae5c5c5a36788bc8114)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_cf81173829721d0a9eca e498
 
 private def e503 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d064c25dd26291905510) (e502)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_45e7d6dba26a066ba7a3 e501
 
 private def e504 : C 7 :=
 .single (e503)
@@ -865,20 +249,11 @@ private def e515 : S 12 :=
 private def e516 : S 11 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9528e48ce4f30ad868d8) (e515)
 
-private def e517 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_da1a29837588e24ff5b2) (e516)
-
-private def e518 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_62e2c1e2e15bb0cda87a) (e517)
-
 private def e519 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_56760c9c60918cbf3d6f) (e518)
-
-private def e520 : S 8 :=
-.congPiDom (e519) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_eae5c5c5a36788bc8114)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_cf81173829721d0a9eca e516
 
 private def e521 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d064c25dd26291905510) (e520)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_45e7d6dba26a066ba7a3 e519
 
 private def e522 : C 7 :=
 .single (e521)
@@ -916,17 +291,11 @@ private def e537 : S 11 :=
 private def e538 : S 11 :=
 .congAppFun (e537) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_59c08ee6f014bf50278f)
 
-private def e539 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3e12b254a3148238e15e) (e538)
-
 private def e540 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9e056103386ad05d9d9f) (e539)
-
-private def e541 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7ed82302d08bb826a510) (e540)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_faf2e54f86aee1334471 e538
 
 private def e542 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d064c25dd26291905510) (e541)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_72fb4e303929e28ced5b e540
 
 private def e543 : C 7 :=
 .single (e542)
@@ -943,17 +312,11 @@ private def e547 : C 7 :=
 private def e548 : C 7 :=
 .trans (e547) (e545)
 
-private def e549 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3e12b254a3148238e15e) (e479)
-
 private def e550 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9e056103386ad05d9d9f) (e549)
-
-private def e551 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7ed82302d08bb826a510) (e550)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_faf2e54f86aee1334471 e479
 
 private def e552 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d064c25dd26291905510) (e551)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_72fb4e303929e28ced5b e550
 
 private def e553 : C 7 :=
 .single (e552)
@@ -1000,20 +363,11 @@ private def e567 : S 11 :=
 private def e568 : S 11 :=
 .congPiDom (e567) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dd4fc597f6a31798810d)
 
-private def e569 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_da1a29837588e24ff5b2) (e568)
-
-private def e570 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_62e2c1e2e15bb0cda87a) (e569)
-
 private def e571 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_56760c9c60918cbf3d6f) (e570)
-
-private def e573 : S 8 :=
-.congPiDom (e571) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9bbf6b7a077f10dc3f99)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_cf81173829721d0a9eca e568
 
 private def e574 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d064c25dd26291905510) (e573)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_4ecc09a21ca843ad622a e571
 
 private def e575 : C 7 :=
 .single (e574)
@@ -1024,20 +378,11 @@ private def e576 : S 12 :=
 private def e577 : S 11 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9528e48ce4f30ad868d8) (e576)
 
-private def e578 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_da1a29837588e24ff5b2) (e577)
-
-private def e579 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_62e2c1e2e15bb0cda87a) (e578)
-
 private def e580 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_56760c9c60918cbf3d6f) (e579)
-
-private def e581 : S 8 :=
-.congPiDom (e580) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9bbf6b7a077f10dc3f99)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_cf81173829721d0a9eca e577
 
 private def e582 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d064c25dd26291905510) (e581)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_4ecc09a21ca843ad622a e580
 
 private def e583 : C 7 :=
 .single (e582)
@@ -1054,17 +399,11 @@ private def e586 : C 7 :=
 private def e587 : C 7 :=
 .trans (e555) (e586)
 
-private def e588 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3e12b254a3148238e15e) (e567)
-
 private def e589 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9e056103386ad05d9d9f) (e588)
-
-private def e590 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7ed82302d08bb826a510) (e589)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_faf2e54f86aee1334471 e567
 
 private def e591 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d064c25dd26291905510) (e590)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_72fb4e303929e28ced5b e589
 
 private def e592 : C 7 :=
 .single (e591)
@@ -1114,9 +453,6 @@ private def e606 : C 7 :=
 private def e607 : T 7 :=
 .convert (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ac52c5a0191db9338aca) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4119145459c228af2ee2) (e412) (e431) (e606)
 
-private def e611 : T 7 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d064c25dd26291905510) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_70a8eaf19705570fe65c) (e607) (replay_ffab124b380a29bf4936)
-
 private def e617 : T 10 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_b7b0d4f9c05076ab70ae) (replay_e78213c920befa21e944)
 
@@ -1129,56 +465,26 @@ private def e619 : T 8 :=
 private def e620 : T 7 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (replay_0432db7c6e4e1e541d38) (e619)
 
-private def e623 : T 11 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_7fbeba8818273106d8c8) (replay_bbeadd6fb074304dde2a)
-
-private def e625 : T 11 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (e623) (replay_c1e92b3aeffe2c000a2a)
-
-private def e626 : T 11 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c8943244e8541c6bb939) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dd4fc597f6a31798810d) (e625) (replay_7fbeba8818273106d8c8)
-
-private def e627 : T 11 :=
-.sigmaForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (e626) (replay_c1e92b3aeffe2c000a2a)
-
 private def e628 : T 11 :=
-.cumul (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (e627)
-
-private def e629 : T 10 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (e617) (e628)
-
-private def e630 : T 9 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_926d1059d18a7acb855f) (e618) (e629)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_6562d93d6c87394cce14 11 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_07af1126333fe0124d8d) (replay_c1e92b3aeffe2c000a2a)
 
 private def e631 : T 8 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (e619) (e630)
-
-private def e632 : T 7 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (e620) (e631)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_3d4333af0ad21e3b2bf8 8 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (e619) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_926d1059d18a7acb855f) (e618) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (e617) (e628)
 
 private def e633 : T 7 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b20852c8806024ec5392) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dcaf7f3c486980aabb9e) (e611) (e632)
-
-private def e634 : T 7 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9f9a03288a6b4e36d75e) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2f256db6ca3161a43552) (e633) (replay_e197ee63c3c9ea3d9b51)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_17a6b16386a9978ede13 7 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b20852c8806024ec5392) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dcaf7f3c486980aabb9e) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d064c25dd26291905510) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_70a8eaf19705570fe65c) (e607) (replay_ffab124b380a29bf4936) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (e620) (e631)
 
 private def e635 : T 7 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e16481ee968b916985a1) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (e634) (replay_e197ee63c3c9ea3d9b51)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_4d5f04684bb1c9672070 7 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e16481ee968b916985a1) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9f9a03288a6b4e36d75e) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2f256db6ca3161a43552) (e633) (replay_e197ee63c3c9ea3d9b51)
 
 private def e636 : T 7 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (e635) (replay_3e07c8af8123696e3523)
 
-private def e637 : T 7 :=
-.cumul (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (e636)
-
 private def e638 : T 6 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a8a040a7dc522e2a057b) (e391) (e637)
-
-private def e639 : T 5 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3b69fc5965686a991caa) (e392) (e638)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_2e319dea3ae00cbdfc4c 6 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a8a040a7dc522e2a057b) (e391) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (e636)
 
 private def e640 : T 5 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a85ac2afd339f6febefa) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9b222a9ccd79e463a7a) (e390) (e639)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_17a6b16386a9978ede13 5 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a85ac2afd339f6febefa) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9b222a9ccd79e463a7a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5978e1f6d4b31cb31598) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_8bdce492097ea624b89b) (e389) (replay_088a7fed4563d6a06e7a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3b69fc5965686a991caa) (e392) (e638)
 
 private def e646 : T 6 :=
 .appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_545fb4a3c03c82a175c1) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d064c25dd26291905510) (replay_d33e8dbee1d5fe8efa81) (replay_f690a064aabb944975e0)
@@ -1187,10 +493,7 @@ private def e647 : T 5 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_e8c0af6d55b0a0664088) (e646)
 
 private def e662 : T 9 :=
-.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a5f313e17bf6f92fda5d) (e144)
-
-private def e663 : T 9 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a05d6e3c3a2642274834) (e662) (replay_07c41680d17703d7171f)
+.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a5f313e17bf6f92fda5d) (replay_2b3d36bec0f47f4acb62)
 
 private def e664 : T 10 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d3b434f6728366c60c60) (replay_2dfd9dc2004aaef0d010) (replay_e78213c920befa21e944)
@@ -1201,11 +504,8 @@ private def e665 : T 9 :=
 private def e666 : T 10 :=
 .lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a8a040a7dc522e2a057b) (e664) (replay_e78213c920befa21e944)
 
-private def e667 : T 9 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3b69fc5965686a991caa) (e665) (e666)
-
 private def e668 : T 9 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ca7d30268047d415f423) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7502c56985a83fa8f0a0) (e663) (e667)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_17a6b16386a9978ede13 9 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ca7d30268047d415f423) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7502c56985a83fa8f0a0) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a05d6e3c3a2642274834) (e662) (replay_07c41680d17703d7171f) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3b69fc5965686a991caa) (e665) (e666)
 
 private def e677 : T 13 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_13cf0c5003c2ff085491) (replay_39520f2102ac9d665fff)
@@ -1219,17 +519,11 @@ private def e679 : T 11 :=
 private def e680 : T 10 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (replay_eefbc4c5a14843258e0d) (e679)
 
-private def e682 : T 12 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_7a62ac130b0694e869b7) (replay_13cf0c5003c2ff085491)
-
 private def e683 : T 11 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (replay_e695289ae2171e34556e) (e682)
-
-private def e684 : T 10 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b5fcf8a047e56612b09d) (e680) (e683)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8704404f73c273f28b55 11 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (replay_e695289ae2171e34556e) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_7a62ac130b0694e869b7) (replay_13cf0c5003c2ff085491)
 
 private def e685 : T 9 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_145482549cab95f9be25) (replay_cf26163fe59a0dbcc31b) (e684)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8704404f73c273f28b55 9 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_145482549cab95f9be25) (replay_cf26163fe59a0dbcc31b) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b5fcf8a047e56612b09d) (e680) (e683)
 
 private def e686 : C 9 :=
 .refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c38613a5a98e4196f38a)
@@ -1297,20 +591,11 @@ private def e715 : S 13 :=
 private def e717 : S 13 :=
 .congPiDom (e715) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_8fdd55c61c80a7ac0639)
 
-private def e718 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_bbb581aed34efb7d1d89) (e717)
-
-private def e719 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c8943244e8541c6bb939) (e718)
-
 private def e720 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ffbcdddae5a4ba50f754) (e719)
-
-private def e722 : S 10 :=
-.congPiDom (e720) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2898ca5f7d4597a09a0e)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_e621f309f62d71d0df1e e717
 
 private def e723 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8) (e722)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_f6275a7b922d91d0c85c e720
 
 private def e724 : C 9 :=
 .single (e723)
@@ -1333,20 +618,11 @@ private def e731 : S 13 :=
 private def e732 : S 13 :=
 .congPiDom (e731) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_8fdd55c61c80a7ac0639)
 
-private def e733 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_bbb581aed34efb7d1d89) (e732)
-
-private def e734 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c8943244e8541c6bb939) (e733)
-
 private def e735 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ffbcdddae5a4ba50f754) (e734)
-
-private def e736 : S 10 :=
-.congPiDom (e735) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2898ca5f7d4597a09a0e)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_e621f309f62d71d0df1e e732
 
 private def e737 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8) (e736)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_f6275a7b922d91d0c85c e735
 
 private def e738 : C 9 :=
 .single (e737)
@@ -1375,20 +651,11 @@ private def e749 : S 14 :=
 private def e750 : S 13 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7231169b8e7902d80314) (e749)
 
-private def e751 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_bbb581aed34efb7d1d89) (e750)
-
-private def e752 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c8943244e8541c6bb939) (e751)
-
 private def e753 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ffbcdddae5a4ba50f754) (e752)
-
-private def e754 : S 10 :=
-.congPiDom (e753) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2898ca5f7d4597a09a0e)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_e621f309f62d71d0df1e e750
 
 private def e755 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8) (e754)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_f6275a7b922d91d0c85c e753
 
 private def e756 : C 9 :=
 .single (e755)
@@ -1423,20 +690,11 @@ private def e767 : S 14 :=
 private def e768 : S 13 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7231169b8e7902d80314) (e767)
 
-private def e769 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_bbb581aed34efb7d1d89) (e768)
-
-private def e770 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c8943244e8541c6bb939) (e769)
-
 private def e771 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ffbcdddae5a4ba50f754) (e770)
-
-private def e772 : S 10 :=
-.congPiDom (e771) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2898ca5f7d4597a09a0e)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_e621f309f62d71d0df1e e768
 
 private def e773 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8) (e772)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_f6275a7b922d91d0c85c e771
 
 private def e774 : C 9 :=
 .single (e773)
@@ -1474,17 +732,11 @@ private def e789 : S 13 :=
 private def e790 : S 13 :=
 .congAppFun (e789) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6a8a7e2188ee7fa75bc7)
 
-private def e791 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_816cb872a33609e1650e) (e790)
-
 private def e792 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1bed53fd97751c172144) (e791)
-
-private def e793 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_637703192f2b26cda358) (e792)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_a2453454e40e1cc04c6c e790
 
 private def e794 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8) (e793)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_f304a4ce91791f2bab13 e792
 
 private def e795 : C 9 :=
 .single (e794)
@@ -1501,17 +753,11 @@ private def e799 : C 9 :=
 private def e800 : C 9 :=
 .trans (e799) (e797)
 
-private def e801 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_816cb872a33609e1650e) (e731)
-
 private def e802 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1bed53fd97751c172144) (e801)
-
-private def e803 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_637703192f2b26cda358) (e802)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_a2453454e40e1cc04c6c e731
 
 private def e804 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8) (e803)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_f304a4ce91791f2bab13 e802
 
 private def e805 : C 9 :=
 .single (e804)
@@ -1538,7 +784,7 @@ private def e813 : C 9 :=
 .trans (e707) (e812)
 
 private def e814 : S 9 :=
-.congPiDom (e314) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_00a7b57572bcd966f045)
+.congPiDom (replay_9431e19f921e875b0944) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_00a7b57572bcd966f045)
 
 private def e815 : C 9 :=
 .single (e814)
@@ -1555,20 +801,11 @@ private def e818 : S 13 :=
 private def e819 : S 13 :=
 .congPiDom (e818) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dea29f7c5b98576419ec)
 
-private def e820 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_bbb581aed34efb7d1d89) (e819)
-
-private def e821 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c8943244e8541c6bb939) (e820)
-
 private def e822 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ffbcdddae5a4ba50f754) (e821)
-
-private def e824 : S 10 :=
-.congPiDom (e822) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_96380d3510278c266047)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_e621f309f62d71d0df1e e819
 
 private def e825 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8) (e824)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_c5d24866a23eb4f1fcac e822
 
 private def e826 : C 9 :=
 .single (e825)
@@ -1579,20 +816,11 @@ private def e827 : S 14 :=
 private def e828 : S 13 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7231169b8e7902d80314) (e827)
 
-private def e829 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_bbb581aed34efb7d1d89) (e828)
-
-private def e830 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c8943244e8541c6bb939) (e829)
-
 private def e831 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ffbcdddae5a4ba50f754) (e830)
-
-private def e832 : S 10 :=
-.congPiDom (e831) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_96380d3510278c266047)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_e621f309f62d71d0df1e e828
 
 private def e833 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8) (e832)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_c5d24866a23eb4f1fcac e831
 
 private def e834 : C 9 :=
 .single (e833)
@@ -1609,17 +837,11 @@ private def e837 : C 9 :=
 private def e838 : C 9 :=
 .trans (e807) (e837)
 
-private def e839 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_816cb872a33609e1650e) (e818)
-
 private def e840 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1bed53fd97751c172144) (e839)
-
-private def e841 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_637703192f2b26cda358) (e840)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_a2453454e40e1cc04c6c e818
 
 private def e842 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8) (e841)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_f304a4ce91791f2bab13 e840
 
 private def e843 : C 9 :=
 .single (e842)
@@ -1669,9 +891,6 @@ private def e857 : C 9 :=
 private def e858 : T 9 :=
 .convert (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c38613a5a98e4196f38a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4119145459c228af2ee2) (e668) (e685) (e857)
 
-private def e862 : T 9 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_00a7b57572bcd966f045) (e858) (replay_8f68fd41cbd38b75604c)
-
 private def e867 : T 12 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_bbeadd6fb074304dde2a) (replay_13cf0c5003c2ff085491)
 
@@ -1684,41 +903,23 @@ private def e869 : T 10 :=
 private def e870 : T 9 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (replay_ccd89ba91d77b76699f4) (e869)
 
-private def e873 : T 13 :=
-.sigmaForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_8dab544be16d5febf71b) (replay_730a0c3ead453f836005)
-
 private def e874 : T 13 :=
-.cumul (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (e873)
-
-private def e875 : T 12 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (e867) (e874)
-
-private def e876 : T 11 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_926d1059d18a7acb855f) (e868) (e875)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_6562d93d6c87394cce14 13 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_8dab544be16d5febf71b) (replay_730a0c3ead453f836005)
 
 private def e877 : T 10 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (e869) (e876)
-
-private def e878 : T 9 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (e870) (e877)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_3d4333af0ad21e3b2bf8 10 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (e869) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_926d1059d18a7acb855f) (e868) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (e867) (e874)
 
 private def e879 : T 9 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_641f55689cb8d8472882) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0b73c5cc6411aec4e689) (e862) (e878)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_17a6b16386a9978ede13 9 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_641f55689cb8d8472882) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0b73c5cc6411aec4e689) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_00a7b57572bcd966f045) (e858) (replay_8f68fd41cbd38b75604c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (e870) (e877)
 
 private def e880 : T 9 :=
 .appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9e056103386ad05d9d9f) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ae525495c21ef893a57a) (e879) (replay_07c41680d17703d7171f)
 
-private def e881 : T 9 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_41dd040c100b76251cb9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b74e03acbfc24aeb10e) (e880) (replay_07c41680d17703d7171f)
-
 private def e882 : T 9 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (e881) (replay_2dfd9dc2004aaef0d010)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_96c410b2c04018d2df28 9 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_41dd040c100b76251cb9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b74e03acbfc24aeb10e) (e880) (replay_07c41680d17703d7171f) (replay_2dfd9dc2004aaef0d010)
 
 private def e892 : T 11 :=
-.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a5f313e17bf6f92fda5d) (e144)
-
-private def e893 : T 11 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9528e48ce4f30ad868d8) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9a07dc1b333728044d11) (e892) (replay_7fbeba8818273106d8c8)
+.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a5f313e17bf6f92fda5d) (replay_2b3d36bec0f47f4acb62)
 
 private def e894 : T 12 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d3b434f6728366c60c60) (replay_7a62ac130b0694e869b7) (replay_13cf0c5003c2ff085491)
@@ -1729,35 +930,20 @@ private def e895 : T 11 :=
 private def e896 : T 12 :=
 .lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a8a040a7dc522e2a057b) (e894) (replay_13cf0c5003c2ff085491)
 
-private def e897 : T 11 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3b69fc5965686a991caa) (e895) (e896)
-
 private def e898 : T 11 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2700c210f98a74275a3f) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4b5356b75b8b8a00e7b3) (e893) (e897)
-
-private def e907 : T 15 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_db148fd65b599d74a887) (replay_2dfd2a610fc484ec894e)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_17a6b16386a9978ede13 11 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2700c210f98a74275a3f) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4b5356b75b8b8a00e7b3) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9528e48ce4f30ad868d8) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9a07dc1b333728044d11) (e892) (replay_7fbeba8818273106d8c8) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3b69fc5965686a991caa) (e895) (e896)
 
 private def e908 : T 14 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (replay_de4ddb8e850ce189ef81) (e907)
-
-private def e909 : T 13 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_926d1059d18a7acb855f) (replay_8dab544be16d5febf71b) (e908)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_958149842244f9e10772 14 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (replay_de4ddb8e850ce189ef81) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_db148fd65b599d74a887) (replay_2dfd2a610fc484ec894e)
 
 private def e910 : T 12 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (replay_6c2a7f095fb66b85019c) (e909)
-
-private def e912 : T 14 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_de4ddb8e850ce189ef81) (replay_db148fd65b599d74a887)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8704404f73c273f28b55 12 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (replay_6c2a7f095fb66b85019c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_926d1059d18a7acb855f) (replay_8dab544be16d5febf71b) (e908)
 
 private def e913 : T 13 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (replay_727588f81155df155235) (e912)
-
-private def e914 : T 12 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b5fcf8a047e56612b09d) (e910) (e913)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8704404f73c273f28b55 13 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (replay_727588f81155df155235) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_de4ddb8e850ce189ef81) (replay_db148fd65b599d74a887)
 
 private def e915 : T 11 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_145482549cab95f9be25) (replay_e78213c920befa21e944) (e914)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8704404f73c273f28b55 11 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_145482549cab95f9be25) (replay_e78213c920befa21e944) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b5fcf8a047e56612b09d) (e910) (e913)
 
 private def e916 : C 11 :=
 .refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e65ea3b1806bba0b2125)
@@ -1825,20 +1011,11 @@ private def e946 : S 15 :=
 private def e948 : S 15 :=
 .congPiDom (e946) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_fe4237977dd953074deb)
 
-private def e949 : S 14 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6e4a38aa8b20bf9f3571) (e948)
-
-private def e950 : S 13 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b56a1922a5a71afc4661) (e949)
-
 private def e951 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_76bf2a76d66e1cc66026) (e950)
-
-private def e953 : S 12 :=
-.congPiDom (e951) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4a558c4ec6360b0ba19a)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_2e5f8d0ebf94833ed3e1 e948
 
 private def e954 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9528e48ce4f30ad868d8) (e953)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_383cbc4db0a94ba48698 e951
 
 private def e955 : C 11 :=
 .single (e954)
@@ -1861,20 +1038,11 @@ private def e962 : S 15 :=
 private def e963 : S 15 :=
 .congPiDom (e962) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_fe4237977dd953074deb)
 
-private def e964 : S 14 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6e4a38aa8b20bf9f3571) (e963)
-
-private def e965 : S 13 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b56a1922a5a71afc4661) (e964)
-
 private def e966 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_76bf2a76d66e1cc66026) (e965)
-
-private def e967 : S 12 :=
-.congPiDom (e966) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4a558c4ec6360b0ba19a)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_2e5f8d0ebf94833ed3e1 e963
 
 private def e968 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9528e48ce4f30ad868d8) (e967)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_383cbc4db0a94ba48698 e966
 
 private def e969 : C 11 :=
 .single (e968)
@@ -1903,20 +1071,11 @@ private def e980 : S 16 :=
 private def e981 : S 15 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4161bc0bf24be3a461cb) (e980)
 
-private def e982 : S 14 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6e4a38aa8b20bf9f3571) (e981)
-
-private def e983 : S 13 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b56a1922a5a71afc4661) (e982)
-
 private def e984 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_76bf2a76d66e1cc66026) (e983)
-
-private def e985 : S 12 :=
-.congPiDom (e984) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4a558c4ec6360b0ba19a)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_2e5f8d0ebf94833ed3e1 e981
 
 private def e986 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9528e48ce4f30ad868d8) (e985)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_383cbc4db0a94ba48698 e984
 
 private def e987 : C 11 :=
 .single (e986)
@@ -1951,20 +1110,11 @@ private def e998 : S 16 :=
 private def e999 : S 15 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4161bc0bf24be3a461cb) (e998)
 
-private def e1000 : S 14 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6e4a38aa8b20bf9f3571) (e999)
-
-private def e1001 : S 13 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b56a1922a5a71afc4661) (e1000)
-
 private def e1002 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_76bf2a76d66e1cc66026) (e1001)
-
-private def e1003 : S 12 :=
-.congPiDom (e1002) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4a558c4ec6360b0ba19a)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_2e5f8d0ebf94833ed3e1 e999
 
 private def e1004 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9528e48ce4f30ad868d8) (e1003)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_383cbc4db0a94ba48698 e1002
 
 private def e1005 : C 11 :=
 .single (e1004)
@@ -2002,17 +1152,11 @@ private def e1020 : S 15 :=
 private def e1021 : S 15 :=
 .congAppFun (e1020) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5bd042cad00d92762eeb)
 
-private def e1022 : S 14 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c9230a52ef85dcd3f070) (e1021)
-
 private def e1023 : S 13 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c2c7c8a4e5915c01ed88) (e1022)
-
-private def e1024 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_59272ba0bf27f7706d44) (e1023)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_da7a244e4a461ca8f2f5 e1021
 
 private def e1025 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9528e48ce4f30ad868d8) (e1024)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_99198f957e6c56c31ffb e1023
 
 private def e1026 : C 11 :=
 .single (e1025)
@@ -2029,17 +1173,11 @@ private def e1030 : C 11 :=
 private def e1031 : C 11 :=
 .trans (e1030) (e1028)
 
-private def e1032 : S 14 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c9230a52ef85dcd3f070) (e962)
-
 private def e1033 : S 13 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c2c7c8a4e5915c01ed88) (e1032)
-
-private def e1034 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_59272ba0bf27f7706d44) (e1033)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_da7a244e4a461ca8f2f5 e962
 
 private def e1035 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9528e48ce4f30ad868d8) (e1034)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_99198f957e6c56c31ffb e1033
 
 private def e1036 : C 11 :=
 .single (e1035)
@@ -2083,20 +1221,11 @@ private def e1049 : S 15 :=
 private def e1050 : S 15 :=
 .congPiDom (e1049) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_fba61bf6e440845f7d28)
 
-private def e1051 : S 14 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6e4a38aa8b20bf9f3571) (e1050)
-
-private def e1052 : S 13 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b56a1922a5a71afc4661) (e1051)
-
 private def e1053 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_76bf2a76d66e1cc66026) (e1052)
-
-private def e1055 : S 12 :=
-.congPiDom (e1053) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7fb09fbfa6517eb536ed)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_2e5f8d0ebf94833ed3e1 e1050
 
 private def e1056 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9528e48ce4f30ad868d8) (e1055)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_4e46881a256f86dbb0ff e1053
 
 private def e1057 : C 11 :=
 .single (e1056)
@@ -2107,20 +1236,11 @@ private def e1058 : S 16 :=
 private def e1059 : S 15 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4161bc0bf24be3a461cb) (e1058)
 
-private def e1060 : S 14 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6e4a38aa8b20bf9f3571) (e1059)
-
-private def e1061 : S 13 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b56a1922a5a71afc4661) (e1060)
-
 private def e1062 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_76bf2a76d66e1cc66026) (e1061)
-
-private def e1063 : S 12 :=
-.congPiDom (e1062) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7fb09fbfa6517eb536ed)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_2e5f8d0ebf94833ed3e1 e1059
 
 private def e1064 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9528e48ce4f30ad868d8) (e1063)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_4e46881a256f86dbb0ff e1062
 
 private def e1065 : C 11 :=
 .single (e1064)
@@ -2137,17 +1257,11 @@ private def e1068 : C 11 :=
 private def e1069 : C 11 :=
 .trans (e1038) (e1068)
 
-private def e1070 : S 14 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c9230a52ef85dcd3f070) (e1049)
-
 private def e1071 : S 13 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c2c7c8a4e5915c01ed88) (e1070)
-
-private def e1072 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_59272ba0bf27f7706d44) (e1071)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_da7a244e4a461ca8f2f5 e1049
 
 private def e1073 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9528e48ce4f30ad868d8) (e1072)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_99198f957e6c56c31ffb e1071
 
 private def e1074 : C 11 :=
 .single (e1073)
@@ -2197,9 +1311,6 @@ private def e1088 : C 11 :=
 private def e1089 : T 11 :=
 .convert (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e65ea3b1806bba0b2125) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4119145459c228af2ee2) (e898) (e915) (e1088)
 
-private def e1093 : T 11 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9528e48ce4f30ad868d8) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_58643c5acc0dafd0a679) (e1089) (replay_c93a4b141e1ddc8ceb10)
-
 private def e1098 : T 14 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_39520f2102ac9d665fff) (replay_db148fd65b599d74a887)
 
@@ -2212,71 +1323,35 @@ private def e1100 : T 12 :=
 private def e1101 : T 11 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (replay_e695289ae2171e34556e) (e1100)
 
-private def e1104 : T 15 :=
-.sigmaForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_2c304eb7e4ba83000148) (replay_7bbd6a1783772f9a6990)
-
 private def e1105 : T 15 :=
-.cumul (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (e1104)
-
-private def e1106 : T 14 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (e1098) (e1105)
-
-private def e1107 : T 13 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_926d1059d18a7acb855f) (e1099) (e1106)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_6562d93d6c87394cce14 15 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_2c304eb7e4ba83000148) (replay_7bbd6a1783772f9a6990)
 
 private def e1108 : T 12 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (e1100) (e1107)
-
-private def e1109 : T 11 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (e1101) (e1108)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_3d4333af0ad21e3b2bf8 12 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (e1100) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_926d1059d18a7acb855f) (e1099) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (e1098) (e1105)
 
 private def e1110 : T 11 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_fb734925a3bc79e1dc35) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_25334c347994cba33094) (e1093) (e1109)
-
-private def e1111 : T 11 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1bed53fd97751c172144) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0f5b596af1f66046fbdd) (e1110) (replay_7fbeba8818273106d8c8)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_17a6b16386a9978ede13 11 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_fb734925a3bc79e1dc35) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_25334c347994cba33094) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9528e48ce4f30ad868d8) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_58643c5acc0dafd0a679) (e1089) (replay_c93a4b141e1ddc8ceb10) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (e1101) (e1108)
 
 private def e1112 : T 11 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e1c424901913a758a932) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dd4fc597f6a31798810d) (e1111) (replay_7fbeba8818273106d8c8)
-
-private def e1113 : T 10 :=
-.sigmaForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_8dd06e568960d2567ea5) (e1112)
-
-private def e1116 : T 11 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1bed53fd97751c172144) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dd4fc597f6a31798810d) (replay_822ec59208384ebebfa1) (replay_e2d6d709dff69f4a3cef)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_4d5f04684bb1c9672070 11 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e1c424901913a758a932) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dd4fc597f6a31798810d) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1bed53fd97751c172144) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0f5b596af1f66046fbdd) (e1110) (replay_7fbeba8818273106d8c8)
 
 private def e1117 : T 10 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (e1113) (e1116)
-
-private def e1118 : T 9 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_13f420e1e571ce9bd69e) (e882) (e1117)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_17c469b41bbbcdd4cd17 10 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_8dd06e568960d2567ea5) (e1112) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1bed53fd97751c172144) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dd4fc597f6a31798810d) (replay_822ec59208384ebebfa1) (replay_e2d6d709dff69f4a3cef)
 
 private def e1119 : T 8 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_32b4abc1203b6894f5b7) (replay_3e07c8af8123696e3523) (e1118)
-
-private def e1120 : T 7 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c6999770192030b59a9) (replay_e197ee63c3c9ea3d9b51) (e1119)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8704404f73c273f28b55 8 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_32b4abc1203b6894f5b7) (replay_3e07c8af8123696e3523) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_13f420e1e571ce9bd69e) (e882) (e1117)
 
 private def e1121 : T 6 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_bbf6f125b673f4c18062) (replay_811c48c79398f6d0dc39) (e1120)
-
-private def e1123 : T 9 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_53047c3473acacee0b84) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b74e03acbfc24aeb10e) (e880) (replay_07c41680d17703d7171f)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8704404f73c273f28b55 6 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_bbf6f125b673f4c18062) (replay_811c48c79398f6d0dc39) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c6999770192030b59a9) (replay_e197ee63c3c9ea3d9b51) (e1119)
 
 private def e1124 : T 9 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (e1123) (replay_2dfd9dc2004aaef0d010)
-
-private def e1125 : T 8 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (replay_3e07c8af8123696e3523) (e1124)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_96c410b2c04018d2df28 9 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_53047c3473acacee0b84) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b74e03acbfc24aeb10e) (e880) (replay_07c41680d17703d7171f) (replay_2dfd9dc2004aaef0d010)
 
 private def e1126 : T 7 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4c32bd4102c8f968b76a) (replay_0432db7c6e4e1e541d38) (e1125)
-
-private def e1127 : T 6 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4e294ee453df269967d4) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f2fe31c8ad7fb9f469ad) (e1121) (e1126)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8704404f73c273f28b55 7 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4c32bd4102c8f968b76a) (replay_0432db7c6e4e1e541d38) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (replay_3e07c8af8123696e3523) (e1124)
 
 private def e1128 : T 5 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_edf1d472bb78df7df487) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_561048869e512d1c5eed) (e647) (e1127)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8704404f73c273f28b55 5 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_edf1d472bb78df7df487) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_561048869e512d1c5eed) (e647) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4e294ee453df269967d4) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f2fe31c8ad7fb9f469ad) (e1121) (e1126)
 
 private def e1129 : C 5 :=
 .refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ac11ca2d7915c1ebcc16)
@@ -2296,26 +1371,14 @@ private def e1133 : C 5 :=
 private def e1143 : S 7 :=
 .congAppArg (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f80b79f221af36f1ff0e) (replay_a7166dcc5716894cac92)
 
-private def e1145 : S 7 :=
-.congAppFun (e1143) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3e722ce8c62222c102c3)
-
 private def e1147 : S 7 :=
-.congAppFun (e1145) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a6554b81c57291f8b68)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_2de7fa9b035b4e255e9a e1143
 
 private def e1149 : S 7 :=
 .congPiDom (e1147) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c06e62962fffb2477f30)
 
-private def e1150 : S 6 :=
-.congLam (e1149)
-
-private def e1151 : S 5 :=
-.congLam (e1150)
-
-private def e1153 : S 5 :=
-.congAppFun (e1151) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_10a09856ff4a49f9d49f)
-
 private def e1155 : S 5 :=
-.congAppFun (e1153) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_673e4ecc26f1f0b1d4b3)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_9b17c88364a2e04c900c e1149
 
 private def e1157 : S 5 :=
 .congPiDom (e1155) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_57338dbe54a20fd78998)
@@ -2501,44 +1564,26 @@ private def e1218 : C 5 :=
 private def e1229 : S 11 :=
 .congAppArg (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5d1efdeff0ba5d0b7675) (replay_f8fdfa6d753c6546dd68)
 
-private def e1230 : S 11 :=
-.congAppFun (e1229) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_abb7c7809fdccfdb450a)
-
 private def e1231 : S 11 :=
-.congAppFun (e1230) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_59c08ee6f014bf50278f)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_cdd44c8b4cce6bbfe196 e1229
 
 private def e1233 : S 11 :=
 .congPiDom (e1231) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6fecb91773897d9be7f6)
 
-private def e1234 : S 10 :=
-.congLam (e1233)
-
 private def e1235 : S 9 :=
-.congLam (e1234)
-
-private def e1237 : S 9 :=
-.congAppFun (e1235) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6ec5fb851516271acc72)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_538d98d3a783141c3145 e1233
 
 private def e1239 : S 9 :=
-.congAppFun (e1237) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_46822c41966942c14476)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_b808939710aa4128aab5 e1235
 
 private def e1241 : S 9 :=
 .congPiDom (e1239) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1acdc98e65d636f41985)
 
-private def e1242 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_369043ee55c31306fc04) (e1241)
-
-private def e1243 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3531df46ccfd426e0cca) (e1242)
-
 private def e1244 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_545fb4a3c03c82a175c1) (e1243)
-
-private def e1246 : S 6 :=
-.congPiDom (e1244) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_164ab86b7dff16d6f577)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_435979cda34283230632 e1241
 
 private def e1247 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0202a361a93da8c87a82) (e1246)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_6f33ea11dbb014655781 e1244
 
 private def e1248 : C 5 :=
 .single (e1247)
@@ -2585,20 +1630,11 @@ private def e1263 : S 9 :=
 private def e1264 : S 9 :=
 .congPiDom (e1263) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1acdc98e65d636f41985)
 
-private def e1265 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_369043ee55c31306fc04) (e1264)
-
-private def e1266 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3531df46ccfd426e0cca) (e1265)
-
 private def e1267 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_545fb4a3c03c82a175c1) (e1266)
-
-private def e1268 : S 6 :=
-.congPiDom (e1267) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_164ab86b7dff16d6f577)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_435979cda34283230632 e1264
 
 private def e1269 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0202a361a93da8c87a82) (e1268)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_6f33ea11dbb014655781 e1267
 
 private def e1270 : C 5 :=
 .single (e1269)
@@ -2645,20 +1681,11 @@ private def e1285 : S 9 :=
 private def e1286 : S 9 :=
 .congPiDom (e1285) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1acdc98e65d636f41985)
 
-private def e1287 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_369043ee55c31306fc04) (e1286)
-
-private def e1288 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3531df46ccfd426e0cca) (e1287)
-
 private def e1289 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_545fb4a3c03c82a175c1) (e1288)
-
-private def e1290 : S 6 :=
-.congPiDom (e1289) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_164ab86b7dff16d6f577)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_435979cda34283230632 e1286
 
 private def e1291 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0202a361a93da8c87a82) (e1290)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_6f33ea11dbb014655781 e1289
 
 private def e1292 : C 5 :=
 .single (e1291)
@@ -2699,44 +1726,23 @@ private def e1304 : C 5 :=
 private def e1316 : S 12 :=
 .congAppArg (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_114d2e4e6de8fca09721) (replay_7f179bd421058f0c5720)
 
-private def e1317 : S 12 :=
-.congAppFun (e1316) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2f252033ccef6a6a834a)
-
 private def e1319 : S 12 :=
-.congAppFun (e1317) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f6020bec2f79974210d6)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_6e08ba02a3e98eac0c7d e1316
 
 private def e1321 : S 12 :=
 .congPiDom (e1319) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c66ddd835127a1befaba)
 
-private def e1322 : S 11 :=
-.congLam (e1321)
-
-private def e1323 : S 10 :=
-.congLam (e1322)
-
-private def e1325 : S 10 :=
-.congAppFun (e1323) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_29e6362be00331af1526)
-
 private def e1327 : S 10 :=
-.congAppFun (e1325) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_fd8f671c52437c194141)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_3052631186b117517a6a e1321
 
 private def e1328 : S 9 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9391ef60df1984416624) (e1327)
 
-private def e1329 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_369043ee55c31306fc04) (e1328)
-
-private def e1330 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3531df46ccfd426e0cca) (e1329)
-
 private def e1331 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_545fb4a3c03c82a175c1) (e1330)
-
-private def e1332 : S 6 :=
-.congPiDom (e1331) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_164ab86b7dff16d6f577)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_435979cda34283230632 e1328
 
 private def e1333 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0202a361a93da8c87a82) (e1332)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_6f33ea11dbb014655781 e1331
 
 private def e1334 : C 5 :=
 .single (e1333)
@@ -2783,20 +1789,11 @@ private def e1349 : S 10 :=
 private def e1350 : S 9 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9391ef60df1984416624) (e1349)
 
-private def e1351 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_369043ee55c31306fc04) (e1350)
-
-private def e1352 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3531df46ccfd426e0cca) (e1351)
-
 private def e1353 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_545fb4a3c03c82a175c1) (e1352)
-
-private def e1354 : S 6 :=
-.congPiDom (e1353) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_164ab86b7dff16d6f577)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_435979cda34283230632 e1350
 
 private def e1355 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0202a361a93da8c87a82) (e1354)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_6f33ea11dbb014655781 e1353
 
 private def e1356 : C 5 :=
 .single (e1355)
@@ -2852,20 +1849,11 @@ private def e1374 : S 10 :=
 private def e1375 : S 9 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9391ef60df1984416624) (e1374)
 
-private def e1376 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_369043ee55c31306fc04) (e1375)
-
-private def e1377 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3531df46ccfd426e0cca) (e1376)
-
 private def e1378 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_545fb4a3c03c82a175c1) (e1377)
-
-private def e1379 : S 6 :=
-.congPiDom (e1378) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_164ab86b7dff16d6f577)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_435979cda34283230632 e1375
 
 private def e1380 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0202a361a93da8c87a82) (e1379)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_6f33ea11dbb014655781 e1378
 
 private def e1381 : C 5 :=
 .single (e1380)
@@ -2925,26 +1913,14 @@ private def e1393 : NativeVectorAll.decoder.Code 10 :=
 private def e1394 : S 10 :=
 .root (e1393)
 
-private def e1396 : S 10 :=
-.congPiDom (e1394) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3eacceaff971011d0028)
-
 private def e1397 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9391ef60df1984416624) (e1396)
-
-private def e1398 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_369043ee55c31306fc04) (e1397)
-
-private def e1399 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3531df46ccfd426e0cca) (e1398)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_372bf3e2bebe7f97ff39 e1394
 
 private def e1400 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_545fb4a3c03c82a175c1) (e1399)
-
-private def e1401 : S 6 :=
-.congPiDom (e1400) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_164ab86b7dff16d6f577)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_435979cda34283230632 e1397
 
 private def e1402 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0202a361a93da8c87a82) (e1401)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_6f33ea11dbb014655781 e1400
 
 private def e1403 : C 5 :=
 .single (e1402)
@@ -2961,26 +1937,14 @@ private def e1407 : C 5 :=
 private def e1416 : S 10 :=
 .congAppFun (replay_38be617160f7961c96f0) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_14eb4b5b3dd52140f28c)
 
-private def e1417 : S 10 :=
-.congPiDom (e1416) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3eacceaff971011d0028)
-
 private def e1418 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9391ef60df1984416624) (e1417)
-
-private def e1419 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_369043ee55c31306fc04) (e1418)
-
-private def e1420 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3531df46ccfd426e0cca) (e1419)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_372bf3e2bebe7f97ff39 e1416
 
 private def e1421 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_545fb4a3c03c82a175c1) (e1420)
-
-private def e1422 : S 6 :=
-.congPiDom (e1421) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_164ab86b7dff16d6f577)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_435979cda34283230632 e1418
 
 private def e1423 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0202a361a93da8c87a82) (e1422)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_6f33ea11dbb014655781 e1421
 
 private def e1424 : C 5 :=
 .single (e1423)
@@ -3003,26 +1967,14 @@ private def e1430 : C 5 :=
 private def e1434 : S 10 :=
 .congAppFun (replay_79a11045a45411335904) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_14eb4b5b3dd52140f28c)
 
-private def e1435 : S 10 :=
-.congPiDom (e1434) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3eacceaff971011d0028)
-
 private def e1436 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9391ef60df1984416624) (e1435)
-
-private def e1437 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_369043ee55c31306fc04) (e1436)
-
-private def e1438 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3531df46ccfd426e0cca) (e1437)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_372bf3e2bebe7f97ff39 e1434
 
 private def e1439 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_545fb4a3c03c82a175c1) (e1438)
-
-private def e1440 : S 6 :=
-.congPiDom (e1439) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_164ab86b7dff16d6f577)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_435979cda34283230632 e1436
 
 private def e1441 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0202a361a93da8c87a82) (e1440)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_6f33ea11dbb014655781 e1439
 
 private def e1442 : C 5 :=
 .single (e1441)
@@ -3045,26 +1997,14 @@ private def e1448 : C 5 :=
 private def e1451 : S 10 :=
 .congAppFun (replay_cd5863f9d0cc42ba0adf) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_14eb4b5b3dd52140f28c)
 
-private def e1452 : S 10 :=
-.congPiDom (e1451) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3eacceaff971011d0028)
-
 private def e1453 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9391ef60df1984416624) (e1452)
-
-private def e1454 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_369043ee55c31306fc04) (e1453)
-
-private def e1455 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3531df46ccfd426e0cca) (e1454)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_372bf3e2bebe7f97ff39 e1451
 
 private def e1456 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_545fb4a3c03c82a175c1) (e1455)
-
-private def e1457 : S 6 :=
-.congPiDom (e1456) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_164ab86b7dff16d6f577)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_435979cda34283230632 e1453
 
 private def e1458 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0202a361a93da8c87a82) (e1457)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_6f33ea11dbb014655781 e1456
 
 private def e1459 : C 5 :=
 .single (e1458)
@@ -3105,26 +2045,14 @@ private def e1471 : C 5 :=
 private def e1473 : S 10 :=
 .betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_434c2b4d730eca9e660b) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_14eb4b5b3dd52140f28c)
 
-private def e1474 : S 10 :=
-.congPiDom (e1473) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3eacceaff971011d0028)
-
 private def e1475 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9391ef60df1984416624) (e1474)
-
-private def e1476 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_369043ee55c31306fc04) (e1475)
-
-private def e1477 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3531df46ccfd426e0cca) (e1476)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_372bf3e2bebe7f97ff39 e1473
 
 private def e1478 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_545fb4a3c03c82a175c1) (e1477)
-
-private def e1479 : S 6 :=
-.congPiDom (e1478) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_164ab86b7dff16d6f577)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_435979cda34283230632 e1475
 
 private def e1480 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0202a361a93da8c87a82) (e1479)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_6f33ea11dbb014655781 e1478
 
 private def e1481 : C 5 :=
 .single (e1480)
@@ -3195,20 +2123,11 @@ private def e1503 : C 5 :=
 private def e1507 : S 9 :=
 .congAppFun (e1235) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9dcc403caa19d1550c37)
 
-private def e1508 : S 9 :=
-.congAppFun (e1507) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_46822c41966942c14476)
-
-private def e1509 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c351605dcec825868e68) (e1508)
-
 private def e1510 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9f9a03288a6b4e36d75e) (e1509)
-
-private def e1511 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_693d3c5e9fa88fc11a08) (e1510)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_bfbd3b0df1143ac672b1 e1507
 
 private def e1512 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0202a361a93da8c87a82) (e1511)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_be4d2d9f1857a246149e e1510
 
 private def e1513 : C 5 :=
 .single (e1512)
@@ -3249,20 +2168,11 @@ private def e1525 : C 5 :=
 private def e1526 : S 9 :=
 .betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_27f0867e43f7a5c74ab4) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9dcc403caa19d1550c37)
 
-private def e1527 : S 9 :=
-.congAppFun (e1526) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_46822c41966942c14476)
-
-private def e1528 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c351605dcec825868e68) (e1527)
-
 private def e1529 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9f9a03288a6b4e36d75e) (e1528)
-
-private def e1530 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_693d3c5e9fa88fc11a08) (e1529)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_bfbd3b0df1143ac672b1 e1526
 
 private def e1531 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0202a361a93da8c87a82) (e1530)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_be4d2d9f1857a246149e e1529
 
 private def e1532 : C 5 :=
 .single (e1531)
@@ -3306,17 +2216,11 @@ private def e1545 : C 5 :=
 private def e1547 : S 9 :=
 .betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1907d08d680fcf99a013) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_46822c41966942c14476)
 
-private def e1548 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c351605dcec825868e68) (e1547)
-
 private def e1549 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9f9a03288a6b4e36d75e) (e1548)
-
-private def e1550 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_693d3c5e9fa88fc11a08) (e1549)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_e39639aceda0a011f6f8 e1547
 
 private def e1551 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0202a361a93da8c87a82) (e1550)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_be4d2d9f1857a246149e e1549
 
 private def e1552 : C 5 :=
 .single (e1551)
@@ -3369,26 +2273,14 @@ private def e1568 : C 5 :=
 private def e1569 : C 5 :=
 .trans (e1557) (e1556)
 
-private def e1571 : S 10 :=
-.congLam (e567)
-
-private def e1572 : S 9 :=
-.congLam (e1571)
-
-private def e1573 : S 9 :=
-.congAppArg (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_8e1ae4f2926269f0625f) (e1572)
-
 private def e1575 : S 9 :=
-.congAppFun (e1573) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b922f34162f17a4b8f47)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_ae0ff7e49ddc5f8cf450 e567
 
 private def e1577 : S 9 :=
 .congAppFun (e1575) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_04db8cb3622dab5d9613)
 
-private def e1578 : S 9 :=
-.congAppFun (e1577) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6ec5fb851516271acc72)
-
 private def e1579 : S 9 :=
-.congAppFun (e1578) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_46822c41966942c14476)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_b808939710aa4128aab5 e1577
 
 private def e1581 : S 9 :=
 .congPiDom (e1579) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_03f4c306a72600e8013d)
@@ -3396,20 +2288,11 @@ private def e1581 : S 9 :=
 private def e1583 : S 9 :=
 .congPiDom (e1581) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6f7b43de44f6fa41128e)
 
-private def e1584 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_369043ee55c31306fc04) (e1583)
-
-private def e1585 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3531df46ccfd426e0cca) (e1584)
-
 private def e1586 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_545fb4a3c03c82a175c1) (e1585)
-
-private def e1588 : S 6 :=
-.congPiDom (e1586) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_88f2b90eb1a56ff173aa)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_435979cda34283230632 e1583
 
 private def e1589 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0202a361a93da8c87a82) (e1588)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_8c659e523d66cef0b283 e1586
 
 private def e1590 : C 5 :=
 .single (e1589)
@@ -3432,50 +2315,17 @@ private def e1595 : C 5 :=
 private def e1596 : C 5 :=
 .trans (e1595) (e1556)
 
-private def e1599 : S 12 :=
-.congLam (e818)
-
-private def e1600 : S 11 :=
-.congLam (e1599)
-
-private def e1601 : S 11 :=
-.congAppArg (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_8e7c54c17ecd7624c626) (e1600)
-
-private def e1603 : S 11 :=
-.congAppFun (e1601) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9d932d644cf8fb9a7056)
-
-private def e1605 : S 11 :=
-.congAppFun (e1603) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2265a71c20b44591f816)
-
-private def e1607 : S 11 :=
-.congAppFun (e1605) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e50870c897935008ae22)
-
-private def e1608 : S 11 :=
-.congAppFun (e1607) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_45d62506e29fc638d0e0)
-
 private def e1609 : S 10 :=
-.congSigmaCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1e48b53379ef509db2cd) (e1608)
-
-private def e1610 : S 10 :=
-.congPiDom (e1609) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3eacceaff971011d0028)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_d763a24c026fd86e50a2 e818
 
 private def e1611 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9391ef60df1984416624) (e1610)
-
-private def e1612 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_369043ee55c31306fc04) (e1611)
-
-private def e1613 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3531df46ccfd426e0cca) (e1612)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_372bf3e2bebe7f97ff39 e1609
 
 private def e1614 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_545fb4a3c03c82a175c1) (e1613)
-
-private def e1615 : S 6 :=
-.congPiDom (e1614) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_88f2b90eb1a56ff173aa)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_435979cda34283230632 e1611
 
 private def e1616 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0202a361a93da8c87a82) (e1615)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_8c659e523d66cef0b283 e1614
 
 private def e1617 : C 5 :=
 .single (e1616)
@@ -3516,26 +2366,17 @@ private def e1628 : C 5 :=
 private def e1629 : C 5 :=
 .trans (e1554) (e1628)
 
-private def e1630 : S 9 :=
-.congAppFun (e1577) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9dcc403caa19d1550c37)
-
 private def e1631 : S 9 :=
-.congAppFun (e1630) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_46822c41966942c14476)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_5dc1ff5555d7cf650440 e1577
 
 private def e1633 : S 9 :=
 .congPiDom (e1631) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4758e3c99126fcddd050)
 
-private def e1634 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c351605dcec825868e68) (e1633)
-
 private def e1635 : S 7 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9f9a03288a6b4e36d75e) (e1634)
-
-private def e1636 : S 6 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_693d3c5e9fa88fc11a08) (e1635)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_e39639aceda0a011f6f8 e1633
 
 private def e1637 : S 5 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0202a361a93da8c87a82) (e1636)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_be4d2d9f1857a246149e e1635
 
 private def e1638 : C 5 :=
 .single (e1637)
@@ -3612,23 +2453,14 @@ private def e1661 : C 5 :=
 private def e1662 : T 5 :=
 .convert (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ac11ca2d7915c1ebcc16) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5f49690f5b0e5561d901) (e640) (e1128) (e1661)
 
-private def e1664 : T 6 :=
-.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_cbf15d421a0ecd2260a1) (replay_e745b811a26bc658ec14)
-
 private def e1665 : T 6 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_39e100ccd2d3487475a1) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_78dd3cdfc0be57295f37) (e1664) (replay_fb92de9ad2d284eba393)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_bd03b1613e47bc49ec0e 6 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_39e100ccd2d3487475a1) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_78dd3cdfc0be57295f37) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_cbf15d421a0ecd2260a1) (replay_e745b811a26bc658ec14) (replay_fb92de9ad2d284eba393)
 
 private def e1666 : T 5 :=
 .lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_edf1d472bb78df7df487) (e647) (e1665)
 
-private def e1667 : T 5 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0202a361a93da8c87a82) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_53f8d629022d2a6be428) (e1662) (e1666)
-
 private def e1675 : T 8 :=
-.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a5f313e17bf6f92fda5d) (e144)
-
-private def e1676 : T 8 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1e1d71faa71cbb4597f8) (e1675) (replay_534aece673191f529e08)
+.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a5f313e17bf6f92fda5d) (replay_2b3d36bec0f47f4acb62)
 
 private def e1677 : T 9 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d3b434f6728366c60c60) (replay_18e264ae7443180c79f8) (replay_b7b0d4f9c05076ab70ae)
@@ -3639,23 +2471,14 @@ private def e1678 : T 8 :=
 private def e1679 : T 9 :=
 .lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a8a040a7dc522e2a057b) (e1677) (replay_b7b0d4f9c05076ab70ae)
 
-private def e1680 : T 8 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3b69fc5965686a991caa) (e1678) (e1679)
-
 private def e1681 : T 8 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3bfb7b384b9cd3ea6246) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_bbb562d49f45bcf2e8b9) (e1676) (e1680)
-
-private def e1682 : T 11 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_cb03996b2dc3b9d2f1d4) (replay_bbeadd6fb074304dde2a)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_17a6b16386a9978ede13 8 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3bfb7b384b9cd3ea6246) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_bbb562d49f45bcf2e8b9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1e1d71faa71cbb4597f8) (e1675) (replay_534aece673191f529e08) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3b69fc5965686a991caa) (e1678) (e1679)
 
 private def e1683 : T 10 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (replay_eefbc4c5a14843258e0d) (e1682)
-
-private def e1684 : T 9 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b5fcf8a047e56612b09d) (e870) (e1683)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8704404f73c273f28b55 10 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (replay_eefbc4c5a14843258e0d) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_cb03996b2dc3b9d2f1d4) (replay_bbeadd6fb074304dde2a)
 
 private def e1685 : T 8 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_145482549cab95f9be25) (replay_364e906c32a1fece265a) (e1684)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8704404f73c273f28b55 8 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_145482549cab95f9be25) (replay_364e906c32a1fece265a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b5fcf8a047e56612b09d) (e870) (e1683)
 
 private def e1686 : C 8 :=
 .refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a1e066e23e4469d99955)
@@ -3723,20 +2546,11 @@ private def e1714 : S 12 :=
 private def e1716 : S 12 :=
 .congPiDom (e1714) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_22971035d388635cda3f)
 
-private def e1717 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2036d5848f7f7e5aa0d9) (e1716)
-
-private def e1718 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_43d55c8961861bb41778) (e1717)
-
 private def e1719 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9e056103386ad05d9d9f) (e1718)
-
-private def e1721 : S 9 :=
-.congPiDom (e1719) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a11c2a838a2cf64ae056)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_91b17bdd81d69d6027e8 e1716
 
 private def e1722 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (e1721)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_dd64fa6fd1c6ad6bdae7 e1719
 
 private def e1723 : C 8 :=
 .single (e1722)
@@ -3759,20 +2573,11 @@ private def e1729 : S 12 :=
 private def e1730 : S 12 :=
 .congPiDom (e1729) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_22971035d388635cda3f)
 
-private def e1731 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2036d5848f7f7e5aa0d9) (e1730)
-
-private def e1732 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_43d55c8961861bb41778) (e1731)
-
 private def e1733 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9e056103386ad05d9d9f) (e1732)
-
-private def e1734 : S 9 :=
-.congPiDom (e1733) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a11c2a838a2cf64ae056)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_91b17bdd81d69d6027e8 e1730
 
 private def e1735 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (e1734)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_dd64fa6fd1c6ad6bdae7 e1733
 
 private def e1736 : C 8 :=
 .single (e1735)
@@ -3801,20 +2606,11 @@ private def e1746 : S 13 :=
 private def e1747 : S 12 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dd4fc597f6a31798810d) (e1746)
 
-private def e1748 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2036d5848f7f7e5aa0d9) (e1747)
-
-private def e1749 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_43d55c8961861bb41778) (e1748)
-
 private def e1750 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9e056103386ad05d9d9f) (e1749)
-
-private def e1751 : S 9 :=
-.congPiDom (e1750) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a11c2a838a2cf64ae056)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_91b17bdd81d69d6027e8 e1747
 
 private def e1752 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (e1751)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_dd64fa6fd1c6ad6bdae7 e1750
 
 private def e1753 : C 8 :=
 .single (e1752)
@@ -3849,20 +2645,11 @@ private def e1763 : S 13 :=
 private def e1764 : S 12 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dd4fc597f6a31798810d) (e1763)
 
-private def e1765 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2036d5848f7f7e5aa0d9) (e1764)
-
-private def e1766 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_43d55c8961861bb41778) (e1765)
-
 private def e1767 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9e056103386ad05d9d9f) (e1766)
-
-private def e1768 : S 9 :=
-.congPiDom (e1767) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a11c2a838a2cf64ae056)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_91b17bdd81d69d6027e8 e1764
 
 private def e1769 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (e1768)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_dd64fa6fd1c6ad6bdae7 e1767
 
 private def e1770 : C 8 :=
 .single (e1769)
@@ -3900,17 +2687,11 @@ private def e1782 : S 12 :=
 private def e1783 : S 12 :=
 .congAppFun (e1782) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f6020bec2f79974210d6)
 
-private def e1784 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a5e9d5d0070a13dbae71) (e1783)
-
 private def e1785 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ffbcdddae5a4ba50f754) (e1784)
-
-private def e1786 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_641f55689cb8d8472882) (e1785)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_edff14f0151f529d1961 e1783
 
 private def e1787 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (e1786)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_73682793b304faac4798 e1785
 
 private def e1788 : C 8 :=
 .single (e1787)
@@ -3927,17 +2708,11 @@ private def e1792 : C 8 :=
 private def e1793 : C 8 :=
 .trans (e1792) (e1790)
 
-private def e1794 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a5e9d5d0070a13dbae71) (e1729)
-
 private def e1795 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ffbcdddae5a4ba50f754) (e1794)
-
-private def e1796 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_641f55689cb8d8472882) (e1795)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_edff14f0151f529d1961 e1729
 
 private def e1797 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (e1796)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_73682793b304faac4798 e1795
 
 private def e1798 : C 8 :=
 .single (e1797)
@@ -3964,7 +2739,7 @@ private def e1806 : C 8 :=
 .trans (e1707) (e1805)
 
 private def e1807 : S 8 :=
-.congPiDom (e305) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ada4051bda78fe7c1e8b)
+.congPiDom (replay_8459e16dbc4b3ec14f3b) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ada4051bda78fe7c1e8b)
 
 private def e1808 : C 8 :=
 .single (e1807)
@@ -3978,20 +2753,11 @@ private def e1810 : C 8 :=
 private def e1811 : S 12 :=
 .congPiDom (e576) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7231169b8e7902d80314)
 
-private def e1812 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2036d5848f7f7e5aa0d9) (e1811)
-
-private def e1813 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_43d55c8961861bb41778) (e1812)
-
 private def e1814 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9e056103386ad05d9d9f) (e1813)
-
-private def e1815 : S 9 :=
-.congPiDom (e1814) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0b73c5cc6411aec4e689)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_91b17bdd81d69d6027e8 e1811
 
 private def e1816 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (e1815)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_b7e66e4d1ebc73a6c82a e1814
 
 private def e1817 : C 8 :=
 .single (e1816)
@@ -3999,20 +2765,11 @@ private def e1817 : C 8 :=
 private def e1818 : S 12 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dd4fc597f6a31798810d) (e818)
 
-private def e1819 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2036d5848f7f7e5aa0d9) (e1818)
-
-private def e1820 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_43d55c8961861bb41778) (e1819)
-
 private def e1821 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9e056103386ad05d9d9f) (e1820)
-
-private def e1822 : S 9 :=
-.congPiDom (e1821) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0b73c5cc6411aec4e689)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_91b17bdd81d69d6027e8 e1818
 
 private def e1823 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (e1822)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_b7e66e4d1ebc73a6c82a e1821
 
 private def e1824 : C 8 :=
 .single (e1823)
@@ -4029,17 +2786,11 @@ private def e1827 : C 8 :=
 private def e1828 : C 8 :=
 .trans (e1800) (e1827)
 
-private def e1829 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a5e9d5d0070a13dbae71) (e576)
-
 private def e1830 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ffbcdddae5a4ba50f754) (e1829)
-
-private def e1831 : S 9 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_641f55689cb8d8472882) (e1830)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_edff14f0151f529d1961 e576
 
 private def e1832 : S 8 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (e1831)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_73682793b304faac4798 e1830
 
 private def e1833 : C 8 :=
 .single (e1832)
@@ -4089,44 +2840,20 @@ private def e1847 : C 8 :=
 private def e1848 : T 8 :=
 .convert (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a1e066e23e4469d99955) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4119145459c228af2ee2) (e1681) (e1685) (e1847)
 
-private def e1852 : T 8 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ada4051bda78fe7c1e8b) (e1848) (replay_44f53bd0f56deec4a2f1)
-
-private def e1853 : T 12 :=
-.sigmaForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_c1e92b3aeffe2c000a2a) (replay_8dab544be16d5febf71b)
-
 private def e1854 : T 12 :=
-.cumul (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (e1853)
-
-private def e1855 : T 11 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (e423) (e1854)
-
-private def e1856 : T 10 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_926d1059d18a7acb855f) (e424) (e1855)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_6562d93d6c87394cce14 12 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_c1e92b3aeffe2c000a2a) (replay_8dab544be16d5febf71b)
 
 private def e1857 : T 9 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (e425) (e1856)
-
-private def e1858 : T 8 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (e426) (e1857)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_3d4333af0ad21e3b2bf8 9 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (e425) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_926d1059d18a7acb855f) (e424) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (e423) (e1854)
 
 private def e1859 : T 8 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7ed82302d08bb826a510) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9bbf6b7a077f10dc3f99) (e1852) (e1858)
-
-private def e1860 : T 8 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_56760c9c60918cbf3d6f) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_96bce5a2ae0721a01d2b) (e1859) (replay_534aece673191f529e08)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_17a6b16386a9978ede13 8 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7ed82302d08bb826a510) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9bbf6b7a077f10dc3f99) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ada4051bda78fe7c1e8b) (e1848) (replay_44f53bd0f56deec4a2f1) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (e426) (e1857)
 
 private def e1861 : T 8 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d605eaa8fe553c607b85) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8) (e1860) (replay_534aece673191f529e08)
-
-private def e1862 : T 8 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (e1861) (replay_18e264ae7443180c79f8)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_4d5f04684bb1c9672070 8 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d605eaa8fe553c607b85) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_56760c9c60918cbf3d6f) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_96bce5a2ae0721a01d2b) (e1859) (replay_534aece673191f529e08)
 
 private def e1870 : T 10 :=
-.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a5f313e17bf6f92fda5d) (e144)
-
-private def e1871 : T 10 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b74e03acbfc24aeb10e) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f8323529301b12ea3057) (e1870) (replay_8dd06e568960d2567ea5)
+.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a5f313e17bf6f92fda5d) (replay_2b3d36bec0f47f4acb62)
 
 private def e1872 : T 11 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d3b434f6728366c60c60) (replay_cb03996b2dc3b9d2f1d4) (replay_bbeadd6fb074304dde2a)
@@ -4137,23 +2864,14 @@ private def e1873 : T 10 :=
 private def e1874 : T 11 :=
 .lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a8a040a7dc522e2a057b) (e1872) (replay_bbeadd6fb074304dde2a)
 
-private def e1875 : T 10 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3b69fc5965686a991caa) (e1873) (e1874)
-
 private def e1876 : T 10 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c43ede136bc688c9207d) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b1e77cb36f42c9100d1e) (e1871) (e1875)
-
-private def e1877 : T 13 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_bfbf29338b2df2e68771) (replay_39520f2102ac9d665fff)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_17a6b16386a9978ede13 10 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c43ede136bc688c9207d) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b1e77cb36f42c9100d1e) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b74e03acbfc24aeb10e) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f8323529301b12ea3057) (e1870) (replay_8dd06e568960d2567ea5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3b69fc5965686a991caa) (e1873) (e1874)
 
 private def e1878 : T 12 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (replay_6c2a7f095fb66b85019c) (e1877)
-
-private def e1879 : T 11 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b5fcf8a047e56612b09d) (e1101) (e1878)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8704404f73c273f28b55 12 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (replay_6c2a7f095fb66b85019c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_bfbf29338b2df2e68771) (replay_39520f2102ac9d665fff)
 
 private def e1880 : T 10 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_145482549cab95f9be25) (replay_b7b0d4f9c05076ab70ae) (e1879)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8704404f73c273f28b55 10 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_145482549cab95f9be25) (replay_b7b0d4f9c05076ab70ae) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b5fcf8a047e56612b09d) (e1101) (e1878)
 
 private def e1881 : C 10 :=
 .refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e29149804866235b4462)
@@ -4221,20 +2939,11 @@ private def e1911 : S 14 :=
 private def e1913 : S 14 :=
 .congPiDom (e1911) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_70add5a8ad8f580bb830)
 
-private def e1914 : S 13 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c5c2e101d3280859c57b) (e1913)
-
-private def e1915 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4ec2bf2a0236f1f4057c) (e1914)
-
 private def e1916 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1bed53fd97751c172144) (e1915)
-
-private def e1918 : S 11 :=
-.congPiDom (e1916) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_676385da329e10cda787)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_29478d3e00a87fc3cba1 e1913
 
 private def e1919 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b74e03acbfc24aeb10e) (e1918)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_7e2c75e900f9a601e341 e1916
 
 private def e1920 : C 10 :=
 .single (e1919)
@@ -4257,20 +2966,11 @@ private def e1926 : S 14 :=
 private def e1927 : S 14 :=
 .congPiDom (e1926) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_70add5a8ad8f580bb830)
 
-private def e1928 : S 13 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c5c2e101d3280859c57b) (e1927)
-
-private def e1929 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4ec2bf2a0236f1f4057c) (e1928)
-
 private def e1930 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1bed53fd97751c172144) (e1929)
-
-private def e1931 : S 11 :=
-.congPiDom (e1930) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_676385da329e10cda787)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_29478d3e00a87fc3cba1 e1927
 
 private def e1932 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b74e03acbfc24aeb10e) (e1931)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_7e2c75e900f9a601e341 e1930
 
 private def e1933 : C 10 :=
 .single (e1932)
@@ -4299,20 +2999,11 @@ private def e1943 : S 15 :=
 private def e1944 : S 14 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dea29f7c5b98576419ec) (e1943)
 
-private def e1945 : S 13 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c5c2e101d3280859c57b) (e1944)
-
-private def e1946 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4ec2bf2a0236f1f4057c) (e1945)
-
 private def e1947 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1bed53fd97751c172144) (e1946)
-
-private def e1948 : S 11 :=
-.congPiDom (e1947) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_676385da329e10cda787)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_29478d3e00a87fc3cba1 e1944
 
 private def e1949 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b74e03acbfc24aeb10e) (e1948)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_7e2c75e900f9a601e341 e1947
 
 private def e1950 : C 10 :=
 .single (e1949)
@@ -4347,20 +3038,11 @@ private def e1960 : S 15 :=
 private def e1961 : S 14 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dea29f7c5b98576419ec) (e1960)
 
-private def e1962 : S 13 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c5c2e101d3280859c57b) (e1961)
-
-private def e1963 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4ec2bf2a0236f1f4057c) (e1962)
-
 private def e1964 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1bed53fd97751c172144) (e1963)
-
-private def e1965 : S 11 :=
-.congPiDom (e1964) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_676385da329e10cda787)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_29478d3e00a87fc3cba1 e1961
 
 private def e1966 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b74e03acbfc24aeb10e) (e1965)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_7e2c75e900f9a601e341 e1964
 
 private def e1967 : C 10 :=
 .single (e1966)
@@ -4398,17 +3080,11 @@ private def e1980 : S 14 :=
 private def e1981 : S 14 :=
 .congAppFun (e1980) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_af376959c7b0218ec3fe)
 
-private def e1982 : S 13 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_8cfcdc8ea5cc8d2e1005) (e1981)
-
 private def e1983 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_76bf2a76d66e1cc66026) (e1982)
-
-private def e1984 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_fb734925a3bc79e1dc35) (e1983)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_e6c94940a308c37bc398 e1981
 
 private def e1985 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b74e03acbfc24aeb10e) (e1984)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_99ee919cc5063601e578 e1983
 
 private def e1986 : C 10 :=
 .single (e1985)
@@ -4425,17 +3101,11 @@ private def e1990 : C 10 :=
 private def e1991 : C 10 :=
 .trans (e1990) (e1988)
 
-private def e1992 : S 13 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_8cfcdc8ea5cc8d2e1005) (e1926)
-
 private def e1993 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_76bf2a76d66e1cc66026) (e1992)
-
-private def e1994 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_fb734925a3bc79e1dc35) (e1993)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_e6c94940a308c37bc398 e1926
 
 private def e1995 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b74e03acbfc24aeb10e) (e1994)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_99ee919cc5063601e578 e1993
 
 private def e1996 : C 10 :=
 .single (e1995)
@@ -4479,20 +3149,11 @@ private def e2009 : C 10 :=
 private def e2010 : S 14 :=
 .congPiDom (e827) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4161bc0bf24be3a461cb)
 
-private def e2011 : S 13 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c5c2e101d3280859c57b) (e2010)
-
-private def e2012 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4ec2bf2a0236f1f4057c) (e2011)
-
 private def e2013 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1bed53fd97751c172144) (e2012)
-
-private def e2014 : S 11 :=
-.congPiDom (e2013) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_25334c347994cba33094)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_29478d3e00a87fc3cba1 e2010
 
 private def e2015 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b74e03acbfc24aeb10e) (e2014)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_1d441bbbff2c1fdb0fc6 e2013
 
 private def e2016 : C 10 :=
 .single (e2015)
@@ -4500,20 +3161,11 @@ private def e2016 : C 10 :=
 private def e2017 : S 14 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dea29f7c5b98576419ec) (e1049)
 
-private def e2018 : S 13 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c5c2e101d3280859c57b) (e2017)
-
-private def e2019 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4ec2bf2a0236f1f4057c) (e2018)
-
 private def e2020 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1bed53fd97751c172144) (e2019)
-
-private def e2021 : S 11 :=
-.congPiDom (e2020) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_25334c347994cba33094)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_29478d3e00a87fc3cba1 e2017
 
 private def e2022 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b74e03acbfc24aeb10e) (e2021)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_1d441bbbff2c1fdb0fc6 e2020
 
 private def e2023 : C 10 :=
 .single (e2022)
@@ -4530,17 +3182,11 @@ private def e2026 : C 10 :=
 private def e2027 : C 10 :=
 .trans (e1998) (e2026)
 
-private def e2028 : S 13 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_8cfcdc8ea5cc8d2e1005) (e827)
-
 private def e2029 : S 12 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_76bf2a76d66e1cc66026) (e2028)
-
-private def e2030 : S 11 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_fb734925a3bc79e1dc35) (e2029)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_e6c94940a308c37bc398 e827
 
 private def e2031 : S 10 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b74e03acbfc24aeb10e) (e2030)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_99ee919cc5063601e578 e2029
 
 private def e2032 : C 10 :=
 .single (e2031)
@@ -4590,47 +3236,23 @@ private def e2046 : C 10 :=
 private def e2047 : T 10 :=
 .convert (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e29149804866235b4462) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4119145459c228af2ee2) (e1876) (e1880) (e2046)
 
-private def e2051 : T 10 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b74e03acbfc24aeb10e) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ef85e3a3b26fc5c75253) (e2047) (replay_71189f869dd37629b9df)
-
-private def e2052 : T 14 :=
-.sigmaForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_730a0c3ead453f836005) (replay_2c304eb7e4ba83000148)
-
 private def e2053 : T 14 :=
-.cumul (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (e2052)
-
-private def e2054 : T 13 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (e677) (e2053)
-
-private def e2055 : T 12 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_926d1059d18a7acb855f) (e678) (e2054)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_6562d93d6c87394cce14 14 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_730a0c3ead453f836005) (replay_2c304eb7e4ba83000148)
 
 private def e2056 : T 11 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (e679) (e2055)
-
-private def e2057 : T 10 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (e680) (e2056)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_3d4333af0ad21e3b2bf8 11 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (e679) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_926d1059d18a7acb855f) (e678) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (e677) (e2053)
 
 private def e2058 : T 10 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_637703192f2b26cda358) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_96380d3510278c266047) (e2051) (e2057)
-
-private def e2059 : T 10 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ffbcdddae5a4ba50f754) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_051c24de40c55e07eaef) (e2058) (replay_8dd06e568960d2567ea5)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_17a6b16386a9978ede13 10 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_637703192f2b26cda358) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_96380d3510278c266047) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b74e03acbfc24aeb10e) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ef85e3a3b26fc5c75253) (e2047) (replay_71189f869dd37629b9df) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (e680) (e2056)
 
 private def e2060 : T 10 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c3236b8af09bfef25606) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9528e48ce4f30ad868d8) (e2059) (replay_8dd06e568960d2567ea5)
-
-private def e2061 : T 9 :=
-.sigmaForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_07c41680d17703d7171f) (e2060)
-
-private def e2064 : T 10 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ffbcdddae5a4ba50f754) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9528e48ce4f30ad868d8) (replay_92074caf839781e03760) (replay_a8671cad3b05ce34b140)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_4d5f04684bb1c9672070 10 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c3236b8af09bfef25606) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9528e48ce4f30ad868d8) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ffbcdddae5a4ba50f754) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_051c24de40c55e07eaef) (e2058) (replay_8dd06e568960d2567ea5)
 
 private def e2065 : T 9 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (e2061) (e2064)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_17c469b41bbbcdd4cd17 9 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_07c41680d17703d7171f) (e2060) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ffbcdddae5a4ba50f754) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9528e48ce4f30ad868d8) (replay_92074caf839781e03760) (replay_a8671cad3b05ce34b140)
 
 private def e2066 : T 8 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_13f420e1e571ce9bd69e) (e1862) (e2065)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_966b5ef0fda36d625109 8 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_13f420e1e571ce9bd69e) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (e1861) (replay_18e264ae7443180c79f8) (e2065)
 
 private def e2067 : T 7 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_32b4abc1203b6894f5b7) (replay_d46b9e98b3e6a82d2405) (e2066)
@@ -4644,119 +3266,59 @@ private def e2069 : T 5 :=
 private def e2075 : T 10 :=
 .const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_533cc6ec801233d934bf) (replay_8155ca49fef95dd201e8)
 
-private def e2076 : T 10 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b74e03acbfc24aeb10e) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_324d2b582555a6c95dc0) (e2075) (replay_8dd06e568960d2567ea5)
-
 private def e2077 : T 10 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ffbcdddae5a4ba50f754) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_062ad6fe7b4e2f8b2e1a) (e2076) (replay_8dd06e568960d2567ea5)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_4d5f04684bb1c9672070 10 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ffbcdddae5a4ba50f754) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_062ad6fe7b4e2f8b2e1a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b74e03acbfc24aeb10e) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_324d2b582555a6c95dc0) (e2075) (replay_8dd06e568960d2567ea5)
 
 private def e2079 : T 10 :=
 .fstElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_79ced934cb3202a773e4) (replay_8dd06e568960d2567ea5)
 
-private def e2080 : T 10 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1e48b53379ef509db2cd) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d1b6f6651cc62ce156d9) (e2077) (e2079)
-
 private def e2083 : T 10 :=
 .sndElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1e48b53379ef509db2cd) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_79ced934cb3202a773e4) (replay_8dd06e568960d2567ea5)
 
-private def e2084 : T 10 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_8b07607a1c110a3900c6) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1f9a4e66da77e8a90e24) (replay_8dd06e568960d2567ea5) (e2083)
-
 private def e2085 : T 10 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_77a46930df6c788cbdb9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_55d107fd67606131df6b) (e2080) (e2084)
-
-private def e2086 : T 9 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_13f420e1e571ce9bd69e) (e2065) (e2085)
-
-private def e2087 : T 8 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_32b4abc1203b6894f5b7) (e2066) (e2086)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_378c9b2c799750967bc0 10 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_77a46930df6c788cbdb9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_55d107fd67606131df6b) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1e48b53379ef509db2cd) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d1b6f6651cc62ce156d9) (e2077) (e2079) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_8b07607a1c110a3900c6) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1f9a4e66da77e8a90e24) (replay_8dd06e568960d2567ea5) (e2083)
 
 private def e2088 : T 7 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c6999770192030b59a9) (e2067) (e2087)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_3d4333af0ad21e3b2bf8 7 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c6999770192030b59a9) (e2067) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_32b4abc1203b6894f5b7) (e2066) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_13f420e1e571ce9bd69e) (e2065) (e2085)
 
 private def e2089 : T 6 :=
 .lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_bbf6f125b673f4c18062) (e2068) (e2088)
 
-private def e2090 : T 5 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4e294ee453df269967d4) (e2069) (e2089)
-
 private def e2091 : T 5 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3eb3e0df143ba898e01b) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e3a633d6f5df32ea674e) (e1667) (e2090)
-
-private def e2092 : T 5 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_02c898a5fa9dca7e390e) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9682a6ba7efe90680399) (e2091) (replay_088a7fed4563d6a06e7a)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_17a6b16386a9978ede13 5 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3eb3e0df143ba898e01b) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e3a633d6f5df32ea674e) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0202a361a93da8c87a82) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_53f8d629022d2a6be428) (e1662) (e1666) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4e294ee453df269967d4) (e2069) (e2089)
 
 private def e2093 : T 5 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5331ca9ad2f18da19b3f) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6f434cce40192fbe6b70) (e2092) (replay_088a7fed4563d6a06e7a)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_4d5f04684bb1c9672070 5 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5331ca9ad2f18da19b3f) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6f434cce40192fbe6b70) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_02c898a5fa9dca7e390e) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9682a6ba7efe90680399) (e2091) (replay_088a7fed4563d6a06e7a)
 
 private def e2094 : T 5 :=
 .appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b5d7366fef524f02cd69) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ae665606aa0645d83412) (e2093) (replay_088a7fed4563d6a06e7a)
 
-private def e2095 : T 4 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (e370) (e2094)
-
-private def e2096 : T 3 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4c32bd4102c8f968b76a) (e371) (e2095)
-
 private def e2097 : T 2 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f2fe31c8ad7fb9f469ad) (e372) (e2096)
-
-private def e2098 : T 1 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_533cc6ec801233d934bf) (e373) (e2097)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_3d4333af0ad21e3b2bf8 2 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f2fe31c8ad7fb9f469ad) (e372) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4c32bd4102c8f968b76a) (e371) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (e370) (e2094)
 
 private def e2099 : T 0 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_985b848bba9a614cf854) (e374) (e2098)
-
-private def e2101 : T 8 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_534aece673191f529e08) (replay_cf26163fe59a0dbcc31b)
-
-private def e2102 : T 8 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (e2101) (replay_07c41680d17703d7171f)
-
-private def e2103 : T 8 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ed88dce83fa3ae5d4c4a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8) (e2102) (replay_534aece673191f529e08)
-
-private def e2104 : T 8 :=
-.sigmaForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (e2103) (replay_07c41680d17703d7171f)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_a01eeb0864f95e605a1b 0 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_985b848bba9a614cf854) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_533cc6ec801233d934bf) (replay_7a268c731e7a9afff236) (e373) (e2097)
 
 private def e2105 : T 8 :=
-.cumul (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (e2104)
-
-private def e2106 : T 7 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (e355) (e2105)
-
-private def e2107 : T 6 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_926d1059d18a7acb855f) (e356) (e2106)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_6562d93d6c87394cce14 8 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_aafd23c0a7e2bb8a1fda) (replay_07c41680d17703d7171f)
 
 private def e2108 : T 5 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (e357) (e2107)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_3d4333af0ad21e3b2bf8 5 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (replay_b7955d87d66cc2356da8) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_926d1059d18a7acb855f) (replay_46d87b945667e8b9c6f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (replay_0263d1c79861444bbc2b) (e2105)
 
 private def e2109 : T 4 :=
-.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (e358) (e2108)
-
-private def e2110 : T 4 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1307b628e74cbf939cd4) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_fd75b7ede071eab44538) (e349) (e2109)
+.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (replay_3dba47e0d66dd5881da1) (e2108)
 
 private def e2111 : T 4 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7090374f1485408a1741) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3f8fd0cbbad6bfbc5baa) (e2110) (replay_f89a0d3fd4af1bf7786d)
-
-private def e2112 : T 4 :=
-.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5d2fe1eb531662373187) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5978e1f6d4b31cb31598) (e2111) (replay_f89a0d3fd4af1bf7786d)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_abc997f471525f0ec2c2 4 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7090374f1485408a1741) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3f8fd0cbbad6bfbc5baa) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1307b628e74cbf939cd4) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_fd75b7ede071eab44538) (replay_6c7163c1b19e471e9892) (e2109) (replay_f89a0d3fd4af1bf7786d)
 
 private def e2113 : T 4 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (e2112) (replay_bf3f7acfa265bdb54010)
-
-private def e2114 : T 3 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (replay_be261adb759aa3486f8c) (e2113)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_96c410b2c04018d2df28 4 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5d2fe1eb531662373187) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5978e1f6d4b31cb31598) (e2111) (replay_f89a0d3fd4af1bf7786d) (replay_bf3f7acfa265bdb54010)
 
 private def e2115 : T 2 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4c32bd4102c8f968b76a) (replay_2a0decba183f967a7699) (e2114)
-
-private def e2116 : T 1 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f2fe31c8ad7fb9f469ad) (replay_2ec113d8b40f7f163a79) (e2115)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8704404f73c273f28b55 2 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4c32bd4102c8f968b76a) (replay_2a0decba183f967a7699) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (replay_be261adb759aa3486f8c) (e2113)
 
 private def e2117 : T 0 :=
-.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_533cc6ec801233d934bf) (replay_7a268c731e7a9afff236) (e2116)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_d01135a657f050a2df2d 0 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_533cc6ec801233d934bf) (replay_7a268c731e7a9afff236) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f2fe31c8ad7fb9f469ad) (replay_2ec113d8b40f7f163a79) (e2115)
 
 private def e2118 : C 0 :=
 .refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_89b631dddc3b3fc78cc9)
@@ -4818,41 +3380,14 @@ private def e2140 : C 0 :=
 private def e2143 : S 6 :=
 .head (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9)
 
-private def e2144 : S 5 :=
-.congLam (e2143)
-
-private def e2145 : S 4 :=
-.congLam (e2144)
-
-private def e2146 : S 4 :=
-.congAppArg (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_16a82ed3189fddafc0ab) (e2145)
-
 private def e2148 : S 4 :=
-.congAppFun (e2146) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4ef2ce4b89eded36da33)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_49dbd768d4678d959c8e e2143
 
 private def e2150 : S 4 :=
 .congAppFun (e2148) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_96187348bc88f0750c79)
 
-private def e2152 : S 4 :=
-.congAppFun (e2150) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_41ed62600d0ff298be98)
-
-private def e2154 : S 4 :=
-.congAppFun (e2152) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_877d4c7461ca80be7a82)
-
-private def e2156 : S 4 :=
-.congPiDom (e2154) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9e7ddabaed3b96857702)
-
-private def e2157 : S 3 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_34de2eb30a6d1c8d73a0) (e2156)
-
-private def e2158 : S 2 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e7afc61b162c474cee28) (e2157)
-
-private def e2159 : S 1 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_51057c62b6697d24bc8b) (e2158)
-
 private def e2160 : S 0 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_003f1c1bfee893c3d4f3) (e2159)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_c2f6c3c89b540eaba3a2 e2150
 
 private def e2161 : C 0 :=
 .single (e2160)
@@ -4905,26 +3440,8 @@ private def e2177 : C 0 :=
 private def e2186 : S 4 :=
 .congAppArg (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7fc68ad11234eb7fe550) (replay_076dc27a5d647e2567a7)
 
-private def e2187 : S 4 :=
-.congAppFun (e2186) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_41ed62600d0ff298be98)
-
-private def e2188 : S 4 :=
-.congAppFun (e2187) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_877d4c7461ca80be7a82)
-
-private def e2189 : S 4 :=
-.congPiDom (e2188) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9e7ddabaed3b96857702)
-
-private def e2190 : S 3 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_34de2eb30a6d1c8d73a0) (e2189)
-
-private def e2191 : S 2 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e7afc61b162c474cee28) (e2190)
-
-private def e2192 : S 1 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_51057c62b6697d24bc8b) (e2191)
-
 private def e2193 : S 0 :=
-.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_003f1c1bfee893c3d4f3) (e2192)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_c2f6c3c89b540eaba3a2 e2186
 
 private def e2194 : C 0 :=
 .single (e2193)

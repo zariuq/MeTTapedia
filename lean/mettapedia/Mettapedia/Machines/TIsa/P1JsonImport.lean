@@ -17,6 +17,14 @@ namespace Mettapedia.Machines.TIsa.P1JsonImport
 open Lean Elab Term P1Capture P1Source
 open Algorithms.MeTTa.Simple.Parser (SExpr)
 
+universe u
+
+/-- The word profile has no store payload to quote. Reifying its type
+does not add any new JSON data or opcode. -/
+private instance [ToLevel.{u}] : ToExpr (PEmpty : Type u) where
+  toExpr value := nomatch value
+  toTypeExpr := mkConst ``PEmpty [.succ (toLevel.{u})]
+
 deriving instance ToExpr for Binary
 deriving instance ToExpr for Shift
 deriving instance ToExpr for Comparison
@@ -24,12 +32,12 @@ deriving instance ToExpr for ExitStatus
 deriving instance ToExpr for TypeTag
 deriving instance ToExpr for Width
 deriving instance ToExpr for Operand
-deriving instance ToExpr for Instr
-deriving instance ToExpr for Stmt
+deriving instance ToExpr for P1Source.Instruction
+deriving instance ToExpr for P1Source.Statement
 deriving instance ToExpr for Mode
 deriving instance ToExpr for RegionDecl
 deriving instance ToExpr for EntryReg
-deriving instance ToExpr for P1Source.Program
+deriving instance ToExpr for P1Source.SourceProgram
 
 private partial def sourceExpr : SExpr → Expr
   | .atom token => mkApp (mkConst ``SExpr.atom) (toExpr token)

@@ -2,6 +2,8 @@ import Mettapedia.GSLT.Distinction.Probabilistic.KantorovichDuality
 import Mettapedia.GSLT.Distinction.Probabilistic.LogicalDistance
 import Mettapedia.GSLT.Distinction.Probabilistic.System
 import Mettapedia.GSLT.Distinction.Probabilistic.FiniteChains
+import Mettapedia.GSLT.Distinction.Probabilistic.FiniteHorizonSafety
+import Mettapedia.GSLT.Distinction.Probabilistic.RiskAccount
 import Mettapedia.GSLT.Distinction.Probabilistic.FinitePrediction
 import Mettapedia.GSLT.Distinction.Probabilistic.FiniteSubprediction
 import Mettapedia.GSLT.Distinction.Probabilistic.FinitePredictionArray
@@ -35,6 +37,10 @@ this layer reuses.
   bisimulation and its logical characterisation; the erasure of bisimulations.
 * `FiniteChains`: a finite chain is a probabilistic GSLT; Larsen–Skou
   bisimilarity, probabilistic bisimilarity and distance zero coincide.
+* `FiniteHorizonSafety`: conditional safety bounds compose along adaptive runs,
+  and exact observation laws preserve safety probabilities through readback.
+* `RiskAccount`: signed charges at revision and expected slack at ordinary
+  moves yield conditional risk bounds. Exact refusal risk gives maximal admission.
 * `FinitePrediction`: the weighted-traversal module constructs finite kernel
   predictions, with exact arithmetic interpretation and entry counts;
   compatible observations preserve their probabilistic GSLT predicate masses.

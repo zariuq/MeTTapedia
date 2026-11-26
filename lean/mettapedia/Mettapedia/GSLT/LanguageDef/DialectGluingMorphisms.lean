@@ -1,3 +1,4 @@
+import Mettapedia.GSLT.LanguageDef.StructuralInclusion
 import Mettapedia.GSLT.LanguageDef.DialectGluing
 import Mettapedia.GSLT.LanguageDef.StructuralLanguageDefCategory
 
@@ -36,20 +37,12 @@ def leftInclusionMorphism (name : String) (base : LanguageDef)
     {left right : LanguageDef}
     (leftValid : left.validate = [])
     (gluedValid : (glue name base left right).validate = []) :
-    StructuralMorphism ⟨left, leftValid⟩ ⟨glue name base left right, gluedValid⟩ where
-  symbols := LanguageDefSymbolMap.id
-  mapsTypes declaration membership := by
-    rw [mapTypeDecl_id]
-    exact List.mem_append_left _ membership
-  mapsTerms rule membership := by
-    rw [mapGrammarRule_id]
-    exact List.mem_append_left _ membership
-  mapsEquations equation membership := by
-    rw [mapEquation_id]
-    exact List.mem_append_left _ membership
-  mapsRewrites rewrite membership := by
-    rw [mapRewriteRule_id]
-    exact List.mem_append_left _ membership
+    StructuralMorphism ⟨left, leftValid⟩ ⟨glue name base left right, gluedValid⟩ :=
+  StructuralMorphism.ofDeclarationInclusion {
+    types := fun _ member => List.mem_append_left _ member
+    terms := fun _ member => List.mem_append_left _ member
+    equations := fun _ member => List.mem_append_left _ member
+    rewrites := fun _ member => List.mem_append_left _ member }
 
 /-! ## Right/base collision coverage and the right inclusion -/
 

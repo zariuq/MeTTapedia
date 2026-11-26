@@ -1,3 +1,5 @@
+import Mettapedia.Data.List.LabelChunkProof
+import Mettapedia.GSLT.LanguageDef.RewriteFreeLanguage
 import Mettapedia.GSLT.LanguageDef.IndexedConstructorSignature
 import Mettapedia.GSLT.LanguageDef.CarrierWellSorted
 import Mettapedia.OSLF.MeTTaIL.ContextualStep
@@ -76,8 +78,6 @@ private def constructorsChunk0 : List (IndexedConstructorSignature.Constructor t
     constructor "tptp-cst:label-tptp92-alt-annotated-formula-5" sort_NodeLabel []
   ]
 
-private def constructorsPrefix0 : List (IndexedConstructorSignature.Constructor types) := constructorsChunk0
-
 private def constructorsChunk1 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-annotated-formula-6" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-annotations-1" sort_NodeLabel [],
@@ -96,8 +96,6 @@ private def constructorsChunk1 : List (IndexedConstructorSignature.Constructor t
     constructor "tptp-cst:label-tptp92-alt-cnf-disjunction-1" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-cnf-disjunction-2" sort_NodeLabel []
   ]
-
-private def constructorsPrefix1 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix0 ++ constructorsChunk1
 
 private def constructorsChunk2 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-cnf-formula-1" sort_NodeLabel [],
@@ -118,8 +116,6 @@ private def constructorsChunk2 : List (IndexedConstructorSignature.Constructor t
     constructor "tptp-cst:label-tptp92-alt-dag-source-1" sort_NodeLabel []
   ]
 
-private def constructorsPrefix2 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix1 ++ constructorsChunk2
-
 private def constructorsChunk3 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-dag-source-2" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-def-or-sys-constant-1" sort_NodeLabel [],
@@ -138,8 +134,6 @@ private def constructorsChunk3 : List (IndexedConstructorSignature.Constructor t
     constructor "tptp-cst:label-tptp92-alt-file-name-1" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-file-source-1" sort_NodeLabel []
   ]
-
-private def constructorsPrefix3 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix2 ++ constructorsChunk3
 
 private def constructorsChunk4 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-fof-and-formula-1" sort_NodeLabel [],
@@ -160,8 +154,6 @@ private def constructorsChunk4 : List (IndexedConstructorSignature.Constructor t
     constructor "tptp-cst:label-tptp92-alt-fof-defined-atomic-term-1" sort_NodeLabel []
   ]
 
-private def constructorsPrefix4 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix3 ++ constructorsChunk4
-
 private def constructorsChunk5 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-fof-defined-infix-formula-1" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-fof-defined-plain-formula-1" sort_NodeLabel [],
@@ -180,8 +172,6 @@ private def constructorsChunk5 : List (IndexedConstructorSignature.Constructor t
     constructor "tptp-cst:label-tptp92-alt-fof-infix-unary-1" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-fof-logic-formula-1" sort_NodeLabel []
   ]
-
-private def constructorsPrefix5 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix4 ++ constructorsChunk5
 
 private def constructorsChunk6 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-fof-logic-formula-2" sort_NodeLabel [],
@@ -202,8 +192,6 @@ private def constructorsChunk6 : List (IndexedConstructorSignature.Constructor t
     constructor "tptp-cst:label-tptp92-alt-fof-term-1" sort_NodeLabel []
   ]
 
-private def constructorsPrefix6 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix5 ++ constructorsChunk6
-
 private def constructorsChunk7 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-fof-term-2" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-fof-unary-formula-1" sort_NodeLabel [],
@@ -222,8 +210,6 @@ private def constructorsChunk7 : List (IndexedConstructorSignature.Constructor t
     constructor "tptp-cst:label-tptp92-alt-formula-data-5" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-formula-role-1" sort_NodeLabel []
   ]
-
-private def constructorsPrefix7 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix6 ++ constructorsChunk7
 
 private def constructorsChunk8 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-formula-role-2" sort_NodeLabel [],
@@ -244,8 +230,6 @@ private def constructorsChunk8 : List (IndexedConstructorSignature.Constructor t
     constructor "tptp-cst:label-tptp92-alt-general-term-3" sort_NodeLabel []
   ]
 
-private def constructorsPrefix8 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix7 ++ constructorsChunk8
-
 private def constructorsChunk9 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-general-terms-1" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-gentzen-arrow-1" sort_NodeLabel [],
@@ -264,8 +248,6 @@ private def constructorsChunk9 : List (IndexedConstructorSignature.Constructor t
     constructor "tptp-cst:label-tptp92-alt-name-2" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-name-list-1" sort_NodeLabel []
   ]
-
-private def constructorsPrefix9 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix8 ++ constructorsChunk9
 
 private def constructorsChunk10 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-name-list-2" sort_NodeLabel [],
@@ -286,8 +268,6 @@ private def constructorsChunk10 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-alt-ntf-connective-name-1" sort_NodeLabel []
   ]
 
-private def constructorsPrefix10 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix9 ++ constructorsChunk10
-
 private def constructorsChunk11 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-ntf-index-1" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-ntf-short-connective-1" sort_NodeLabel [],
@@ -306,8 +286,6 @@ private def constructorsChunk11 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-alt-nxf-parameter-list-1" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-nxf-parameter-list-2" sort_NodeLabel []
   ]
-
-private def constructorsPrefix11 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix10 ++ constructorsChunk11
 
 private def constructorsChunk12 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-optional-info-1" sort_NodeLabel [],
@@ -328,8 +306,6 @@ private def constructorsChunk12 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-alt-space-name-1" sort_NodeLabel []
   ]
 
-private def constructorsPrefix12 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix11 ++ constructorsChunk12
-
 private def constructorsChunk13 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-subtype-sign-1" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-system-constant-1" sort_NodeLabel [],
@@ -348,8 +324,6 @@ private def constructorsChunk13 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-alt-tff-atom-typing-1" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-tff-atom-typing-2" sort_NodeLabel []
   ]
-
-private def constructorsPrefix13 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix12 ++ constructorsChunk13
 
 private def constructorsChunk14 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-tff-atom-typing-list-1" sort_NodeLabel [],
@@ -370,8 +344,6 @@ private def constructorsChunk14 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-alt-tff-binary-nonassoc-1" sort_NodeLabel []
   ]
 
-private def constructorsPrefix14 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix13 ++ constructorsChunk14
-
 private def constructorsChunk15 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-tff-defined-atomic-1" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-tff-defined-infix-1" sort_NodeLabel [],
@@ -390,8 +362,6 @@ private def constructorsChunk15 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-alt-tff-logic-formula-5" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-tff-logic-formula-6" sort_NodeLabel []
   ]
-
-private def constructorsPrefix15 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix14 ++ constructorsChunk15
 
 private def constructorsChunk16 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-tff-mapping-type-1" sort_NodeLabel [],
@@ -412,8 +382,6 @@ private def constructorsChunk16 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-alt-tff-quantifier-1" sort_NodeLabel []
   ]
 
-private def constructorsPrefix16 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix15 ++ constructorsChunk16
-
 private def constructorsChunk17 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-tff-quantifier-2" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-tff-subtype-1" sort_NodeLabel [],
@@ -432,8 +400,6 @@ private def constructorsChunk17 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-alt-tff-unary-connective-1" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-tff-unary-connective-2" sort_NodeLabel []
   ]
-
-private def constructorsPrefix17 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix16 ++ constructorsChunk17
 
 private def constructorsChunk18 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-tff-unary-formula-1" sort_NodeLabel [],
@@ -454,8 +420,6 @@ private def constructorsChunk18 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-alt-tff-unitary-type-2" sort_NodeLabel []
   ]
 
-private def constructorsPrefix18 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix17 ++ constructorsChunk18
-
 private def constructorsChunk19 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-tff-variable-1" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-tff-variable-2" sort_NodeLabel [],
@@ -474,8 +438,6 @@ private def constructorsChunk19 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-alt-theory-1" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-theory-name-1" sort_NodeLabel []
   ]
-
-private def constructorsPrefix19 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix18 ++ constructorsChunk19
 
 private def constructorsChunk20 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-thf-and-formula-1" sort_NodeLabel [],
@@ -496,8 +458,6 @@ private def constructorsChunk20 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-alt-thf-binary-assoc-1" sort_NodeLabel []
   ]
 
-private def constructorsPrefix20 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix19 ++ constructorsChunk20
-
 private def constructorsChunk21 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-thf-binary-assoc-2" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-thf-binary-assoc-3" sort_NodeLabel [],
@@ -516,8 +476,6 @@ private def constructorsChunk21 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-alt-thf-defined-atomic-1" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-thf-defined-atomic-2" sort_NodeLabel []
   ]
-
-private def constructorsPrefix21 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix20 ++ constructorsChunk21
 
 private def constructorsChunk22 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-thf-defined-atomic-3" sort_NodeLabel [],
@@ -538,8 +496,6 @@ private def constructorsChunk22 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-alt-thf-let-1" sort_NodeLabel []
   ]
 
-private def constructorsPrefix22 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix21 ++ constructorsChunk22
-
 private def constructorsChunk23 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-thf-let-defn-1" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-thf-let-defn-list-1" sort_NodeLabel [],
@@ -558,8 +514,6 @@ private def constructorsChunk23 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-alt-thf-mapping-type-2" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-thf-or-formula-1" sort_NodeLabel []
   ]
-
-private def constructorsPrefix23 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix22 ++ constructorsChunk23
 
 private def constructorsChunk24 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-thf-or-formula-2" sort_NodeLabel [],
@@ -580,8 +534,6 @@ private def constructorsChunk24 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-alt-thf-top-level-type-2" sort_NodeLabel []
   ]
 
-private def constructorsPrefix24 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix23 ++ constructorsChunk24
-
 private def constructorsChunk25 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-thf-top-level-type-3" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-thf-tuple-1" sort_NodeLabel [],
@@ -600,8 +552,6 @@ private def constructorsChunk25 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-alt-thf-unitary-formula-2" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-thf-unitary-formula-3" sort_NodeLabel []
   ]
-
-private def constructorsPrefix25 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix24 ++ constructorsChunk25
 
 private def constructorsChunk26 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-thf-unitary-formula-4" sort_NodeLabel [],
@@ -622,8 +572,6 @@ private def constructorsChunk26 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-alt-txf-let-1" sort_NodeLabel []
   ]
 
-private def constructorsPrefix26 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix25 ++ constructorsChunk26
-
 private def constructorsChunk27 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-txf-let-defn-1" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-txf-let-defn-list-1" sort_NodeLabel [],
@@ -642,8 +590,6 @@ private def constructorsChunk27 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-alt-type-constant-1" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-alt-type-functor-1" sort_NodeLabel []
   ]
-
-private def constructorsPrefix27 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix26 ++ constructorsChunk27
 
 private def constructorsChunk28 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-alt-type-quantifier-1" sort_NodeLabel [],
@@ -664,8 +610,6 @@ private def constructorsChunk28 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-cnf-annotated" sort_NodeLabel []
   ]
 
-private def constructorsPrefix28 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix27 ++ constructorsChunk28
-
 private def constructorsChunk29 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-cnf-disjunction" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-cnf-formula" sort_NodeLabel [],
@@ -684,8 +628,6 @@ private def constructorsChunk29 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-defined-functor" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-defined-infix-pred" sort_NodeLabel []
   ]
-
-private def constructorsPrefix29 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix28 ++ constructorsChunk29
 
 private def constructorsChunk30 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-defined-term" sort_NodeLabel [],
@@ -706,8 +648,6 @@ private def constructorsChunk30 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-fof-defined-infix-formula" sort_NodeLabel []
   ]
 
-private def constructorsPrefix30 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix29 ++ constructorsChunk30
-
 private def constructorsChunk31 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-fof-defined-plain-formula" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-fof-defined-plain-term" sort_NodeLabel [],
@@ -726,8 +666,6 @@ private def constructorsChunk31 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-fof-sequent" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-fof-system-atomic-formula" sort_NodeLabel []
   ]
-
-private def constructorsPrefix31 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix30 ++ constructorsChunk31
 
 private def constructorsChunk32 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-fof-system-term" sort_NodeLabel [],
@@ -748,8 +686,6 @@ private def constructorsChunk32 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-gentzen-arrow" sort_NodeLabel []
   ]
 
-private def constructorsPrefix32 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix31 ++ constructorsChunk32
-
 private def constructorsChunk33 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-identical" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-include" sort_NodeLabel [],
@@ -768,8 +704,6 @@ private def constructorsChunk33 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-nhf-parameter-list" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-nonassoc-connective" sort_NodeLabel []
   ]
-
-private def constructorsPrefix33 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix32 ++ constructorsChunk33
 
 private def constructorsChunk34 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-nothing" sort_NodeLabel [],
@@ -790,8 +724,6 @@ private def constructorsChunk34 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-source" sort_NodeLabel []
   ]
 
-private def constructorsPrefix34 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix33 ++ constructorsChunk34
-
 private def constructorsChunk35 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-sources" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-space-name" sort_NodeLabel [],
@@ -810,8 +742,6 @@ private def constructorsChunk35 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-tff-atom-typing-list" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-tff-atomic-formula" sort_NodeLabel []
   ]
-
-private def constructorsPrefix35 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix34 ++ constructorsChunk35
 
 private def constructorsChunk36 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-tff-atomic-type" sort_NodeLabel [],
@@ -832,8 +762,6 @@ private def constructorsChunk36 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-tff-prefix-unary" sort_NodeLabel []
   ]
 
-private def constructorsPrefix36 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix35 ++ constructorsChunk36
-
 private def constructorsChunk37 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-tff-preunit-formula" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-tff-quantified-formula" sort_NodeLabel [],
@@ -852,8 +780,6 @@ private def constructorsChunk37 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-tff-unitary-term" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-tff-unitary-type" sort_NodeLabel []
   ]
-
-private def constructorsPrefix37 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix36 ++ constructorsChunk37
 
 private def constructorsChunk38 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-tff-variable" sort_NodeLabel [],
@@ -874,8 +800,6 @@ private def constructorsChunk38 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-thf-binary-assoc" sort_NodeLabel []
   ]
 
-private def constructorsPrefix38 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix37 ++ constructorsChunk38
-
 private def constructorsChunk39 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-thf-binary-formula" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-thf-binary-nonassoc" sort_NodeLabel [],
@@ -894,8 +818,6 @@ private def constructorsChunk39 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-thf-let-defn-list" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-thf-let-defns" sort_NodeLabel []
   ]
-
-private def constructorsPrefix39 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix38 ++ constructorsChunk39
 
 private def constructorsChunk40 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-thf-let-types" sort_NodeLabel [],
@@ -916,8 +838,6 @@ private def constructorsChunk40 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-thf-typed-variable" sort_NodeLabel []
   ]
 
-private def constructorsPrefix40 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix39 ++ constructorsChunk40
-
 private def constructorsChunk41 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-thf-unary-connective" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-thf-unary-formula" sort_NodeLabel [],
@@ -936,8 +856,6 @@ private def constructorsChunk41 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-tptp92-txf-let" sort_NodeLabel [],
     constructor "tptp-cst:label-tptp92-txf-let-defn" sort_NodeLabel []
   ]
-
-private def constructorsPrefix41 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix40 ++ constructorsChunk41
 
 private def constructorsChunk42 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:label-tptp92-txf-let-defn-list" sort_NodeLabel [],
@@ -958,8 +876,6 @@ private def constructorsChunk42 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:label-upper-word" sort_NodeLabel []
   ]
 
-private def constructorsPrefix42 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix41 ++ constructorsChunk42
-
 private def constructorsChunk43 : List (IndexedConstructorSignature.Constructor types) := [
     constructor "tptp-cst:nil" sort_SyntaxTree [],
     constructor "tptp-cst:node" sort_SyntaxTree [parameter "label" sort_NodeLabel, parameter "payload" sort_SyntaxTree],
@@ -969,9 +885,22 @@ private def constructorsChunk43 : List (IndexedConstructorSignature.Constructor 
     constructor "tptp-cst:spanned-node" sort_SyntaxTree [parameter "label" sort_NodeLabel, parameter "start" sort_Integer, parameter "stop" sort_Integer, parameter "payload" sort_SyntaxTree]
   ]
 
-private def constructorsPrefix43 : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix42 ++ constructorsChunk43
+certified_label_chunks constructorChunks as constructorLabelOrder
+  via (fun row : IndexedConstructorSignature.Constructor types => row.label) from [
+  constructorsChunk0, constructorsChunk1, constructorsChunk2, constructorsChunk3,
+  constructorsChunk4, constructorsChunk5, constructorsChunk6, constructorsChunk7,
+  constructorsChunk8, constructorsChunk9, constructorsChunk10, constructorsChunk11,
+  constructorsChunk12, constructorsChunk13, constructorsChunk14, constructorsChunk15,
+  constructorsChunk16, constructorsChunk17, constructorsChunk18, constructorsChunk19,
+  constructorsChunk20, constructorsChunk21, constructorsChunk22, constructorsChunk23,
+  constructorsChunk24, constructorsChunk25, constructorsChunk26, constructorsChunk27,
+  constructorsChunk28, constructorsChunk29, constructorsChunk30, constructorsChunk31,
+  constructorsChunk32, constructorsChunk33, constructorsChunk34, constructorsChunk35,
+  constructorsChunk36, constructorsChunk37, constructorsChunk38, constructorsChunk39,
+  constructorsChunk40, constructorsChunk41, constructorsChunk42, constructorsChunk43
+]
 
-def constructors : List (IndexedConstructorSignature.Constructor types) := constructorsPrefix43
+def constructors : List (IndexedConstructorSignature.Constructor types) := constructorChunks.flatten
 
 def language : LanguageDef :=
   IndexedConstructorSignature.language
@@ -980,6 +909,7 @@ def language : LanguageDef :=
 private theorem typesNamesIncreasing :
     List.IsChain (fun first second : String => first < second)
       (types.map (·.name)) := by
+  apply Mettapedia.Data.List.isChain_of_checkAdjacent
   decide +kernel
 
 private theorem typesNodup :
@@ -992,7 +922,8 @@ private theorem typesNodup :
 private theorem constructorsNamesIncreasing :
     List.IsChain (fun first second : String => first < second)
       (constructors.map (·.label)) := by
-  decide +kernel
+  rw [constructors, List.map_flatten]
+  exact constructorLabelOrder
 
 private theorem constructorsNodup :
     (constructors.map (·.label)).Nodup := by
@@ -1039,16 +970,9 @@ def theory : Mettapedia.GSLT.GSLT :=
     (ReductionRespectsEquations.of_equation_free rfl)
 
 theorem theory_no_step (source target : Pattern) :
-    ¬ theory.Step source target := by
-  intro reduction
-  unfold theory at reduction
-  rw [languageGSLT_step] at reduction
-  unfold langReducesUsing at reduction
-  rcases reduction with ⟨_, step⟩
-  cases step with
-  | rule ruleMember =>
-      change _ ∈ ([] : List RewriteRule) at ruleMember
-      simp at ruleMember
+    ¬ theory.Step source target :=
+  languageGSLT_no_step_of_no_rewrites (language := language)
+    (laws := ReductionRespectsEquations.of_equation_free rfl) rfl
 
 def stepDecision : EffectiveStructure.StepDecision theory where
   decideStep _ _ := false

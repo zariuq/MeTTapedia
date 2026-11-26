@@ -1,6 +1,6 @@
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Bridges.Execution
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Bridges.Transitions
-import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.RulesAsRows.Bisimulation
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.RuleSyntax.Reflection.Bisimulation
 
 /-!
 # Stored rule interpretation composes through actual operational arrows
@@ -17,7 +17,7 @@ set_option autoImplicit false
 namespace Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Interface.Bridges.StoredRules
 
 open Mettapedia.GSLT Mettapedia.GSLT.IndexedOperational
-open FragmentsOfTheStep.TransitionMaps RuleSyntax RuleSyntax.RulesAsRows
+open FragmentsOfTheStep.TransitionMaps RuleSyntax RuleSyntax.Reflection
 
 variable {O : Type*} [DecidableEq O] {F : Set (Rule Tm)} (closed : ClosedFragment F)
 

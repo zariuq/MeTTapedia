@@ -321,17 +321,8 @@ theorem typed_condition_finishes (dispatch : GroundedDispatch) (policy : Policy)
         (final (Space.ofList ifProgram) emitted) →
       emitted.map (fun r => r.1.erase) = [badArg] :=
     fun emitted run => five_source_scoped (complete_source run)
-  refine ⟨PublishesInOrder.bag ⟨?_, every⟩, FinishesInOrder.bag ⟨fine.acc, fun y path => ?_⟩,
-    petta_five⟩
-  · obtain ⟨space, emitted, path⟩ := IfAtFrames.Fine.exists_final fine
-    have same : space = Space.ofList ifProgram := space_fixed path
-    subst same
-    exact ⟨emitted, path⟩
-  · rcases (fine.reaches path).progress with moves | ⟨space, emitted, rfl⟩
-    · exact Or.inl moves
-    · have same : space = Space.ofList ifProgram := space_fixed path
-      subst same
-      exact Or.inr ⟨emitted, rfl, every emitted path⟩
+  have finishes := FinishesInOrder.of_fine fine every
+  exact ⟨finishes.publishes.bag, finishes.bag, petta_five⟩
 
 #print axioms five_checks_scoped
 #print axioms five_selection_scoped

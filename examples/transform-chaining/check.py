@@ -91,8 +91,9 @@ def check(args, work):
     ordinary, _ = run([*cetta, HERE / "compose.metta"], environment=env)
     family = tagged(ordinary, "prepared-family")
     route = tagged(ordinary, "prepared-route")
-    assert len(family) == 2 and len(route) == 1 and tagged(ordinary, "reversed") == ()
+    assert len(family) == len(route) == 2 and tagged(ordinary, "reversed") == ()
     assert [row[4:6] for row in family] == [("l1", "r1"), ("l2", "r1")]
+    assert [row[4:6] for row in route] == [("l3", "r2"), ("l4", "r2")]
     assert family == tagged(ordinary, "ordinary-family") and route == tagged(ordinary, "ordinary-route")
     assert tagged(ordinary, "first-family") == family[0]
 
@@ -101,40 +102,42 @@ def check(args, work):
     assert len(outcomes) == 1 and "(finished true)" in tcalc
     derived = [row for row in outcomes[0] if row[0] == "holds" and isinstance(row[1], tuple)]
     expected = []
-    for relation, answers in [(("then", "mother", "father"), family), (("then", "rail", "ferry"), route)]:
+    examples = {("mother", "father"): family, ("rail", "ferry"): route}
+    for (r, s), answers in examples.items():
         for tag, x, mid, z, i, j, lp, rp, ls, rs in answers:
             assert tag == "witness"
-            expected.append(("holds", relation, x, z, ("via", mid, ("leaf", i, lp, ls), ("leaf", j, rp, rs))))
-    composed, = tagged(ordinary, "nested")
-    assert composed == ("via", "west", expected[-1][-1], ("leaf", "r3", "bus-proof", "schedule"))
-    expected.append(("holds", ("then", ("then", "rail", "ferry"), "bus"), "east", "pier", composed))
+            expected.append(("holds", ("then", r, s), x, z, ("via", mid, ("leaf", i, lp, ls), ("leaf", j, rp, rs))))
+    nested = tuple(("via", "west", row[-1], ("leaf", "r3", "bus-proof", "schedule"))
+                   for row in expected if row[1] == ("then", "rail", "ferry"))
+    assert tagged(ordinary, "nested") == nested
+    expected.extend(("holds", ("then", ("then", "rail", "ferry"), "bus"), "east", "pier", composed)
+                    for composed in nested)
     assert sorted(derived, key=repr) == sorted(expected, key=repr)
 
     # Decode the actual tcalc child proofs and middle at the lowering boundary.
-    kernel_rows = []
+    kernel_rows = {relation: [] for relation in examples}
     for _, rel, x, z, (via, mid, left, right) in derived:
-        if rel == ("then", "mother", "father"):
+        relation = rel[1:]
+        if relation in kernel_rows:
             assert via == "via" and left[0] == right[0] == "leaf"
-            kernel_rows.append((x, mid, z, left[1], right[1], left[2], right[2], left[3], right[3]))
-    assert sorted(kernel_rows) == sorted(row[1:] for row in family)
-    damaged = list(kernel_rows[0])
-    damaged[1] = "alice"
-    swapped = list(kernel_rows[0])
-    swapped[5:7] = reversed(swapped[5:7])
-    forged_id = list(kernel_rows[0])
-    forged_id[3] = "unissued"
-    forged_source = list(kernel_rows[0])
-    forged_source[7] = "independent-report"
+            kernel_rows[relation].append((x, mid, z, left[1], right[1], left[2], right[2], left[3], right[3]))
     facts = [term(line) for line in (HERE / "compose.tcalc").read_text().splitlines() if line.startswith("(holds ")]
     requests = [("premise", rel, x, z, *leaf[1:]) for _, rel, x, z, leaf in facts]
-    requests.extend(("check", "mother", "father", *fields)
-                    for fields in [*kernel_rows, damaged, swapped, forged_id, forged_source])
+    expected_checks = []
+    for relation, rows in kernel_rows.items():
+        assert sorted(rows) == sorted(row[1:] for row in examples[relation])
+        x, mid, z, i, j, lp, rp, ls, rs = rows[0]
+        mutations = [(x, x, z, i, j, lp, rp, ls, rs), (x, mid, z, i, j, rp, lp, ls, rs),
+                     (x, mid, z, "unissued", j, lp, rp, ls, rs),
+                     (x, mid, z, i, j, lp, rp, "unissued-source", rs)]
+        requests.extend(("check", *relation, *fields) for fields in [*rows, *mutations])
+        expected_checks.extend("accepted " + " ".join([i, j, ls, rs])
+                               for _, _, _, i, j, _, _, ls, rs in rows)
+        expected_checks.extend(["rejected", "rejected", "invalid-occurrence", "invalid-occurrence"])
     kernel_input = "".join("\t".join(fields) + "\n" for fields in requests)
     checked, _ = run(["lake", "env", "lean", "-DwarningAsError=true", "--run",
                       HERE / "CheckReceipts.lean"], cwd=LEAN, data=kernel_input)
-    assert checked.splitlines() == ["accepted " + " ".join([i, j, ls, rs])
-                                     for _, _, _, i, j, _, _, ls, rs in kernel_rows] + [
-                                         "rejected", "rejected", "invalid-occurrence", "invalid-occurrence"]
+    assert checked.splitlines() == expected_checks
 
     for ref in ("0", "1"):
         visible, _ = run([*cetta, HERE / "visibility.metta"],
@@ -182,7 +185,7 @@ def check(args, work):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__, epilog=(
-        "Build the Lean module Mettapedia.Languages.MeTTa.PrimeCandidates.DeclarationBased.TransformChain "
+        "Build the DeclarationBased.TransformChain and DeclarationBased.TransformChainTransport Lean modules "
         "in the mettapedia Lake project before running the replay."))
     for option, help_text in (
         ("cetta", "CeTTa executable with the PeTTa extended and tcalc languages"),

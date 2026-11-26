@@ -112,17 +112,17 @@ mutual
       CostStaticSemanticLeafSafeAt support
         (rhoCanonicalOccurrenceAvailable reflectiveAvailable context)
           binderImage parameter := by
-    cases plan with
-    | bvar sourceIndex lookup correspondence availableScope =>
+    match (generalizing := true) pattern, sourceType, plan with
+    | _, _, .bvar sourceIndex lookup correspondence availableScope =>
         cases planOccurrence
-    | @fvar sourceBound targetBound sourceAvailable thinning outer sourceName
+    | _, _, @CostStaticRegionPlan.fvar _ _ _ sourceBound targetBound sourceAvailable thinning outer sourceName
         sourceType targetLookup =>
         cases planOccurrence with
         | sourceFVar =>
             simpa [rhoCanonicalOccurrenceAvailable] using
               sourceLeafSemanticSafeAt targetLookup targetSafe parameter
                 nameEquality
-    | boundaryApplication constructor rendered outsideCurrent certified
+    | _, _, .boundaryApplication constructor rendered outsideCurrent certified
         certifies =>
         cases planOccurrence with
         | boundaryApplication =>
@@ -134,7 +134,7 @@ mutual
               boundaryLeafSemanticSafeAt certified.typed globalMembership
                 certified.content_eq certified.targetType_eq targetSafe
                   childrenPreserve parameter nameEquality
-    | application constructor rendered current preimage notBare children =>
+    | _, _, .application constructor rendered current preimage notBare children =>
         obtain ⟨before, child, after, inner, decomposition, contextEquality,
             ⟨nested⟩⟩ :=
           planOccurrence_application_split_context planOccurrence
@@ -153,12 +153,12 @@ mutual
                 nameEquality childrenPreserve
         rw [contextEquality]
         simpa [rhoCanonicalOccurrenceAvailable] using leafSafe
-    | lambda bodyPlan =>
+    | _, _, .lambda bodyPlan =>
         simp [CostStaticRegionPlan.abstractPattern] at frameFree
-    | multiLambda bodyPlan =>
+    | _, _, .multiLambda bodyPlan =>
         simp [CostStaticRegionPlan.abstractPattern,
           WellSorted.ReflectiveSubstitutionBinderFree] at frameFree
-    | collection choice selected children =>
+    | _, _, .collection choice selected children =>
         obtain ⟨before, child, after, inner, decomposition, contextEquality,
             ⟨nested⟩⟩ :=
           planOccurrence_collection_split_context planOccurrence
@@ -178,7 +178,7 @@ mutual
                 nameEquality childrenPreserve
         rw [contextEquality]
         simpa [rhoCanonicalOccurrenceAvailable] using leafSafe
-    | boundaryCollection currentRejected oppositeChoice oppositeSelected
+    | _, _, .boundaryCollection currentRejected oppositeChoice oppositeSelected
         certified certifies =>
         cases planOccurrence with
         | boundaryCollection =>
@@ -190,7 +190,7 @@ mutual
               boundaryLeafSemanticSafeAt certified.typed globalMembership
                 certified.content_eq certified.targetType_eq targetSafe
                   childrenPreserve parameter nameEquality
-  termination_by 3 * sizeOf pattern + 2
+  termination_by structural plan
 
   /-- Ordered-argument companion to exact quote-local leaf safety. -/
   theorem CostStaticArgumentPlan.semanticLeafSafeAt_quoteLocal
@@ -239,9 +239,9 @@ mutual
       CostStaticSemanticLeafSafeAt support
         (rhoCanonicalOccurrenceAvailable reflectiveAvailable inner)
           binderImage parameter := by
-    cases plan with
-    | nil => simp [CostStaticArgumentPlan.decorations] at decomposition
-    | cons representation parameterType head tail =>
+    match (generalizing := true) arguments, parameters, plan with
+    | _, _, .nil => simp [CostStaticArgumentPlan.decorations] at decomposition
+    | _, _, .cons representation parameterType head tail =>
         obtain ⟨_, _, headSafe, tailSafe⟩ :=
           argumentsSafeAt_cons_map (source := rhoCIGSLT) (color := color)
             parameterType argumentsSafe
@@ -290,7 +290,7 @@ mutual
               tail freeParts.2 collectionDeterministic globalTable values
                 tailSubset tailSafe decomposition.2 nested parameter
                   nameEquality childrenPreserve
-  termination_by 3 * sizeOf arguments + 1
+  termination_by structural plan
 
   /-- Homogeneous-collection companion to exact quote-local leaf safety. -/
   theorem CostStaticElementPlan.semanticLeafSafeAt_quoteLocal
@@ -340,9 +340,9 @@ mutual
       CostStaticSemanticLeafSafeAt support
         (rhoCanonicalOccurrenceAvailable reflectiveAvailable inner)
           binderImage parameter := by
-    cases plan with
-    | nil => simp [CostStaticElementPlan.decorations] at decomposition
-    | cons head tail =>
+    match (generalizing := true) elements, sourceElementType, plan with
+    | _, _, .nil => simp [CostStaticElementPlan.decorations] at decomposition
+    | _, _, .cons head tail =>
         obtain ⟨_, _, headSafe, tailSafe⟩ :=
           elementsSafeAt_cons (source := rhoCIGSLT) elementsSafe
         have freeParts :
@@ -390,10 +390,7 @@ mutual
               tail freeParts.2 collectionDeterministic globalTable values
                 tailSubset tailSafe decomposition.2 nested parameter
                   nameEquality childrenPreserve
-  termination_by 3 * sizeOf elements + 1
-  decreasing_by
-    all_goals subst_vars
-    all_goals simp <;> omega
+  termination_by structural plan
 end
 
 /-- Every selected semantic atom is safe at the quote-local availability of
@@ -592,6 +589,39 @@ theorem rhoCanonicalListOccurrenceSupportBounded_of_collection
     CostStaticFVarListOccurrence.inCollection,
     rhoCanonicalOccurrenceAvailable] using selected
 
+/-- Recover support bounds for an application from the exact argument selected
+by its occurrence. A quote starts the selected argument with empty availability. -/
+private theorem rhoCanonicalOccurrenceSupportBounded_apply
+    {support : ContextSupport.Support} {available : List TypeExpr}
+    {constructor : String} {arguments : List Pattern}
+    (bounded : RhoCanonicalListOccurrenceSupportBounded support
+      (if ReflectiveContextSupport.isQuoteConstructor rhoReflectionProfile
+        constructor then [] else available) arguments) :
+    RhoCanonicalOccurrenceSupportBounded support available (.apply constructor arguments) := by
+  intro occurrence
+  let view := Classical.choice (CostApplyOccurrenceView.nonempty constructor arguments occurrence)
+  have selected := bounded (applyOccurrenceArgument constructor arguments occurrence)
+  change support occurrence.name <:+ rhoCanonicalOccurrenceAvailable
+    (if ReflectiveContextSupport.isQuoteConstructor rhoReflectionProfile
+      constructor then [] else available) view.inner at selected
+  rw [view.context_eq]
+  by_cases quoted : ReflectiveContextSupport.isQuoteConstructor rhoReflectionProfile constructor = true <;>
+    simpa [rhoCanonicalOccurrenceAvailable, rhoCIGSLT_reflection_eq_rhoReflectionProfile, quoted]
+      using selected
+
+/-- Recover support bounds for a collection from its selected finite position. -/
+private theorem rhoCanonicalOccurrenceSupportBounded_collection
+    {support : ContextSupport.Support} {available : List TypeExpr}
+    {collectionType : CollType} {elements : List Pattern} {rest : Option String}
+    (bounded : RhoCanonicalListOccurrenceSupportBounded support available elements) :
+    RhoCanonicalOccurrenceSupportBounded support available (.collection collectionType elements rest) := by
+  intro occurrence
+  let view := collectionOccurrenceView collectionType elements rest occurrence
+  have selected := bounded (collectionOccurrenceMember collectionType elements rest occurrence)
+  change support occurrence.name <:+ rhoCanonicalOccurrenceAvailable available view.inner at selected
+  rw [view.context_eq]
+  simpa only [rhoCanonicalOccurrenceAvailable] using selected
+
 theorem rhoCanonicalOccurrenceSupportBounded_head
     (support : ContextSupport.Support) (available : List TypeExpr)
     (head : Pattern) (tail : List Pattern)
@@ -631,9 +661,9 @@ mutual
       (bounded : RhoCanonicalOccurrenceSupportBounded support available pattern) :
       typed.ReflectiveSupportSafeAt rhoReflectionProfile support available
         binderImage := by
-    cases typed with
-    | bvar lookup => exact .bvar lookup available
-    | @fvar bound name type lookup =>
+    match (generalizing := true) pattern, type, typed with
+    | _, _, .bvar lookup => exact .bvar lookup available
+    | _, _, @WellSorted.HasType.fvar _ _ bound name type lookup =>
         have suffix := bounded
           ({ name := name
              context := .hole
@@ -641,7 +671,7 @@ mutual
         exact .fvar lookup available (by
           exact List.suffix_iff_exists_eq_append.mp
             (by simpa [rhoCanonicalOccurrenceAvailable] using suffix))
-    | @constructor bound rule arguments membership notBare argumentsTyped =>
+    | _, _, @WellSorted.HasType.constructor _ _ bound rule arguments membership notBare argumentsTyped =>
         have argumentsFree : WellSorted.ReflectiveSubstitutionBinderFreeList
             arguments = true := by
           simpa [WellSorted.ReflectiveSubstitutionBinderFree] using frameFree
@@ -668,13 +698,13 @@ mutual
                 (by simpa [ordinary] using argumentsBounded)
           exact .constructorOrdinary (membership := membership)
             (notBare := notBare) ordinary argumentsSafe
-    | lambda bodyTyped =>
+    | _, _, .lambda bodyTyped =>
         simp [WellSorted.ReflectiveSubstitutionBinderFree] at frameFree
-    | multiLambda bodyTyped =>
+    | _, _, .multiLambda bodyTyped =>
         simp [WellSorted.ReflectiveSubstitutionBinderFree] at frameFree
-    | subst bodyTyped replacementTyped =>
+    | _, _, .subst bodyTyped replacementTyped =>
         simp [WellSorted.ReflectiveSubstitutionBinderFree] at frameFree
-    | @collection bound collectionType elements rest elementType elementsTyped =>
+    | _, _, @WellSorted.HasType.collection _ _ bound collectionType elements rest elementType elementsTyped =>
         have elementsFree : WellSorted.ReflectiveSubstitutionBinderFreeList
             elements = true := by
           simpa [WellSorted.ReflectiveSubstitutionBinderFree] using frameFree
@@ -684,7 +714,7 @@ mutual
         exact .collection
           (WellSorted.ElementsHaveType.rhoCanonicalFrame_supportSafe_of_occurrences
             elementsTyped elementsFree elementsBounded)
-    | @collectionConstructor bound rule parameterName collectionType elements
+    | _, _, @WellSorted.HasType.collectionConstructor _ _ bound rule parameterName collectionType elements
         rest elementType membership parameterShape elementsTyped =>
         have elementsFree : WellSorted.ReflectiveSubstitutionBinderFreeList
             elements = true := by
@@ -696,7 +726,7 @@ mutual
           (parameterShape := parameterShape)
           (WellSorted.ElementsHaveType.rhoCanonicalFrame_supportSafe_of_occurrences
             elementsTyped elementsFree elementsBounded)
-  termination_by 3 * sizeOf pattern + 2
+  termination_by structural typed
 
   /-- Ordered-argument companion to canonical occurrence reconstruction. -/
   theorem WellSorted.ArgumentsHaveTypes.rhoCanonicalFrame_supportSafe_of_occurrences
@@ -712,9 +742,9 @@ mutual
         arguments) :
       typed.ReflectiveSupportSafeAt rhoReflectionProfile support available
         binderImage := by
-    cases typed with
-    | nil => exact .nil bound available
-    | @cons bound argument arguments parameter parameters expected
+    match (generalizing := true) arguments, parameters, typed with
+    | _, _, .nil => exact .nil bound available
+    | _, _, @WellSorted.ArgumentsHaveTypes.cons _ _ bound argument arguments parameter parameters expected
         representation parameterType argumentTyped argumentsTyped =>
         have freeParts :
             WellSorted.ReflectiveSubstitutionBinderFree argument = true ∧
@@ -731,7 +761,7 @@ mutual
             argumentsTyped freeParts.2
               (rhoCanonicalListOccurrenceSupportBounded_tail support available
                 argument arguments bounded))
-  termination_by 3 * sizeOf arguments + 1
+  termination_by structural typed
 
   /-- Homogeneous-element companion to canonical occurrence reconstruction. -/
   theorem WellSorted.ElementsHaveType.rhoCanonicalFrame_supportSafe_of_occurrences
@@ -747,9 +777,9 @@ mutual
         elements) :
       typed.ReflectiveSupportSafeAt rhoReflectionProfile support available
         binderImage := by
-    cases typed with
-    | nil => exact .nil bound elementType available
-    | @cons bound element elements elementType elementTyped elementsTyped =>
+    match (generalizing := true) elements, elementType, typed with
+    | _, _, .nil bound elementType => exact .nil bound elementType available
+    | _, _, @WellSorted.ElementsHaveType.cons _ _ bound element elements elementType elementTyped elementsTyped =>
         have freeParts :
             WellSorted.ReflectiveSubstitutionBinderFree element = true ∧
               WellSorted.ReflectiveSubstitutionBinderFreeList
@@ -764,10 +794,7 @@ mutual
             elementsTyped freeParts.2
               (rhoCanonicalListOccurrenceSupportBounded_tail support available
                 element elements bounded))
-  termination_by 3 * sizeOf elements + 1
-  decreasing_by
-    all_goals subst_vars
-    all_goals simp <;> omega
+  termination_by structural typed
 end
 
 set_option maxRecDepth 2000 in
@@ -786,123 +813,67 @@ mutual
         available binderImage)
       (frameFree : WellSorted.ReflectiveSubstitutionBinderFree pattern = true) :
       RhoCanonicalOccurrenceSupportBounded support available pattern := by
-    intro occurrence
-    cases safe with
-    | bvar =>
+    match (generalizing := true) pattern, type, typed, available, binderImage, safe with
+    | _, _, _, _, _, .bvar _ _ =>
+        intro occurrence
         rcases occurrence with ⟨name, context, selected⟩
         cases selected
-    | @fvar bound name type lookup currentAvailable binderImage shape =>
+    | _, _, _, _, _, @WellSorted.HasType.ReflectiveSupportSafeAt.fvar _ _ _ _ bound name type lookup currentAvailable binderImage shape =>
+        intro occurrence
         rcases occurrence with ⟨occurrenceName, context, selected⟩
         cases selected
         simpa [rhoCanonicalOccurrenceAvailable] using
           List.suffix_iff_exists_eq_append.mpr shape
-    | @constructorQuote bound rule arguments membership notBare argumentsTyped
+    | _, _, _, _, _, @WellSorted.HasType.ReflectiveSupportSafeAt.constructorQuote _ _ _ _ bound rule arguments membership notBare argumentsTyped
         currentAvailable binderImage quoted argumentsSafe =>
+        intro occurrence
         have argumentsFree : WellSorted.ReflectiveSubstitutionBinderFreeList
             arguments = true := by
           simpa [WellSorted.ReflectiveSubstitutionBinderFree] using frameFree
         have argumentsBounded :=
           WellSorted.ArgumentsHaveTypes.ReflectiveSupportSafeAt.rhoCanonicalFrame_supportBounded
             argumentsSafe argumentsFree
-        let view := Classical.choice
-          (CostApplyOccurrenceView.nonempty rule.label arguments occurrence)
-        let position : Fin arguments.length := ⟨view.before.length, by
-          have lengths := congrArg List.length view.arguments_eq
-          simp only [List.length_append, List.length_cons] at lengths
-          omega⟩
-        have argumentEquality : arguments.get position = view.argument :=
-          List.getElem_of_append view.arguments_eq rfl
-        let nested : CostStaticFVarListOccurrence arguments :=
-          { position := position
-            occurrence :=
-              { name := occurrence.name
-                context := view.inner
-                selected := argumentEquality.symm ▸ view.selected } }
-        have suffix := argumentsBounded nested
-        rw [view.context_eq]
-        simpa [rhoCanonicalOccurrenceAvailable, rhoCIGSLT_reflection_eq_rhoReflectionProfile, quoted]
-          using suffix
-    | @constructorOrdinary bound rule arguments membership notBare
+        exact rhoCanonicalOccurrenceSupportBounded_apply
+          (by simpa [quoted] using argumentsBounded) occurrence
+    | _, _, _, _, _, @WellSorted.HasType.ReflectiveSupportSafeAt.constructorOrdinary _ _ _ _ bound rule arguments membership notBare
         argumentsTyped currentAvailable binderImage ordinary argumentsSafe =>
+        intro occurrence
         have argumentsFree : WellSorted.ReflectiveSubstitutionBinderFreeList
             arguments = true := by
           simpa [WellSorted.ReflectiveSubstitutionBinderFree] using frameFree
         have argumentsBounded :=
           WellSorted.ArgumentsHaveTypes.ReflectiveSupportSafeAt.rhoCanonicalFrame_supportBounded
             argumentsSafe argumentsFree
-        let view := Classical.choice
-          (CostApplyOccurrenceView.nonempty rule.label arguments occurrence)
-        let position : Fin arguments.length := ⟨view.before.length, by
-          have lengths := congrArg List.length view.arguments_eq
-          simp only [List.length_append, List.length_cons] at lengths
-          omega⟩
-        have argumentEquality : arguments.get position = view.argument :=
-          List.getElem_of_append view.arguments_eq rfl
-        let nested : CostStaticFVarListOccurrence arguments :=
-          { position := position
-            occurrence :=
-              { name := occurrence.name
-                context := view.inner
-                selected := argumentEquality.symm ▸ view.selected } }
-        have suffix := argumentsBounded nested
-        rw [view.context_eq]
-        simpa [rhoCanonicalOccurrenceAvailable, rhoCIGSLT_reflection_eq_rhoReflectionProfile, ordinary]
-          using suffix
-    | lambda => simp [WellSorted.ReflectiveSubstitutionBinderFree] at frameFree
-    | multiLambda => simp [WellSorted.ReflectiveSubstitutionBinderFree] at frameFree
-    | subst => simp [WellSorted.ReflectiveSubstitutionBinderFree] at frameFree
-    | @collection bound collectionType elements rest elementType elementsTyped
+        exact rhoCanonicalOccurrenceSupportBounded_apply
+          (by simpa [ordinary] using argumentsBounded) occurrence
+    | _, _, _, _, _, .lambda _ =>
+        simp [WellSorted.ReflectiveSubstitutionBinderFree] at frameFree
+    | _, _, _, _, _, .multiLambda _ =>
+        simp [WellSorted.ReflectiveSubstitutionBinderFree] at frameFree
+    | _, _, _, _, _, .subst _ _ =>
+        simp [WellSorted.ReflectiveSubstitutionBinderFree] at frameFree
+    | _, _, _, _, _, @WellSorted.HasType.ReflectiveSupportSafeAt.collection _ _ _ _ bound collectionType elements rest elementType elementsTyped
         currentAvailable binderImage elementsSafe =>
+        intro occurrence
         have elementsFree : WellSorted.ReflectiveSubstitutionBinderFreeList
             elements = true := by
           simpa [WellSorted.ReflectiveSubstitutionBinderFree] using frameFree
         have elementsBounded :=
           WellSorted.ElementsHaveType.ReflectiveSupportSafeAt.rhoCanonicalFrame_supportBounded
             elementsSafe elementsFree
-        let view := collectionOccurrenceView collectionType elements rest
-          occurrence
-        let position : Fin elements.length := ⟨view.before.length, by
-          have lengths := congrArg List.length view.patterns_eq
-          simp only [List.length_append, List.length_cons] at lengths
-          omega⟩
-        have elementEquality : elements.get position = view.member :=
-          List.getElem_of_append view.patterns_eq rfl
-        let nested : CostStaticFVarListOccurrence elements :=
-          { position := position
-            occurrence :=
-              { name := occurrence.name
-                context := view.inner
-                selected := elementEquality.symm ▸ view.selected } }
-        have suffix := elementsBounded nested
-        rw [view.context_eq]
-        simpa [rhoCanonicalOccurrenceAvailable] using suffix
-    | @collectionConstructor bound rule parameterName collectionType elements
+        exact rhoCanonicalOccurrenceSupportBounded_collection elementsBounded occurrence
+    | _, _, _, _, _, @WellSorted.HasType.ReflectiveSupportSafeAt.collectionConstructor _ _ _ _ bound rule parameterName collectionType elements
         rest elementType membership parameterShape elementsTyped
         currentAvailable binderImage elementsSafe =>
+        intro occurrence
         have elementsFree : WellSorted.ReflectiveSubstitutionBinderFreeList
             elements = true := by
           simpa [WellSorted.ReflectiveSubstitutionBinderFree] using frameFree
         have elementsBounded :=
           WellSorted.ElementsHaveType.ReflectiveSupportSafeAt.rhoCanonicalFrame_supportBounded
             elementsSafe elementsFree
-        let view := collectionOccurrenceView collectionType elements rest
-          occurrence
-        let position : Fin elements.length := ⟨view.before.length, by
-          have lengths := congrArg List.length view.patterns_eq
-          simp only [List.length_append, List.length_cons] at lengths
-          omega⟩
-        have elementEquality : elements.get position = view.member :=
-          List.getElem_of_append view.patterns_eq rfl
-        let nested : CostStaticFVarListOccurrence elements :=
-          { position := position
-            occurrence :=
-              { name := occurrence.name
-                context := view.inner
-                selected := elementEquality.symm ▸ view.selected } }
-        have suffix := elementsBounded nested
-        rw [view.context_eq]
-        simpa [rhoCanonicalOccurrenceAvailable] using suffix
-  termination_by 3 * sizeOf pattern + 2
+        exact rhoCanonicalOccurrenceSupportBounded_collection elementsBounded occurrence
+  termination_by structural safe
 
   /-- Ordered-argument companion of `rhoCanonicalFrame_supportBounded`. -/
   theorem WellSorted.ArgumentsHaveTypes.ReflectiveSupportSafeAt.rhoCanonicalFrame_supportBounded
@@ -916,12 +887,14 @@ mutual
         available binderImage)
       (frameFree : WellSorted.ReflectiveSubstitutionBinderFreeList arguments = true) :
       RhoCanonicalListOccurrenceSupportBounded support available arguments := by
-    intro occurrence
-    cases safe with
-    | nil => exact Fin.elim0 occurrence.position
-    | @cons bound argument arguments parameter parameters expected
+    match (generalizing := true) arguments, parameters, typed, available, binderImage, safe with
+    | _, _, _, _, _, .nil _ _ =>
+        intro occurrence
+        exact Fin.elim0 occurrence.position
+    | _, _, _, _, _, @WellSorted.ArgumentsHaveTypes.ReflectiveSupportSafeAt.cons _ _ _ _ bound argument arguments parameter parameters expected
         representation parameterType argumentTyped argumentsTyped
         currentAvailable binderImage argumentSafe argumentsSafe =>
+        intro occurrence
         have freeParts : WellSorted.ReflectiveSubstitutionBinderFree argument = true ∧
             WellSorted.ReflectiveSubstitutionBinderFreeList arguments = true := by
           simpa [WellSorted.ReflectiveSubstitutionBinderFreeList] using frameFree
@@ -936,7 +909,7 @@ mutual
         | zero => exact headBounded nested
         | succ tailPosition =>
             exact tailBounded ⟨tailPosition, nested⟩
-  termination_by 3 * sizeOf arguments + 1
+  termination_by structural safe
 
   /-- Collection-element companion of `rhoCanonicalFrame_supportBounded`. -/
   theorem WellSorted.ElementsHaveType.ReflectiveSupportSafeAt.rhoCanonicalFrame_supportBounded
@@ -950,11 +923,13 @@ mutual
         available binderImage)
       (frameFree : WellSorted.ReflectiveSubstitutionBinderFreeList elements = true) :
       RhoCanonicalListOccurrenceSupportBounded support available elements := by
-    intro occurrence
-    cases safe with
-    | nil => exact Fin.elim0 occurrence.position
-    | @cons bound element elements elementType elementTyped elementsTyped
+    match (generalizing := true) elements, elementType, typed, available, binderImage, safe with
+    | _, _, _, _, _, .nil _ _ _ =>
+        intro occurrence
+        exact Fin.elim0 occurrence.position
+    | _, _, _, _, _, @WellSorted.ElementsHaveType.ReflectiveSupportSafeAt.cons _ _ _ _ bound element elements elementType elementTyped elementsTyped
         currentAvailable binderImage elementSafe elementsSafe =>
+        intro occurrence
         have freeParts : WellSorted.ReflectiveSubstitutionBinderFree element = true ∧
             WellSorted.ReflectiveSubstitutionBinderFreeList elements = true := by
           simpa [WellSorted.ReflectiveSubstitutionBinderFreeList] using frameFree
@@ -969,11 +944,7 @@ mutual
         | zero => exact headBounded nested
         | succ tailPosition =>
             exact tailBounded ⟨tailPosition, nested⟩
-  termination_by 3 * sizeOf elements + 1
-
-  decreasing_by
-    all_goals subst_vars
-    all_goals simp <;> omega
+  termination_by structural safe
 end
 
 /-! ## Exact occurrence support quotient -/
@@ -1186,7 +1157,7 @@ mutual
         simp only [mapPattern, WellSorted.ReflectiveSubstitutionBinderFree]
         exact rhoReflectiveSubstitutionBinderFreeList_mapPattern symbols
           elements
-  termination_by pattern => 3 * sizeOf pattern + 2
+  termination_by structural pattern => pattern
 
   /-- List companion to binder-freedom under static symbol mapping. -/
   theorem rhoReflectiveSubstitutionBinderFreeList_mapPattern
@@ -1200,10 +1171,7 @@ mutual
           WellSorted.ReflectiveSubstitutionBinderFreeList,
           rhoReflectiveSubstitutionBinderFree_mapPattern symbols pattern,
           rhoReflectiveSubstitutionBinderFreeList_mapPattern symbols patterns]
-  termination_by patterns => 3 * sizeOf patterns + 1
-
-  decreasing_by
-    all_goals simp_wf <;> omega
+  termination_by structural patterns => patterns
 end
 
 mutual
@@ -1241,7 +1209,7 @@ mutual
           WellSorted.ReflectiveSubstitutionBinderFree]
         exact rhoReflectiveSubstitutionBinderFreeList_thickenAmbientBVars
           thinning depth elements
-  termination_by pattern => 3 * sizeOf pattern + 2
+  termination_by structural pattern => pattern
 
   /-- List companion to binder-freedom under ambient-binder reinsertion. -/
   theorem rhoReflectiveSubstitutionBinderFreeList_thickenAmbientBVars
@@ -1260,10 +1228,7 @@ mutual
             thinning depth pattern,
           rhoReflectiveSubstitutionBinderFreeList_thickenAmbientBVars
             thinning depth patterns]
-  termination_by patterns => 3 * sizeOf patterns + 1
-
-  decreasing_by
-    all_goals simp_wf <;> omega
+  termination_by structural patterns => patterns
 end
 
 /-- The mapped and ambient-thickened target canonical frame retains the

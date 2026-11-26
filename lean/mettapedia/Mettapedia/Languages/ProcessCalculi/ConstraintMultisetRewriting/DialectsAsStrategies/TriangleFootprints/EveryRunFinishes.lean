@@ -125,6 +125,38 @@ theorem space_fixed {x y : HEConfig}
       | internal _ => exact ih
       | publish => exact ih
 
+/-- A reachable configuration can step or has a terminal list satisfying
+the declared observation. The list remains available to the observer. -/
+theorem Fine.progress_observing {start target : HEConfig} {observes : List Result → Prop}
+    (fine : Fine dispatch lookup policy start)
+    (path : Relation.ReflTransGen (HEStep dispatch lookup policy) start target)
+    (observation : ∀ emitted, Relation.ReflTransGen (HEStep dispatch lookup policy)
+      start ⟨start.space, .returning [], [], emitted⟩ → observes emitted) :
+    (∃ next, HEStep dispatch lookup policy target next) ∨
+      ∃ emitted : List Result, target = ⟨start.space, .returning [], [], emitted⟩ ∧
+        observes emitted := by
+  rcases (fine.reaches path).progress with moves | ⟨space, emitted, rfl⟩
+  · exact Or.inl moves
+  · have same : space = start.space := space_fixed path
+    subst space
+    exact Or.inr ⟨emitted, rfl, observation emitted path⟩
+
+/-- Following permitted steps from a fine configuration reaches a terminal
+configuration in the same space. -/
+theorem Fine.reaches_final_in_space {start : HEConfig} (fine : Fine dispatch lookup policy start) :
+    ∃ emitted : List Result, Relation.ReflTransGen (HEStep dispatch lookup policy)
+      start ⟨start.space, .returning [], [], emitted⟩ := by
+  induction fine with
+  | final => exact ⟨_, .refl⟩
+  | @step start moves _ ih =>
+      obtain ⟨next, step⟩ := moves
+      obtain ⟨emitted, path⟩ := ih next step
+      rw [space_fixed (Relation.ReflTransGen.single step)] at path
+      exact ⟨emitted, .head step path⟩
+
+#print axioms Fine.progress_observing
+#print axioms Fine.reaches_final_in_space
+
 /-! ## Continuation frames -/
 
 section Frames
@@ -1058,13 +1090,7 @@ theorem every_run_finishes_k (policy : Policy) {atoms : List Atom} (program : Ca
   obtain ⟨_, N, every⟩ := every_complete_run_k policy program settles
   have determined := (CompoundBindings.settlesK_determined (policy := policy) program settles).plain
   refine ⟨fine.acc, fun y path => ?_, N, fun n bigger => (every n bigger).1⟩
-  rcases (fine.reaches path).progress with moves | ⟨space, emitted, rfl⟩
-  · exact Or.inl moves
-  · have sameSpace := space_fixed path
-    simp only [load, Mettapedia.Languages.MeTTa.HE.RecursiveTasks.Contextual.Configuration.initial]
-      at sameSpace
-    subst sameSpace
-    exact Or.inr ⟨emitted, rfl, determined _ _ _ _ (complete_source path)⟩
+  exact fine.progress_observing path fun _ run => determined _ _ _ _ (complete_source run)
 
 /-- **A cycle defeats well-foundedness**: if every configuration satisfying `P` reaches another one
 in at least one step, then no configuration from which the step relation is well founded reaches a

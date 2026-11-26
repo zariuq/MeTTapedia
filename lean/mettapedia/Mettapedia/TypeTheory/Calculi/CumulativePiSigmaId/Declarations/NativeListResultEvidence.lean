@@ -1,4 +1,8 @@
 import Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeListResultView
+import Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax
+import Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorReplayTemplates
+import Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts
+import Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts
 
 /-! Generated finite evidence; independently replayed by the checking companion. -/
 
@@ -7,587 +11,78 @@ namespace Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.NativeListResultView
 open Presentation Declaration
 open Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId
 
+open Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorReplayTemplates
+
 private abbrev S (n : Nat) := StructuralConversionCode.StepCode Tower.Head NativeListResultView.decoder.Code n
 private abbrev C (n : Nat) := StructuralConversionCode.Code Tower.Head NativeListResultView.decoder.Code n
 private abbrev T (n : Nat) := StructuralTypingReplay.Code Tower.Head C n
 private abbrev X (n : Nat) := StructuralTypingReplay.ContextCode Tower.Head C n
 
-private def e0 : X 0 :=
-.nil
-
-private def e1 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-            (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-            (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))))
-
-private def e2 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-
-private def e3 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))
-
-private def e4 : T 0 :=
-.headType
-
-private def e5 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))
-
-private def e6 : T 1 :=
-.headType
-
-private def e7 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-
-private def e8 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-
-private def e9 : Tower.Tm 2 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-
-private def e10 : Tower.Tm 3 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-
-private def e11 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))
-
-private def e12 : T 0 :=
-.piForm (e2) (e2) (e4) (e6)
-
-private def e13 : T 2 :=
-.const (e11) (e12)
-
-private def e14 : T 2 :=
-.var
-
-private def e15 : T 2 :=
-.appElim (e9) (e10) (e13) (e14)
-
-private def e16 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-
-private def e17 : Tower.Tm 4 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-
-private def e18 : T 3 :=
-.const (e11) (e12)
-
-private def e19 : T 3 :=
-.var
-
-private def e20 : Tower.Tm 4 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3
-
-private def e21 : Tower.Tm 5 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-
-private def e22 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))
-
-private def e23 : T 4 :=
-.var
-
-private def e24 : T 5 :=
-.headType
-
-private def e25 : T 4 :=
-.piForm (e7) (e2) (e23) (e24)
-
-private def e26 : T 5 :=
-.var
-
-private def e27 : T 4 :=
-.lamIntro (e22) (e25) (e26)
-
-private def e28 : T 4 :=
-.appElim (e20) (e21) (e27) (e23)
-
-private def e29 : T 3 :=
-.sigmaForm (e7) (e7) (e19) (e28)
-
 private def e30 : T 3 :=
-.cumul (e16) (e29)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8db28e2c143426783158 3 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_8ac3920e24449662ac7d) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_79e72e1cc2f009b67130) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5978e1f6d4b31cb31598) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_f89a0d3fd4af1bf7786d) (replay_587987cca324d4b0199b) (replay_088a7fed4563d6a06e7a)
 
 private def e31 : T 3 :=
-.appElim (e10) (e17) (e18) (e30)
-
-private def e32 : Tower.Tm 4 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)))
-
-private def e33 : Tower.Tm 4 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3)
-
-private def e34 : Tower.Tm 5 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))
-
-private def e35 : Tower.Tm 4 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))
-
-private def e36 : Tower.Tm 5 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))
-
-private def e37 : Tower.Tm 4 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6))
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))))
-
-private def e38 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))))
-
-private def e39 : Tower.Tm 5 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 1)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 2))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))))
-
-private def e40 : Tower.Tm 5 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 1)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 1)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-            (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 2))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 2))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-            (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))))
-
-private def e41 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-            (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-            (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ
-              (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-            (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-            (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ
-              (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))))))
-
-private def e42 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ
-            (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))))
-
-private def e43 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))))
-
-private def e44 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))
-
-private def e45 : T 4 :=
-.headType
-
-private def e46 : T 3 :=
-.piForm (e7) (e2) (e19) (e45)
-
-private def e47 : T 2 :=
-.piForm (e7) (e22) (e14) (e46)
-
-private def e48 : T 3 :=
-.appElim (e10) (e17) (e18) (e19)
-
-private def e49 : T 4 :=
-.const (e11) (e12)
-
-private def e50 : T 4 :=
-.appElim (e17) (e21) (e49) (e23)
-
-private def e51 : T 4 :=
-.piForm (e7) (e2) (e50) (e24)
-
-private def e52 : T 3 :=
-.piForm (e7) (e22) (e48) (e51)
-
-private def e53 : T 2 :=
-.piForm (e44) (e44) (e47) (e52)
-
-private def e54 : T 1 :=
-.piForm (e2) (e43) (e6) (e53)
-
-private def e55 : T 0 :=
-.piForm (e2) (e42) (e4) (e54)
-
-private def e56 : T 4 :=
-.const (e41) (e55)
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_04aeab44f3773c0fe12b) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (replay_0e4d61dc8c297be34c90) (e30)
 
 private def e57 : T 4 :=
-.appElim (e17) (e40) (e56) (e23)
-
-private def e58 : Tower.Tm 5 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4
-
-private def e59 : Tower.Tm 6 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-
-private def e60 : T 6 :=
-.headType
-
-private def e61 : T 5 :=
-.piForm (e7) (e2) (e26) (e60)
-
-private def e62 : T 6 :=
-.var
-
-private def e63 : T 5 :=
-.lamIntro (e22) (e61) (e62)
-
-private def e64 : T 5 :=
-.appElim (e58) (e59) (e63) (e26)
-
-private def e65 : T 4 :=
-.sigmaForm (e7) (e7) (e23) (e64)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_bd03b1613e47bc49ec0e 4 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4d2564d0d92407d5eda5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a25d4330ec9e9add9d7e) (replay_d4bf3b6c78ab8c6058a3) (replay_f89a0d3fd4af1bf7786d)
 
 private def e66 : T 4 :=
-.cumul (e16) (e65)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8db28e2c143426783158 4 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_f89a0d3fd4af1bf7786d) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f76f44da44e23bb59ec9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_39e100ccd2d3487475a1) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_088a7fed4563d6a06e7a) (replay_ff33acd87c5b03c2f11e) (replay_fb92de9ad2d284eba393)
 
 private def e67 : T 4 :=
-.appElim (e17) (e39) (e57) (e66)
-
-private def e68 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))
-
-private def e69 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7dce7a2b8bb1d493ab7b) (e57) (e66)
 
 private def e70 : T 5 :=
-.sigmaForm (e7) (e7) (e26) (e62)
+.sigmaForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_088a7fed4563d6a06e7a) (replay_fb92de9ad2d284eba393)
 
 private def e71 : T 5 :=
-.piForm (e16) (e2) (e70) (e60)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (e70) (replay_ff33acd87c5b03c2f11e)
 
 private def e72 : T 4 :=
-.piForm (e7) (e69) (e23) (e71)
-
-private def e73 : T 5 :=
-.const (e11) (e12)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4a70ce54e90dfc48e41a) (replay_f89a0d3fd4af1bf7786d) (e71)
 
 private def e74 : T 5 :=
-.appElim (e21) (e59) (e73) (e26)
-
-private def e75 : Tower.Tm 7 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-
-private def e76 : T 6 :=
-.const (e11) (e12)
-
-private def e77 : Tower.Tm 7 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6
-
-private def e78 : Tower.Tm 8 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-
-private def e79 : T 7 :=
-.var
-
-private def e80 : T 8 :=
-.headType
-
-private def e81 : T 7 :=
-.piForm (e7) (e2) (e79) (e80)
-
-private def e82 : T 8 :=
-.var
-
-private def e83 : T 7 :=
-.lamIntro (e22) (e81) (e82)
-
-private def e84 : T 7 :=
-.appElim (e77) (e78) (e83) (e79)
-
-private def e85 : T 6 :=
-.sigmaForm (e7) (e7) (e62) (e84)
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5978e1f6d4b31cb31598) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_39e100ccd2d3487475a1) (replay_ea03df5e9090f26d7b4c) (replay_088a7fed4563d6a06e7a)
 
 private def e86 : T 6 :=
-.cumul (e16) (e85)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8db28e2c143426783158 6 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_fb92de9ad2d284eba393) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3531df46ccfd426e0cca) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_e197ee63c3c9ea3d9b51) (replay_364e906c32a1fece265a) (replay_534aece673191f529e08)
 
 private def e87 : T 6 :=
-.appElim (e59) (e75) (e76) (e86)
-
-private def e88 : T 7 :=
-.headType
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_39e100ccd2d3487475a1) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d064c25dd26291905510) (replay_460a4220a9fcc7c0d868) (e86)
 
 private def e89 : T 6 :=
-.piForm (e7) (e2) (e87) (e88)
-
-private def e90 : T 5 :=
-.piForm (e7) (e22) (e74) (e89)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (e87) (replay_4ec057243fb248f73891)
 
 private def e91 : T 4 :=
-.piForm (e68) (e44) (e72) (e90)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8704404f73c273f28b55 4 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_375428fd4a96a04ec864) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1e019bdd28a721b2309d) (e72) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (e74) (e89)
 
 private def e92 : C 4 :=
-.refl (e37)
+.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f32b315b38880a76b91a)
 
 private def e93 : C 4 :=
 .trans (e92) (e92)
 
-private def e94 : Tower.Tm 7 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5
-
-private def e95 : Tower.Tm 6 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0
-
 private def e96 : S 6 :=
-.betaPi (e94) (e95)
+.betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dbe9d218f641fcefd695) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_56ec059523fbc107fa64)
 
 private def e97 : S 5 :=
-.congSigmaCod (e58) (e96)
+.congSigmaCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f76f44da44e23bb59ec9) (e96)
 
 private def e98 : S 5 :=
-.congPiDom (e97) (e59)
+.congPiDom (e97) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_39e100ccd2d3487475a1)
 
 private def e99 : S 4 :=
-.congPiCod (e20) (e98)
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_79e72e1cc2f009b67130) (e98)
 
 private def e100 : S 4 :=
-.congPiDom (e99) (e36)
+.congPiDom (e99) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dc6fc8f415c2925f636d)
 
 private def e101 : C 4 :=
 .single (e100)
 
-private def e102 : Tower.Tm 4 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6))
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))))
-
 private def e103 : C 4 :=
-.refl (e102)
+.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9dba47dbdb25bc1e684)
 
 private def e104 : C 4 :=
 .trans (e101) (e103)
@@ -641,1057 +136,175 @@ private def e120 : C 4 :=
 .trans (e92) (e119)
 
 private def e121 : T 4 :=
-.convert (e37) (e38) (e67) (e91) (e120)
+.convert (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f32b315b38880a76b91a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_50f4e343eb9f8e5eb1ec) (e67) (e91) (e120)
 
 private def e122 : T 6 :=
-.fstElim (e94) (e62)
+.fstElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dbe9d218f641fcefd695) (replay_fb92de9ad2d284eba393)
 
 private def e123 : T 6 :=
-.idForm (e7) (e62) (e62) (e122)
-
-private def e124 : T 5 :=
-.lamIntro (e69) (e71) (e123)
+.idForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_fb92de9ad2d284eba393) (replay_fb92de9ad2d284eba393) (e122)
 
 private def e125 : T 4 :=
-.lamIntro (e68) (e72) (e124)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_a951cfdc4e886c32b0c9 4 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_375428fd4a96a04ec864) (e72) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4a70ce54e90dfc48e41a) (e71) (e123)
 
 private def e126 : T 4 :=
-.appElim (e35) (e36) (e121) (e125)
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4e2e7348545d941d0ac7) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dc6fc8f415c2925f636d) (e121) (e125)
 
 private def e127 : T 4 :=
-.appElim (e33) (e34) (e126) (e23)
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_744d525ce85a35b1f7a2) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4a7432134f8725c932a7) (e126) (replay_f89a0d3fd4af1bf7786d)
 
 private def e128 : T 4 :=
-.appElim (e32) (e21) (e127) (e23)
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7bca072f1729970a9de7) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5978e1f6d4b31cb31598) (e127) (replay_f89a0d3fd4af1bf7786d)
 
 private def e129 : T 3 :=
-.sigmaForm (e7) (e7) (e31) (e128)
+.sigmaForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (e31) (e128)
 
 private def e130 : T 3 :=
-.piForm (e16) (e7) (e129) (e50)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (e129) (replay_f059f9ff8dbaa5e901c0)
 
 private def e131 : T 2 :=
-.piForm (e7) (e8) (e15) (e130)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_13f420e1e571ce9bd69e) (replay_299e9bd44642ab0eecc2) (e130)
 
 private def e132 : T 1 :=
-.piForm (e2) (e5) (e6) (e131)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_72aea0512476935f3a25) (replay_2ec113d8b40f7f163a79) (e131)
 
 private def e133 : T 0 :=
-.piForm (e2) (e3) (e4) (e132)
-
-private def e134 : Tower.Tm 5 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3)
-
-private def e135 : Tower.Tm 4 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5))))
-
-private def e136 : Tower.Tm 5 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4))
-
-private def e137 : Tower.Tm 4 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 2)
-
-private def e138 : Tower.Tm 5 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6))
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)))))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)))
-
-private def e139 : Tower.Tm 4 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3)))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List.nil)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)))))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6))
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)))
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7)))
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const
-                    `CumulativeTower.List.cons)
-                  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-                    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7)
-                    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-                        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 8))
-                      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 2))
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 1))))))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6))
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-
-private def e140 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-            (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-            (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))
-
-private def e141 : Tower.Tm 4 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))
-
-private def e142 : Tower.Tm 5 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List.nil)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)))))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7))
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const
-                    `CumulativeTower.List.cons)
-                  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-                    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 8)
-                    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-                        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 9))
-                      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 2))
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 1))))))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7))
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-
-private def e143 : Tower.Tm 4 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List.nil)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5))
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)))))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6))
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-                  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7))
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3)
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const
-                      `CumulativeTower.List.cons)
-                    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-                      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 8)
-                      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-                          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 9))
-                        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-                  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 2))
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 1))))))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7))
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)))))
-
-private def e144 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-            (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-            (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-            (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-            (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-              (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-              (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))))
-
-private def e145 : Tower.Tm 5 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List.nil)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 1)))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 2)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3)
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const
-                      `CumulativeTower.List.cons)
-                    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5))
-                  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 2))
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 1))))))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)))))
-
-private def e146 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-            (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-            (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-              (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-              (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-                (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-                (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-            (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-            (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))))
-
-private def e147 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-            (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-            (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-              (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-              (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))))
-
-private def e148 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-            (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-            (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))
-
-private def e149 : Tower.Tm 1 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-
-private def e150 : T 1 :=
-.const (e11) (e12)
-
-private def e151 : T 1 :=
-.var
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a5a6663d8dda2fa82976) (replay_7a268c731e7a9afff236) (e132)
 
 private def e152 : T 1 :=
-.appElim (e149) (e9) (e150) (e151)
-
-private def e153 : T 2 :=
-.headType
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_bd03b1613e47bc49ec0e 1 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_51057c62b6697d24bc8b) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_393305a5fb0280dd5557) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (replay_f3cb5775e55c84d569cb) (replay_579b334deaab55db1c09)
 
 private def e154 : T 1 :=
-.piForm (e7) (e2) (e152) (e153)
-
-private def e155 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))
-
-private def e156 : Tower.Tm 2 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 1)
-
-private def e157 : Tower.Tm 3 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)
-
-private def e158 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (e152) (replay_7b7ffdffff88fd07525e)
 
 private def e159 : T 0 :=
-.piForm (e2) (e7) (e4) (e152)
-
-private def e160 : T 2 :=
-.const (e158) (e159)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_7a268c731e7a9afff236) (e152)
 
 private def e161 : T 2 :=
-.appElim (e9) (e157) (e160) (e14)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_bd03b1613e47bc49ec0e 2 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_393305a5fb0280dd5557) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1a871efba73d82895ef5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_cbf15d421a0ecd2260a1) (e159) (replay_67648559da2b4f1cdeb2)
 
 private def e162 : T 2 :=
-.appElim (e156) (e10) (e14) (e161)
-
-private def e163 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))
-
-private def e164 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))
-
-private def e165 : Tower.Tm 5 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_40103e605f24979085b1) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_04aeab44f3773c0fe12b) (replay_67648559da2b4f1cdeb2) (e161)
 
 private def e166 : T 5 :=
-.appElim (e165) (e59) (e26) (e26)
-
-private def e167 : Tower.Tm 6 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-
-private def e168 : Tower.Tm 7 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)
-
-private def e169 : Tower.Tm 6 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5
-
-private def e170 : Tower.Tm 7 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7))
-
-private def e171 : Tower.Tm 7 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 1))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 2)))
-
-private def e172 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.succ (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a6fe26126980406902cc) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_39e100ccd2d3487475a1) (replay_088a7fed4563d6a06e7a) (replay_088a7fed4563d6a06e7a)
 
 private def e173 : T 2 :=
-.piForm (e7) (e7) (e15) (e48)
-
-private def e174 : T 1 :=
-.piForm (e7) (e16) (e151) (e173)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_299e9bd44642ab0eecc2) (replay_696e8605658be2c7d3cc)
 
 private def e175 : T 0 :=
-.piForm (e2) (e164) (e4) (e174)
-
-private def e176 : T 6 :=
-.const (e172) (e175)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8704404f73c273f28b55 0 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4c32bd4102c8f968b76a) (replay_7a268c731e7a9afff236) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (replay_579b334deaab55db1c09) (e173)
 
 private def e177 : T 6 :=
-.appElim (e59) (e171) (e176) (e62)
-
-private def e178 : T 6 :=
-.appElim (e169) (e170) (e177) (e62)
-
-private def e179 : T 6 :=
-.appElim (e167) (e168) (e178) (e62)
-
-private def e180 : T 6 :=
-.appElim (e167) (e75) (e62) (e179)
-
-private def e181 : T 5 :=
-.piForm (e7) (e7) (e166) (e180)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_bd03b1613e47bc49ec0e 6 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_39e100ccd2d3487475a1) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9d94678fd7d999128daa) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5c7c37509bac47cbe26e) (e175) (replay_fb92de9ad2d284eba393)
 
 private def e182 : T 4 :=
-.piForm (e7) (e16) (e50) (e181)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_4b33c45d53a5e68e8f78 4 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (replay_f059f9ff8dbaa5e901c0) (e166) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c22d63e04d0c04fdfb6c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d064c25dd26291905510) (replay_fb92de9ad2d284eba393) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d544c68392ee32059233) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_987df36b061ff751f22f) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a58311947bcddd0856f7) (e177)
 
 private def e183 : T 3 :=
-.piForm (e7) (e164) (e19) (e182)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4c32bd4102c8f968b76a) (replay_8ac3920e24449662ac7d) (e182)
 
 private def e184 : T 4 :=
-.piForm (e7) (e7) (e50) (e166)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_f059f9ff8dbaa5e901c0) (e166)
 
 private def e185 : T 3 :=
-.piForm (e163) (e16) (e183) (e184)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_946dc3150b84a1d0455f) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (e183) (e184)
 
 private def e186 : T 2 :=
-.piForm (e7) (e155) (e162) (e185)
-
-private def e187 : T 1 :=
-.piForm (e22) (e148) (e154) (e186)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_cbfb1ca7fa4ee4e43fec) (e162) (e185)
 
 private def e188 : T 0 :=
-.piForm (e2) (e147) (e4) (e187)
-
-private def e189 : T 4 :=
-.const (e146) (e188)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8704404f73c273f28b55 0 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0d32a37a6a2fce764722) (replay_7a268c731e7a9afff236) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ca37c2de3f6b0f6cbd34) (e154) (e186)
 
 private def e190 : T 4 :=
-.appElim (e17) (e145) (e189) (e66)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_bd03b1613e47bc49ec0e 4 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_bf5bb1aee94d83e2fdba) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3e95a2cf9c0fd6408281) (e188) (e66)
 
 private def e191 : T 4 :=
-.appElim (e17) (e21) (e49) (e66)
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5978e1f6d4b31cb31598) (replay_930ee4101ae7d78aa002) (e66)
 
 private def e192 : T 4 :=
-.piForm (e7) (e2) (e191) (e24)
-
-private def e193 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-          (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))
-
-private def e194 : Tower.Tm 5 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)))
-
-private def e195 : Tower.Tm 6 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)
-
-private def e196 : T 5 :=
-.const (e158) (e159)
-
-private def e197 : T 6 :=
-.piForm (e7) (e2) (e62) (e88)
-
-private def e198 : T 6 :=
-.lamIntro (e22) (e197) (e79)
-
-private def e199 : T 6 :=
-.appElim (e169) (e75) (e198) (e62)
-
-private def e200 : T 5 :=
-.sigmaForm (e7) (e7) (e26) (e199)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (e191) (replay_587987cca324d4b0199b)
 
 private def e201 : T 5 :=
-.cumul (e16) (e200)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8db28e2c143426783158 5 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_088a7fed4563d6a06e7a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_987df36b061ff751f22f) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d064c25dd26291905510) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_fb92de9ad2d284eba393) (replay_4ec057243fb248f73891) (replay_e197ee63c3c9ea3d9b51)
 
 private def e202 : T 5 :=
-.appElim (e21) (e195) (e196) (e201)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_bd03b1613e47bc49ec0e 5 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5978e1f6d4b31cb31598) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_67611e4ced1af709d5f8) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_cbf15d421a0ecd2260a1) (e159) (e201)
 
 private def e203 : T 5 :=
-.appElim (e194) (e59) (e26) (e202)
-
-private def e204 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e798307e12cc176689ec) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_39e100ccd2d3487475a1) (replay_088a7fed4563d6a06e7a) (e202)
 
 private def e205 : T 6 :=
-.sigmaForm (e7) (e7) (e62) (e79)
+.sigmaForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_fb92de9ad2d284eba393) (replay_e197ee63c3c9ea3d9b51)
 
 private def e206 : T 7 :=
-.const (e11) (e12)
-
-private def e207 : Tower.Tm 8 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7
-
-private def e208 : Tower.Tm 9 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-
-private def e209 : T 9 :=
-.headType
-
-private def e210 : T 8 :=
-.piForm (e7) (e2) (e82) (e209)
-
-private def e211 : T 9 :=
-.var
-
-private def e212 : T 8 :=
-.lamIntro (e22) (e210) (e211)
-
-private def e213 : T 8 :=
-.appElim (e207) (e208) (e212) (e82)
-
-private def e214 : T 7 :=
-.sigmaForm (e7) (e7) (e79) (e213)
+.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (replay_f3cb5775e55c84d569cb)
 
 private def e215 : T 7 :=
-.cumul (e16) (e214)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_6562d93d6c87394cce14 7 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_e197ee63c3c9ea3d9b51) (replay_aafd23c0a7e2bb8a1fda)
 
 private def e216 : T 7 :=
-.appElim (e75) (e78) (e206) (e215)
-
-private def e217 : Tower.Tm 8 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 8))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)))
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d064c25dd26291905510) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (e206) (e215)
 
 private def e218 : T 8 :=
-.appElim (e217) (e208) (e82) (e82)
-
-private def e219 : Tower.Tm 9 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 8)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 9))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)))
-
-private def e220 : Tower.Tm 10 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-
-private def e221 : Tower.Tm 10 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 9)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 10))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)))
-
-private def e222 : Tower.Tm 9 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 8)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 8)
-
-private def e223 : Tower.Tm 10 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 9)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 10))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 10)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 11))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-
-private def e224 : Tower.Tm 9 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 8)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 9))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 9)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 10))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 10)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 11))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)))))
-
-private def e225 : Tower.Head :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-  (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.max
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)
-      (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0)))
-
-private def e226 : Tower.Tm 10 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 1))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 2)))
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1a2f8a0a34a11521e460) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8) (replay_534aece673191f529e08) (replay_534aece673191f529e08)
 
 private def e227 : T 9 :=
-.const (e172) (e175)
-
-private def e228 : Tower.Tm 10 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 9
-
-private def e229 : Tower.Tm 11 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-
-private def e230 : T 10 :=
-.var
-
-private def e231 : T 11 :=
-.headType
-
-private def e232 : T 10 :=
-.piForm (e7) (e2) (e230) (e231)
-
-private def e233 : T 11 :=
-.var
-
-private def e234 : T 10 :=
-.lamIntro (e22) (e232) (e233)
-
-private def e235 : T 10 :=
-.appElim (e228) (e229) (e234) (e230)
-
-private def e236 : T 9 :=
-.sigmaForm (e7) (e7) (e211) (e235)
+.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5c7c37509bac47cbe26e) (e175)
 
 private def e237 : T 9 :=
-.cumul (e16) (e236)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8db28e2c143426783158 9 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_07c41680d17703d7171f) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_43d55c8961861bb41778) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9528e48ce4f30ad868d8) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_8dd06e568960d2567ea5) (replay_e78213c920befa21e944) (replay_7fbeba8818273106d8c8)
 
 private def e238 : T 9 :=
-.appElim (e208) (e226) (e227) (e237)
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ccb47806deb8da9ede49) (e227) (e237)
 
 private def e239 : T 9 :=
-.sigmaForm (e7) (e7) (e211) (e230)
+.sigmaForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_07c41680d17703d7171f) (replay_8dd06e568960d2567ea5)
 
 private def e240 : T 10 :=
-.const (e11) (e12)
-
-private def e241 : Tower.Tm 11 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 10
-
-private def e242 : Tower.Tm 12 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-
-private def e243 : T 12 :=
-.headType
-
-private def e244 : T 11 :=
-.piForm (e7) (e2) (e233) (e243)
-
-private def e245 : T 12 :=
-.var
-
-private def e246 : T 11 :=
-.lamIntro (e22) (e244) (e245)
-
-private def e247 : T 11 :=
-.appElim (e241) (e242) (e246) (e233)
-
-private def e248 : T 10 :=
-.sigmaForm (e7) (e7) (e230) (e247)
+.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (replay_f3cb5775e55c84d569cb)
 
 private def e249 : T 10 :=
-.cumul (e16) (e248)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_6562d93d6c87394cce14 10 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_8dd06e568960d2567ea5) (replay_07af1126333fe0124d8d)
 
 private def e250 : T 10 :=
-.appElim (e220) (e229) (e240) (e249)
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b74e03acbfc24aeb10e) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9528e48ce4f30ad868d8) (e240) (e249)
 
 private def e251 : T 11 :=
-.const (e11) (e12)
-
-private def e252 : Tower.Tm 12 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 11
-
-private def e253 : Tower.Tm 13 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-    (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))
-
-private def e254 : T 13 :=
-.headType
-
-private def e255 : T 12 :=
-.piForm (e7) (e2) (e245) (e254)
-
-private def e256 : T 13 :=
-.var
-
-private def e257 : T 12 :=
-.lamIntro (e22) (e255) (e256)
-
-private def e258 : T 12 :=
-.appElim (e252) (e253) (e257) (e245)
-
-private def e259 : T 11 :=
-.sigmaForm (e7) (e7) (e233) (e258)
+.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (replay_f3cb5775e55c84d569cb)
 
 private def e260 : T 11 :=
-.cumul (e16) (e259)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8db28e2c143426783158 11 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_7fbeba8818273106d8c8) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4ec2bf2a0236f1f4057c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7231169b8e7902d80314) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_c1e92b3aeffe2c000a2a) (replay_13cf0c5003c2ff085491) (replay_8dab544be16d5febf71b)
 
 private def e261 : T 11 :=
-.appElim (e229) (e242) (e251) (e260)
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9528e48ce4f30ad868d8) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dd4fc597f6a31798810d) (e251) (e260)
 
 private def e262 : T 10 :=
-.piForm (e7) (e7) (e250) (e261)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (e250) (e261)
 
 private def e263 : T 9 :=
-.piForm (e16) (e16) (e239) (e262)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (e239) (e262)
 
 private def e264 : C 9 :=
-.refl (e224)
+.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_eca772ad9aa2e25ec122)
 
 private def e265 : C 9 :=
 .trans (e264) (e264)
 
-private def e266 : Tower.Tm 9 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 8
-
-private def e267 : Tower.Tm 11 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 9
-
-private def e268 : Tower.Tm 10 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0
-
 private def e269 : S 10 :=
-.betaPi (e267) (e268)
+.betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_8304ec2301382ae96f36) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b6263f8b29eb9d152bde)
 
 private def e270 : S 9 :=
-.congSigmaCod (e266) (e269)
+.congSigmaCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_62e2c1e2e15bb0cda87a) (e269)
 
 private def e271 : S 9 :=
-.congPiDom (e270) (e223)
+.congPiDom (e270) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a0595e75e12882829903)
 
 private def e272 : C 9 :=
 .single (e271)
 
-private def e273 : Tower.Tm 9 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 8)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 8))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 9)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 10))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 10)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 11))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)))))
-
 private def e274 : C 9 :=
-.refl (e273)
+.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1f63b8942f563a9b755f)
 
 private def e275 : C 9 :=
 .trans (e272) (e274)
@@ -1727,199 +340,52 @@ private def e285 : C 9 :=
 .trans (e264) (e284)
 
 private def e286 : T 9 :=
-.convert (e224) (e225) (e238) (e263) (e285)
-
-private def e287 : T 9 :=
-.appElim (e222) (e223) (e286) (e211)
-
-private def e288 : T 9 :=
-.appElim (e219) (e221) (e287) (e211)
-
-private def e289 : T 9 :=
-.appElim (e219) (e220) (e211) (e288)
-
-private def e290 : T 8 :=
-.piForm (e7) (e7) (e218) (e289)
+.convert (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_eca772ad9aa2e25ec122) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_20a2def77d0de870a35a) (e238) (e263) (e285)
 
 private def e291 : T 7 :=
-.piForm (e7) (e16) (e216) (e290)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_4b33c45d53a5e68e8f78 7 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (e216) (e218) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1fd803dae7d7cd8b3c11) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b74e03acbfc24aeb10e) (replay_07c41680d17703d7171f) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f833191624d36c33f140) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_408494d71841e0fb93b6) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a0595e75e12882829903) (e286)
 
 private def e292 : T 6 :=
-.piForm (e16) (e164) (e205) (e291)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4c32bd4102c8f968b76a) (e205) (e291)
 
 private def e293 : T 7 :=
-.piForm (e7) (e7) (e216) (e218)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (e216) (e218)
 
 private def e294 : T 6 :=
-.piForm (e204) (e16) (e292) (e293)
-
-private def e295 : T 5 :=
-.piForm (e7) (e193) (e203) (e294)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_268cc486106ae027dde5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (e292) (e293)
 
 private def e296 : T 4 :=
-.piForm (e22) (e140) (e192) (e295)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8704404f73c273f28b55 4 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9962b7d3472fa706e6eb) (e192) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_75a67d8dd8dd5b3547d7) (e203) (e294)
 
 private def e297 : C 4 :=
-.refl (e143)
+.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4000cf26c5cdfe4f277d)
 
 private def e298 : C 4 :=
 .trans (e297) (e297)
 
-private def e299 : Tower.Tm 5 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List.nil)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-
-private def e300 : Tower.Tm 8 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6
-
-private def e301 : Tower.Tm 7 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0
-
 private def e302 : S 7 :=
-.betaPi (e300) (e301)
+.betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c8ec43694698892ca9e) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a6554b81c57291f8b68)
 
 private def e303 : S 6 :=
-.congSigmaCod (e169) (e302)
-
-private def e304 : Tower.Tm 7 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List.cons)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 8)
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-                  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 9))
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 2))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 1))))
+.congSigmaCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_987df36b061ff751f22f) (e302)
 
 private def e305 : S 6 :=
-.congPiDom (e303) (e304)
-
-private def e306 : Tower.Tm 7 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))
+.congPiDom (e303) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e22ca2210052deba5eee)
 
 private def e307 : S 6 :=
-.congPiDom (e305) (e306)
+.congPiDom (e305) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1ad670d57d2a4ce368d3)
 
 private def e308 : S 5 :=
-.congPiCod (e299) (e307)
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_62b7e5433f8dc1b00351) (e307)
 
 private def e309 : S 4 :=
-.congPiCod (e141) (e308)
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_db65b639101d256b78f1) (e308)
 
 private def e310 : C 4 :=
 .single (e309)
 
-private def e311 : Tower.Tm 4 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.head
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.LevelTower.Head.sort
-        (Mettapedia.TypeTheory.UniverseLevel.LevelExpr.param 0))))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List.nil)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5))
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)))))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-                  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7))
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3)
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const
-                      `CumulativeTower.List.cons)
-                    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-                      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 8)
-                      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-                          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 9))
-                        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-                  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 2))
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 1))))))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7))
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)))))
-
 private def e312 : C 4 :=
-.refl (e311)
+.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b8a392db6f8b8445f719)
 
 private def e313 : C 4 :=
 .trans (e310) (e312)
@@ -1982,183 +448,52 @@ private def e332 : C 4 :=
 .trans (e297) (e331)
 
 private def e333 : T 4 :=
-.convert (e143) (e144) (e190) (e296) (e332)
+.convert (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4000cf26c5cdfe4f277d) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6f42b9f0bfae4b4e9d3c) (e190) (e296) (e332)
 
 private def e334 : T 4 :=
-.lamIntro (e22) (e192) (e74)
+.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (e192) (e74)
 
 private def e335 : T 4 :=
-.appElim (e141) (e142) (e333) (e334)
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_db65b639101d256b78f1) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_cbc090efe38164ee1bcc) (e333) (e334)
 
 private def e336 : T 7 :=
-.appElim (e75) (e78) (e206) (e79)
-
-private def e337 : T 8 :=
-.const (e11) (e12)
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d064c25dd26291905510) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (e206) (replay_e197ee63c3c9ea3d9b51)
 
 private def e338 : T 8 :=
-.appElim (e78) (e208) (e337) (e82)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_bd03b1613e47bc49ec0e 8 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (replay_f3cb5775e55c84d569cb) (replay_534aece673191f529e08)
 
 private def e339 : T 7 :=
-.piForm (e7) (e7) (e336) (e338)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (e336) (e338)
 
 private def e340 : T 6 :=
-.piForm (e7) (e16) (e87) (e339)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (e87) (e339)
 
 private def e341 : T 5 :=
-.piForm (e16) (e164) (e70) (e340)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4c32bd4102c8f968b76a) (e70) (e340)
 
 private def e342 : T 6 :=
-.piForm (e7) (e7) (e87) (e336)
-
-private def e343 : T 5 :=
-.piForm (e204) (e16) (e341) (e342)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (e87) (e336)
 
 private def e344 : T 4 :=
-.piForm (e7) (e193) (e50) (e343)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_8704404f73c273f28b55 4 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_75a67d8dd8dd5b3547d7) (replay_f059f9ff8dbaa5e901c0) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_268cc486106ae027dde5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (e341) (e342)
 
 private def e345 : C 4 :=
-.refl (e139)
+.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6792bafa42d28e7d8ad6)
 
 private def e346 : C 4 :=
 .trans (e345) (e345)
 
-private def e347 : Tower.Tm 4 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List.nil)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 3)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)))
-
 private def e348 : S 4 :=
-.betaPi (e134) (e347)
-
-private def e349 : Tower.Tm 5 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6))
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7)))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List.cons)
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-                  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7)
-                  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-                      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 8))
-                    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 2))
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 1))))))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)))
+.betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_8d42a5d4a75e49df1ac8) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dccb1f3e82914ba178da)
 
 private def e350 : S 4 :=
-.congPiDom (e348) (e349)
+.congPiDom (e348) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a10314ebaea4875c6ead)
 
 private def e351 : C 4 :=
 .single (e350)
 
-private def e352 : Tower.Tm 4 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 2))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6))
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)))
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7)))
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const
-                    `CumulativeTower.List.cons)
-                  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-                    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7)
-                    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-                        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 8))
-                      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 2))
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 1))))))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6))
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-
 private def e353 : C 4 :=
-.refl (e352)
+.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c4e9e6b452bc679b2966)
 
 private def e354 : C 4 :=
 .trans (e353) (e353)
@@ -2178,142 +513,20 @@ private def e358 : C 4 :=
 private def e359 : C 4 :=
 .trans (e356) (e358)
 
-private def e360 : Tower.Tm 5 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-
-private def e361 : Tower.Tm 6 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)))
-
-private def e362 : Tower.Tm 8 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)
-
 private def e363 : S 7 :=
-.betaPi (e362) (e301)
-
-private def e364 : Tower.Tm 8 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7)))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List.cons)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 8))
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 2))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 1))
+.betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98ed44b8f69ad5e1f45a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a6554b81c57291f8b68)
 
 private def e365 : S 7 :=
-.congPiDom (e363) (e364)
-
-private def e366 : S 6 :=
-.congPiCod (e361) (e365)
-
-private def e367 : S 5 :=
-.congPiCod (e360) (e366)
-
-private def e368 : Tower.Tm 6 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))
-
-private def e369 : S 5 :=
-.congPiDom (e367) (e368)
+.congPiDom (e363) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_25f572fe3925c6722de7)
 
 private def e370 : S 4 :=
-.congPiCod (e137) (e369)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_d356ea86617e0655e784 e365
 
 private def e371 : C 4 :=
 .single (e370)
 
-private def e372 : Tower.Tm 4 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 2))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6))
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7)))
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const
-                    `CumulativeTower.List.cons)
-                  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-                    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7)
-                    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-                      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-                        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 8))
-                      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 2))
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 1))))))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6))
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-
 private def e373 : C 4 :=
-.refl (e372)
+.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c63feacd276cb8c02259)
 
 private def e374 : C 4 :=
 .trans (e373) (e373)
@@ -2333,95 +546,20 @@ private def e378 : C 4 :=
 private def e379 : C 4 :=
 .trans (e376) (e378)
 
-private def e380 : Tower.Tm 7 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-
-private def e381 : Tower.Tm 9 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7)
-
-private def e382 : Tower.Tm 8 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List.cons)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 8))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 2))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 1)
-
 private def e383 : S 8 :=
-.betaPi (e381) (e382)
+.betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_621232e8615dbf2764b9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ab3b709069b2fcdbd976)
 
 private def e384 : S 7 :=
-.congPiCod (e380) (e383)
-
-private def e385 : S 6 :=
-.congPiCod (e361) (e384)
-
-private def e386 : S 5 :=
-.congPiCod (e360) (e385)
-
-private def e387 : S 5 :=
-.congPiDom (e386) (e368)
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_8c609c9493516447af1f) (e383)
 
 private def e388 : S 4 :=
-.congPiCod (e137) (e387)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorStepContexts.place_d356ea86617e0655e784 e384
 
 private def e389 : C 4 :=
 .single (e388)
 
-private def e390 : Tower.Tm 4 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 2))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6))
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)))))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6))
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-
 private def e391 : C 4 :=
-.refl (e390)
+.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c741ee287e9e5ea3bb68)
 
 private def e392 : C 4 :=
 .trans (e391) (e391)
@@ -2471,81 +609,20 @@ private def e406 : C 4 :=
 private def e407 : C 4 :=
 .trans (e353) (e406)
 
-private def e408 : Tower.Tm 5 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6))))
-
 private def e409 : S 6 :=
-.congPiCod (e361) (e363)
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_60bba5a2ef37a4d74845) (e363)
 
 private def e410 : S 5 :=
-.congPiCod (e408) (e409)
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5e4f4c3c7e2ce94487ed) (e409)
 
 private def e411 : S 4 :=
-.congPiCod (e137) (e410)
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_37cd6eacc9b809b7e9e9) (e410)
 
 private def e412 : C 4 :=
 .single (e411)
 
-private def e413 : Tower.Tm 4 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 2))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-                (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6))
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5))
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)))))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6))
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5))))
-
 private def e414 : C 4 :=
-.refl (e413)
+.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_de6f048fe7a8475139d8)
 
 private def e415 : C 4 :=
 .trans (e414) (e414)
@@ -2596,151 +673,82 @@ private def e430 : C 4 :=
 .trans (e345) (e429)
 
 private def e431 : T 4 :=
-.convert (e139) (e140) (e335) (e344) (e430)
-
-private def e432 : Tower.Tm 5 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)
-
-private def e433 : T 4 :=
-.const (e158) (e159)
+.convert (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6792bafa42d28e7d8ad6) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9962b7d3472fa706e6eb) (e335) (e344) (e430)
 
 private def e434 : T 4 :=
-.appElim (e17) (e432) (e433) (e23)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_bd03b1613e47bc49ec0e 4 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b539e247f62c1154de9a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_cbf15d421a0ecd2260a1) (e159) (replay_f89a0d3fd4af1bf7786d)
 
 private def e435 : T 4 :=
-.appElim (e137) (e138) (e431) (e434)
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_37cd6eacc9b809b7e9e9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7c34e568184dfa15c58c) (e431) (e434)
 
 private def e436 : T 4 :=
-.sigmaForm (e7) (e7) (e23) (e26)
+.sigmaForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_f89a0d3fd4af1bf7786d) (replay_088a7fed4563d6a06e7a)
 
 private def e437 : T 5 :=
-.appElim (e21) (e59) (e73) (e201)
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5978e1f6d4b31cb31598) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_39e100ccd2d3487475a1) (replay_ea03df5e9090f26d7b4c) (e201)
 
 private def e438 : T 6 :=
-.appElim (e59) (e75) (e76) (e62)
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_39e100ccd2d3487475a1) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d064c25dd26291905510) (replay_460a4220a9fcc7c0d868) (replay_fb92de9ad2d284eba393)
 
 private def e439 : T 6 :=
-.piForm (e7) (e7) (e438) (e336)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (e438) (e336)
 
 private def e440 : T 5 :=
-.piForm (e7) (e16) (e437) (e439)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (e437) (e439)
 
 private def e441 : T 4 :=
-.piForm (e16) (e164) (e436) (e440)
-
-private def e442 : Tower.Tm 8 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7))
-
-private def e443 : Tower.Tm 8 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.pi
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 1))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List)
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 2)))
-
-private def e444 : T 7 :=
-.const (e172) (e175)
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4c32bd4102c8f968b76a) (e436) (e440)
 
 private def e445 : T 7 :=
-.appElim (e75) (e443) (e444) (e79)
-
-private def e446 : Tower.Tm 7 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_bd03b1613e47bc49ec0e 7 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d064c25dd26291905510) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d061b32267b8b41b0777) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5c7c37509bac47cbe26e) (e175) (replay_e197ee63c3c9ea3d9b51)
 
 private def e447 : T 7 :=
-.sigmaForm (e7) (e7) (e79) (e82)
+.sigmaForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (replay_e197ee63c3c9ea3d9b51) (replay_534aece673191f529e08)
 
 private def e448 : T 7 :=
-.piForm (e16) (e7) (e447) (e82)
-
-private def e449 : Tower.Tm 9 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 7
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (e447) (replay_534aece673191f529e08)
 
 private def e450 : T 8 :=
-.sndElim (e207) (e449) (e82)
+.sndElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ed88dce83fa3ae5d4c4a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_198d6bd75ff0377bcd7c) (replay_534aece673191f529e08)
 
 private def e451 : T 7 :=
-.lamIntro (e8) (e448) (e450)
+.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_13f420e1e571ce9bd69e) (e448) (e450)
 
 private def e452 : T 7 :=
-.appElim (e446) (e300) (e451) (e79)
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_46979916b47a5487854c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c8ec43694698892ca9e) (e451) (replay_e197ee63c3c9ea3d9b51)
 
 private def e453 : T 7 :=
-.appElim (e94) (e442) (e445) (e452)
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dbe9d218f641fcefd695) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_484de923d2436ba1f066) (e445) (e452)
 
 private def e454 : T 7 :=
-.appElim (e380) (e362) (e453) (e79)
-
-private def e455 : T 6 :=
-.lamIntro (e16) (e439) (e454)
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_8c609c9493516447af1f) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98ed44b8f69ad5e1f45a) (e453) (replay_e197ee63c3c9ea3d9b51)
 
 private def e456 : T 5 :=
-.lamIntro (e164) (e440) (e455)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_a951cfdc4e886c32b0c9 5 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4c32bd4102c8f968b76a) (e440) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_773364d509161a7cfc0c) (e439) (e454)
 
 private def e457 : T 4 :=
-.lamIntro (e204) (e441) (e456)
+.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_268cc486106ae027dde5) (e441) (e456)
 
 private def e458 : T 4 :=
-.appElim (e135) (e136) (e435) (e457)
-
-private def e459 : Tower.Tm 5 :=
-Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.const `CumulativeTower.List.mapRel)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4))
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.sigma
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 4)
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.app
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 5))
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))
-      (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-        (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.lam
-          (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.id
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 6)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 1)
-            (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.fst
-              (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0))))))
-    (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 2))
-  (Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.Presentation.Tm.var 0)
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a26c3da03d120242063d) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9000f42261541c48b33e) (e435) (e457)
 
 private def e460 : T 4 :=
-.fstElim (e459) (e23)
+.fstElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_922006b618494a9c3a08) (replay_f89a0d3fd4af1bf7786d)
 
 private def e461 : T 4 :=
-.appElim (e32) (e134) (e458) (e460)
-
-private def e462 : T 3 :=
-.lamIntro (e8) (e130) (e461)
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7bca072f1729970a9de7) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_8d42a5d4a75e49df1ac8) (e458) (e460)
 
 private def e463 : T 2 :=
-.lamIntro (e5) (e131) (e462)
+Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorTypingContexts.assemble_a951cfdc4e886c32b0c9 2 (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_72aea0512476935f3a25) (e131) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_13f420e1e571ce9bd69e) (e130) (e461)
 
 private def e464 : T 1 :=
-.lamIntro (e3) (e132) (e463)
+.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a5a6663d8dda2fa82976) (e132) (e463)
 
 private def e465 : T 0 :=
-.lamIntro (e1) (e133) (e464)
+.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d815a15646fd762a8450) (e133) (e464)
 
 def submission : FormationSensitiveElaboration.Submission Tower.Head NativeListResultView.decoder.Code 0 :=
-{ context := e0, term := e465 }
+{ context := replay_844b001091b2055dfd9d, term := e465 }
 
 
 end Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.NativeListResultView.Evidence

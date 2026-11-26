@@ -1,3 +1,4 @@
+import Mettapedia.GSLT.LanguageDef.FirstOrderRuleInstantiation
 import Mettapedia.Languages.VibeITP.Presentation.Decode
 
 /-!
@@ -103,5 +104,16 @@ theorem FODerivable.intro {R : List FORule} {r : FORule} (hr : r ∈ R)
     (hprem : ∀ p ∈ r.instPremises args, FODerivable R p) : FODerivable R J := by
   subst hJ
   exact .rule r hr args hlen (fun a ha => isData_valid (hdata a ha)) hprem
+
+/-- Introduce a named rule using its checked argument and premise lists. -/
+theorem FODerivable.intro_of_shape {R : List FORule} {rule : FORule}
+    {args premises : List Pattern} {conclusion : Pattern}
+    (member : rule ∈ R)
+    (shape : rule.instPremises args = premises ∧ rule.instConclusion args = conclusion)
+    (length : args.length = rule.vars.length) (data : List.Forall IsData args)
+    (proved : List.Forall (FODerivable R) premises) : FODerivable R conclusion := by
+  apply FODerivable.intro member args length (List.forall_iff_forall_mem.mp data) shape.2
+  rw [shape.1]
+  exact List.forall_iff_forall_mem.mp proved
 
 end Mettapedia.Languages.VibeITP.Presentation

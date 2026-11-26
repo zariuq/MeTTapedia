@@ -51,6 +51,7 @@ function Lean.Omega.IntList.combo
 function Option.guard
 function List.zipWith
 function Lean.Omega.Constraint.combo
+function List.brecOn.go
 function Lean.Omega.IntList.sum
 function List.get!Internal
 function Lean.Omega.positivize
@@ -78,6 +79,7 @@ function InvImage
 function List.range'
 function WellFounded.Nat.eager
 function List.filter.match_1
+function PProd.fst
 function instInhabitedTrue
 function Lean.Omega.Constraint.flip
 function Option.getD
@@ -87,12 +89,14 @@ function Int.decLe
 function Lean.Omega.IntList.add
 function Lean.Omega.Constraint.upperBound
 function Lean.Omega.LinearCombo.eval
+function Quot.liftOn
 function cast
 function instInhabitedNat
 function Function.comp
 function List.zipWith.match_1
 function Lean.Omega.Constraint.sat
 function Int.instDecidableEq
+function PProd.snd
 function GE.ge
 function Lean.Omega.Coeffs.sdiv
 function Nat.lt_wfRel
@@ -128,6 +132,7 @@ function WellFounded.Nat.fix.go
 function Lean.Omega.tidy?.match_1
 function Lean.Omega.Constraint.div
 function Lean.Omega.IntList.get
+function List.zipWith._f
 function Lean.Omega.Coeffs.smul
 function Int.sub
 function Int.subNatNat

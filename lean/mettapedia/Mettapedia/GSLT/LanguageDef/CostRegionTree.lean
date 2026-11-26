@@ -3675,6 +3675,19 @@ theorem entries_append {source : CIGSLT} {color : CostStaticColor}
   | cons boundary content tail inductionHypothesis =>
       simp [append, entries, inductionHypothesis]
 
+/-- A membership observer of a concatenated table can be restricted to
+each segment. The ordered entry list is retained by `entries_append`. -/
+theorem entries_append_subset_iff {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {left right : List CostRegionOccurrence}
+    (leftTable : TypedCostRegionBoundaryTable source color targetFree left)
+    (rightTable : TypedCostRegionBoundaryTable source color targetFree right)
+    {entries : List (TypedCostRegionBoundary source color targetFree)} :
+    (append leftTable rightTable).entries ⊆ entries ↔
+      leftTable.entries ⊆ entries ∧ rightTable.entries ⊆ entries := by
+  rw [entries_append]
+  exact List.append_subset
+
 /-- Splitting a table partitions its entries without changing their order. -/
 theorem entries_split {source : CIGSLT} {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
@@ -4464,6 +4477,32 @@ theorem certify?_split_of_append_eq_some {source : CIGSLT}
           subst table
           simp
 
+/-- The entry returned by a singleton table is the exact certificate
+accepted for that occurrence and both of its supplied target indices. -/
+theorem certify?_singleton_entry {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    {occurrence : CostRegionOccurrence}
+    {targetSupport : List TypeExpr} {targetType : TypeExpr}
+    {table : TypedCostRegionBoundaryTable source color targetFree [occurrence]}
+    (certified : certify? (source := source) (color := color)
+      (targetFree := targetFree) (.cons targetSupport targetType .nil) = some table)
+    {boundary : TypedCostRegionBoundary source color targetFree}
+    (membership : boundary ∈ table.entries) :
+    ∃ head, certifyCostRegionBoundary? source color targetFree
+        targetSupport targetType occurrence.content = some head ∧
+      head.typed = boundary := by
+  cases headResult : certifyCostRegionBoundary? source color targetFree
+      targetSupport targetType occurrence.content with
+  | none =>
+      simp [certify?, headResult] at certified
+  | some head =>
+      simp [certify?, headResult] at certified
+      cases certified
+      refine ⟨head, rfl, ?_⟩
+      simp only [entries, CostRegionBoundaryEvidence.TypedCostRegionBoundaryTable.entries,
+        List.mem_cons, List.not_mem_nil, or_false] at membership
+      exact membership.symm
+
 /-- Every entry of a successfully certified singleton fiber recovers the
 exact source binder context whose static image was observed. -/
 theorem certify?_singleton_sourceSupport_eq {source : CIGSLT}
@@ -4479,17 +4518,8 @@ theorem certify?_singleton_sourceSupport_eq {source : CIGSLT}
     (boundary : TypedCostRegionBoundary source color targetFree)
     (membership : boundary ∈ table.entries) :
     boundary.boundary.support = availableSource := by
-  cases headResult : certifyCostRegionBoundary? source color targetFree
-      (availableSource.map (mapTypeExpr (color.symbols source))) targetType
-        occurrence.content with
-  | none =>
-      simp [certify?, headResult] at certified
-  | some head =>
-      simp [certify?, headResult] at certified
-      cases certified
-      simp only [entries, CostRegionBoundaryEvidence.TypedCostRegionBoundaryTable.entries, List.mem_cons, List.not_mem_nil, or_false] at membership
-      subst boundary
-      exact certifyCostRegionBoundary?_sourceSupport_eq headResult
+  obtain ⟨_, observed, rfl⟩ := certify?_singleton_entry certified membership
+  exact certifyCostRegionBoundary?_sourceSupport_eq observed
 
 /-- Every entry of a successfully certified singleton retains the exact
 observed target binder context, including positions outside the selected
@@ -4505,16 +4535,8 @@ theorem certify?_singleton_targetSupport_eq {source : CIGSLT}
     (boundary : TypedCostRegionBoundary source color targetFree)
     (membership : boundary ∈ table.entries) :
     boundary.boundary.targetSupport = targetSupport := by
-  cases headResult : certifyCostRegionBoundary? source color targetFree
-      targetSupport targetType occurrence.content with
-  | none =>
-      simp [certify?, headResult] at certified
-  | some head =>
-      simp [certify?, headResult] at certified
-      cases certified
-      simp only [entries, CostRegionBoundaryEvidence.TypedCostRegionBoundaryTable.entries, List.mem_cons, List.not_mem_nil, or_false] at membership
-      subst boundary
-      exact head.targetSupport_eq
+  obtain ⟨head, _, rfl⟩ := certify?_singleton_entry certified membership
+  exact head.targetSupport_eq
 
 /-- Every entry of a successfully certified singleton fiber at a mapped
 target type recovers the exact source type. -/
@@ -4530,17 +4552,8 @@ theorem certify?_singleton_sourceType_eq {source : CIGSLT}
     (boundary : TypedCostRegionBoundary source color targetFree)
     (membership : boundary ∈ table.entries) :
     boundary.boundary.type = sourceType := by
-  cases headResult : certifyCostRegionBoundary? source color targetFree
-      targetSupport (mapTypeExpr (color.symbols source) sourceType)
-        occurrence.content with
-  | none =>
-      simp [certify?, headResult] at certified
-  | some head =>
-      simp [certify?, headResult] at certified
-      cases certified
-      simp only [entries, CostRegionBoundaryEvidence.TypedCostRegionBoundaryTable.entries, List.mem_cons, List.not_mem_nil, or_false] at membership
-      subst boundary
-      exact certifyCostRegionBoundary?_sourceType_eq headResult
+  obtain ⟨_, observed, rfl⟩ := certify?_singleton_entry certified membership
+  exact certifyCostRegionBoundary?_sourceType_eq observed
 
 /-- Every successful finite certification table is coherently contained in
 the selected static type and binder-support fiber. -/
@@ -4754,6 +4767,22 @@ theorem restorationAssignment_boundaryVariable {source : CIGSLT}
   simp [restorationAssignment, decodeCostRegionSourceVariableName_boundary,
     table.resolve_of_mem_entries boundary membership]
 
+private theorem restorationAssignment_openPatternWellSorted
+    {source : CIGSLT} {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    {name : String} {type : TypeExpr} (lookup : table.mappedFreeContext name = some type) :
+    ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree (table.restorationSupport name)
+      type (table.restorationAssignment name) := by
+  refine costRestoration_openPatternWellSorted source color table.resolve lookup ?_ ?_
+  · intro sourceName decoded
+    simp [restorationAssignment, decoded]
+  · intro boundary decoded observed
+    simpa only [restorationAssignment, decoded, observed,
+      CostRegionBoundaryEvidence.TypedCostRegionBoundary.openPattern_pattern] using
+      (CostRegionBoundaryEvidence.TypedCostRegionBoundary.openPattern boundary).2
+
 /-- The finite resolver is a typed supported assignment in the generated
 Cost language.  Every accepted boundary obtains its proof from the table
 entry itself, never from decoding a serialized key. -/
@@ -4764,43 +4793,7 @@ def supportedAssignment {source : CIGSLT} {color : CostStaticColor}
     WellSorted.SupportedAssignment source.costWholeLanguage
       table.mappedFreeContext targetFree table.restorationSupport where
   assignment := table.restorationAssignment
-  typed := by
-    intro name type lookup
-    cases decodedName : decodeCostRegionSourceVariableName name with
-    | some sourceName =>
-        cases targetLookup : targetFree sourceName with
-        | none =>
-            simp [mappedFreeContext, decodedName, targetLookup] at lookup
-        | some targetType =>
-            cases decodedType :
-                CostStaticTypeImage.decode source.theory color targetType with
-            | none =>
-                simp [mappedFreeContext, decodedName, targetLookup,
-                  decodedType] at lookup
-            | some sourceType =>
-                have encodedType :
-                    mapTypeExpr (color.symbols source) sourceType = targetType :=
-                  CostStaticTypeImage.mapTypeExpr_decode source.theory color decodedType
-                have mappedType :
-                    mapTypeExpr (color.symbols source) sourceType = type := by
-                  simpa [mappedFreeContext, decodedName, targetLookup,
-                    decodedType] using lookup
-                have targetTypeEquality : targetType = type :=
-                  encodedType.symm.trans mappedType
-                have targetLookup' : targetFree sourceName = some type := by
-                  simpa [targetTypeEquality] using targetLookup
-                simpa [restorationSupport, restorationAssignment,
-                  decodedName] using
-                    (WellSorted.HasType.fvar (bound := []) targetLookup')
-    | none =>
-        cases resolved : table.resolve name with
-        | none =>
-            simp [mappedFreeContext, decodedName, resolved] at lookup
-        | some typedBoundary =>
-            have targetType : typedBoundary.boundary.targetType = type := by
-              simpa [mappedFreeContext, decodedName, resolved] using lookup
-            simpa [restorationSupport, restorationAssignment, decodedName,
-              resolved, targetType] using typedBoundary.contentTyped
+  typed lookup := (table.restorationAssignment_openPatternWellSorted lookup).1.1
 
 /-- The finite resolver maps every admitted name to a complete open object,
 including locally nameless metadata and reflective quotation safety. -/
@@ -4812,53 +4805,9 @@ def supportedOpenAssignment {source : CIGSLT} {color : CostStaticColor}
       source.costWholeLanguage
       table.mappedFreeContext targetFree table.restorationSupport where
   toSupportedAssignment := table.supportedAssignment
-  canonicalBinderMetadata := by
-    intro name type lookup
-    change (table.restorationAssignment name).hasCanonicalBinderMetadata = true
-    cases decodedName : decodeCostRegionSourceVariableName name with
-    | some sourceName =>
-        simp only [restorationAssignment, decodedName]
-        rfl
-    | none =>
-        cases resolved : table.resolve name with
-        | none =>
-            simp [mappedFreeContext, decodedName, resolved] at lookup
-        | some typedBoundary =>
-            simpa [restorationAssignment, decodedName, resolved] using
-              typedBoundary.contentCanonicalBinderMetadata
-  objectPattern := by
-    intro name type lookup
-    change WellSorted.isObjectPattern (table.restorationAssignment name) = true
-    cases decodedName : decodeCostRegionSourceVariableName name with
-    | some sourceName =>
-        simp only [restorationAssignment, decodedName]
-        rfl
-    | none =>
-        cases resolved : table.resolve name with
-        | none =>
-            simp [mappedFreeContext, decodedName, resolved] at lookup
-        | some typedBoundary =>
-            simpa [restorationAssignment, decodedName, resolved] using
-              typedBoundary.contentObjectPattern
-  reflectiveScopeSafe := by
-    intro name type lookup
-    change ReflectiveWellSorted.ReflectiveScopeSafeAt
-      source.costWholeReflectionProfile
-      (table.restorationSupport name).length
-      (table.restorationAssignment name)
-    cases decodedName : decodeCostRegionSourceVariableName name with
-    | some sourceName =>
-        intro presentation membership
-        simp only [restorationSupport, restorationAssignment, decodedName,
-          List.length_nil]
-        exact scopeSafeAt_fvar _ _ _ _
-    | none =>
-        cases resolved : table.resolve name with
-        | none =>
-            simp [mappedFreeContext, decodedName, resolved] at lookup
-        | some typedBoundary =>
-            simpa [restorationSupport, restorationAssignment, decodedName,
-              resolved] using typedBoundary.contentReflectiveScopeSafe
+  canonicalBinderMetadata lookup := (table.restorationAssignment_openPatternWellSorted lookup).1.2.1
+  objectPattern lookup := (table.restorationAssignment_openPatternWellSorted lookup).1.2.2.1
+  reflectiveScopeSafe lookup := (table.restorationAssignment_openPatternWellSorted lookup).2
 
 namespace Values
 
@@ -4879,6 +4828,23 @@ def assignment {source : CIGSLT} {color : CostStaticColor}
         | some resolved => resolved.2.1
         | none => .fvar name
 
+private theorem assignment_openPatternWellSorted
+    {source : CIGSLT} {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (values : Values source color targetFree table)
+    {name : String} {type : TypeExpr} (lookup : table.mappedFreeContext name = some type) :
+    ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree (table.restorationSupport name)
+      type (values.assignment table name) := by
+  refine costRestoration_openPatternWellSorted source color table.resolve lookup ?_ ?_
+  · intro sourceName decoded
+    simp [assignment, decoded]
+  · intro boundary decoded observed
+    have selected := (values.resolve_boundary table name).trans observed
+    obtain ⟨⟨selectedBoundary, value⟩, read, rfl⟩ := Option.map_eq_some_iff.mp selected
+    simpa only [assignment, decoded, read] using value.2
+
 /-- Finite replacement values form a supported assignment in exactly the
 same domain and support map as their stable boundary table. -/
 def supportedAssignment {source : CIGSLT} {color : CostStaticColor}
@@ -4889,50 +4855,7 @@ def supportedAssignment {source : CIGSLT} {color : CostStaticColor}
     WellSorted.SupportedAssignment source.costWholeLanguage
       table.mappedFreeContext targetFree table.restorationSupport where
   assignment := values.assignment table
-  typed := by
-    intro name type lookup
-    cases decodedName : decodeCostRegionSourceVariableName name with
-    | some sourceName =>
-        cases targetLookup : targetFree sourceName with
-        | none =>
-            simp [mappedFreeContext, decodedName, targetLookup] at lookup
-        | some targetType =>
-            cases decodedType :
-                CostStaticTypeImage.decode source.theory color targetType with
-            | none =>
-                simp [mappedFreeContext, decodedName, targetLookup,
-                  decodedType] at lookup
-            | some sourceType =>
-                have encodedType :
-                    mapTypeExpr (color.symbols source) sourceType = targetType :=
-                  CostStaticTypeImage.mapTypeExpr_decode source.theory color decodedType
-                have mappedType :
-                    mapTypeExpr (color.symbols source) sourceType = type := by
-                  simpa [mappedFreeContext, decodedName, targetLookup,
-                    decodedType] using lookup
-                have targetTypeEquality : targetType = type :=
-                  encodedType.symm.trans mappedType
-                have targetLookup' : targetFree sourceName = some type := by
-                  simpa [targetTypeEquality] using targetLookup
-                simpa [assignment, restorationSupport, decodedName] using
-                  (WellSorted.HasType.fvar (bound := []) targetLookup')
-    | none =>
-        cases valueResolved : values.resolve table name with
-        | none =>
-            have tableResolved : table.resolve name = none := by
-              have agrees := values.resolve_boundary table name
-              rw [valueResolved] at agrees
-              simpa using agrees.symm
-            simp [mappedFreeContext, decodedName, tableResolved] at lookup
-        | some resolved =>
-            have tableResolved : table.resolve name = some resolved.1 := by
-              have agrees := values.resolve_boundary table name
-              rw [valueResolved] at agrees
-              simpa using agrees.symm
-            have targetType : resolved.1.boundary.targetType = type := by
-              simpa [mappedFreeContext, decodedName, tableResolved] using lookup
-            simpa [assignment, restorationSupport, decodedName, valueResolved,
-              tableResolved, targetType] using resolved.2.2.1.1
+  typed lookup := (assignment_openPatternWellSorted table values lookup).1.1
 
 /-- The finite replacement vector contains complete open values, so its
 supported assignment also preserves object syntax, binder metadata, and
@@ -4946,67 +4869,9 @@ def supportedOpenAssignment {source : CIGSLT} {color : CostStaticColor}
       source.costWholeLanguage
       table.mappedFreeContext targetFree table.restorationSupport where
   toSupportedAssignment := values.supportedAssignment table
-  canonicalBinderMetadata := by
-    intro name type lookup
-    change (values.assignment table name).hasCanonicalBinderMetadata = true
-    cases decodedName : decodeCostRegionSourceVariableName name with
-    | some sourceName =>
-        simp only [assignment, decodedName]
-        rfl
-    | none =>
-        cases valueResolved : values.resolve table name with
-        | none =>
-            have tableResolved : table.resolve name = none := by
-              have agrees := values.resolve_boundary table name
-              rw [valueResolved] at agrees
-              simpa using agrees.symm
-            simp [mappedFreeContext, decodedName, tableResolved] at lookup
-        | some resolved =>
-            simpa [assignment, decodedName, valueResolved] using
-              resolved.2.2.1.2.1
-  objectPattern := by
-    intro name type lookup
-    change WellSorted.isObjectPattern (values.assignment table name) = true
-    cases decodedName : decodeCostRegionSourceVariableName name with
-    | some sourceName =>
-        simp only [assignment, decodedName]
-        rfl
-    | none =>
-        cases valueResolved : values.resolve table name with
-        | none =>
-            have tableResolved : table.resolve name = none := by
-              have agrees := values.resolve_boundary table name
-              rw [valueResolved] at agrees
-              simpa using agrees.symm
-            simp [mappedFreeContext, decodedName, tableResolved] at lookup
-        | some resolved =>
-            simpa [assignment, decodedName, valueResolved] using
-              resolved.2.2.1.2.2.1
-  reflectiveScopeSafe := by
-    intro name type lookup
-    change ReflectiveWellSorted.ReflectiveScopeSafeAt
-      source.costWholeReflectionProfile
-      (table.restorationSupport name).length (values.assignment table name)
-    cases decodedName : decodeCostRegionSourceVariableName name with
-    | some sourceName =>
-        intro presentation membership
-        simp only [restorationSupport, assignment, decodedName, List.length_nil]
-        exact scopeSafeAt_fvar _ _ _ _
-    | none =>
-        cases valueResolved : values.resolve table name with
-        | none =>
-            have tableResolved : table.resolve name = none := by
-              have agrees := values.resolve_boundary table name
-              rw [valueResolved] at agrees
-              simpa using agrees.symm
-            simp [mappedFreeContext, decodedName, tableResolved] at lookup
-        | some resolved =>
-            have tableResolved : table.resolve name = some resolved.1 := by
-              have agrees := values.resolve_boundary table name
-              rw [valueResolved] at agrees
-              simpa using agrees.symm
-            simpa [restorationSupport, assignment, decodedName, valueResolved,
-              tableResolved] using resolved.2.2.2
+  canonicalBinderMetadata lookup := (assignment_openPatternWellSorted table values lookup).1.2.1
+  objectPattern lookup := (assignment_openPatternWellSorted table values lookup).1.2.2.1
+  reflectiveScopeSafe lookup := (assignment_openPatternWellSorted table values lookup).2
 
 /-- Semantic agreement of a replacement-vector head and the corresponding
 original boundary value extends pointwise agreement of the tail to the whole
@@ -9869,22 +9734,9 @@ mutual
     | nil => rfl
     | cons representation parameterType head tail =>
         simp only [WellSorted.isObjectPatternList, Bool.and_eq_true] at object
-        have headSubset : head.boundaryTable.entries ⊆ globalTable.entries := by
-          intro boundary membership
-          apply entriesSubset
-          change boundary ∈
-            (TypedCostRegionBoundaryTable.append head.boundaryTable
-              tail.boundaryTable).entries
-          rw [TypedCostRegionBoundaryTable.entries_append]
-          exact List.mem_append_left tail.boundaryTable.entries membership
-        have tailSubset : tail.boundaryTable.entries ⊆ globalTable.entries := by
-          intro boundary membership
-          apply entriesSubset
-          change boundary ∈
-            (TypedCostRegionBoundaryTable.append head.boundaryTable
-              tail.boundaryTable).entries
-          rw [TypedCostRegionBoundaryTable.entries_append]
-          exact List.mem_append_right head.boundaryTable.entries membership
+        obtain ⟨headSubset, tailSubset⟩ :=
+          (TypedCostRegionBoundaryTable.entries_append_subset_iff
+            head.boundaryTable tail.boundaryTable).mp entriesSubset
         have headRestored :=
           CostStaticRegionPlan.restoreMappedAbstractPattern head globalTable
             headSubset object.1
@@ -9926,22 +9778,9 @@ mutual
     | nil => rfl
     | cons head tail =>
         simp only [WellSorted.isObjectPatternList, Bool.and_eq_true] at object
-        have headSubset : head.boundaryTable.entries ⊆ globalTable.entries := by
-          intro boundary membership
-          apply entriesSubset
-          change boundary ∈
-            (TypedCostRegionBoundaryTable.append head.boundaryTable
-              tail.boundaryTable).entries
-          rw [TypedCostRegionBoundaryTable.entries_append]
-          exact List.mem_append_left tail.boundaryTable.entries membership
-        have tailSubset : tail.boundaryTable.entries ⊆ globalTable.entries := by
-          intro boundary membership
-          apply entriesSubset
-          change boundary ∈
-            (TypedCostRegionBoundaryTable.append head.boundaryTable
-              tail.boundaryTable).entries
-          rw [TypedCostRegionBoundaryTable.entries_append]
-          exact List.mem_append_right head.boundaryTable.entries membership
+        obtain ⟨headSubset, tailSubset⟩ :=
+          (TypedCostRegionBoundaryTable.entries_append_subset_iff
+            head.boundaryTable tail.boundaryTable).mp entriesSubset
         have headRestored :=
           CostStaticRegionPlan.restoreMappedAbstractPattern head globalTable
             headSubset object.1
@@ -10451,24 +10290,9 @@ mutual
         refine ⟨typed, ?_⟩
         exact .nil sourceBound sourceAvailable
     | cons representation parameterType head tail =>
-        have headSubset : head.boundaryTable.entries ⊆
-            globalTable.entries := by
-          intro boundary membership
-          apply entriesSubset
-          change boundary ∈
-            (TypedCostRegionBoundaryTable.append head.boundaryTable
-              tail.boundaryTable).entries
-          rw [TypedCostRegionBoundaryTable.entries_append]
-          exact List.mem_append_left _ membership
-        have tailSubset : tail.boundaryTable.entries ⊆
-            globalTable.entries := by
-          intro boundary membership
-          apply entriesSubset
-          change boundary ∈
-            (TypedCostRegionBoundaryTable.append head.boundaryTable
-              tail.boundaryTable).entries
-          rw [TypedCostRegionBoundaryTable.entries_append]
-          exact List.mem_append_right _ membership
+        obtain ⟨headSubset, tailSubset⟩ :=
+          (TypedCostRegionBoundaryTable.entries_append_subset_iff
+            head.boundaryTable tail.boundaryTable).mp entriesSubset
         obtain ⟨headTyped, headSafe⟩ :=
           CostStaticRegionPlan.abstractPattern_supportedSafe
             (sourceBound := sourceBound) (targetBound := targetBound)
@@ -10532,24 +10356,9 @@ mutual
         refine ⟨typed, ?_⟩
         exact .nil sourceBound sourceElementType sourceAvailable
     | cons head tail =>
-        have headSubset : head.boundaryTable.entries ⊆
-            globalTable.entries := by
-          intro boundary membership
-          apply entriesSubset
-          change boundary ∈
-            (TypedCostRegionBoundaryTable.append head.boundaryTable
-              tail.boundaryTable).entries
-          rw [TypedCostRegionBoundaryTable.entries_append]
-          exact List.mem_append_left _ membership
-        have tailSubset : tail.boundaryTable.entries ⊆
-            globalTable.entries := by
-          intro boundary membership
-          apply entriesSubset
-          change boundary ∈
-            (TypedCostRegionBoundaryTable.append head.boundaryTable
-              tail.boundaryTable).entries
-          rw [TypedCostRegionBoundaryTable.entries_append]
-          exact List.mem_append_right _ membership
+        obtain ⟨headSubset, tailSubset⟩ :=
+          (TypedCostRegionBoundaryTable.entries_append_subset_iff
+            head.boundaryTable tail.boundaryTable).mp entriesSubset
         obtain ⟨headTyped, headSafe⟩ :=
           CostStaticRegionPlan.abstractPattern_supportedSafe
             (sourceBound := sourceBound) (targetBound := targetBound)
@@ -11072,6 +10881,40 @@ def build? {source : CIGSLT} {color : CostStaticColor}
       else
         none
 
+/-- Success retains the actual compiler receipt and the static-root
+guard for the exact node and its input. -/
+theorem build?_eq_some_iff_planned {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr}
+    {sourceSort : LangSort source.theory.presentation.presentation.language}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree
+      targetBound (color.mapLangSort source sourceSort))
+    {node : CostStaticRegionNode source color targetFree} :
+    build? term = some node ↔
+      ∃ (plan : CostStaticRegionPlan source color targetFree
+          (CostStaticTypeThinning.sourceContextOfTarget source.theory color targetBound)
+          targetBound
+          (CostStaticTypeThinning.ofTargetThinning source.theory color targetBound)
+          targetBound .hole term.1 (.base sourceSort.1))
+        (rootStatic : plan.isStaticRoot = true),
+        plan.CompilerReceipt ∧ node = ofPlan term plan rootStatic := by
+  constructor
+  · intro built
+    unfold build? at built
+    dsimp only at built
+    split at built
+    · simp at built
+    · rename_i chosen selected
+      split at built
+      · rename_i root
+        exact ⟨chosen, root, selected, (Option.some.inj built).symm⟩
+      · simp at built
+  · rintro ⟨plan, rootStatic, receipt, rfl⟩
+    unfold build?
+    dsimp only
+    rw [receipt]
+    simp [rootStatic]
+
 /-- A successful executable node build retains the input generated term
 definitionally; the planner can only add evidence and finite boundary data. -/
 theorem build?_term_eq {source : CIGSLT} {color : CostStaticColor}
@@ -11084,21 +10927,8 @@ theorem build?_term_eq {source : CIGSLT} {color : CostStaticColor}
     {node : CostStaticRegionNode source color targetFree}
     (built : CostStaticRegionNode.build? term = some node) :
     node.term.1 = term.1 := by
-  unfold CostStaticRegionNode.build? at built
-  dsimp only at built
-  cases planned : buildCostStaticRegionPlan? source color targetFree
-      (CostStaticTypeThinning.sourceContextOfTarget source.theory color targetBound)
-      targetBound
-      (CostStaticTypeThinning.ofTargetThinning source.theory color targetBound)
-      targetBound .hole term.1 (.base sourceSort.1) with
-  | none => simp [planned] at built
-  | some plan =>
-      rw [planned] at built
-      by_cases rootStatic : plan.isStaticRoot = true
-      · simp [rootStatic] at built
-        subst node
-        rfl
-      · simp [rootStatic] at built
+  obtain ⟨_, _, _, rfl⟩ := (build?_eq_some_iff_planned term).mp built
+  rfl
 
 /-- A successful executable node build also retains the exact ambient binder
 fiber supplied to the planner. -/
@@ -11111,21 +10941,8 @@ theorem build?_targetBound_eq {source : CIGSLT} {color : CostStaticColor}
     {node : CostStaticRegionNode source color targetFree}
     (built : CostStaticRegionNode.build? term = some node) :
     node.targetBound = targetBound := by
-  unfold CostStaticRegionNode.build? at built
-  dsimp only at built
-  cases planned : buildCostStaticRegionPlan? source color targetFree
-      (CostStaticTypeThinning.sourceContextOfTarget source.theory color targetBound)
-      targetBound
-      (CostStaticTypeThinning.ofTargetThinning source.theory color targetBound)
-      targetBound .hole term.1 (.base sourceSort.1) with
-  | none => simp [planned] at built
-  | some plan =>
-      rw [planned] at built
-      by_cases rootStatic : plan.isStaticRoot = true
-      · simp [rootStatic] at built
-        subst node
-        rfl
-      · simp [rootStatic] at built
+  obtain ⟨_, _, _, rfl⟩ := (build?_eq_some_iff_planned term).mp built
+  rfl
 
 /-- A successful executable node build retains the exact source sort used to
 index its input term.  Raw-pattern equality alone cannot recover this
@@ -11139,21 +10956,8 @@ theorem build?_sourceSort_eq {source : CIGSLT} {color : CostStaticColor}
     {node : CostStaticRegionNode source color targetFree}
     (built : CostStaticRegionNode.build? term = some node) :
     node.sourceSort = sourceSort := by
-  unfold CostStaticRegionNode.build? at built
-  dsimp only at built
-  cases planned : buildCostStaticRegionPlan? source color targetFree
-      (CostStaticTypeThinning.sourceContextOfTarget source.theory color targetBound)
-      targetBound
-      (CostStaticTypeThinning.ofTargetThinning source.theory color targetBound)
-      targetBound .hole term.1 (.base sourceSort.1) with
-  | none => simp [planned] at built
-  | some plan =>
-      rw [planned] at built
-      by_cases rootStatic : plan.isStaticRoot = true
-      · simp [rootStatic] at built
-        subst node
-        rfl
-      · simp [rootStatic] at built
+  obtain ⟨_, _, _, rfl⟩ := (build?_eq_some_iff_planned term).mp built
+  rfl
 
 /-- One successful static-root candidate for a term in an arbitrary generated
 Cost sort.  The source sort and color are retained as data, while the two
@@ -11833,11 +11637,8 @@ theorem exists_build?_eq_some_of_plan {source : CIGSLT}
     (compiled : plan.CompilerReceipt)
     (rootStatic : plan.isStaticRoot = true) :
     ∃ node, CostStaticRegionNode.build? term = some node := by
-  refine ⟨CostStaticRegionNode.ofPlan term plan rootStatic, ?_⟩
-  unfold CostStaticRegionNode.build?
-  dsimp only
-  rw [compiled]
-  simp [rootStatic]
+  exact ⟨ofPlan term plan rootStatic,
+    (build?_eq_some_iff_planned term).mpr ⟨plan, rootStatic, compiled, rfl⟩⟩
 
 /-- Exact replay form of `exists_build?_eq_some_of_plan`: the deterministic
 node builder returns the node packaged from the supplied structural plan. -/
@@ -11856,10 +11657,7 @@ theorem build?_eq_some_of_plan {source : CIGSLT}
     (rootStatic : plan.isStaticRoot = true) :
     CostStaticRegionNode.build? term =
       some (CostStaticRegionNode.ofPlan term plan rootStatic) := by
-  unfold CostStaticRegionNode.build?
-  dsimp only
-  rw [compiled]
-  simp [rootStatic]
+  exact (build?_eq_some_iff_planned term).mpr ⟨plan, rootStatic, compiled, rfl⟩
 
 /-- Re-running the deterministic structural planner returns an existing node
 exactly when that node carries the corresponding compiler receipt. -/

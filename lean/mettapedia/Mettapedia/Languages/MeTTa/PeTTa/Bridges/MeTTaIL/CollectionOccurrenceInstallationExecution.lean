@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.PeTTa.EquationEquality
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CollectionOccurrenceBatchExecution
 import Mettapedia.OSLF.MeTTaIL.CollectionOccurrenceInstallation
 
@@ -27,20 +28,8 @@ def library : BridgeKit.Library :=
 theorem checked : library.check = true := CollectionOccurrenceSearchExecution.SelectedNativeSource.checked
 
 section ProofMetadata
-private local instance installationEquationEq : DecidableEq SpaceSemantics.Equation := by
-  intro left right
-  apply decidable_of_iff (left.head = right.head ∧ left.arguments = right.arguments ∧ left.body = right.body)
-  constructor
-  · rintro ⟨head, arguments, body⟩
-    cases left
-    cases right
-    cases head
-    cases arguments
-    cases body
-    rfl
-  · intro same
-    cases same
-    exact ⟨rfl, rfl, rfl⟩
+private local instance installationEquationEq : DecidableEq SpaceSemantics.Equation :=
+  SpaceSemantics.Equation.decideEq
 
 def installationProofLibrary : Library := ⟨
   RuleExecutionProgram.callFragment ["gslt:automata:append"] RuleExecutionProgram.scopedProgram,

@@ -4,6 +4,60 @@ namespace Mettapedia.GSLT.LanguageDef.CompiledPlanLowering
 
 open CompiledPlanWireFormat CompiledPlanAdmission
 
+/-- A scalar node's tag determines its source term and variable readout. -/
+private inductive ScalarEmission : Term → Node → List Nat → Prop where
+  | symbol (name : List UInt8) : ScalarEmission (.symbol name) (scalarNode 1 0 0 name) []
+  | slot (index : UInt32) :
+      ScalarEmission (.variable index) (scalarNode 2 0 index []) [index.toNat]
+  | text (value : List UInt8) : ScalarEmission (.string value) (scalarNode 3 0 0 value) []
+  | integer (value : Int64) : ScalarEmission (.integer value) (scalarNode 4 value 0 []) []
+
+private theorem scalar_readback {source : Term} {node : Node} {slots : List Nat}
+    (scalar : ScalarEmission source node slots)
+    (builder : Builder) (program : Program) (fuel : Nat)
+    (wellFormed : builder.WellFormed) (sourceValid : termTextsValid source = true)
+    (nodePrefix : (emitTerm source builder).2.nodes <+: program.nodes)
+    (nodesFit : (emitTerm source builder).2.nodeCount < UInt32.size)
+    (fuelEnough : termDepth source < fuel) :
+    ∃ decoded,
+      decodeTerm? program fuel (emitTerm source builder).1.toNat = some decoded ∧
+        DecodedTermMatchesSourceAt decoded source builder.nodeCount builder.childCount := by
+  have emitted : emitTerm source builder = appendNode builder node := by
+    cases scalar <;> rfl
+  have localValid : node.locallyValid = true := by
+    cases scalar <;>
+      simp [termTextsValid, bytesNonempty, textEncodable?, bytesNulFree] at sourceValid <;>
+      simp [scalarNode, Node.locallyValid, scalarNodeFieldsAreZero, bytesNonempty,
+        bytesNulFree, sourceValid]
+  have rootIndex := emitTerm_root_succ_eq_nodeCount source builder nodesFit
+  have nodeLength : (emitTerm source builder).2.nodesRev.length =
+      (emitTerm source builder).2.nodeCount :=
+    (emitTerm_wellFormed source builder wellFormed).1.symm
+  have indexEq : (emitTerm source builder).1.toNat =
+      (emitTerm source builder).2.nodesRev.length - 1 := by omega
+  have lookup : program.nodes[(emitTerm source builder).1.toNat]? = some node := by
+    rw [indexEq]
+    exact getElem?_eq_reverseHead_of_prefix _ _ node nodePrefix
+      (by simp [emitted, appendNode])
+  have afterCount : (emitTerm source builder).2.nodeCount = builder.nodeCount + 1 := by
+    simp [emitted, appendNode]
+  have rootExact := Nat.add_right_cancel (rootIndex.trans afterCount)
+  cases fuel with
+  | zero => exact (Nat.not_lt_zero _ fuelEnough).elim
+  | succ remaining =>
+    refine ⟨DecodedTerm.leaf source (emitTerm source builder).1.toNat slots, ?_, ?_⟩
+    · simp only [decodeTerm?, lookup]
+      change (if !node.locallyValid then none else _) = _
+      rw [localValid]
+      cases scalar <;> rfl
+    · cases scalar <;>
+        simp [DecodedTermMatchesSourceAt, DecodedTerm.leaf, termNodeCount,
+          termChildSlotCount, termUsedVariables, termDepth, slotRange, rootExact]
+
+example : (scalarNode 1 0 0 [97]).locallyValid = true := by decide +kernel
+
+example : (scalarNode 1 0 0 []).locallyValid = false := by decide +kernel
+
 mutual
 
 theorem decodeTerm?_emitTerm
@@ -19,196 +73,21 @@ theorem decodeTerm?_emitTerm
       decodeTerm? program fuel (emitTerm source builder).1.toNat =
           some decoded ∧
         DecodedTermMatchesSourceAt decoded source builder.nodeCount
-          builder.childCount := by
-  cases source with
-  | symbol name =>
-      let node := scalarNode 1 0 0 name
-      have afterWellFormed :=
-        emitTerm_wellFormed (.symbol name) builder wellFormed
-      have selected := getElem?_eq_reverseHead_of_prefix
-        (emitTerm (.symbol name) builder).2.nodesRev program.nodes node
-        nodePrefix (by simp [emitTerm, appendNode, node])
-      have rootIndex :=
-        emitTerm_root_succ_eq_nodeCount (.symbol name) builder nodesFit
-      have nodeLength :
-          (emitTerm (.symbol name) builder).2.nodesRev.length =
-            (emitTerm (.symbol name) builder).2.nodeCount :=
-        afterWellFormed.1.symm
-      have indexEq : (emitTerm (.symbol name) builder).1.toNat =
-          (emitTerm (.symbol name) builder).2.nodesRev.length - 1 := by
-        omega
-      have lookup :
-          program.nodes[(emitTerm (.symbol name) builder).1.toNat]? =
-            some node := by
-        rw [indexEq]
-        exact selected
-      cases fuel with
-      | zero => omega
-      | succ remaining =>
-          refine ⟨DecodedTerm.leaf (.symbol name)
-            (emitTerm (.symbol name) builder).1.toNat, ?_, ?_⟩
-          · have localValid : node.locallyValid = true := by
-              simp [termTextsValid, bytesNonempty, textEncodable?,
-                bytesNulFree] at sourceValid
-              simp [node, scalarNode, Node.locallyValid,
-                scalarNodeFieldsAreZero, bytesNonempty, bytesNulFree,
-                sourceValid]
-            have localValid' :
-                (scalarNode 1 0 0 name).locallyValid = true := by
-              simpa [node] using localValid
-            simp only [decodeTerm?, lookup]
-            change
-              (if (!(scalarNode 1 0 0 name).locallyValid) = true then none
-                else _) = _
-            rw [localValid']
-            rfl
-          · have rootExact :
-                (emitTerm (.symbol name) builder).1.toNat =
-                  builder.nodeCount := by
-              change (emitTerm (.symbol name) builder).1.toNat + 1 =
-                builder.nodeCount + 1 at rootIndex
-              omega
-            simp [DecodedTermMatchesSourceAt, DecodedTerm.leaf,
-              termNodeCount, termChildSlotCount, termUsedVariables,
-              termDepth, slotRange, rootExact]
-  | «variable» slot =>
-      let node := scalarNode 2 0 slot []
-      have afterWellFormed :=
-        emitTerm_wellFormed (.variable slot) builder wellFormed
-      have selected := getElem?_eq_reverseHead_of_prefix
-        (emitTerm (.variable slot) builder).2.nodesRev program.nodes node
-        nodePrefix (by simp [emitTerm, appendNode, node])
-      have rootIndex :=
-        emitTerm_root_succ_eq_nodeCount (.variable slot) builder nodesFit
-      have nodeLength :
-          (emitTerm (.variable slot) builder).2.nodesRev.length =
-            (emitTerm (.variable slot) builder).2.nodeCount :=
-        afterWellFormed.1.symm
-      have indexEq : (emitTerm (.variable slot) builder).1.toNat =
-          (emitTerm (.variable slot) builder).2.nodesRev.length - 1 := by
-        omega
-      have lookup :
-          program.nodes[(emitTerm (.variable slot) builder).1.toNat]? =
-            some node := by
-        rw [indexEq]
-        exact selected
-      cases fuel with
-      | zero => omega
-      | succ remaining =>
-          refine ⟨DecodedTerm.leaf (.variable slot)
-            (emitTerm (.variable slot) builder).1.toNat [slot.toNat], ?_, ?_⟩
-          · have localValid :
-                (scalarNode 2 0 slot []).locallyValid = true := by
-              simp [scalarNode, Node.locallyValid, bytesNulFree]
-            simp only [decodeTerm?, lookup]
-            change
-              (if (!(scalarNode 2 0 slot []).locallyValid) = true then none
-                else _) = _
-            rw [localValid]
-            rfl
-          · have rootExact :
-                (emitTerm (.variable slot) builder).1.toNat =
-                  builder.nodeCount := by
-              change (emitTerm (.variable slot) builder).1.toNat + 1 =
-                builder.nodeCount + 1 at rootIndex
-              omega
-            simp [DecodedTermMatchesSourceAt, DecodedTerm.leaf,
-              termNodeCount, termChildSlotCount, termUsedVariables,
-              termDepth, slotRange, rootExact]
-  | «string» value =>
-      let node := scalarNode 3 0 0 value
-      have afterWellFormed :=
-        emitTerm_wellFormed (.string value) builder wellFormed
-      have selected := getElem?_eq_reverseHead_of_prefix
-        (emitTerm (.string value) builder).2.nodesRev program.nodes node
-        nodePrefix (by simp [emitTerm, appendNode, node])
-      have rootIndex :=
-        emitTerm_root_succ_eq_nodeCount (.string value) builder nodesFit
-      have nodeLength :
-          (emitTerm (.string value) builder).2.nodesRev.length =
-            (emitTerm (.string value) builder).2.nodeCount :=
-        afterWellFormed.1.symm
-      have indexEq : (emitTerm (.string value) builder).1.toNat =
-          (emitTerm (.string value) builder).2.nodesRev.length - 1 := by
-        omega
-      have lookup :
-          program.nodes[(emitTerm (.string value) builder).1.toNat]? =
-            some node := by
-        rw [indexEq]
-        exact selected
-      cases fuel with
-      | zero => omega
-      | succ remaining =>
-          refine ⟨DecodedTerm.leaf (.string value)
-            (emitTerm (.string value) builder).1.toNat, ?_, ?_⟩
-          · have localValid : node.locallyValid = true := by
-              simp [termTextsValid, textEncodable?, bytesNulFree]
-                at sourceValid
-              simp [node, scalarNode, Node.locallyValid, bytesNulFree,
-                sourceValid]
-            have localValid' :
-                (scalarNode 3 0 0 value).locallyValid = true := by
-              simpa [node] using localValid
-            simp only [decodeTerm?, lookup]
-            change
-              (if (!(scalarNode 3 0 0 value).locallyValid) = true then none
-                else _) = _
-            rw [localValid']
-            rfl
-          · have rootExact :
-                (emitTerm (.string value) builder).1.toNat =
-                  builder.nodeCount := by
-              change (emitTerm (.string value) builder).1.toNat + 1 =
-                builder.nodeCount + 1 at rootIndex
-              omega
-            simp [DecodedTermMatchesSourceAt, DecodedTerm.leaf,
-              termNodeCount, termChildSlotCount, termUsedVariables,
-              termDepth, slotRange, rootExact]
-  | integer value =>
-      let node := scalarNode 4 value 0 []
-      have afterWellFormed :=
-        emitTerm_wellFormed (.integer value) builder wellFormed
-      have selected := getElem?_eq_reverseHead_of_prefix
-        (emitTerm (.integer value) builder).2.nodesRev program.nodes node
-        nodePrefix (by simp [emitTerm, appendNode, node])
-      have rootIndex :=
-        emitTerm_root_succ_eq_nodeCount (.integer value) builder nodesFit
-      have nodeLength :
-          (emitTerm (.integer value) builder).2.nodesRev.length =
-            (emitTerm (.integer value) builder).2.nodeCount :=
-        afterWellFormed.1.symm
-      have indexEq : (emitTerm (.integer value) builder).1.toNat =
-          (emitTerm (.integer value) builder).2.nodesRev.length - 1 := by
-        omega
-      have lookup :
-          program.nodes[(emitTerm (.integer value) builder).1.toNat]? =
-            some node := by
-        rw [indexEq]
-        exact selected
-      cases fuel with
-      | zero => omega
-      | succ remaining =>
-          refine ⟨DecodedTerm.leaf (.integer value)
-            (emitTerm (.integer value) builder).1.toNat, ?_, ?_⟩
-          · have localValid :
-                (scalarNode 4 value 0 []).locallyValid = true := by
-              simp [scalarNode, Node.locallyValid, bytesNulFree]
-            simp only [decodeTerm?, lookup]
-            change
-              (if (!(scalarNode 4 value 0 []).locallyValid) = true then none
-                else _) = _
-            rw [localValid]
-            rfl
-          · have rootExact :
-                (emitTerm (.integer value) builder).1.toNat =
-                  builder.nodeCount := by
-              change (emitTerm (.integer value) builder).1.toNat + 1 =
-                builder.nodeCount + 1 at rootIndex
-              omega
-            simp [DecodedTermMatchesSourceAt, DecodedTerm.leaf,
-              termNodeCount, termChildSlotCount, termUsedVariables,
-              termDepth, slotRange, rootExact]
-  | application head arguments =>
+          builder.childCount :=
+  match source with
+  | .symbol name => by
+      exact scalar_readback (.symbol name) builder program fuel
+        wellFormed sourceValid nodePrefix nodesFit fuelEnough
+  | .«variable» slot => by
+      exact scalar_readback (.slot slot) builder program fuel
+        wellFormed sourceValid nodePrefix nodesFit fuelEnough
+  | .«string» value => by
+      exact scalar_readback (.text value) builder program fuel
+        wellFormed sourceValid nodePrefix nodesFit fuelEnough
+  | .integer value => by
+      exact scalar_readback (.integer value) builder program fuel
+        wellFormed sourceValid nodePrefix nodesFit fuelEnough
+  | .application head arguments => by
       cases emittedArguments : emitTerms arguments builder with
       | mk roots afterArguments =>
           let withChildren : Builder :=
@@ -456,7 +335,7 @@ theorem decodeTerm?_emitTerm
               · exact argumentsVariables
               · rw [argumentsDepth]
                 rfl
-termination_by sizeOf source
+termination_by structural source
 
 theorem decodeTerms?_emitTerms
     (source : Terms) (builder : Builder) (program : Program) (fuel : Nat)
@@ -470,14 +349,14 @@ theorem decodeTerms?_emitTerms
     ∃ decoded,
       decodeTerms? program fuel (emitTerms source builder).1 = some decoded ∧
         DecodedTermsMatchSourceAt decoded source builder.nodeCount
-          builder.childCount := by
-  cases source with
-  | nil =>
+          builder.childCount :=
+  match source with
+  | .nil => by
       refine ⟨[], by simp [emitTerms, decodeTerms?], ?_⟩
       simp [DecodedTermsMatchSourceAt, decodedTerms, Terms.ofList,
         concatDecodedTerms, termsNodeCount, termsChildSlotCount,
         termsUsedVariables, termsMaximumDepth, maximumDepth, slotRange]
-  | cons head tail =>
+  | .cons head tail => by
       cases emittedHead : emitTerm head builder with
       | mk root afterHead =>
           cases emittedTail : emitTerms tail afterHead with
@@ -599,7 +478,7 @@ theorem decodeTerms?_emitTerms
                   rw [headVariables, tailVariables]
                 · simp [maximumDepth, headDepth, tailDepth,
                     termsMaximumDepth]
-termination_by sizeOf source
+termination_by structural source
 
 end
 

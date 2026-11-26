@@ -174,155 +174,130 @@ theorem scoped_congr (p : Pattern) : ∀ (bound bound' : List String), (∀ y, y
       · exact head bound bound' same hs
       · exact tail q later bound bound' same hs
 
+/-- The names used by a scoped term are covered by its environment and its
+own binders, and the two sources of names are disjoint. -/
+private structure ScopeFootprint (names outer introduced : List String) : Prop where
+  covered : ∀ y ∈ names, y ∈ outer ∨ y ∈ introduced
+  fresh : ∀ y ∈ introduced, y ∉ outer
+
+private theorem ScopeFootprint.append
+    {a b outer left right : List String}
+    (h₁ : ScopeFootprint a outer left) (h₂ : ScopeFootprint b outer right) :
+    ScopeFootprint (a ++ b) outer (left ++ right) := by
+  constructor
+  · intro y hy
+    rcases List.mem_append.mp hy with ha | hb
+    · exact (h₁.covered y ha).imp_right (fun h => List.mem_append.mpr (.inl h))
+    · exact (h₂.covered y hb).imp_right (fun h => List.mem_append.mpr (.inr h))
+  · intro y hy
+    rcases List.mem_append.mp hy with hl | hr
+    · exact h₁.fresh y hl
+    · exact h₂.fresh y hr
+
+private theorem ScopeFootprint.input
+    {introduced outer channel body channelBinders bodyBinders : List String}
+    (fresh : ∀ y ∈ introduced, y ∉ outer)
+    (x : ScopeFootprint channel outer channelBinders)
+    (k : ScopeFootprint body (introduced ++ outer) bodyBinders) :
+    ScopeFootprint (introduced ++ channel ++ body) outer
+      (introduced ++ channelBinders ++ bodyBinders) := by
+  constructor
+  · intro y hy
+    simp only [List.mem_append, or_assoc] at hy ⊢
+    rcases hy with h | (h | h)
+    · exact .inr (.inl h)
+    · exact (x.covered y h).imp_right (fun h => .inr (.inl h))
+    · rcases k.covered y h with h | hb
+      · rcases List.mem_append.mp h with hi | ho
+        · exact .inr (.inl hi)
+        · exact .inl ho
+      · exact .inr (.inr (.inr hb))
+  · intro y hy
+    simp only [List.mem_append, or_assoc] at hy
+    rcases hy with hi | (hx | hk)
+    · exact fresh y hi
+    · exact x.fresh y hx
+    · exact fun ho => k.fresh y hk (List.mem_append_right _ ho)
+
+private theorem scopeFootprint_list (ps : List Pattern) (outer : List String)
+    (each : ∀ q ∈ ps, ScopeFootprint (pvars q) outer (binders q)) :
+    ScopeFootprint (pvars.pvarsList ps) outer (ps.flatMap binders) := by
+  constructor
+  · intro y hy
+    obtain ⟨q, member, occurs⟩ := MeTTaCalculus.Corrected.mem_pvarsList.mp hy
+    exact ((each q member).covered y occurs).imp_right fun h =>
+      List.mem_flatMap.mpr ⟨q, member, h⟩
+  · intro y hy
+    obtain ⟨q, member, occurs⟩ := List.mem_flatMap.mp hy
+    exact (each q member).fresh y occurs
+
+private theorem scopeFootprint (p : Pattern) : ∀ outer : List String, Scoped outer p →
+    ScopeFootprint (pvars p) outer (binders p) := by
+  induction p using Pattern.rec
+      (motive_2 := fun ps => ∀ q ∈ ps, ∀ outer, Scoped outer q →
+        ScopeFootprint (pvars q) outer (binders q)) with
+  | bvar n => intro _ _; exact ⟨by simp [pvars], by simp [binders]⟩
+  | fvar x =>
+      intro outer scopeProof
+      refine ⟨?_, by simp [binders]⟩
+      intro y occurs
+      simp only [pvars, List.mem_singleton] at occurs
+      subst y
+      exact .inl scopeProof
+  | apply c args ih =>
+      intro outer scopeProof
+      rw [scoped_apply] at scopeProof
+      rw [MeTTaCalculus.Corrected.pvars_apply, binders_apply]
+      split_ifs at scopeProof ⊢
+      · match args, ih, scopeProof with
+        | t :: x :: k :: rest, ih, scopeProof =>
+            obtain ⟨fresh, _, hx, hk, hr⟩ := scopeProof
+            rw [bindersFor_cons3]
+            have input := ScopeFootprint.input fresh (ih x (by simp) outer hx)
+              (ih k (by simp) (pvars t ++ outer) hk)
+            have tail := scopeFootprint_list rest outer fun q member =>
+              ih q (by simp [member]) outer ((scopedList_iff outer rest).mp hr q member)
+            simpa only [pvars.pvarsList, List.append_assoc] using input.append tail
+        | [], _, _ =>
+            exact scopeFootprint_list [] outer (fun _ member => (List.not_mem_nil member).elim)
+        | [p], ih, hp =>
+            rw [bindersFor_short _ (by simp)]
+            exact scopeFootprint_list [p] outer fun q member =>
+              ih q member outer ((scopedFor_short _ _ (by simp)).mp hp q member)
+        | [p, q], ih, hp =>
+            rw [bindersFor_short _ (by simp)]
+            exact scopeFootprint_list [p, q] outer fun r member =>
+              ih r member outer ((scopedFor_short _ _ (by simp)).mp hp r member)
+      · exact scopeFootprint_list args outer fun q member => ih q member outer (scopeProof q member)
+  | lambda nm body ih => exact ih
+  | multiLambda n nms body ih => exact ih
+  | subst body repl ih₁ ih₂ =>
+      intro outer scopeProof
+      exact (ih₁ outer scopeProof.1).append (ih₂ outer scopeProof.2)
+  | collection ct elems rest ih =>
+      intro outer scopeProof
+      simp only [Scoped] at scopeProof
+      simpa only [pvars, binders, MeTTaCalculus.Corrected.bindersList_eq_flatMap] using
+        scopeFootprint_list elems outer fun q member =>
+          ih q member outer ((scopedList_iff outer elems).mp scopeProof q member)
+  | nil =>
+      rename_i q member outer scopeProof
+      simp at member
+  | cons p ps head tail =>
+      rename_i q member outer scopeProof
+      rcases List.mem_cons.mp member with rfl | later
+      · exact head outer scopeProof
+      · exact tail q later outer scopeProof
+
 /-- **A scoped term's variables are bound outside or bound inside.** -/
 theorem vars_of_scoped (p : Pattern) : ∀ bound : List String, Scoped bound p →
-    ∀ y ∈ pvars p, y ∈ bound ∨ y ∈ binders p := by
-  induction p using Pattern.rec (motive_2 := fun ps => ∀ q ∈ ps, ∀ bound : List String, Scoped bound q →
-      ∀ y ∈ pvars q, y ∈ bound ∨ y ∈ binders q) with
-  | bvar n => intro _ _ y inside; simp [pvars] at inside
-  | fvar x =>
-      intro bound hs y inside
-      simp only [pvars, List.mem_singleton] at inside
-      subst inside
-      exact .inl hs
-  | apply c args ih =>
-      intro bound hs y inside
-      rw [MeTTaCalculus.Corrected.pvars_apply, MeTTaCalculus.Corrected.mem_pvarsList] at inside
-      obtain ⟨q, member, inQ⟩ := inside
-      rw [scoped_apply] at hs
-      rw [binders_apply]
-      split_ifs at hs ⊢ with isFor
-      · match args, ih, hs, member with
-        | t :: x :: k :: rest, ih, hs, member =>
-            obtain ⟨-, -, scopedX, scopedK, scopedRest⟩ := hs
-            rw [bindersFor_cons3]
-            simp only [List.mem_cons] at member
-            rcases member with rfl | rfl | rfl | inRest
-            · exact .inr (by simp [inQ])
-            · rcases ih q (by simp) bound scopedX y inQ with inBound | inBinders
-              · exact .inl inBound
-              · exact .inr (by simp [inBinders])
-            · rcases ih q (by simp) _ scopedK y inQ with inOuter | inBinders
-              · rcases List.mem_append.mp inOuter with inT | inBound
-                · exact .inr (by simp [inT])
-                · exact .inl inBound
-              · exact .inr (by simp [inBinders])
-            · rw [scopedList_iff] at scopedRest
-              rcases ih q (by simp [inRest]) bound (scopedRest q inRest) y inQ with inBound | inBinders
-              · exact .inl inBound
-              · exact .inr (by simp only [List.mem_append, List.mem_flatMap]; exact .inr ⟨q, inRest, inBinders⟩)
-        | [], _, _, member => simp at member
-        | [p], ih, hs, member =>
-            rw [scopedFor_short _ _ (by simp)] at hs
-            rw [bindersFor_short _ (by simp)]
-            rcases ih q member bound (hs q member) y inQ with inBound | inBinders
-            · exact .inl inBound
-            · exact .inr (List.mem_flatMap.mpr ⟨q, member, inBinders⟩)
-        | [p, p'], ih, hs, member =>
-            rw [scopedFor_short _ _ (by simp)] at hs
-            rw [bindersFor_short _ (by simp)]
-            rcases ih q member bound (hs q member) y inQ with inBound | inBinders
-            · exact .inl inBound
-            · exact .inr (List.mem_flatMap.mpr ⟨q, member, inBinders⟩)
-      · rcases ih q member bound (hs q member) y inQ with inBound | inBinders
-        · exact .inl inBound
-        · exact .inr (List.mem_flatMap.mpr ⟨q, member, inBinders⟩)
-  | lambda nm body ih =>
-      intro bound hs y inside
-      simpa [binders] using ih bound hs y (by simpa [pvars] using inside)
-  | multiLambda n nms body ih =>
-      intro bound hs y inside
-      simpa [binders] using ih bound hs y (by simpa [pvars] using inside)
-  | subst body repl ihb ihr =>
-      intro bound hs y inside
-      simp only [pvars, List.mem_append] at inside
-      simp only [binders, List.mem_append]
-      rcases inside with inBody | inRepl
-      · rcases ihb bound hs.1 y inBody with inBound | inBinders
-        · exact .inl inBound
-        · exact .inr (.inl inBinders)
-      · rcases ihr bound hs.2 y inRepl with inBound | inBinders
-        · exact .inl inBound
-        · exact .inr (.inr inBinders)
-  | collection ct elems rest ih =>
-      intro bound hs y inside
-      simp only [Scoped] at hs
-      rw [scopedList_iff] at hs
-      simp only [pvars, MeTTaCalculus.Corrected.mem_pvarsList] at inside
-      obtain ⟨q, member, inQ⟩ := inside
-      simp only [binders, MeTTaCalculus.Corrected.bindersList_eq_flatMap, List.mem_flatMap]
-      rcases ih q member bound (hs q member) y inQ with inBound | inBinders
-      · exact .inl inBound
-      · exact .inr ⟨q, member, inBinders⟩
-  | nil => simp_all
-  | cons p ps head tail =>
-      rename_i q member bound hs y inside
-      rcases List.mem_cons.mp member with rfl | later
-      · exact head bound hs y inside
-      · exact tail q later bound hs y inside
+    ∀ y ∈ pvars p, y ∈ bound ∨ y ∈ binders p :=
+  fun bound scopeProof => (scopeFootprint p bound scopeProof).covered
 
 /-- **A scoped term's binders are not bound outside.** -/
 theorem binders_not_bound (p : Pattern) : ∀ bound : List String, Scoped bound p →
-    ∀ y ∈ binders p, y ∉ bound := by
-  induction p using Pattern.rec (motive_2 := fun ps => ∀ q ∈ ps, ∀ bound : List String, Scoped bound q →
-      ∀ y ∈ binders q, y ∉ bound) with
-  | bvar n => intro _ _ y inside; simp [binders] at inside
-  | fvar x => intro _ _ y inside; simp [binders] at inside
-  | apply c args ih =>
-      intro bound hs y inside
-      rw [scoped_apply] at hs
-      rw [binders_apply] at inside
-      split_ifs at hs inside with isFor
-      · match args, ih, hs, inside with
-        | t :: x :: k :: rest, ih, hs, inside =>
-            obtain ⟨fresh, noBinders, -, scopedK, scopedRest⟩ := hs
-            rw [bindersFor_cons3] at inside
-            simp only [List.mem_append, List.mem_flatMap] at inside
-            rcases inside with ((inT | inX) | inK) | ⟨q, inRest, inQ⟩
-            · exact fresh y inT
-            · rw [noBinders] at inX; exact absurd inX List.not_mem_nil
-            · intro inBound
-              exact ih k (by simp) _ scopedK y inK (List.mem_append_right _ inBound)
-            · rw [scopedList_iff] at scopedRest
-              exact ih q (by simp [inRest]) bound (scopedRest q inRest) y inQ
-        | [], _, _, inside => simp [MeTTaCalculus.Corrected.bindersFor] at inside
-        | [p], ih, hs, inside =>
-            rw [scopedFor_short _ _ (by simp)] at hs
-            rw [bindersFor_short _ (by simp)] at inside
-            obtain ⟨q, member, inQ⟩ := List.mem_flatMap.mp inside
-            exact ih q member bound (hs q member) y inQ
-        | [p, p'], ih, hs, inside =>
-            rw [scopedFor_short _ _ (by simp)] at hs
-            rw [bindersFor_short _ (by simp)] at inside
-            obtain ⟨q, member, inQ⟩ := List.mem_flatMap.mp inside
-            exact ih q member bound (hs q member) y inQ
-      · obtain ⟨q, member, inQ⟩ := List.mem_flatMap.mp inside
-        exact ih q member bound (hs q member) y inQ
-  | lambda nm body ih =>
-      intro bound hs y inside
-      exact ih bound hs y (by simpa [binders] using inside)
-  | multiLambda n nms body ih =>
-      intro bound hs y inside
-      exact ih bound hs y (by simpa [binders] using inside)
-  | subst body repl ihb ihr =>
-      intro bound hs y inside
-      simp only [binders, List.mem_append] at inside
-      rcases inside with inBody | inRepl
-      · exact ihb bound hs.1 y inBody
-      · exact ihr bound hs.2 y inRepl
-  | collection ct elems rest ih =>
-      intro bound hs y inside
-      simp only [Scoped] at hs
-      rw [scopedList_iff] at hs
-      simp only [binders, MeTTaCalculus.Corrected.bindersList_eq_flatMap, List.mem_flatMap] at inside
-      obtain ⟨q, member, inQ⟩ := inside
-      exact ih q member bound (hs q member) y inQ
-  | nil => simp_all
-  | cons p ps head tail =>
-      rename_i q member bound hs y inside
-      rcases List.mem_cons.mp member with rfl | later
-      · exact head bound hs y inside
-      · exact tail q later bound hs y inside
+    ∀ y ∈ binders p, y ∉ bound :=
+  fun bound scopeProof => (scopeFootprint p bound scopeProof).fresh
 
 /-- A term without variables binds nothing. -/
 theorem binders_of_ground {p : Pattern} (ground : pvars p = []) : binders p = [] :=
@@ -331,79 +306,244 @@ theorem binders_of_ground {p : Pattern} (ground : pvars p = []) : binders p = []
     rw [ground] at occurs
     exact List.not_mem_nil occurs
 
-/-- **A term without variables is scoped under every list.** -/
-theorem scoped_of_ground (p : Pattern) : ∀ bound : List String, pvars p = [] → Scoped bound p := by
-  induction p using Pattern.rec (motive_2 := fun ps => ∀ q ∈ ps, ∀ bound : List String, pvars q = [] →
-      Scoped bound q) with
-  | bvar n => intro _ _; trivial
-  | fvar x => intro _ ground; simp [pvars] at ground
+/-- **A term that binds nothing is scoped under every list holding its variables.** -/
+theorem scoped_of_binders_nil (p : Pattern) : ∀ bound : List String, binders p = [] →
+    (∀ y ∈ pvars p, y ∈ bound) → Scoped bound p := by
+  induction p using Pattern.rec (motive_2 := fun ps => ∀ q ∈ ps, ∀ bound : List String, binders q = [] →
+      (∀ y ∈ pvars q, y ∈ bound) → Scoped bound q) with
+  | bvar n => intro _ _ _; trivial
+  | fvar x => intro bound _ inside; exact inside x (by simp [pvars])
   | apply c args ih =>
-      intro bound ground
-      have each : ∀ q ∈ args, pvars q = [] := fun q member =>
-        List.eq_nil_iff_forall_not_mem.mpr fun y occurs =>
-          List.eq_nil_iff_forall_not_mem.mp ground y (mem_pvars_apply_of member occurs)
+      intro bound noBinders inside
+      have varsOf : ∀ q ∈ args, ∀ y ∈ pvars q, y ∈ bound := fun q member y occurs =>
+        inside y (mem_pvars_apply_of member occurs)
+      rw [binders_apply] at noBinders
       rw [scoped_apply]
-      split_ifs with isFor
-      · match args, ih, each with
-        | t :: x :: k :: rest, ih, each =>
-            have groundT := each t (by simp)
-            refine ⟨fun y inT => by rw [groundT] at inT; exact absurd inT List.not_mem_nil,
-              binders_of_ground (each x (by simp)), ih x (by simp) bound (each x (by simp)),
-              ih k (by simp) _ (each k (by simp)), ?_⟩
+      split_ifs at noBinders ⊢ with isFor
+      · match args, ih, varsOf, noBinders with
+        | t :: x :: k :: rest, ih, varsOf, noBinders =>
+            rw [bindersFor_cons3] at noBinders
+            simp only [List.append_eq_nil_iff, List.flatMap_eq_nil_iff] at noBinders
+            obtain ⟨⟨⟨noT, noX⟩, noK⟩, noRest⟩ := noBinders
+            refine ⟨fun y inT => by rw [noT] at inT; exact absurd inT List.not_mem_nil, noX,
+              ih x (by simp) bound noX (varsOf x (by simp)),
+              ih k (by simp) _ noK fun y occurs => List.mem_append_right _ (varsOf k (by simp) y occurs), ?_⟩
             rw [scopedList_iff]
-            exact fun q member => ih q (by simp [member]) bound (each q (by simp [member]))
-        | [], _, _ => trivial
-        | [p], ih, each =>
+            exact fun q member => ih q (by simp [member]) bound (noRest q member) (varsOf q (by simp [member]))
+        | [], _, _, _ => trivial
+        | [p], ih, varsOf, noBinders =>
+            rw [bindersFor_short _ (by simp), List.flatMap_eq_nil_iff] at noBinders
             rw [scopedFor_short _ _ (by simp)]
-            exact fun q member => ih q member bound (each q member)
-        | [p, p'], ih, each =>
+            exact fun q member => ih q member bound (noBinders q member) (varsOf q member)
+        | [p, p'], ih, varsOf, noBinders =>
+            rw [bindersFor_short _ (by simp), List.flatMap_eq_nil_iff] at noBinders
             rw [scopedFor_short _ _ (by simp)]
-            exact fun q member => ih q member bound (each q member)
-      · exact fun q member => ih q member bound (each q member)
-  | lambda nm body ih => intro bound ground; exact ih bound (by simpa [pvars] using ground)
-  | multiLambda n nms body ih => intro bound ground; exact ih bound (by simpa [pvars] using ground)
+            exact fun q member => ih q member bound (noBinders q member) (varsOf q member)
+      · rw [List.flatMap_eq_nil_iff] at noBinders
+        exact fun q member => ih q member bound (noBinders q member) (varsOf q member)
+  | lambda nm body ih =>
+      intro bound noBinders inside
+      exact ih bound (by simpa [binders] using noBinders) (by simpa [pvars] using inside)
+  | multiLambda n nms body ih =>
+      intro bound noBinders inside
+      exact ih bound (by simpa [binders] using noBinders) (by simpa [pvars] using inside)
   | subst body repl ihb ihr =>
-      intro bound ground
-      have both : pvars body = [] ∧ pvars repl = [] := by simpa [pvars] using ground
-      exact ⟨ihb bound both.1, ihr bound both.2⟩
+      intro bound noBinders inside
+      have both : binders body = [] ∧ binders repl = [] := by simpa [binders] using noBinders
+      exact ⟨ihb bound both.1 fun y occurs => inside y (by simp [pvars, occurs]),
+        ihr bound both.2 fun y occurs => inside y (by simp [pvars, occurs])⟩
   | collection ct elems rest ih =>
-      intro bound ground
+      intro bound noBinders inside
       simp only [Scoped]
       rw [scopedList_iff]
-      exact fun q member => ih q member bound (List.eq_nil_iff_forall_not_mem.mpr fun y occurs =>
-        List.eq_nil_iff_forall_not_mem.mp ground y (mem_pvars_collection_of member occurs))
+      have each : ∀ q ∈ elems, binders q = [] := by
+        simpa [binders, MeTTaCalculus.Corrected.bindersList_eq_flatMap, List.flatMap_eq_nil_iff] using
+          noBinders
+      exact fun q member => ih q member bound (each q member)
+        (fun y occurs => inside y (mem_pvars_collection_of member occurs))
   | nil => simp_all
   | cons p ps head tail =>
-      rename_i q member bound ground
+      rename_i q member bound noBinders inside
       rcases List.mem_cons.mp member with rfl | later
-      · exact head bound ground
-      · exact tail q later bound ground
+      · exact head bound noBinders inside
+      · exact tail q later bound noBinders inside
 
-/-- **Substituting values without variables keeps the binders**, when no binder is substituted. -/
-theorem binders_psubst {δ : PSubst} (ground : GroundValued δ) (p : Pattern)
-    (untouched : ∀ y ∈ binders p, δ y = none) : binders (psubst δ p) = binders p := by
+/-- **A term without variables is scoped under every list.** -/
+theorem scoped_of_ground (p : Pattern) : ∀ bound : List String, pvars p = [] → Scoped bound p := by
+  intro bound ground
+  apply scoped_of_binders_nil p bound (binders_of_ground ground)
+  intro y occurs
+  rw [ground] at occurs
+  exact (List.not_mem_nil occurs).elim
+
+/-! ## Frames: the variables each input binds -/
+
+mutual
+/-- **The frames of a term**: for each input with a variable in its pattern, the pattern's variables. -/
+def frames : Pattern → List (List String)
+  | .bvar _ => []
+  | .fvar _ => []
+  | .apply c args => if c = "MFor" then framesFor args else framesList args
+  | .lambda _ body => frames body
+  | .multiLambda _ _ body => frames body
+  | .subst body repl => frames body ++ frames repl
+  | .collection _ elems _ => framesList elems
+/-- Frames of a list. -/
+def framesList : List Pattern → List (List String)
+  | [] => []
+  | p :: ps => frames p ++ framesList ps
+/-- Frames of an input's arguments. -/
+def framesFor : List Pattern → List (List String)
+  | [] => []
+  | [p] => frames p
+  | [p, q] => frames p ++ frames q
+  | t :: x :: k :: rest => (if pvars t = [] then [] else [pvars t]) ++ frames x ++ frames k ++ framesList rest
+end
+
+theorem framesList_eq_flatMap (ps : List Pattern) : framesList ps = ps.flatMap frames := by
+  induction ps with
+  | nil => rfl
+  | cons p ps ih => simp [framesList, ih]
+
+theorem frames_apply (c : String) (args : List Pattern) :
+    frames (.apply c args) = if c = "MFor" then framesFor args else args.flatMap frames := by
+  simp [frames, framesList_eq_flatMap]
+
+theorem framesFor_cons3 (t x k : Pattern) (rest : List Pattern) :
+    framesFor (t :: x :: k :: rest) =
+      (if pvars t = [] then [] else [pvars t]) ++ frames x ++ frames k ++ rest.flatMap frames := by
+  simp [framesFor, framesList_eq_flatMap]
+
+theorem framesFor_short (ps : List Pattern) (short : ps.length < 3) : framesFor ps = ps.flatMap frames := by
+  match ps, short with
+  | [], _ => rfl
+  | [p], _ => simp [framesFor]
+  | [p, q], _ => simp [framesFor]
+
+theorem frames_pFor (t x k : Pattern) :
+    frames (pFor t x k) = (if pvars t = [] then [] else [pvars t]) ++ frames x ++ frames k := by
+  simp [pFor, frames_apply, framesFor_cons3]
+
+theorem frames_par (a b : Pattern) : frames (par a b) = frames a ++ frames b := by
+  simp [par, MeTTaCalculus.pPar, frames, framesList]
+
+private structure FrameReadout (names : List String) (groups : List (List String)) : Prop where
+  ordered : names = groups.flatten
+  nonempty : ∀ group ∈ groups, group ≠ []
+
+private theorem FrameReadout.empty : FrameReadout [] [] :=
+  ⟨rfl, fun _ member => (List.not_mem_nil member).elim⟩
+
+private theorem FrameReadout.single (names : List String) :
+    FrameReadout names (if names = [] then [] else [names]) := by
+  split
+  · next empty =>
+      subst names
+      exact FrameReadout.empty
+  · next nonempty =>
+      exact ⟨by simp, fun group member => by simpa only [List.mem_singleton.mp member] using nonempty⟩
+
+private theorem FrameReadout.append {as bs : List String} {xs ys : List (List String)}
+    (left : FrameReadout as xs) (right : FrameReadout bs ys) :
+    FrameReadout (as ++ bs) (xs ++ ys) := by
+  refine ⟨by rw [List.flatten_append, ← left.ordered, ← right.ordered], ?_⟩
+  intro group member
+  rcases List.mem_append.mp member with h | h
+  · exact left.nonempty group h
+  · exact right.nonempty group h
+
+private theorem frameReadout_list (ps : List Pattern)
+    (each : ∀ p ∈ ps, FrameReadout (binders p) (frames p)) :
+    FrameReadout (ps.flatMap binders) (ps.flatMap frames) := by
+  induction ps with
+  | nil => exact FrameReadout.empty
+  | cons p rest ih =>
+      exact (each p (by simp)).append
+        (ih fun q member => each q (List.mem_cons_of_mem _ member))
+
+private theorem frameReadout (p : Pattern) : FrameReadout (binders p) (frames p) := by
+  induction p using Pattern.rec
+      (motive_2 := fun ps => ∀ q ∈ ps, FrameReadout (binders q) (frames q)) with
+  | bvar n => exact FrameReadout.empty
+  | fvar x => exact FrameReadout.empty
+  | apply c args ih =>
+      rw [binders_apply, frames_apply]
+      split
+      · cases args with
+        | nil => exact FrameReadout.empty
+        | cons t tail =>
+            cases tail with
+            | nil => exact ih t (by simp)
+            | cons x tail =>
+                cases tail with
+                | nil => exact (ih t (by simp)).append (ih x (by simp))
+                | cons k rest =>
+                    rw [bindersFor_cons3, framesFor_cons3]
+                    simpa only [List.append_assoc] using
+                      (((FrameReadout.single (pvars t)).append (ih x (by simp))).append
+                        (ih k (by simp))).append
+                          (frameReadout_list rest (fun q member => ih q (by simp [member])))
+      · exact frameReadout_list args ih
+  | lambda nm body ih => exact ih
+  | multiLambda n nms body ih => exact ih
+  | subst body repl ihb ihr => exact ihb.append ihr
+  | collection ct elems rest ih =>
+      simpa only [binders, frames, MeTTaCalculus.Corrected.bindersList_eq_flatMap,
+        framesList_eq_flatMap] using frameReadout_list elems ih
+  | nil =>
+      rename_i q member
+      simp at member
+  | cons p ps head tail =>
+      rename_i q member
+      rcases List.mem_cons.mp member with rfl | later
+      · exact head
+      · exact tail q later
+
+/-- Reading the binder names from the input frames preserves order and repetitions. -/
+theorem binders_eq_flatten_frames (p : Pattern) : binders p = (frames p).flatten :=
+  (frameReadout p).ordered
+
+/-- **The binders are the frames' variables.** -/
+theorem mem_binders_iff (p : Pattern) : ∀ y : String, y ∈ binders p ↔ ∃ f ∈ frames p, y ∈ f := by
+  intro y
+  rw [binders_eq_flatten_frames, List.mem_flatten]
+
+/-- All frames are nonempty, so an empty binder readout certifies an empty frame list. -/
+theorem frames_eq_nil_of_binders_eq_nil (p : Pattern) (empty : binders p = []) : frames p = [] := by
+  apply List.eq_nil_iff_forall_not_mem.mpr
+  intro group member
+  have flat : (frames p).flatten = [] := (binders_eq_flatten_frames p).symm.trans empty
+  exact (frameReadout p).nonempty group member (List.flatten_eq_nil_iff.mp flat group member)
+
+/-- **A term without variables has no frame.** -/
+theorem frames_of_ground (p : Pattern) (ground : pvars p = []) : frames p = [] :=
+  frames_eq_nil_of_binders_eq_nil p (binders_of_ground ground)
+
+/-- **Substituting values without variables keeps the frames**, when no binder is substituted. -/
+theorem frames_psubst {δ : PSubst} (ground : GroundValued δ) (p : Pattern)
+    (untouched : ∀ y ∈ binders p, δ y = none) : frames (psubst δ p) = frames p := by
   revert untouched
   induction p using Pattern.rec (motive_2 := fun ps => ∀ q ∈ ps, (∀ y ∈ binders q, δ y = none) →
-      binders (psubst δ q) = binders q) with
+      frames (psubst δ q) = frames q) with
   | bvar n => intro _; rfl
   | fvar x =>
       intro _
-      show binders ((δ x).getD (.fvar x)) = binders (.fvar x)
+      show frames ((δ x).getD (.fvar x)) = frames (.fvar x)
       cases found : δ x with
-      | some v => simp only [Option.getD_some]; rw [binders_of_ground (ground x v found)]; rfl
+      | some v => simp only [Option.getD_some]; rw [frames_of_ground v (ground x v found)]; rfl
       | none => rfl
   | apply c args ih =>
       intro untouched
       have psubstApply : psubst δ (.apply c args) = .apply c (args.map (psubst δ)) := by
         simp only [psubst, psubstList_eq_map]
-      rw [psubstApply, binders_apply, binders_apply]
+      rw [psubstApply, frames_apply, frames_apply]
       rw [binders_apply] at untouched
       split_ifs at untouched ⊢ with isFor
       · match args, ih, untouched with
         | t :: x :: k :: rest, ih, untouched =>
             rw [bindersFor_cons3] at untouched
             simp only [List.map_cons]
-            rw [bindersFor_cons3, bindersFor_cons3]
+            rw [framesFor_cons3, framesFor_cons3]
             have tFixed : psubst δ t = t := by
               rw [psubst_congr δ (fun _ => none) t fun y occurs => untouched y (by simp [occurs]), psubst_none]
             rw [tFixed, ih x (by simp) fun y inside => untouched y (by simp [inside]),
@@ -415,13 +555,13 @@ theorem binders_psubst {δ : PSubst} (ground : GroundValued δ) (p : Pattern)
         | [p], ih, untouched =>
             rw [bindersFor_short [p] (by simp)] at untouched
             simp only [List.map_cons, List.map_nil]
-            rw [bindersFor_short _ (by simp), bindersFor_short [p] (by simp)]
+            rw [framesFor_short _ (by simp), framesFor_short [p] (by simp)]
             simp only [List.flatMap_cons, List.flatMap_nil]
             rw [ih p (by simp) fun y inside => untouched y (by simp [inside])]
         | [p, q], ih, untouched =>
             rw [bindersFor_short [p, q] (by simp)] at untouched
             simp only [List.map_cons, List.map_nil]
-            rw [bindersFor_short _ (by simp), bindersFor_short [p, q] (by simp)]
+            rw [framesFor_short _ (by simp), framesFor_short [p, q] (by simp)]
             simp only [List.flatMap_cons, List.flatMap_nil]
             rw [ih p (by simp) fun y inside => untouched y (by simp [inside]),
               ih q (by simp) fun y inside => untouched y (by simp [inside])]
@@ -430,21 +570,20 @@ theorem binders_psubst {δ : PSubst} (ground : GroundValued δ) (p : Pattern)
           untouched y (List.mem_flatMap.mpr ⟨q, member, inside⟩)
   | lambda nm body ih =>
       intro untouched
-      simp only [psubst, binders]
+      simp only [psubst, frames]
       exact ih fun y inside => untouched y (by simpa [binders] using inside)
   | multiLambda n nms body ih =>
       intro untouched
-      simp only [psubst, binders]
+      simp only [psubst, frames]
       exact ih fun y inside => untouched y (by simpa [binders] using inside)
   | subst body repl ihb ihr =>
       intro untouched
-      simp only [psubst, binders]
+      simp only [psubst, frames]
       rw [ihb fun y inside => untouched y (by simp [binders, inside]),
         ihr fun y inside => untouched y (by simp [binders, inside])]
   | collection ct elems rest ih =>
       intro untouched
-      simp only [psubst, binders, MeTTaCalculus.Corrected.bindersList_eq_flatMap, psubstList_eq_map,
-        List.flatMap_map]
+      simp only [psubst, frames, framesList_eq_flatMap, psubstList_eq_map, List.flatMap_map]
       exact List.flatMap_congr fun q member => ih q member fun y inside => untouched y (by
         simp only [binders, MeTTaCalculus.Corrected.bindersList_eq_flatMap, List.mem_flatMap]
         exact ⟨q, member, inside⟩)
@@ -454,6 +593,12 @@ theorem binders_psubst {δ : PSubst} (ground : GroundValued δ) (p : Pattern)
       rcases List.mem_cons.mp member with rfl | later
       · exact head untouched
       · exact tail q later untouched
+
+/-- **Substituting values without variables keeps the binders**, when no binder is substituted. -/
+theorem binders_psubst {δ : PSubst} (ground : GroundValued δ) (p : Pattern)
+    (untouched : ∀ y ∈ binders p, δ y = none) : binders (psubst δ p) = binders p := by
+  rw [binders_eq_flatten_frames (psubst δ p), frames_psubst ground p untouched,
+    ← binders_eq_flatten_frames p]
 
 /-- **Substituting values without variables for the outermost binders keeps scoping.** The values are
 put for variables of `vs`, every variable of `vs` gets one, and no other variable of the term is
@@ -544,275 +689,6 @@ theorem scoped_psubst {δ : PSubst} (ground : GroundValued δ) {vs : List String
       rcases List.mem_cons.mp member with rfl | later
       · exact head bound hs outsideVs
       · exact tail q later bound hs outsideVs
-
-/-! ## Frames: the variables each input binds -/
-
-mutual
-/-- **The frames of a term**: for each input with a variable in its pattern, the pattern's variables. -/
-def frames : Pattern → List (List String)
-  | .bvar _ => []
-  | .fvar _ => []
-  | .apply c args => if c = "MFor" then framesFor args else framesList args
-  | .lambda _ body => frames body
-  | .multiLambda _ _ body => frames body
-  | .subst body repl => frames body ++ frames repl
-  | .collection _ elems _ => framesList elems
-/-- Frames of a list. -/
-def framesList : List Pattern → List (List String)
-  | [] => []
-  | p :: ps => frames p ++ framesList ps
-/-- Frames of an input's arguments. -/
-def framesFor : List Pattern → List (List String)
-  | [] => []
-  | [p] => frames p
-  | [p, q] => frames p ++ frames q
-  | t :: x :: k :: rest => (if pvars t = [] then [] else [pvars t]) ++ frames x ++ frames k ++ framesList rest
-end
-
-theorem framesList_eq_flatMap (ps : List Pattern) : framesList ps = ps.flatMap frames := by
-  induction ps with
-  | nil => rfl
-  | cons p ps ih => simp [framesList, ih]
-
-theorem frames_apply (c : String) (args : List Pattern) :
-    frames (.apply c args) = if c = "MFor" then framesFor args else args.flatMap frames := by
-  simp [frames, framesList_eq_flatMap]
-
-theorem framesFor_cons3 (t x k : Pattern) (rest : List Pattern) :
-    framesFor (t :: x :: k :: rest) =
-      (if pvars t = [] then [] else [pvars t]) ++ frames x ++ frames k ++ rest.flatMap frames := by
-  simp [framesFor, framesList_eq_flatMap]
-
-theorem framesFor_short (ps : List Pattern) (short : ps.length < 3) : framesFor ps = ps.flatMap frames := by
-  match ps, short with
-  | [], _ => rfl
-  | [p], _ => simp [framesFor]
-  | [p, q], _ => simp [framesFor]
-
-theorem frames_pFor (t x k : Pattern) :
-    frames (pFor t x k) = (if pvars t = [] then [] else [pvars t]) ++ frames x ++ frames k := by
-  simp [pFor, frames_apply, framesFor_cons3]
-
-theorem frames_par (a b : Pattern) : frames (par a b) = frames a ++ frames b := by
-  simp [par, MeTTaCalculus.pPar, frames, framesList]
-
-/-- **The binders are the frames' variables.** -/
-theorem mem_binders_iff (p : Pattern) : ∀ y : String, y ∈ binders p ↔ ∃ f ∈ frames p, y ∈ f := by
-  induction p using Pattern.rec (motive_2 := fun ps => ∀ q ∈ ps, ∀ y : String,
-      y ∈ binders q ↔ ∃ f ∈ frames q, y ∈ f) with
-  | bvar n => intro y; simp [binders, frames]
-  | fvar x => intro y; simp [binders, frames]
-  | apply c args ih =>
-      intro y
-      rw [binders_apply, frames_apply]
-      split_ifs with isFor
-      · match args, ih with
-        | t :: x :: k :: rest, ih =>
-            rw [bindersFor_cons3, framesFor_cons3]
-            simp only [List.mem_append, List.mem_flatMap]
-            rw [ih x (by simp) y, ih k (by simp) y]
-            constructor
-            · rintro (((inT | ⟨f, inX, inF⟩) | ⟨f, inK, inF⟩) | ⟨q, inRest, inQ⟩)
-              · have notEmpty : pvars t ≠ [] := List.ne_nil_of_mem inT
-                exact ⟨pvars t, by simp [notEmpty], inT⟩
-              · exact ⟨f, by simp [inX], inF⟩
-              · exact ⟨f, by simp [inK], inF⟩
-              · obtain ⟨f, inQF, inF⟩ := (ih q (by simp [inRest]) y).mp inQ
-                exact ⟨f, .inr ⟨q, inRest, inQF⟩, inF⟩
-            · rintro ⟨f, member, inF⟩
-              rcases member with ((inT | inX) | inK) | ⟨q, inRest, inQ⟩
-              · split_ifs at inT with empty
-                · exact absurd inT List.not_mem_nil
-                · rw [List.mem_singleton] at inT
-                  subst inT
-                  exact .inl (.inl (.inl inF))
-              · exact .inl (.inl (.inr ⟨f, inX, inF⟩))
-              · exact .inl (.inr ⟨f, inK, inF⟩)
-              · exact .inr ⟨q, inRest, (ih q (by simp [inRest]) y).mpr ⟨f, inQ, inF⟩⟩
-        | [], _ => simp [MeTTaCalculus.Corrected.bindersFor, framesFor]
-        | [p], ih =>
-            rw [bindersFor_short _ (by simp), framesFor_short _ (by simp)]
-            simp only [List.mem_flatMap]
-            constructor
-            · rintro ⟨q, member, inQ⟩
-              obtain ⟨f, inQF, inF⟩ := (ih q member y).mp inQ
-              exact ⟨f, ⟨q, member, inQF⟩, inF⟩
-            · rintro ⟨f, ⟨q, member, inQF⟩, inF⟩
-              exact ⟨q, member, (ih q member y).mpr ⟨f, inQF, inF⟩⟩
-        | [p, p'], ih =>
-            rw [bindersFor_short _ (by simp), framesFor_short _ (by simp)]
-            simp only [List.mem_flatMap]
-            constructor
-            · rintro ⟨q, member, inQ⟩
-              obtain ⟨f, inQF, inF⟩ := (ih q member y).mp inQ
-              exact ⟨f, ⟨q, member, inQF⟩, inF⟩
-            · rintro ⟨f, ⟨q, member, inQF⟩, inF⟩
-              exact ⟨q, member, (ih q member y).mpr ⟨f, inQF, inF⟩⟩
-      · simp only [List.mem_flatMap]
-        constructor
-        · rintro ⟨q, member, inQ⟩
-          obtain ⟨f, inQF, inF⟩ := (ih q member y).mp inQ
-          exact ⟨f, ⟨q, member, inQF⟩, inF⟩
-        · rintro ⟨f, ⟨q, member, inQF⟩, inF⟩
-          exact ⟨q, member, (ih q member y).mpr ⟨f, inQF, inF⟩⟩
-  | lambda nm body ih => intro y; simpa [binders, frames] using ih y
-  | multiLambda n nms body ih => intro y; simpa [binders, frames] using ih y
-  | subst body repl ihb ihr =>
-      intro y
-      simp only [binders, frames, List.mem_append]
-      rw [ihb y, ihr y]
-      constructor
-      · rintro (⟨f, inF, inY⟩ | ⟨f, inF, inY⟩)
-        · exact ⟨f, .inl inF, inY⟩
-        · exact ⟨f, .inr inF, inY⟩
-      · rintro ⟨f, inF | inF, inY⟩
-        · exact .inl ⟨f, inF, inY⟩
-        · exact .inr ⟨f, inF, inY⟩
-  | collection ct elems rest ih =>
-      intro y
-      simp only [binders, frames, MeTTaCalculus.Corrected.bindersList_eq_flatMap, framesList_eq_flatMap,
-        List.mem_flatMap]
-      constructor
-      · rintro ⟨q, member, inQ⟩
-        obtain ⟨f, inQF, inF⟩ := (ih q member y).mp inQ
-        exact ⟨f, ⟨q, member, inQF⟩, inF⟩
-      · rintro ⟨f, ⟨q, member, inQF⟩, inF⟩
-        exact ⟨q, member, (ih q member y).mpr ⟨f, inQF, inF⟩⟩
-  | nil => simp_all
-  | cons p ps head tail =>
-      rename_i q member y
-      rcases List.mem_cons.mp member with rfl | later
-      · exact head y
-      · exact tail q later y
-
-/-- **A term without variables has no frame.** -/
-theorem frames_of_ground (p : Pattern) (ground : pvars p = []) : frames p = [] := by
-  revert ground
-  induction p using Pattern.rec (motive_2 := fun ps => ∀ q ∈ ps, pvars q = [] → frames q = []) with
-  | bvar n => intro _; rfl
-  | fvar x => intro ground; simp [pvars] at ground
-  | apply c args ih =>
-      intro ground
-      have each : ∀ q ∈ args, pvars q = [] := fun q member =>
-        List.eq_nil_iff_forall_not_mem.mpr fun y occurs =>
-          List.eq_nil_iff_forall_not_mem.mp ground y (mem_pvars_apply_of member occurs)
-      rw [frames_apply]
-      split_ifs with isFor
-      · match args, ih, each with
-        | t :: x :: k :: rest, ih, each =>
-            rw [framesFor_cons3, if_pos (each t (by simp)), ih x (by simp) (each x (by simp)),
-              ih k (by simp) (each k (by simp))]
-            simp only [List.nil_append, List.flatMap_eq_nil_iff]
-            exact fun q member => ih q (by simp [member]) (each q (by simp [member]))
-        | [], _, _ => rfl
-        | [p], ih, each =>
-            rw [framesFor_short _ (by simp), List.flatMap_eq_nil_iff]
-            exact fun q member => ih q member (each q member)
-        | [p, p'], ih, each =>
-            rw [framesFor_short _ (by simp), List.flatMap_eq_nil_iff]
-            exact fun q member => ih q member (each q member)
-      · rw [List.flatMap_eq_nil_iff]
-        exact fun q member => ih q member (each q member)
-  | lambda nm body ih =>
-      intro ground
-      simp only [frames]
-      exact ih (by simpa [pvars] using ground)
-  | multiLambda n nms body ih =>
-      intro ground
-      simp only [frames]
-      exact ih (by simpa [pvars] using ground)
-  | subst body repl ihb ihr =>
-      intro ground
-      have both : pvars body = [] ∧ pvars repl = [] := by simpa [pvars] using ground
-      simp only [frames]
-      rw [ihb both.1, ihr both.2]
-      rfl
-  | collection ct elems rest ih =>
-      intro ground
-      simp only [frames, framesList_eq_flatMap, List.flatMap_eq_nil_iff]
-      exact fun q member => ih q member (List.eq_nil_iff_forall_not_mem.mpr fun y occurs =>
-        List.eq_nil_iff_forall_not_mem.mp ground y (mem_pvars_collection_of member occurs))
-  | nil => simp_all
-  | cons p ps head tail =>
-      rename_i q member ground
-      rcases List.mem_cons.mp member with rfl | later
-      · exact head ground
-      · exact tail q later ground
-
-/-- **Substituting values without variables keeps the frames**, when no binder is substituted. -/
-theorem frames_psubst {δ : PSubst} (ground : GroundValued δ) (p : Pattern)
-    (untouched : ∀ y ∈ binders p, δ y = none) : frames (psubst δ p) = frames p := by
-  revert untouched
-  induction p using Pattern.rec (motive_2 := fun ps => ∀ q ∈ ps, (∀ y ∈ binders q, δ y = none) →
-      frames (psubst δ q) = frames q) with
-  | bvar n => intro _; rfl
-  | fvar x =>
-      intro _
-      show frames ((δ x).getD (.fvar x)) = frames (.fvar x)
-      cases found : δ x with
-      | some v => simp only [Option.getD_some]; rw [frames_of_ground v (ground x v found)]; rfl
-      | none => rfl
-  | apply c args ih =>
-      intro untouched
-      have psubstApply : psubst δ (.apply c args) = .apply c (args.map (psubst δ)) := by
-        simp only [psubst, psubstList_eq_map]
-      rw [psubstApply, frames_apply, frames_apply]
-      rw [binders_apply] at untouched
-      split_ifs at untouched ⊢ with isFor
-      · match args, ih, untouched with
-        | t :: x :: k :: rest, ih, untouched =>
-            rw [bindersFor_cons3] at untouched
-            simp only [List.map_cons]
-            rw [framesFor_cons3, framesFor_cons3]
-            have tFixed : psubst δ t = t := by
-              rw [psubst_congr δ (fun _ => none) t fun y occurs => untouched y (by simp [occurs]), psubst_none]
-            rw [tFixed, ih x (by simp) fun y inside => untouched y (by simp [inside]),
-              ih k (by simp) fun y inside => untouched y (by simp [inside]), List.flatMap_map]
-            congr 1
-            exact List.flatMap_congr fun q member => ih q (by simp [member]) fun y inside =>
-              untouched y (by simp only [List.mem_append, List.mem_flatMap]; exact .inr ⟨q, member, inside⟩)
-        | [], _, _ => rfl
-        | [p], ih, untouched =>
-            rw [bindersFor_short [p] (by simp)] at untouched
-            simp only [List.map_cons, List.map_nil]
-            rw [framesFor_short _ (by simp), framesFor_short [p] (by simp)]
-            simp only [List.flatMap_cons, List.flatMap_nil]
-            rw [ih p (by simp) fun y inside => untouched y (by simp [inside])]
-        | [p, q], ih, untouched =>
-            rw [bindersFor_short [p, q] (by simp)] at untouched
-            simp only [List.map_cons, List.map_nil]
-            rw [framesFor_short _ (by simp), framesFor_short [p, q] (by simp)]
-            simp only [List.flatMap_cons, List.flatMap_nil]
-            rw [ih p (by simp) fun y inside => untouched y (by simp [inside]),
-              ih q (by simp) fun y inside => untouched y (by simp [inside])]
-      · rw [List.flatMap_map]
-        exact List.flatMap_congr fun q member => ih q member fun y inside =>
-          untouched y (List.mem_flatMap.mpr ⟨q, member, inside⟩)
-  | lambda nm body ih =>
-      intro untouched
-      simp only [psubst, frames]
-      exact ih fun y inside => untouched y (by simpa [binders] using inside)
-  | multiLambda n nms body ih =>
-      intro untouched
-      simp only [psubst, frames]
-      exact ih fun y inside => untouched y (by simpa [binders] using inside)
-  | subst body repl ihb ihr =>
-      intro untouched
-      simp only [psubst, frames]
-      rw [ihb fun y inside => untouched y (by simp [binders, inside]),
-        ihr fun y inside => untouched y (by simp [binders, inside])]
-  | collection ct elems rest ih =>
-      intro untouched
-      simp only [psubst, frames, framesList_eq_flatMap, psubstList_eq_map, List.flatMap_map]
-      exact List.flatMap_congr fun q member => ih q member fun y inside => untouched y (by
-        simp only [binders, MeTTaCalculus.Corrected.bindersList_eq_flatMap, List.mem_flatMap]
-        exact ⟨q, member, inside⟩)
-  | nil => simp_all
-  | cons p ps head tail =>
-      rename_i q member untouched
-      rcases List.mem_cons.mp member with rfl | later
-      · exact head untouched
-      · exact tail q later untouched
 
 /-! ## Pre-dotting keeps every variable -/
 
@@ -1090,68 +966,6 @@ theorem nested_applyDot {t u : Pattern} {bs : Bindings} (gp : GroundPrincipal t 
 
 /-! ## The hosted fragment is nested -/
 
-/-- **A term that binds nothing is scoped under every list holding its variables.** -/
-theorem scoped_of_binders_nil (p : Pattern) : ∀ bound : List String, binders p = [] →
-    (∀ y ∈ pvars p, y ∈ bound) → Scoped bound p := by
-  induction p using Pattern.rec (motive_2 := fun ps => ∀ q ∈ ps, ∀ bound : List String, binders q = [] →
-      (∀ y ∈ pvars q, y ∈ bound) → Scoped bound q) with
-  | bvar n => intro _ _ _; trivial
-  | fvar x => intro bound _ inside; exact inside x (by simp [pvars])
-  | apply c args ih =>
-      intro bound noBinders inside
-      have varsOf : ∀ q ∈ args, ∀ y ∈ pvars q, y ∈ bound := fun q member y occurs =>
-        inside y (mem_pvars_apply_of member occurs)
-      rw [binders_apply] at noBinders
-      rw [scoped_apply]
-      split_ifs at noBinders ⊢ with isFor
-      · match args, ih, varsOf, noBinders with
-        | t :: x :: k :: rest, ih, varsOf, noBinders =>
-            rw [bindersFor_cons3] at noBinders
-            simp only [List.append_eq_nil_iff, List.flatMap_eq_nil_iff] at noBinders
-            obtain ⟨⟨⟨noT, noX⟩, noK⟩, noRest⟩ := noBinders
-            refine ⟨fun y inT => by rw [noT] at inT; exact absurd inT List.not_mem_nil, noX,
-              ih x (by simp) bound noX (varsOf x (by simp)),
-              ih k (by simp) _ noK fun y occurs => List.mem_append_right _ (varsOf k (by simp) y occurs), ?_⟩
-            rw [scopedList_iff]
-            exact fun q member => ih q (by simp [member]) bound (noRest q member) (varsOf q (by simp [member]))
-        | [], _, _, _ => trivial
-        | [p], ih, varsOf, noBinders =>
-            rw [bindersFor_short _ (by simp), List.flatMap_eq_nil_iff] at noBinders
-            rw [scopedFor_short _ _ (by simp)]
-            exact fun q member => ih q member bound (noBinders q member) (varsOf q member)
-        | [p, p'], ih, varsOf, noBinders =>
-            rw [bindersFor_short _ (by simp), List.flatMap_eq_nil_iff] at noBinders
-            rw [scopedFor_short _ _ (by simp)]
-            exact fun q member => ih q member bound (noBinders q member) (varsOf q member)
-      · rw [List.flatMap_eq_nil_iff] at noBinders
-        exact fun q member => ih q member bound (noBinders q member) (varsOf q member)
-  | lambda nm body ih =>
-      intro bound noBinders inside
-      exact ih bound (by simpa [binders] using noBinders) (by simpa [pvars] using inside)
-  | multiLambda n nms body ih =>
-      intro bound noBinders inside
-      exact ih bound (by simpa [binders] using noBinders) (by simpa [pvars] using inside)
-  | subst body repl ihb ihr =>
-      intro bound noBinders inside
-      have both : binders body = [] ∧ binders repl = [] := by simpa [binders] using noBinders
-      exact ⟨ihb bound both.1 fun y occurs => inside y (by simp [pvars, occurs]),
-        ihr bound both.2 fun y occurs => inside y (by simp [pvars, occurs])⟩
-  | collection ct elems rest ih =>
-      intro bound noBinders inside
-      simp only [Scoped]
-      rw [scopedList_iff]
-      have each : ∀ q ∈ elems, binders q = [] := by
-        simpa [binders, MeTTaCalculus.Corrected.bindersList_eq_flatMap, List.flatMap_eq_nil_iff] using
-          noBinders
-      exact fun q member => ih q member bound (each q member)
-        (fun y occurs => inside y (mem_pvars_collection_of member occurs))
-  | nil => simp_all
-  | cons p ps head tail =>
-      rename_i q member bound noBinders inside
-      rcases List.mem_cons.mp member with rfl | later
-      · exact head bound noBinders inside
-      · exact tail q later bound noBinders inside
-
 /-- A frame's variables are variables of the term. -/
 theorem mem_pvars_of_mem_frames {c : Pattern} {f : List String} (member : f ∈ frames c) {y : String}
     (inF : y ∈ f) : y ∈ pvars c :=
@@ -1161,18 +975,12 @@ theorem mem_pvars_of_mem_frames {c : Pattern} {f : List String} (member : f ∈ 
 theorem nested_of_hosted {c : Pattern} (hosted : Hosted c) : Nested c := by
   obtain ⟨fo, ground | ⟨t, x, A, rfl, groundX, own, noBinders⟩⟩ := hosted
   · exact ⟨fo, scoped_of_ground c [] ground, by rw [frames_of_ground c ground]; exact List.Pairwise.nil⟩
-  · have empty : ∀ f ∈ frames A, ∀ y ∈ f, False := fun f member y inF => by
-      have inBinders := (mem_binders_iff A y).mpr ⟨f, member, inF⟩
-      rw [noBinders] at inBinders
-      exact List.not_mem_nil inBinders
-    refine ⟨fo, (scoped_pFor [] t x A).mpr ⟨fun y _ => List.not_mem_nil, binders_of_ground groundX,
+  · refine ⟨fo, (scoped_pFor [] t x A).mpr ⟨fun y _ => List.not_mem_nil, binders_of_ground groundX,
       scoped_of_ground x [] groundX, scoped_of_binders_nil A _ noBinders fun y occurs =>
         List.mem_append_left _ (own y occurs)⟩, ?_⟩
-    rw [frames_pFor, frames_of_ground x groundX, List.append_nil]
+    simp only [frames_pFor, frames_of_ground x groundX, frames_eq_nil_of_binders_eq_nil A noBinders,
+      List.append_nil]
     unfold FramesApart
-    rw [List.pairwise_append]
-    refine ⟨?_, List.pairwise_iff_forall_sublist.mpr fun sub y inA _ => empty _ (sub.subset (by simp)) y inA,
-      fun _ _ g inG y _ inYG => empty g inG y inYG⟩
     split_ifs
     · exact List.Pairwise.nil
     · exact List.pairwise_singleton _ _

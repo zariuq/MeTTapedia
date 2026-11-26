@@ -11478,110 +11478,22 @@ theorem miMatch_encoded_misubst_source_none_fail
       simp only [encAST?] at hlhs
       cases hlhs
 
-theorem miRootTable_source_raw_active_spec :
-    ∀ (rws : List RewriteDecl) (term encodedRules encodedTerm : AST),
-      encRules? rws = some encodedRules →
-      encAST? term = some encodedTerm →
-      (∀ out, rootBaseStep? rws term = some out →
-        RootTableRawActiveSome encodedRules encodedTerm out) ∧
-      (rootBaseStep? rws term = none →
-        RootTableRawActiveNone encodedRules encodedTerm)
-  | [], term, encodedRules, encodedTerm, hrules, _hterm => by
-      cases hrules
-      constructor
-      · intro out hcase
-        simp only [rootBaseStep?] at hcase
-        exact nomatch hcase
-      · intro _hcase
-        unfold RootTableRawActiveNone
-        refine ⟨1, miRootTable_nil_sim encodedTerm, ?_⟩
-        intro k hk
-        cases k with
-        | zero =>
-            simp only [eval]
-            exact RootActiveShape.rootTable MIRNil encodedTerm
-        | succ n =>
-            have hn : n < 0 := Nat.succ_lt_succ_iff.mp hk
-            exact False.elim (Nat.not_lt_zero n hn)
-  | rd :: rest, term, encodedRules, encodedTerm, hrules, hterm => by
-      cases hrdRw : rd.rw with
-      | ctx _ _ =>
-          simp only [encRules?, encRewriteDecl?, hrdRw] at hrules
-          cases hrules
-      | base lhs rhs =>
-          simp only [encRules?, encRewriteDecl?, hrdRw] at hrules
-          cases hlhs : encAST? lhs with
-          | none =>
-              simp [hlhs] at hrules
-          | some encodedLhs =>
-              cases hrhs : encAST? rhs with
-              | none =>
-                  simp [hlhs, hrhs] at hrules
-              | some encodedRhs =>
-                  cases hrest : encRules? rest with
-                  | none =>
-                      simp [hlhs, hrhs, hrest] at hrules
-                  | some encodedRest =>
-                      simp [hlhs, hrhs, hrest] at hrules
-                      cases hrules
-                      cases hmatch : AST.matchPat lhs term [] with
-                      | some bs =>
-                          constructor
-                          · intro out hcase
-                            simp only [rootBaseStep?, hrdRw, hmatch] at hcase
-                            cases hcase
-                            unfold RootTableRawActiveSome
-                            obtain ⟨encodedBs, Nroot, hbs, hroot,
-                              hrootActive, _hbsNorm⟩ :=
-                              miRootTable_rule_source_some_raw_active_sim
-                                lhs rhs term encodedLhs encodedRhs
-                                encodedTerm encodedRest rest bs
-                                hlhs hrhs hterm hrest hmatch
-                            obtain ⟨encodedOut, Nsubst, hout, hsubst,
-                              houtNorm⟩ :=
-                              miSubst_encAST_inst_eval rhs encodedRhs hrhs
-                                bs encodedBs hbs
-                            exact ⟨miSubst encodedBs encodedRhs, encodedOut,
-                              Nroot, Nsubst, hout, hroot, hrootActive, hsubst,
-                              houtNorm⟩
-                          · intro hcase
-                            simp only [rootBaseStep?, hrdRw, hmatch] at hcase
-                            exact nomatch hcase
-                      | none =>
-                          have htail :=
-                            miRootTable_source_raw_active_spec rest term
-                              encodedRest encodedTerm hrest hterm
-                          constructor
-                          · intro out hcase
+private abbrev RootReadout (call out : AST) : Prop :=
+  ∃ (raw encoded : AST) (steps normalize : Nat),
+    encAST? out = some encoded ∧ eval pMI steps call = MIRootStep raw ∧
+      (∀ k, k < steps → RootActiveShape (eval pMI k call)) ∧
+      eval pMI normalize raw = encoded ∧ IsNormal pMI encoded
 
-                            simp only [rootBaseStep?, hrdRw, hmatch] at hcase
-                            have htailSome := htail.1 out hcase
-                            unfold RootTableRawActiveSome at htailSome ⊢
-                            obtain ⟨rawNext, encodedOut, NtailRoot,
-                              NtailSubst, hout, htailEval, htailActive,
-                              hsubst, houtNorm⟩ := htailSome
-                            obtain ⟨Nroot, hroot, hrootActive⟩ :=
-                              miRootTable_rule_source_none_active_eval_of_rest
-                                lhs rhs term encodedLhs encodedRhs
-                                encodedTerm encodedRest
-                                (MIRootStep rawNext) rest NtailRoot
-                                hlhs hrhs hterm hrest hmatch htailEval
-                                htailActive
-                            exact ⟨rawNext, encodedOut, Nroot, NtailSubst,
-                              hout, hroot, hrootActive, hsubst, houtNorm⟩
-                          · intro hcase
-                            simp only [rootBaseStep?, hrdRw, hmatch] at hcase
-                            have htailNone := htail.2 hcase
-                            unfold RootTableRawActiveNone at htailNone ⊢
-                            obtain ⟨NtailRoot, htailEval, htailActive⟩ :=
-                              htailNone
-                            obtain ⟨Nroot, hroot, hrootActive⟩ :=
-                              miRootTable_rule_source_none_active_eval_of_rest
-                                lhs rhs term encodedLhs encodedRhs
-                                encodedTerm encodedRest MINoRoot rest
-                                NtailRoot hlhs hrhs hterm hrest hmatch
-                              htailEval htailActive
-                            exact ⟨Nroot, hroot, hrootActive⟩
+private abbrev RootPayloadReadout (call out : AST) : Prop :=
+  ∃ (raw encoded : AST) (steps normalize : Nat),
+    encAST? out = some encoded ∧ eval pMI steps call = MIRootStep raw ∧
+      (∀ k, k < steps → RootActiveShape (eval pMI k call)) ∧
+      eval pMI normalize raw = encoded ∧ IsNormal pMI encoded ∧ RawTermPayload raw encoded
+
+private theorem project_root_payload {call out : AST}
+    (witness : RootPayloadReadout call out) : RootReadout call out := by
+  obtain ⟨raw, encoded, steps, normalize, output, run, active, normalized, normal, _⟩ := witness
+  exact ⟨raw, encoded, steps, normalize, output, run, active, normalized, normal⟩
 
 theorem miRootTable_source_raw_active_spec_payload :
     ∀ (rws : List RewriteDecl) (term encodedRules encodedTerm : AST),
@@ -11684,6 +11596,20 @@ theorem miRootTable_source_raw_active_spec_payload :
                                 NtailRoot hlhs hrhs hterm hrest hmatch
                                 htailEval htailActive
                             exact ⟨Nroot, hroot, hrootActive⟩
+
+theorem miRootTable_source_raw_active_spec :
+    ∀ (rws : List RewriteDecl) (term encodedRules encodedTerm : AST),
+      encRules? rws = some encodedRules →
+      encAST? term = some encodedTerm →
+      (∀ out, rootBaseStep? rws term = some out →
+        RootTableRawActiveSome encodedRules encodedTerm out) ∧
+      (rootBaseStep? rws term = none →
+        RootTableRawActiveNone encodedRules encodedTerm) := by
+  intro rules term encodedRules encodedTerm hrules hterm
+  obtain ⟨success, failure⟩ :=
+    miRootTable_source_raw_active_spec_payload rules term encodedRules encodedTerm hrules hterm
+  exact ⟨fun out found => project_root_payload (success out found), failure⟩
+
 
 theorem miRootTable_source_raw_active_sim
     (rws : List RewriteDecl) (term encodedRules encodedTerm : AST)
@@ -12074,88 +12000,6 @@ theorem miRootTable_source_raw_active_sim_payload
   | none =>
       simpa only [hcase, RootTableRawActiveNone] using hspec.2 hcase
 
-theorem miRoot_eval_of_rootTable_source_raw_active_sim
-    (rws : List RewriteDecl) (term encodedRules encodedTerm : AST)
-    (hrules : encRules? rws = some encodedRules)
-    (hterm : encAST? term = some encodedTerm)
-    (hdispatch : oneStep pMI (miRoot encodedRules encodedTerm) =
-      some (miRootTable encodedRules encodedTerm)) :
-    match rootBaseStep? rws term with
-    | some out =>
-        ∃ (rawNext encodedOut : AST) (rootFuel substFuel : Nat),
-          encAST? out = some encodedOut ∧
-          eval pMI rootFuel (miRoot encodedRules encodedTerm) =
-            MIRootStep rawNext ∧
-          (∀ k, k < rootFuel →
-            RootActiveShape
-              (eval pMI k (miRoot encodedRules encodedTerm))) ∧
-          eval pMI substFuel rawNext = encodedOut ∧
-          IsNormal pMI encodedOut
-    | none =>
-        ∃ rootFuel,
-          eval pMI rootFuel (miRoot encodedRules encodedTerm) = MINoRoot ∧
-          ∀ k, k < rootFuel →
-            RootActiveShape
-              (eval pMI k (miRoot encodedRules encodedTerm)) := by
-  have htable :=
-    miRootTable_source_raw_active_sim rws term encodedRules encodedTerm
-      hrules hterm
-  cases hcase : rootBaseStep? rws term with
-  | some out =>
-      simp only [hcase] at htable ⊢
-      obtain ⟨rawNext, encodedOut, Ntable, Nsubst, hout, htableEval,
-        htableActive, hsubst, houtNorm⟩ := htable
-      have hrootDispatch :
-          eval pMI 1 (miRoot encodedRules encodedTerm) =
-            miRootTable encodedRules encodedTerm := by
-        simp only [eval, hdispatch]
-      have htotal := eval_trans_mi 1 Ntable
-        (miRoot encodedRules encodedTerm)
-        (miRootTable encodedRules encodedTerm)
-        (MIRootStep rawNext)
-        hrootDispatch htableEval
-      refine ⟨rawNext, encodedOut, 1 + Ntable, Nsubst, hout, htotal,
-        ?_, hsubst, houtNorm⟩
-      intro k hk
-      cases k with
-      | zero =>
-          simp only [eval]
-          exact RootActiveShape.root encodedRules encodedTerm
-      | succ k =>
-          have hkTable : k < Ntable := by omega
-          have hsucc :
-              eval pMI (Nat.succ k) (miRoot encodedRules encodedTerm) =
-                eval pMI k (miRootTable encodedRules encodedTerm) := by
-            simp only [eval, hdispatch]
-          rw [hsucc]
-          exact htableActive k hkTable
-  | none =>
-      simp only [hcase] at htable ⊢
-      obtain ⟨Ntable, htableEval, htableActive⟩ := htable
-      have hrootDispatch :
-          eval pMI 1 (miRoot encodedRules encodedTerm) =
-            miRootTable encodedRules encodedTerm := by
-        simp only [eval, hdispatch]
-      have htotal := eval_trans_mi 1 Ntable
-        (miRoot encodedRules encodedTerm)
-        (miRootTable encodedRules encodedTerm)
-        MINoRoot
-        hrootDispatch htableEval
-      refine ⟨1 + Ntable, htotal, ?_⟩
-      intro k hk
-      cases k with
-      | zero =>
-          simp only [eval]
-          exact RootActiveShape.root encodedRules encodedTerm
-      | succ k =>
-          have hkTable : k < Ntable := by omega
-          have hsucc :
-              eval pMI (Nat.succ k) (miRoot encodedRules encodedTerm) =
-                eval pMI k (miRootTable encodedRules encodedTerm) := by
-            simp only [eval, hdispatch]
-          rw [hsucc]
-          exact htableActive k hkTable
-
 theorem miRoot_eval_of_rootTable_source_raw_active_sim_payload
     (rws : List RewriteDecl) (term encodedRules encodedTerm : AST)
     (hrules : encRules? rws = some encodedRules)
@@ -12238,6 +12082,38 @@ theorem miRoot_eval_of_rootTable_source_raw_active_sim_payload
             simp only [eval, hdispatch]
           rw [hsucc]
           exact htableActive k hkTable
+
+theorem miRoot_eval_of_rootTable_source_raw_active_sim
+    (rws : List RewriteDecl) (term encodedRules encodedTerm : AST)
+    (hrules : encRules? rws = some encodedRules)
+    (hterm : encAST? term = some encodedTerm)
+    (hdispatch : oneStep pMI (miRoot encodedRules encodedTerm) =
+      some (miRootTable encodedRules encodedTerm)) :
+    match rootBaseStep? rws term with
+    | some out =>
+        ∃ (rawNext encodedOut : AST) (rootFuel substFuel : Nat),
+          encAST? out = some encodedOut ∧
+          eval pMI rootFuel (miRoot encodedRules encodedTerm) =
+            MIRootStep rawNext ∧
+          (∀ k, k < rootFuel →
+            RootActiveShape
+              (eval pMI k (miRoot encodedRules encodedTerm))) ∧
+          eval pMI substFuel rawNext = encodedOut ∧
+          IsNormal pMI encodedOut
+    | none =>
+        ∃ rootFuel,
+          eval pMI rootFuel (miRoot encodedRules encodedTerm) = MINoRoot ∧
+          ∀ k, k < rootFuel →
+            RootActiveShape
+              (eval pMI k (miRoot encodedRules encodedTerm)) := by
+  have checked := miRoot_eval_of_rootTable_source_raw_active_sim_payload
+    rws term encodedRules encodedTerm hrules hterm hdispatch
+  cases found : rootBaseStep? rws term with
+  | none => simpa only [found] using checked
+  | some out =>
+      exact project_root_payload (call := miRoot encodedRules encodedTerm) (out := out)
+        (by simpa only [found] using checked)
+
 
 theorem miRoot_source_raw_active_sim_var (rws : List RewriteDecl)
     (v : String) (encodedRules : AST)
@@ -14589,235 +14465,6 @@ theorem miStep_source_root_none_app_args_rawnone_with_guard
       a rest encodedRules encodedArgs argsFuel hrules hargsEnc hhead
       hcase hargsEval hargsActive
 
-theorem step_argsBaseStepFuel_source_raw_active_sim :
-    ∀ fuel,
-      (∀ (rws : List RewriteDecl) (term encodedRules encodedTerm : AST),
-        encRules? rws = some encodedRules →
-        encAST? term = some encodedTerm →
-        noQueryAST term = true →
-        astFuel term < fuel →
-        match stepBaseStepFuel? rws fuel term with
-        | some out => StepRawSome encodedRules encodedTerm out
-        | none => StepRawNone encodedRules encodedTerm) ∧
-      (∀ (rws : List RewriteDecl) (args : List AST)
-          (encodedRules encodedArgs : AST),
-        encRules? rws = some encodedRules →
-        encASTList? args = some encodedArgs →
-        noQueryASTList args = true →
-        astListFuel args < fuel →
-        match argsBaseStepFuel? rws fuel args with
-        | some out => ArgsRawSome encodedRules encodedArgs out
-        | none => ArgsRawNone encodedRules encodedArgs) := by
-  intro fuel
-  induction fuel with
-  | zero =>
-      constructor
-      · intro rws term encodedRules encodedTerm hrules hterm hno hfuel
-        exact False.elim (Nat.not_lt_zero _ hfuel)
-      · intro rws args encodedRules encodedArgs hrules hargs hno hfuel
-        exact False.elim (Nat.not_lt_zero _ hfuel)
-  | succ fuel ih =>
-      constructor
-      · intro rws term encodedRules encodedTerm hrules hterm hno hfuel
-        cases term with
-        | var path =>
-            cases path with
-            | base v =>
-                simp only [encAST?] at hterm
-                cases hterm
-                cases hcase : rootBaseStep? rws (.var (.base v)) with
-                | some out =>
-                    simpa [stepBaseStepFuel?, hcase] using
-                      miStep_source_root_some_rawsome_var rws v
-                        encodedRules out hrules hcase
-                | none =>
-                    simpa [stepBaseStepFuel?, hcase] using
-                      miStep_source_root_none_rawnone_var rws v
-                        encodedRules hrules hcase
-            | qualified ident rest =>
-                simp only [encAST?] at hterm
-                cases hterm
-        | sexp label args =>
-            cases label with
-            | id headName =>
-                cases args with
-                | nil =>
-                    simp only [encAST?] at hterm
-                    cases hterm
-                    cases hcase :
-                        rootBaseStep? rws (.sexp (.id headName) []) with
-                    | some out =>
-                        simpa [stepBaseStepFuel?, hcase] using
-                          miStep_source_root_some_rawsome_sym rws headName
-                            encodedRules out hrules hcase
-                    | none =>
-                        have hargsNil :
-                            argsBaseStepFuel? rws fuel [] = none := by
-                          cases fuel <;> simp [argsBaseStepFuel?]
-                        simpa [stepBaseStepFuel?, hcase, hargsNil] using
-                          miStep_source_root_none_rawnone_sym rws headName
-                            encodedRules hrules hcase
-                | cons a rest =>
-                    cases hargsEnc : encASTList? (a :: rest) with
-                    | none =>
-                        simp only [encAST?, hargsEnc] at hterm
-                        cases hterm
-                    | some encodedArgs =>
-                        simp only [encAST?, hargsEnc] at hterm
-                        cases hterm
-                        have hnoApp :
-                            (((headName == "match") == false) &&
-                              noQueryASTList (a :: rest)) = true := by
-                          simpa only [noQueryAST] using hno
-                        have hheadB :
-                            ((headName == "match") == false) = true := by
-                          cases hm : ((headName == "match") == false) <;>
-                            simp [hm] at hnoApp ⊢
-                        have hhead :
-                            (headName == "match") = false := by
-                          cases hhm : (headName == "match") <;>
-                            simp [hhm] at hheadB ⊢
-                        have hnoArgs :
-                            noQueryASTList (a :: rest) = true := by
-                          cases hm : ((headName == "match") == false)
-                          · simp [hm] at hnoApp
-                          · simpa [hm] using hnoApp
-                        have hargsFuel : astListFuel (a :: rest) < fuel := by
-                          simp only [astFuel] at hfuel
-                          omega
-                        cases hroot :
-                            rootBaseStep? rws
-                              (.sexp (.id headName) (a :: rest)) with
-                        | some out =>
-                            simpa [stepBaseStepFuel?, hroot] using
-                              miStep_source_root_some_rawsome_app_head_ne
-                                rws headName a rest encodedRules encodedArgs
-                                out hrules hargsEnc hhead hroot
-                        | none =>
-                            have hargsSim := ih.2 rws (a :: rest)
-                              encodedRules encodedArgs hrules hargsEnc
-                              hnoArgs hargsFuel
-                            cases hargsStep :
-                                argsBaseStepFuel? rws fuel (a :: rest) with
-                            | some argsOut =>
-                                have hargsSome :
-                                    ArgsRawSome encodedRules encodedArgs
-                                      argsOut := by
-                                  simpa [hargsStep] using hargsSim
-                                rcases
-                                  argsBaseStepFuel?_cons_some_nonempty
-                                    rws fuel a rest argsOut hargsStep with
-                                  ⟨argOutHead, argOutRest, rfl⟩
-                                simpa [stepBaseStepFuel?, hroot, hargsStep] using
-                                  miStep_source_root_none_app_args_rawsome_with_guard
-                                    rws headName a rest argOutHead argOutRest
-                                    encodedRules encodedArgs hrules hargsEnc
-                                    hhead hroot hargsSome
-                            | none =>
-                                have hargsNone :
-                                    ArgsRawNone encodedRules encodedArgs := by
-                                  simpa [hargsStep] using hargsSim
-                                simpa [stepBaseStepFuel?, hroot, hargsStep] using
-                                  miStep_source_root_none_app_args_rawnone_with_guard
-                                    rws headName a rest encodedRules
-                                    encodedArgs hrules hargsEnc hhead hroot
-                                    hargsNone
-            | wild =>
-                simp only [encAST?] at hterm
-                cases hterm
-            | listE c =>
-                simp only [encAST?] at hterm
-                cases hterm
-            | listCons c =>
-                simp only [encAST?] at hterm
-                cases hterm
-            | listOne c =>
-                simp only [encAST?] at hterm
-                cases hterm
-        | subst body repl v =>
-            simp only [encAST?] at hterm
-            cases hterm
-      · intro rws args encodedRules encodedArgs hrules hargs hno hfuel
-        cases args with
-        | nil =>
-            simp only [encASTList?] at hargs
-            cases hargs
-            simpa [argsBaseStepFuel?] using
-              miStepArgs_source_nil_rawnone encodedRules
-        | cons t ts =>
-            cases htEnc : encAST? t with
-            | none =>
-                simp only [encASTList?, htEnc] at hargs
-                cases hargs
-            | some encodedT =>
-                cases htsEnc : encASTList? ts with
-                | none =>
-                    simp only [encASTList?, htEnc, htsEnc] at hargs
-                    cases hargs
-                | some encodedTs =>
-                    simp only [encASTList?, htEnc, htsEnc] at hargs
-                    cases hargs
-                    have hnoCons :
-                        noQueryAST t && noQueryASTList ts = true := by
-                      simpa [noQueryASTList] using hno
-                    have htNo : noQueryAST t = true := by
-                      cases ht : noQueryAST t <;>
-                        simp [ht] at hnoCons ⊢
-                    have htsNo : noQueryASTList ts = true := by
-                      cases ht : noQueryAST t
-                      · simp [ht] at hnoCons
-                      · simpa [ht] using hnoCons
-                    have htFuel : astFuel t < fuel := by
-                      simp only [astListFuel] at hfuel
-                      omega
-                    have htsFuel : astListFuel ts < fuel := by
-                      simp only [astListFuel] at hfuel
-                      omega
-                    have hheadSim := ih.1 rws t encodedRules encodedT
-                      hrules htEnc htNo htFuel
-                    cases hstep : stepBaseStepFuel? rws fuel t with
-                    | some tOut =>
-                        have hheadSome :
-                            StepRawSome encodedRules encodedT tOut := by
-                          simpa [hstep] using hheadSim
-                        simpa [argsBaseStepFuel?, hstep] using
-                          miStepArgs_source_cons_of_head_rawsome
-                            encodedRules encodedT encodedTs tOut ts
-                            (encRules?_some_normal rws encodedRules hrules)
-                            (encAST?_some_normal t encodedT htEnc)
-                            htsEnc hheadSome
-                    | none =>
-                        have hheadNone :
-                            StepRawNone encodedRules encodedT := by
-                          simpa [hstep] using hheadSim
-                        have hrestSim := ih.2 rws ts encodedRules
-                          encodedTs hrules htsEnc htsNo htsFuel
-                        cases htail :
-                            argsBaseStepFuel? rws fuel ts with
-                        | some tailOut =>
-                            have htailSome :
-                                ArgsRawSome encodedRules encodedTs
-                                  tailOut := by
-                              simpa [htail] using hrestSim
-                            simpa [argsBaseStepFuel?, hstep, htail] using
-                              miStepArgs_source_cons_of_head_rawnone_rest_rawsome
-                                encodedRules encodedT encodedTs t tailOut
-                                (encRules?_some_normal rws encodedRules hrules)
-                                (encAST?_some_normal t encodedT htEnc)
-                                (encASTList?_some_normal ts encodedTs htsEnc)
-                                htEnc hheadNone htailSome
-                        | none =>
-                            have htailNone :
-                                ArgsRawNone encodedRules encodedTs := by
-                              simpa [htail] using hrestSim
-                            simpa [argsBaseStepFuel?, hstep, htail] using
-                              miStepArgs_source_cons_of_head_rawnone_rest_rawnone
-                                encodedRules encodedT encodedTs
-                                (encRules?_some_normal rws encodedRules hrules)
-                                (encAST?_some_normal t encodedT htEnc)
-                                (encASTList?_some_normal ts encodedTs htsEnc)
-                                hheadNone htailNone
-
 theorem step_argsBaseStepFuel_source_raw_active_payload_sim :
     ∀ fuel,
       (∀ (rws : List RewriteDecl) (term encodedRules encodedTerm : AST),
@@ -15047,6 +14694,42 @@ theorem step_argsBaseStepFuel_source_raw_active_payload_sim :
                                 (encAST?_some_normal t encodedT htEnc)
                                 (encASTList?_some_normal ts encodedTs htsEnc)
                                 hheadNone htailNone
+
+theorem step_argsBaseStepFuel_source_raw_active_sim :
+    ∀ fuel,
+      (∀ (rws : List RewriteDecl) (term encodedRules encodedTerm : AST),
+        encRules? rws = some encodedRules →
+        encAST? term = some encodedTerm →
+        noQueryAST term = true →
+        astFuel term < fuel →
+        match stepBaseStepFuel? rws fuel term with
+        | some out => StepRawSome encodedRules encodedTerm out
+        | none => StepRawNone encodedRules encodedTerm) ∧
+      (∀ (rws : List RewriteDecl) (args : List AST)
+          (encodedRules encodedArgs : AST),
+        encRules? rws = some encodedRules →
+        encASTList? args = some encodedArgs →
+        noQueryASTList args = true →
+        astListFuel args < fuel →
+        match argsBaseStepFuel? rws fuel args with
+        | some out => ArgsRawSome encodedRules encodedArgs out
+        | none => ArgsRawNone encodedRules encodedArgs) := by
+  intro fuel
+  obtain ⟨step, args⟩ := step_argsBaseStepFuel_source_raw_active_payload_sim fuel
+  constructor
+  · intro rws term rules encoded hrules hterm noQuery enough
+    have checked := step rws term rules encoded hrules hterm noQuery enough
+    cases found : stepBaseStepFuel? rws fuel term with
+    | none => simpa only [found] using checked
+    | some out =>
+        exact stepRawSomePayload_to_rawSome (out := out) (by simpa only [found] using checked)
+  · intro rws terms rules encoded hrules hterms noQuery enough
+    have checked := args rws terms rules encoded hrules hterms noQuery enough
+    cases found : argsBaseStepFuel? rws fuel terms with
+    | none => simpa only [found] using checked
+    | some out =>
+        exact argsRawSomePayload_to_rawSome (out := out) (by simpa only [found] using checked)
+
 
 theorem stepBaseStep_source_raw_active_sim
     (rws : List RewriteDecl) (term encodedRules encodedTerm : AST)
@@ -16721,5 +16404,13 @@ def ctxDecl : RewriteDecl :=
 theorem encRewriteDecl_rejects_ctx :
     encRewriteDecl? ctxDecl = none := by
   rfl
+
+example : RootTableRawActiveSome rulesAdd (miAdd miZ miTwo) gTwo :=
+  (miRootTable_source_raw_active_spec addDecls (gAdd gZ gTwo) rulesAdd
+    (miAdd miZ miTwo) rfl rfl).1 gTwo rfl
+
+example : RootTableRawActiveNone MIRNil (miAdd miZ miTwo) :=
+  (miRootTable_source_raw_active_spec [] (gAdd gZ gTwo) MIRNil
+    (miAdd miZ miTwo) rfl rfl).2 rfl
 
 end Mettapedia.GSLT.LanguageDef.MIEvalEncoding

@@ -268,6 +268,22 @@ def q(value): return json.dumps(value, ensure_ascii=False)
 def charlist(value):
     # Exact Unicode codepoints; current emitted target fragment is ASCII.
     return "[" + ", ".join("Char.ofNat " + str(ord(c)) for c in value) + "]"
+
+
+CHARACTER_LIST = re.compile(r"\[(?:Char\.ofNat [0-9]+)(?:, Char\.ofNat [0-9]+)*\]")
+
+
+def reify_character_lists(payload: str) -> str:
+    """Render closed character terms compactly after fixing the AST block layout."""
+    def reify(match: re.Match[str]) -> str:
+        chars = "".join(chr(int(code)) for code in re.findall(r"[0-9]+", match[0]))
+        if not (chars.isascii() and chars.isprintable()):
+            return match[0]
+        return f"(native_c_characters% {q(chars)})"
+
+    return CHARACTER_LIST.sub(reify, payload)
+
+
 def seq(values): return "[" + ", ".join(values) + "]"
 def ctype(value): return "⟨%s, %d⟩" % (charlist(value[0]), value[1])
 def parameter(value): return "⟨%s, %s⟩" % (ctype(value[0]), charlist(value[1]))
@@ -428,7 +444,9 @@ def render(native):
             "namespace " + NS, "", "open NativeOps NativeOps.NativeC", "",
         ]
         if last - first > 8000:
-            lines += FunctionPayload(sid).render(fn, ctoks[first:last])
+            lines.insert(1, "import Mettapedia.GSLT.LanguageDef.NativeOpsCBodyTextAgreement")
+            payload = FunctionPayload(sid).render(fn, ctoks[first:last])
+            lines.extend(reify_character_lists(line) for line in payload)
         else:
             lines += [
                 f"def function_{sid} : CFunction := " + function(fn), "",

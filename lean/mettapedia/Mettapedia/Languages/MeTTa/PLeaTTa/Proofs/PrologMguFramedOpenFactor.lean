@@ -131,6 +131,81 @@ end
 
 mutual
 
+private theorem treeAndForest_binding_alphaOpenable {alpha : List (LogicVar × String)} :
+    (∀ {left right binding}, TreeMgu left right binding →
+      MguRuntimePair alpha left right →
+        TreeSubstitutionAlphaOpenable alpha binding) ∧
+    (∀ {left right binding}, TreesMgu left right binding →
+      MguRuntimePairs alpha left right →
+        TreeSubstitutionAlphaOpenable alpha binding) :=
+  TreeMgu.inductBoth
+    (tree := fun left right binding =>
+      MguRuntimePair alpha left right →
+        TreeSubstitutionAlphaOpenable alpha binding)
+    (forest := fun left right binding =>
+      MguRuntimePairs alpha left right →
+        TreeSubstitutionAlphaOpenable alpha binding)
+    (fun tree framed => by
+      exact ⟨by intro entry member; simp at member,
+        by intro entry member; simp at member⟩)
+    (fun source value different absent framed => by
+      cases framed with
+      | values leftRepresentable rightRepresentable =>
+          exact
+            ⟨treeMgu_binding_variablesSatisfy
+                (.bindLeft source value different absent)
+                (canonicalRuntimeAgrees_variablesSatisfy
+                  leftRepresentable.choose_spec)
+                (canonicalRuntimeAgrees_variablesSatisfy
+                  rightRepresentable.choose_spec),
+              TreeMgu.binding_runtimeRepresentable
+                (.bindLeft source value different absent)
+                leftRepresentable rightRepresentable⟩
+      | equal tree => exact False.elim (different rfl))
+    (fun value target notVariable absent framed => by
+      cases framed with
+      | values leftRepresentable rightRepresentable =>
+          exact
+            ⟨treeMgu_binding_variablesSatisfy
+                (.bindRight value target notVariable absent)
+                (canonicalRuntimeAgrees_variablesSatisfy
+                  leftRepresentable.choose_spec)
+                (canonicalRuntimeAgrees_variablesSatisfy
+                  rightRepresentable.choose_spec),
+              TreeMgu.binding_runtimeRepresentable
+                (.bindRight value target notVariable absent)
+                leftRepresentable rightRepresentable⟩
+      | equal tree => exact False.elim (notVariable target rfl))
+    (fun symbol left right different children childrenInduction framed => by
+      cases framed with
+      | values leftRepresentable rightRepresentable =>
+          exact
+            ⟨treeMgu_binding_variablesSatisfy
+                (.node symbol left right different children)
+                (canonicalRuntimeAgrees_variablesSatisfy
+                  leftRepresentable.choose_spec)
+                (canonicalRuntimeAgrees_variablesSatisfy
+                  rightRepresentable.choose_spec),
+              TreeMgu.binding_runtimeRepresentable
+                (.node symbol left right different children)
+                leftRepresentable rightRepresentable⟩
+      | equal tree => exact False.elim (different rfl)
+      | node _ childPairs => exact childrenInduction childPairs
+      | rigidClash leftSymbol rightSymbol leftChildren rightChildren clash =>
+          exact False.elim (clash rfl))
+    (fun framed => by
+      cases framed
+      exact ⟨by intro entry member; simp at member,
+        by intro entry member; simp at member⟩)
+    (fun left right lefts rights base extension head tail headInduction
+        tailInduction framed => by
+      cases framed with
+      | cons headPair tailPairs =>
+          have baseOpenable := headInduction headPair
+          have extensionOpenable :=
+            tailInduction (tailPairs.apply baseOpenable)
+          exact extensionOpenable.append baseOpenable)
+
 /-- A real canonical root MGU over framed inputs can emit only ordinary
 alpha-covered, runtime-representable replacement values. -/
 theorem TreeMgu.binding_alphaOpenable_of_pair
@@ -138,75 +213,8 @@ theorem TreeMgu.binding_alphaOpenable_of_pair
     {left right : Tree} {binding : TreeSubstitution}
     (derivation : TreeMgu left right binding)
     (pair : MguRuntimePair alpha left right) :
-    TreeSubstitutionAlphaOpenable alpha binding := by
-  exact TreeMgu.rec
-    (motive_1 := fun left right binding _ =>
-      MguRuntimePair alpha left right →
-        TreeSubstitutionAlphaOpenable alpha binding)
-    (motive_2 := fun left right binding _ =>
-      MguRuntimePairs alpha left right →
-        TreeSubstitutionAlphaOpenable alpha binding)
-    (fun tree framed => by
-      exact ⟨by intro entry member; simp at member,
-        by intro entry member; simp at member⟩)
-    (fun source value different absent framed => by
-      cases framed with
-      | values leftRepresentable rightRepresentable =>
-          exact
-            ⟨treeMgu_binding_variablesSatisfy
-                (.bindLeft source value different absent)
-                (canonicalRuntimeAgrees_variablesSatisfy
-                  leftRepresentable.choose_spec)
-                (canonicalRuntimeAgrees_variablesSatisfy
-                  rightRepresentable.choose_spec),
-              TreeMgu.binding_runtimeRepresentable
-                (.bindLeft source value different absent)
-                leftRepresentable rightRepresentable⟩
-      | equal tree => exact False.elim (different rfl))
-    (fun value target notVariable absent framed => by
-      cases framed with
-      | values leftRepresentable rightRepresentable =>
-          exact
-            ⟨treeMgu_binding_variablesSatisfy
-                (.bindRight value target notVariable absent)
-                (canonicalRuntimeAgrees_variablesSatisfy
-                  leftRepresentable.choose_spec)
-                (canonicalRuntimeAgrees_variablesSatisfy
-                  rightRepresentable.choose_spec),
-              TreeMgu.binding_runtimeRepresentable
-                (.bindRight value target notVariable absent)
-                leftRepresentable rightRepresentable⟩
-      | equal tree => exact False.elim (notVariable target rfl))
-    (fun symbol left right different children childrenInduction framed => by
-      cases framed with
-      | values leftRepresentable rightRepresentable =>
-          exact
-            ⟨treeMgu_binding_variablesSatisfy
-                (.node symbol left right different children)
-                (canonicalRuntimeAgrees_variablesSatisfy
-                  leftRepresentable.choose_spec)
-                (canonicalRuntimeAgrees_variablesSatisfy
-                  rightRepresentable.choose_spec),
-              TreeMgu.binding_runtimeRepresentable
-                (.node symbol left right different children)
-                leftRepresentable rightRepresentable⟩
-      | equal tree => exact False.elim (different rfl)
-      | node _ childPairs => exact childrenInduction childPairs
-      | rigidClash leftSymbol rightSymbol leftChildren rightChildren clash =>
-          exact False.elim (clash rfl))
-    (fun framed => by
-      cases framed
-      exact ⟨by intro entry member; simp at member,
-        by intro entry member; simp at member⟩)
-    (fun left right lefts rights base extension head tail headInduction
-        tailInduction framed => by
-      cases framed with
-      | cons headPair tailPairs =>
-          have baseOpenable := headInduction headPair
-          have extensionOpenable :=
-            tailInduction (tailPairs.apply baseOpenable)
-          exact extensionOpenable.append baseOpenable)
-    derivation pair
+    TreeSubstitutionAlphaOpenable alpha binding :=
+  (@treeAndForest_binding_alphaOpenable alpha).1 derivation pair
 
 /-- Ordered child-list specialization of the same output guarantee. -/
 theorem TreesMgu.binding_alphaOpenable_of_pairs
@@ -214,75 +222,8 @@ theorem TreesMgu.binding_alphaOpenable_of_pairs
     {left right : List Tree} {binding : TreeSubstitution}
     (derivation : TreesMgu left right binding)
     (pairs : MguRuntimePairs alpha left right) :
-    TreeSubstitutionAlphaOpenable alpha binding := by
-  exact TreesMgu.rec
-    (motive_1 := fun left right binding _ =>
-      MguRuntimePair alpha left right →
-        TreeSubstitutionAlphaOpenable alpha binding)
-    (motive_2 := fun left right binding _ =>
-      MguRuntimePairs alpha left right →
-        TreeSubstitutionAlphaOpenable alpha binding)
-    (fun tree framed => by
-      exact ⟨by intro entry member; simp at member,
-        by intro entry member; simp at member⟩)
-    (fun source value different absent framed => by
-      cases framed with
-      | values leftRepresentable rightRepresentable =>
-          exact
-            ⟨treeMgu_binding_variablesSatisfy
-                (.bindLeft source value different absent)
-                (canonicalRuntimeAgrees_variablesSatisfy
-                  leftRepresentable.choose_spec)
-                (canonicalRuntimeAgrees_variablesSatisfy
-                  rightRepresentable.choose_spec),
-              TreeMgu.binding_runtimeRepresentable
-                (.bindLeft source value different absent)
-                leftRepresentable rightRepresentable⟩
-      | equal tree => exact False.elim (different rfl))
-    (fun value target notVariable absent framed => by
-      cases framed with
-      | values leftRepresentable rightRepresentable =>
-          exact
-            ⟨treeMgu_binding_variablesSatisfy
-                (.bindRight value target notVariable absent)
-                (canonicalRuntimeAgrees_variablesSatisfy
-                  leftRepresentable.choose_spec)
-                (canonicalRuntimeAgrees_variablesSatisfy
-                  rightRepresentable.choose_spec),
-              TreeMgu.binding_runtimeRepresentable
-                (.bindRight value target notVariable absent)
-                leftRepresentable rightRepresentable⟩
-      | equal tree => exact False.elim (notVariable target rfl))
-    (fun symbol left right different children childrenInduction framed => by
-      cases framed with
-      | values leftRepresentable rightRepresentable =>
-          exact
-            ⟨treeMgu_binding_variablesSatisfy
-                (.node symbol left right different children)
-                (canonicalRuntimeAgrees_variablesSatisfy
-                  leftRepresentable.choose_spec)
-                (canonicalRuntimeAgrees_variablesSatisfy
-                  rightRepresentable.choose_spec),
-              TreeMgu.binding_runtimeRepresentable
-                (.node symbol left right different children)
-                leftRepresentable rightRepresentable⟩
-      | equal tree => exact False.elim (different rfl)
-      | node _ childPairs => exact childrenInduction childPairs
-      | rigidClash leftSymbol rightSymbol leftChildren rightChildren clash =>
-          exact False.elim (clash rfl))
-    (fun framed => by
-      cases framed
-      exact ⟨by intro entry member; simp at member,
-        by intro entry member; simp at member⟩)
-    (fun left right lefts rights base extension head tail headInduction
-        tailInduction framed => by
-      cases framed with
-      | cons headPair tailPairs =>
-          have baseOpenable := headInduction headPair
-          have extensionOpenable :=
-            tailInduction (tailPairs.apply baseOpenable)
-          exact extensionOpenable.append baseOpenable)
-    derivation pairs
+    TreeSubstitutionAlphaOpenable alpha binding :=
+  (@treeAndForest_binding_alphaOpenable alpha).2 derivation pairs
 
 end
 

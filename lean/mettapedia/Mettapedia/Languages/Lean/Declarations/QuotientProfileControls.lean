@@ -15,6 +15,19 @@ run_cmd liftTermElabM do
     throwError "a Prop quotient carrier was accepted by the Type profile"
   unless (← QuotientProfile.refusal? ``Quot [.param `u]).isSome do
     throwError "an unconstrained Sort quotient carrier was accepted by the Type profile"
+  unless (← QuotientProfile.soundRefusal? [.zero]).isSome do
+    throwError "Quot.sound at a Prop carrier was accepted by the Type profile"
+  if let some reason ← QuotientProfile.soundRefusal? [.succ (.param `u)] then
+    throwError "Quot.sound at a Type carrier refused: {reason}"
+  -- What a set reading must refuse in an expression, as a reading of syntax records it.
+  let some funextProof := (← getConstInfo ``funext).value? (allowOpaque := true)
+    | throwError "funext without its proof"
+  let funextOutside ← QuotientProfile.outside funextProof
+  unless funextOutside.any (·.startsWith "Quot.sound at level imax") do
+    throwError "funext's proof is a quotient at a Sort carrier, but outside it was found: {funextOutside}"
+  let liftOutside ← QuotientProfile.outside (← getConstInfo ``QuotientProfile.lift_beta).type
+  unless liftOutside.isEmpty do
+    throwError "lift_beta's statement is in the profile, but outside it was found: {liftOutside}"
 
 example {α : Type u} {β : Type v} (r : α → α → Prop) (f : α → β)
     (respect : ∀ a b, r a b → f a = f b) (a : α) :

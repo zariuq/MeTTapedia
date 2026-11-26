@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentCumulativeClosureCumulative
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentCumulativeClosureCarryPlaced
 
@@ -66,14 +67,10 @@ variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R) (heads : H
   (complete : AlgorithmicComplete S.R S.roles) (declared : DeclaredTypesFormed S.R)
   (choices : ExecutableChecking.HeadChoices S.R) (reducer : ExecutableReduction.Reducer S.R)
   (root : ExecutableReduction.RootEvaluator S.R)
-  (normalizes : ∀ {Θ : Context S.R} {type : TypeOver Θ} (term : Term Θ type),
-    ∃ code : Tm Head Θ.arity, ContextualDependentNormalChecking.Normal (S := S) code ∧
-      Equal S.R Θ.raw term.code code type.code)
-  (certifyNormal : ∀ {n : Nat} (term : Tm Head n),
-    Option (PLift (ContextualDependentNormalChecking.Normal (S := S) term)))
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
-  (rootComplete : ∀ {n : Nat} (term : Tm Head n), root term = none → ∀ target, ¬ S.R.computation.step term target)
+  (normalizes : SolverPremises.HasNormalForms S)
+  (certifyNormal : SolverPremises.NormalityCertifier S)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
+  (rootComplete : SolverPremises.CompleteRootEvaluation (rules := S.R) root)
 
 /-- **Every open rule obligation holds** on a strongly normalizing package whose reducer returns reducts. -/
 theorem open_obligations (sn : StronglyNormalizing S.R)
@@ -169,7 +166,7 @@ the tower's setting the conclusion fails on `crossStore`
 (`ContextualDependentSweep.Witnesses.fragment_without_principal_answer`), so there firing fails. For every store, runs
 are exact; on `crossStore` they stop postponed (`UnificationWithLevels.DependentFibre.cross_postponed`). -/
 theorem dead_decided_of_firing (strengthening : EqualStrengthening S.R)
-    (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n), Keeps (reducer fuel term) (reducer (fuel + 1) term))
+    (stable : SolverPremises.StableReducer (rules := S.R) reducer)
     (sn : StronglyNormalizing S.R)
     (directed : ∀ (fuel : Nat) {n : Nat} (term : Tm Head n) (result : ExecutableReduction.Result S.R term),
       reducer fuel term = some result → ContextualDependentExecutableJoin.Star (R := S.R) term result.val)

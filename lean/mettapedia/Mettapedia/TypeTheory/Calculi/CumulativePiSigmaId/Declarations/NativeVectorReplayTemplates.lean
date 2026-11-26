@@ -231,11 +231,59 @@ def replay_0ce6a6dce2270b05c31b : C RootCode 8 :=
 def replay_01f32b055247f83be855 : C RootCode 8 :=
 .trans (replay_4c5d5587212219314143) (replay_0ce6a6dce2270b05c31b)
 
+def replay_f0289782439035726eb7 : C RootCode 4 :=
+.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f546828750150b3e63cb)
+
+def replay_ce4880379eb07319e33e : C RootCode 4 :=
+.trans (replay_f0289782439035726eb7) (replay_f0289782439035726eb7)
+
+def replay_87b268203efe8c45c90e : S RootCode 8 :=
+.betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6eb2ca94a69500429c03) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f53fa47f7bbcf2b1a226)
+
+def replay_3b69f511de8e7a0445e9 : S RootCode 8 :=
+.congAppFun (replay_87b268203efe8c45c90e) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9c4e10a7ef594a772e44)
+
+def replay_b4ab9ecd1b12ffc6020b : S RootCode 7 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d64c30b5d3d809a06ed9) (replay_3b69f511de8e7a0445e9)
+
+def replay_ab0d2e32364ede04be49 : S RootCode 6 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_545fb4a3c03c82a175c1) (replay_b4ab9ecd1b12ffc6020b)
+
+def replay_87187feee91fd2ead37a : S RootCode 5 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2215ac1cab4d57eec91a) (replay_ab0d2e32364ede04be49)
+
+def replay_e2b60585adffa08cb6b2 : S RootCode 4 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (replay_87187feee91fd2ead37a)
+
+def replay_4ac08890c27f98344578 : C RootCode 4 :=
+.single (replay_e2b60585adffa08cb6b2)
+
+def replay_7729492ecb023f1aa913 : C RootCode 4 :=
+.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7f8f78d08d7ee16ea1f3)
+
+def replay_62ac9b2f9872ffdcc872 : C RootCode 4 :=
+.trans (replay_4ac08890c27f98344578) (replay_7729492ecb023f1aa913)
+
+def replay_2014d3367a4732cad297 : C RootCode 4 :=
+.trans (replay_ce4880379eb07319e33e) (replay_62ac9b2f9872ffdcc872)
+
+def replay_01f81f690591940c267f : C RootCode 4 :=
+.trans (replay_2014d3367a4732cad297) (replay_7729492ecb023f1aa913)
+
 def replay_ff33acd87c5b03c2f11e : T RootCode 6 :=
 .headType
 
 def replay_02223b3ad3c04ae8fb4f : T RootCode 6 :=
 .cumul (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_eca3dc2b6caf4867e1d4) (replay_ff33acd87c5b03c2f11e)
+
+def replay_4ec057243fb248f73891 : T RootCode 7 :=
+.headType
+
+def replay_364e906c32a1fece265a : T RootCode 8 :=
+.headType
+
+def replay_0263d1c79861444bbc2b : T RootCode 7 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_4ec057243fb248f73891) (replay_364e906c32a1fece265a)
 
 def replay_13cf0c5003c2ff085491 : T RootCode 13 :=
 .headType
@@ -648,6 +696,18 @@ def replay_64f7335b7f6ad7fcc4b5 : S RootCode 11 :=
 def replay_0383e2f463ca21ef0884 : S RootCode 11 :=
 .congAppFun (replay_64f7335b7f6ad7fcc4b5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f6e12c6825f2cf9ea459)
 
+def replay_8be2a78285d63848af90 : S RootCode 8 :=
+.betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6eb2ca94a69500429c03) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e93106dbc2bfff46a368)
+
+def replay_b507ea3636558c974214 : S RootCode 8 :=
+.congAppFun (replay_8be2a78285d63848af90) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9c4e10a7ef594a772e44)
+
+def replay_8669dcc592b207216de8 : S RootCode 8 :=
+.congPiDom (replay_b507ea3636558c974214) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c4424e1bf70b466bc36b)
+
+def replay_03b8a56a8ae1ced01737 : S RootCode 7 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e16481ee968b916985a1) (replay_8669dcc592b207216de8)
+
 def replay_f2f77f03217b9f818f8c : S RootCode 7 :=
 .betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_463cd5d893fe98804d67) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7515690901ac6dd75192)
 
@@ -849,9 +909,6 @@ def replay_eae6756ff2133819e90a : T RootCode 7 :=
 def replay_d46b9e98b3e6a82d2405 : T RootCode 7 :=
 .appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9f9a03288a6b4e36d75e) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (replay_eae6756ff2133819e90a) (replay_e197ee63c3c9ea3d9b51)
 
-def replay_364e906c32a1fece265a : T RootCode 8 :=
-.headType
-
 def replay_0498b60b55947aefb5b0 : T RootCode 7 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b4f93e456b4620d589d9) (replay_d46b9e98b3e6a82d2405) (replay_364e906c32a1fece265a)
 
@@ -911,6 +968,18 @@ def replay_e3f43eecba353cc7c004 : S RootCode 8 :=
 
 def replay_0548699d56e67825e181 : S RootCode 8 :=
 .congPiDom (replay_e3f43eecba353cc7c004) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2544ba32b4e74aaae878)
+
+def replay_9431e19f921e875b0944 : S RootCode 9 :=
+.head (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9)
+
+def replay_4676ce8a5eb3db48025e : S RootCode 8 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (replay_9431e19f921e875b0944)
+
+def replay_088db9443497098132b7 : S RootCode 7 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e16481ee968b916985a1) (replay_4676ce8a5eb3db48025e)
+
+def replay_055fffd203bdabdfa7c1 : S RootCode 6 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_987df36b061ff751f22f) (replay_088db9443497098132b7)
 
 def replay_986cdeb7a920685a6b03 : S RootCode 10 :=
 .betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d7ab66c2cd32c6cf10a7) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4a335c7ece839d5c562e)
@@ -1233,6 +1302,15 @@ def replay_b1b15bc917504786cb60 : C RootCode 5 :=
 def replay_073de07b0ea9ea569794 : C RootCode 5 :=
 .trans (replay_b1b15bc917504786cb60) (replay_84ee7788347d9210c6d4)
 
+def replay_adffb5bdfe2ea8ff4fd7 : S RootCode 5 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_02c898a5fa9dca7e390e) (replay_055fffd203bdabdfa7c1)
+
+def replay_49b04fb5d0ea5624f974 : S RootCode 5 :=
+.congPiDom (replay_adffb5bdfe2ea8ff4fd7) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7bd55015fee84cb4f634)
+
+def replay_0746e9f63450cbb8dbec : S RootCode 4 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (replay_49b04fb5d0ea5624f974)
+
 def replay_328142222dfcbc2f4953 : S RootCode 12 :=
 .betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7fc116f81de1ab38c052) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5ed7a14626a13a8e2d8f)
 
@@ -1359,6 +1437,18 @@ def replay_f4d774c5fbc1c3c8e18a : C RootCode 4 :=
 def replay_07aa2dbf6f81af79fe69 : C RootCode 4 :=
 .trans (replay_a7fb516bf976fd342aca) (replay_f4d774c5fbc1c3c8e18a)
 
+def replay_6cb768267ecafb1ac97c : T RootCode 11 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_7fbeba8818273106d8c8) (replay_bbeadd6fb074304dde2a)
+
+def replay_c1e92b3aeffe2c000a2a : T RootCode 12 :=
+.var
+
+def replay_829f037944fa2c5b8e2c : T RootCode 11 :=
+.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (replay_6cb768267ecafb1ac97c) (replay_c1e92b3aeffe2c000a2a)
+
+def replay_07af1126333fe0124d8d : T RootCode 11 :=
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c8943244e8541c6bb939) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dd4fc597f6a31798810d) (replay_829f037944fa2c5b8e2c) (replay_7fbeba8818273106d8c8)
+
 def replay_d34b1e68c91f319c18b5 : S RootCode 12 :=
 .betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f7cab4144f5b47bea6ec) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f6020bec2f79974210d6)
 
@@ -1391,9 +1481,6 @@ def replay_d33e8dbee1d5fe8efa81 : T RootCode 6 :=
 
 def replay_629e69ece1b1fb7e3753 : T RootCode 6 :=
 .appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_545fb4a3c03c82a175c1) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d064c25dd26291905510) (replay_d33e8dbee1d5fe8efa81) (replay_fb92de9ad2d284eba393)
-
-def replay_4ec057243fb248f73891 : T RootCode 7 :=
-.headType
 
 def replay_85991d854c553f3e4785 : T RootCode 7 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_eca3dc2b6caf4867e1d4) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_eca3dc2b6caf4867e1d4) (replay_4ec057243fb248f73891) (replay_364e906c32a1fece265a)
@@ -1578,6 +1665,12 @@ def replay_0892bc67145829a3b493 : C RootCode 4 :=
 def replay_0895bb15b67d26c01797 : C RootCode 5 :=
 .trans (replay_03f01e3e8a761ddfc81a) (replay_0761f602414ae10bf55e)
 
+def replay_1272d668849bdc7039a7 : T RootCode 8 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_534aece673191f529e08) (replay_cf26163fe59a0dbcc31b)
+
+def replay_08beffafd39672d7aa20 : T RootCode 8 :=
+.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (replay_1272d668849bdc7039a7) (replay_07c41680d17703d7171f)
+
 def replay_08e3b2f710b20b8bd0df : T RootCode 4 :=
 .const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ebe6539c4b4eb6ba35d4) (replay_6bde1c8708a73cc59d36)
 
@@ -1592,6 +1685,36 @@ def replay_576132b8adeeeb890e35 : S RootCode 4 :=
 
 def replay_08fd14e1c0fcd75893fa : S RootCode 4 :=
 .congPiDom (replay_576132b8adeeeb890e35) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ce5473ba2d9a755014a2)
+
+def replay_4114569bc89818085360 : S RootCode 8 :=
+.betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9c4e10a7ef594a772e44)
+
+def replay_a847b9a92401907db298 : S RootCode 8 :=
+.congPiDom (replay_4114569bc89818085360) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c4424e1bf70b466bc36b)
+
+def replay_505a897224c1921f9d71 : S RootCode 7 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e16481ee968b916985a1) (replay_a847b9a92401907db298)
+
+def replay_c9127bc5b7e7ce4557b6 : S RootCode 6 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_987df36b061ff751f22f) (replay_505a897224c1921f9d71)
+
+def replay_a0abdb9ba7439f4ce48c : S RootCode 5 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_02c898a5fa9dca7e390e) (replay_c9127bc5b7e7ce4557b6)
+
+def replay_fca192867b84df597023 : S RootCode 5 :=
+.congPiDom (replay_a0abdb9ba7439f4ce48c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_585fb9b3c0c9ed71e68d)
+
+def replay_9f43fa1f3bbb38baa294 : S RootCode 4 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (replay_fca192867b84df597023)
+
+def replay_55d3e11e1a53d67f3199 : C RootCode 4 :=
+.single (replay_9f43fa1f3bbb38baa294)
+
+def replay_bb36a9f92e94d689187f : C RootCode 4 :=
+.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1123f76cb4ba10c4458b)
+
+def replay_09103c946c55ee420ae9 : C RootCode 4 :=
+.trans (replay_55d3e11e1a53d67f3199) (replay_bb36a9f92e94d689187f)
 
 def replay_570674516d35a8bae4ad : S RootCode 11 :=
 .betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_65561d1b7fcbb3a625a4) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_abb7c7809fdccfdb450a)
@@ -1701,6 +1824,30 @@ def replay_12c3ca87c657ca507cec : C RootCode 5 :=
 def replay_09d0c1e37ff3e1215ea1 : C RootCode 5 :=
 .trans (replay_12c3ca87c657ca507cec) (replay_d15e9877c967a649611c)
 
+def replay_2ec113d8b40f7f163a79 : T RootCode 1 :=
+.headType
+
+def replay_f3cb5775e55c84d569cb : T RootCode 0 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_7a268c731e7a9afff236) (replay_2ec113d8b40f7f163a79)
+
+def replay_930ee4101ae7d78aa002 : T RootCode 4 :=
+.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (replay_f3cb5775e55c84d569cb)
+
+def replay_f059f9ff8dbaa5e901c0 : T RootCode 4 :=
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5978e1f6d4b31cb31598) (replay_930ee4101ae7d78aa002) (replay_f89a0d3fd4af1bf7786d)
+
+def replay_587987cca324d4b0199b : T RootCode 5 :=
+.headType
+
+def replay_09e736e5511645be39b6 : T RootCode 4 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_f059f9ff8dbaa5e901c0) (replay_587987cca324d4b0199b)
+
+def replay_a200d89fbe960fc7b65d : S RootCode 9 :=
+.betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5b15989a49ccca91be68) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_44030ca211a2a92d0431)
+
+def replay_0a38df084a36c01b0cd0 : S RootCode 9 :=
+.congAppFun (replay_a200d89fbe960fc7b65d) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_93ab7058ba75994f43b7)
+
 def replay_7964ac3a007c988725e5 : C RootCode 5 :=
 .refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08520c83c040515509ba)
 
@@ -1782,6 +1929,12 @@ def replay_131128a69a9f48e8df77 : C RootCode 9 :=
 def replay_0c0485c46b22f4b8d0ea : C RootCode 9 :=
 .trans (replay_131128a69a9f48e8df77) (replay_210c0cb655f3e2e5deba)
 
+def replay_9e526d31287da105258f : T RootCode 5 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d3b434f6728366c60c60) (replay_bf3f7acfa265bdb54010) (replay_ff33acd87c5b03c2f11e)
+
+def replay_0c4d9ab28420dbb33af7 : T RootCode 4 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a8a040a7dc522e2a057b) (replay_909a1aacbbe83fd007eb) (replay_9e526d31287da105258f)
+
 def replay_998ef69ec834e167c359 : T RootCode 7 :=
 .const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ebe6539c4b4eb6ba35d4) (replay_6bde1c8708a73cc59d36)
 
@@ -1799,6 +1952,57 @@ def replay_0c98ca10692a8e74c78f : T RootCode 7 :=
 
 def replay_0cade12dae52f9592b40 : S RootCode 8 :=
 .betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ae5f11a052ebd24548e7) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f53fa47f7bbcf2b1a226)
+
+def replay_eaee70d93ef98b39a462 : C RootCode 4 :=
+.trans (replay_bb36a9f92e94d689187f) (replay_bb36a9f92e94d689187f)
+
+def replay_e330c4c3867c5a825ee6 : C RootCode 4 :=
+.trans (replay_bb36a9f92e94d689187f) (replay_eaee70d93ef98b39a462)
+
+def replay_159816a1ee458321812d : S RootCode 8 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (replay_0a38df084a36c01b0cd0)
+
+def replay_8d9fea8affc6a08d85f3 : S RootCode 7 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e16481ee968b916985a1) (replay_159816a1ee458321812d)
+
+def replay_5616abd2dab6e0167b17 : S RootCode 6 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_987df36b061ff751f22f) (replay_8d9fea8affc6a08d85f3)
+
+def replay_8123e580da5bed199fdb : S RootCode 5 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_02c898a5fa9dca7e390e) (replay_5616abd2dab6e0167b17)
+
+def replay_235f6edd3e9830c44be5 : S RootCode 5 :=
+.congPiDom (replay_8123e580da5bed199fdb) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_585fb9b3c0c9ed71e68d)
+
+def replay_98318ac1ff6268371013 : S RootCode 4 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (replay_235f6edd3e9830c44be5)
+
+def replay_b6137f8225d6af79a301 : C RootCode 4 :=
+.single (replay_98318ac1ff6268371013)
+
+def replay_69e366a30692bba3a3c4 : C RootCode 4 :=
+.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_73d02ebce0a649ec1c82)
+
+def replay_7e05dd20fd6d37272f29 : C RootCode 4 :=
+.trans (replay_b6137f8225d6af79a301) (replay_69e366a30692bba3a3c4)
+
+def replay_212497a9ae7a8288c77d : C RootCode 4 :=
+.trans (replay_e330c4c3867c5a825ee6) (replay_7e05dd20fd6d37272f29)
+
+def replay_2507142887277d3c48e0 : C RootCode 4 :=
+.trans (replay_69e366a30692bba3a3c4) (replay_69e366a30692bba3a3c4)
+
+def replay_59485820ddd6b4ea5736 : C RootCode 4 :=
+.trans (replay_2507142887277d3c48e0) (replay_69e366a30692bba3a3c4)
+
+def replay_b65384ac9c1d5c4e843b : C RootCode 4 :=
+.trans (replay_59485820ddd6b4ea5736) (replay_69e366a30692bba3a3c4)
+
+def replay_5855d81d5902ce0c70bd : C RootCode 4 :=
+.trans (replay_b65384ac9c1d5c4e843b) (replay_69e366a30692bba3a3c4)
+
+def replay_0cb2547080e72302bdb2 : C RootCode 4 :=
+.trans (replay_212497a9ae7a8288c77d) (replay_5855d81d5902ce0c70bd)
 
 def replay_39ba739bac3ef784d92a : C RootCode 7 :=
 .refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3f569567d54db949d2be)
@@ -2280,6 +2484,42 @@ def replay_12aff162d69530a492cc : T RootCode 10 :=
 def replay_0e2704f83c2903705295 : T RootCode 10 :=
 .idForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (replay_eefbc4c5a14843258e0d) (replay_12aff162d69530a492cc) (replay_12aff162d69530a492cc)
 
+def replay_cc03e66ef56884bf2929 : C RootCode 4 :=
+.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_45d871966da4c8500660)
+
+def replay_d3936c36d45c7fb315dc : C RootCode 4 :=
+.trans (replay_cc03e66ef56884bf2929) (replay_cc03e66ef56884bf2929)
+
+def replay_c8d0f1f12e8333b0cc0c : C RootCode 4 :=
+.trans (replay_d3936c36d45c7fb315dc) (replay_cc03e66ef56884bf2929)
+
+def replay_8459e16dbc4b3ec14f3b : S RootCode 8 :=
+.head (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9)
+
+def replay_dcf47e8b9f5dabb0a494 : S RootCode 7 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d64c30b5d3d809a06ed9) (replay_8459e16dbc4b3ec14f3b)
+
+def replay_ede4f62d47187318fd2d : S RootCode 6 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_545fb4a3c03c82a175c1) (replay_dcf47e8b9f5dabb0a494)
+
+def replay_b1cab87b93ea206f0e73 : S RootCode 5 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2215ac1cab4d57eec91a) (replay_ede4f62d47187318fd2d)
+
+def replay_74c0de71afd0278c858d : S RootCode 4 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (replay_b1cab87b93ea206f0e73)
+
+def replay_ead958accaa5e0d5894e : C RootCode 4 :=
+.single (replay_74c0de71afd0278c858d)
+
+def replay_9ce2792c8870ebf782d7 : C RootCode 4 :=
+.trans (replay_c8d0f1f12e8333b0cc0c) (replay_ead958accaa5e0d5894e)
+
+def replay_0e460e5299b8d1bb6091 : C RootCode 4 :=
+.trans (replay_cc03e66ef56884bf2929) (replay_9ce2792c8870ebf782d7)
+
+def replay_0e4d61dc8c297be34c90 : T RootCode 3 :=
+.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (replay_f3cb5775e55c84d569cb)
+
 def replay_39a7418a977378df49b5 : S RootCode 8 :=
 .head (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9dcfb49953f0cbf1e6dd) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9dcfb49953f0cbf1e6dd)
 
@@ -2496,6 +2736,9 @@ def replay_496c61e9c4187b1fb683 : C RootCode 8 :=
 def replay_10d2fda85cacf58900bc : C RootCode 8 :=
 .trans (replay_c031104d838d6a63acfb) (replay_496c61e9c4187b1fb683)
 
+def replay_10e2a978566ddaa32bd4 : S RootCode 6 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_987df36b061ff751f22f) (replay_03b8a56a8ae1ced01737)
+
 def replay_5f06cad464a5e43881e4 : S RootCode 15 :=
 .betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1c29adbab43852c2623f) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5bd042cad00d92762eeb)
 
@@ -2537,9 +2780,6 @@ def replay_11413be7feb00b664627 : S RootCode 8 :=
 
 def replay_969cc339bc7b9faafcc7 : T RootCode 12 :=
 .const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_efcf5258f7ac1893910c) (replay_5b8cbc04c481fc3a3f32)
-
-def replay_c1e92b3aeffe2c000a2a : T RootCode 12 :=
-.var
 
 def replay_2a801f30681dba222494 : T RootCode 12 :=
 .appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dd4fc597f6a31798810d) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_61fc3a8b3c78d09a4d74) (replay_969cc339bc7b9faafcc7) (replay_c1e92b3aeffe2c000a2a)
@@ -3165,6 +3405,21 @@ def replay_325328272f6ea6496cb3 : C RootCode 7 :=
 def replay_14cccbd52fde40349f1e : C RootCode 7 :=
 .trans (replay_0ae679c5a0a44775c1f3) (replay_325328272f6ea6496cb3)
 
+def replay_ad0be643c357af587a2f : S RootCode 9 :=
+.betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b74e03acbfc24aeb10e) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_93ab7058ba75994f43b7)
+
+def replay_86aefb539c2e4a308c19 : S RootCode 8 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_83774d5525e9e22ed9e1) (replay_ad0be643c357af587a2f)
+
+def replay_ecb4f1c8e676cee9952b : S RootCode 7 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e16481ee968b916985a1) (replay_86aefb539c2e4a308c19)
+
+def replay_333fc27ebd3f66ba2da4 : S RootCode 6 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_987df36b061ff751f22f) (replay_ecb4f1c8e676cee9952b)
+
+def replay_15284ac93866f6eeb354 : S RootCode 5 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_02c898a5fa9dca7e390e) (replay_333fc27ebd3f66ba2da4)
+
 def replay_153b553906710954f3e7 : C RootCode 5 :=
 .trans (replay_073de07b0ea9ea569794) (replay_67ee2118f1a9b31c80b3)
 
@@ -3212,6 +3467,42 @@ def replay_6e788303dab2203fc3cc : C RootCode 4 :=
 
 def replay_16529f17a5de5d3877bf : C RootCode 4 :=
 .trans (replay_003e795d9e6406d56a53) (replay_6e788303dab2203fc3cc)
+
+def replay_2ccd89c311c7bb1f3bd8 : S RootCode 8 :=
+.congPiDom (replay_8459e16dbc4b3ec14f3b) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8)
+
+def replay_dc16d3fcdd47958d7293 : S RootCode 7 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e16481ee968b916985a1) (replay_2ccd89c311c7bb1f3bd8)
+
+def replay_38575788c7f74c9858f5 : S RootCode 6 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_987df36b061ff751f22f) (replay_dc16d3fcdd47958d7293)
+
+def replay_ae2ba296ba8dd05b8228 : S RootCode 5 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_02c898a5fa9dca7e390e) (replay_38575788c7f74c9858f5)
+
+def replay_6064ca6f17c7d279ea84 : S RootCode 5 :=
+.congPiDom (replay_ae2ba296ba8dd05b8228) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7bd55015fee84cb4f634)
+
+def replay_246b97a89fabf2367f14 : S RootCode 4 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (replay_6064ca6f17c7d279ea84)
+
+def replay_6abf22f437918f7a355e : C RootCode 4 :=
+.single (replay_246b97a89fabf2367f14)
+
+def replay_479672e7395514b253e7 : C RootCode 4 :=
+.single (replay_0746e9f63450cbb8dbec)
+
+def replay_b57e5dd9eb6e693c0d12 : C RootCode 4 :=
+.trans (replay_6abf22f437918f7a355e) (replay_479672e7395514b253e7)
+
+def replay_27da26cdc2e58cb5d2a9 : C RootCode 4 :=
+.trans (replay_c8d0f1f12e8333b0cc0c) (replay_b57e5dd9eb6e693c0d12)
+
+def replay_ff25d5473e82450d83cd : C RootCode 4 :=
+.trans (replay_cc03e66ef56884bf2929) (replay_27da26cdc2e58cb5d2a9)
+
+def replay_168e55ae8fc8cc44edb9 : C RootCode 4 :=
+.trans (replay_cc03e66ef56884bf2929) (replay_ff25d5473e82450d83cd)
 
 def replay_16c27561fd70ee9b24b6 : T RootCode 6 :=
 .const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c9eb3646631aeca3536e) (replay_b584482ec97989538436)
@@ -3477,6 +3768,24 @@ def replay_9f764298066047757600 : S RootCode 9 :=
 def replay_198a2878a447c887473c : S RootCode 8 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_369043ee55c31306fc04) (replay_9f764298066047757600)
 
+def replay_9e6cddd6e6e102d278a2 : C RootCode 4 :=
+.trans (replay_c8d0f1f12e8333b0cc0c) (replay_d3936c36d45c7fb315dc)
+
+def replay_faf110453a06fc1661f7 : C RootCode 4 :=
+.trans (replay_cc03e66ef56884bf2929) (replay_9e6cddd6e6e102d278a2)
+
+def replay_28bd677eef610e19f794 : C RootCode 4 :=
+.trans (replay_cc03e66ef56884bf2929) (replay_faf110453a06fc1661f7)
+
+def replay_fd9cb2388537d76d8c4b : C RootCode 4 :=
+.trans (replay_c8d0f1f12e8333b0cc0c) (replay_cc03e66ef56884bf2929)
+
+def replay_d2d7935007423af534f2 : C RootCode 4 :=
+.trans (replay_cc03e66ef56884bf2929) (replay_fd9cb2388537d76d8c4b)
+
+def replay_19fd1fc2d46f69b3bb0e : C RootCode 4 :=
+.trans (replay_28bd677eef610e19f794) (replay_d2d7935007423af534f2)
+
 def replay_47f55dc3d42c3121db0a : T RootCode 10 :=
 .const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_efcf5258f7ac1893910c) (replay_5b8cbc04c481fc3a3f32)
 
@@ -3525,6 +3834,18 @@ def replay_bf31422f62ccbebf01de : S RootCode 9 :=
 def replay_1a92d75860ca8f99ebae : C RootCode 9 :=
 .single (replay_bf31422f62ccbebf01de)
 
+def replay_9807a4eb9c3ee80fa6e9 : S RootCode 4 :=
+.betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6eb023f151e9373cf9ce) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_82a2893d012540d0191a)
+
+def replay_8a70c5391ec454c3b784 : S RootCode 4 :=
+.congAppFun (replay_9807a4eb9c3ee80fa6e9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9c85be851750b97e18c4)
+
+def replay_e2f00a7053bfd9109156 : S RootCode 4 :=
+.congPiDom (replay_8a70c5391ec454c3b784) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d8ca52afad2c41f0f5b6)
+
+def replay_1a9d76367441b8c5779f : C RootCode 4 :=
+.single (replay_e2f00a7053bfd9109156)
+
 def replay_491685f1023715e4ecb5 : S RootCode 16 :=
 .betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_abea3b1af356dcfa16d7) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_dba10e79403fd13bc086)
 
@@ -3566,6 +3887,24 @@ def replay_9c5c0161a69a0e4ee4a0 : C RootCode 11 :=
 
 def replay_1b87262a7e1cb7d46d8c : C RootCode 11 :=
 .trans (replay_3f40ee23b8eadb1f4d7e) (replay_9c5c0161a69a0e4ee4a0)
+
+def replay_9a8c52ee0ece732b2898 : T RootCode 4 :=
+.headType
+
+def replay_7b5d2ef22a204f78cf30 : T RootCode 3 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_8ac3920e24449662ac7d) (replay_9a8c52ee0ece732b2898)
+
+def replay_9b227a8fdf3b823f0f03 : T RootCode 2 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (replay_67648559da2b4f1cdeb2) (replay_7b5d2ef22a204f78cf30)
+
+def replay_696e8605658be2c7d3cc : T RootCode 3 :=
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_04aeab44f3773c0fe12b) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (replay_0e4d61dc8c297be34c90) (replay_8ac3920e24449662ac7d)
+
+def replay_3f5e2d479f3ff4f4c5fa : T RootCode 3 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (replay_696e8605658be2c7d3cc) (replay_09e736e5511645be39b6)
+
+def replay_1bab961693f3183b1d36 : T RootCode 2 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1e019bdd28a721b2309d) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1e019bdd28a721b2309d) (replay_9b227a8fdf3b823f0f03) (replay_3f5e2d479f3ff4f4c5fa)
 
 def replay_6c2a7f095fb66b85019c : T RootCode 12 :=
 .const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_604561302f0133e1fa78) (replay_7a268c731e7a9afff236)
@@ -3737,6 +4076,21 @@ def replay_4830937313ea4cf488f5 : C RootCode 5 :=
 
 def replay_1be8498eaf830b84c1a1 : C RootCode 5 :=
 .trans (replay_8a0684e8483dce31a8a5) (replay_4830937313ea4cf488f5)
+
+def replay_41b28529b52e1b46a54f : T RootCode 6 :=
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_545fb4a3c03c82a175c1) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a1b0b0b3b0ddf0f66dc0) (replay_fb92de9ad2d284eba393) (replay_fb92de9ad2d284eba393)
+
+def replay_58682d76a1fc142f3d92 : T RootCode 6 :=
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5b5fbd485bc823ecfe93) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a00b8c8444bea058b778) (replay_41b28529b52e1b46a54f) (replay_fb92de9ad2d284eba393)
+
+def replay_a7860c7a191dc925fb6b : T RootCode 7 :=
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9f9a03288a6b4e36d75e) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1b2c38f14d55661a483f) (replay_e197ee63c3c9ea3d9b51) (replay_c7c8c241dc8829eb3368)
+
+def replay_fa5d39d671a2ae9ca888 : T RootCode 7 :=
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_02622304141c4f3f2ef4) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_84694f68cb6df114afa7) (replay_a7860c7a191dc925fb6b) (replay_7d06d2df84b8bc22b63d)
+
+def replay_1c89f594136c999f8a42 : T RootCode 6 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_58682d76a1fc142f3d92) (replay_fa5d39d671a2ae9ca888)
 
 def replay_6904a321655689f8583d : S RootCode 4 :=
 .betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a27060780ae3276936d3) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9c85be851750b97e18c4)
@@ -4239,6 +4593,9 @@ def replay_6b406ec9d780278bec9f : S RootCode 14 :=
 def replay_22293b8cf0e9bf44ba48 : S RootCode 13 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c2c7c8a4e5915c01ed88) (replay_6b406ec9d780278bec9f)
 
+def replay_224eb38c41bac0e28d1c : T RootCode 1 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_20d4953062359334b5ab) (replay_2ec113d8b40f7f163a79) (replay_1bab961693f3183b1d36)
+
 def replay_22c6ee7ee03de8f25d78 : S RootCode 4 :=
 .betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0d9c648e9e99e616a33a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_82a2893d012540d0191a)
 
@@ -4488,6 +4845,9 @@ def replay_d3485dd87b3d72f7dc8e : T RootCode 11 :=
 def replay_269ab6e96ec062014711 : T RootCode 10 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_eca3dc2b6caf4867e1d4) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b1a28e9d42d7f3e26777) (replay_b7b0d4f9c05076ab70ae) (replay_d3485dd87b3d72f7dc8e)
 
+def replay_26dcc81a4b405854c8f4 : C RootCode 4 :=
+.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e338820d8be943fbdcc1)
+
 def replay_de8359c9f46169f269a0 : S RootCode 8 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_369043ee55c31306fc04) (replay_16eba260a337c0f2928f)
 
@@ -4553,6 +4913,12 @@ def replay_a29df3809362a9159256 : C RootCode 8 :=
 
 def replay_28b6db5334bf24cdab6c : C RootCode 8 :=
 .trans (replay_a29df3809362a9159256) (replay_13a7e8bb10a5302a997e)
+
+def replay_5133bc33167cf449408d : T RootCode 2 :=
+.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (replay_f3cb5775e55c84d569cb)
+
+def replay_299e9bd44642ab0eecc2 : T RootCode 2 :=
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_393305a5fb0280dd5557) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_04aeab44f3773c0fe12b) (replay_5133bc33167cf449408d) (replay_67648559da2b4f1cdeb2)
 
 def replay_fafcc56e9e6510473a68 : S RootCode 6 :=
 .congPiDom (replay_27ad9b238303e6777dff) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_722c170a530fc30c6132)
@@ -4641,6 +5007,48 @@ def replay_29f7c2b4c36ce9320c41 : T RootCode 10 :=
 def replay_2a0decba183f967a7699 : T RootCode 2 :=
 .const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_604561302f0133e1fa78) (replay_7a268c731e7a9afff236)
 
+def replay_e5a5f50e2277bf37d592 : T RootCode 2 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d3b434f6728366c60c60) (replay_e0b4cd7d4f5470728848) (replay_87427d3bb5db02e83042)
+
+def replay_ebfe49ebf2b76cc20087 : T RootCode 1 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a8a040a7dc522e2a057b) (replay_5a68ee9128a498498c58) (replay_e5a5f50e2277bf37d592)
+
+def replay_cfda62529553e807e251 : T RootCode 2 :=
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e7afc61b162c474cee28) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_f27530831649330ef53a) (replay_67648559da2b4f1cdeb2) (replay_0f2dd1205a90f8a9be11)
+
+def replay_4e772cdc9cb9e4d65661 : T RootCode 2 :=
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e12ca69c4e9e56abe06b) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c11f892d8ff03ba1dddc) (replay_cfda62529553e807e251) (replay_06e957bf163fa838af72)
+
+def replay_7a4c0e4a685cdacdae13 : T RootCode 5 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (replay_bf3f7acfa265bdb54010) (replay_1c89f594136c999f8a42)
+
+def replay_5577875529c8288f0e3d : T RootCode 4 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_926d1059d18a7acb855f) (replay_f89a0d3fd4af1bf7786d) (replay_7a4c0e4a685cdacdae13)
+
+def replay_fcfc77ab29aaf7bc0939 : T RootCode 3 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (replay_d6d38e78195867038cfc) (replay_5577875529c8288f0e3d)
+
+def replay_bd765196400f4b3a1d1e : T RootCode 6 :=
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ea1e125d0ec89812d6af) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a00b8c8444bea058b778) (replay_41b28529b52e1b46a54f) (replay_fb92de9ad2d284eba393)
+
+def replay_2b6b71009dd30bdd0b8d : T RootCode 5 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_bf3f7acfa265bdb54010) (replay_bd765196400f4b3a1d1e)
+
+def replay_cc7cd10e4b4ba637518e : T RootCode 4 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (replay_909a1aacbbe83fd007eb) (replay_2b6b71009dd30bdd0b8d)
+
+def replay_925e5ce61a84dd7172e9 : T RootCode 3 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b5fcf8a047e56612b09d) (replay_fcfc77ab29aaf7bc0939) (replay_cc7cd10e4b4ba637518e)
+
+def replay_58b8032f0e7db20fce39 : T RootCode 2 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_145482549cab95f9be25) (replay_4e772cdc9cb9e4d65661) (replay_925e5ce61a84dd7172e9)
+
+def replay_f5fb87c4671ed466323d : T RootCode 1 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3b69fc5965686a991caa) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4119145459c228af2ee2) (replay_ebfe49ebf2b76cc20087) (replay_58b8032f0e7db20fce39)
+
+def replay_2b3d36bec0f47f4acb62 : T RootCode 0 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_061870f2805e00b0bc08) (replay_7a268c731e7a9afff236) (replay_f5fb87c4671ed466323d)
+
 def replay_92913b616d9fd04f0f66 : S RootCode 5 :=
 .betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_8fc67e313b66d3bde846) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_673e4ecc26f1f0b1d4b3)
 
@@ -4649,6 +5057,18 @@ def replay_440a9c517489bcdfaa84 : S RootCode 5 :=
 
 def replay_2b689fe7a064363172dc : C RootCode 5 :=
 .single (replay_440a9c517489bcdfaa84)
+
+def replay_844b001091b2055dfd9d : X RootCode 0 :=
+.nil
+
+def replay_574e564d3cdf9e872915 : X RootCode 1 :=
+.snoc (replay_844b001091b2055dfd9d) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_7a268c731e7a9afff236)
+
+def replay_8311bf53e134cd2b70cc : T RootCode 1 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_579b334deaab55db1c09) (replay_7b7ffdffff88fd07525e)
+
+def replay_2b923eba459954dceaf0 : X RootCode 2 :=
+.snoc (replay_574e564d3cdf9e872915) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (replay_8311bf53e134cd2b70cc)
 
 def replay_2bbce8d219752890fd71 : C RootCode 10 :=
 .refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2aa08c3b2ecba8aea7d0)
@@ -4694,6 +5114,12 @@ def replay_2d75271b447a28810bb8 : T RootCode 11 :=
 
 def replay_2dd78110a87e2dbc85c7 : C RootCode 5 :=
 .refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7af886a9b61fe7ea6f4e)
+
+def replay_e156174e55cf6de3e87f : C RootCode 4 :=
+.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_03110f5c19bf7d6858ca)
+
+def replay_2de870992057c71c2bc4 : C RootCode 4 :=
+.trans (replay_e156174e55cf6de3e87f) (replay_e156174e55cf6de3e87f)
 
 def replay_a6ef3a6f2ac76e299a32 : S RootCode 10 :=
 .betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_df96c216643bb607dff9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_32af9ebf291ed8ef17cf)
@@ -4773,9 +5199,6 @@ def replay_70707597882902a555ab : S RootCode 10 :=
 def replay_2e57d5f97b88166a5029 : S RootCode 10 :=
 .congPiDom (replay_70707597882902a555ab) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_887822b9ba6a55cca075)
 
-def replay_2ec113d8b40f7f163a79 : T RootCode 1 :=
-.headType
-
 def replay_2ecfc910ca5d0b535bf4 : C RootCode 5 :=
 .trans (replay_15aabc1f35c56dfbc388) (replay_4032a4e627d792fb4cbf)
 
@@ -4803,6 +5226,9 @@ def replay_2f9b8f596b3abe8aedce : C RootCode 5 :=
 def replay_2fa735a334f18834a861 : C RootCode 11 :=
 .refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_79bf2d9bd7c77e1823c3)
 
+def replay_2fba8f58bc4026c1eb2c : S RootCode 4 :=
+.head (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9)
+
 def replay_fa29ad4fae51db9388c0 : T RootCode 14 :=
 .sigmaForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5d3e7b0e50ed7249e009) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9dcfb49953f0cbf1e6dd) (replay_730a0c3ead453f836005) (replay_2c304eb7e4ba83000148)
 
@@ -4820,6 +5246,9 @@ def replay_d3c3e8c39cc5f457ea42 : T RootCode 11 :=
 
 def replay_3031b8e5abe007233bf8 : T RootCode 10 :=
 .lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_088ec0f4742a888f4d7e) (replay_b2ef58dbd0b820f90b19) (replay_d3c3e8c39cc5f457ea42)
+
+def replay_30563676b89b89f23ab8 : S RootCode 5 :=
+.congPiDom (replay_15284ac93866f6eeb354) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_585fb9b3c0c9ed71e68d)
 
 def replay_d598a32e310a56c8a767 : S RootCode 11 :=
 .congPiDom (replay_81a098fe1ca6789b46b4) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6806caf1582d938d9203)
@@ -4925,6 +5354,39 @@ def replay_3ed37bf6705f499a3d97 : S RootCode 7 :=
 
 def replay_336ef0b5ee98e03d4931 : S RootCode 7 :=
 .congPiDom (replay_3ed37bf6705f499a3d97) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a29128a05eed32aa34c6)
+
+def replay_370665aee8922d6aed29 : C RootCode 4 :=
+.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9725e8a1d7cc252e4b48)
+
+def replay_6b3c16a57fb690297f41 : C RootCode 4 :=
+.trans (replay_370665aee8922d6aed29) (replay_370665aee8922d6aed29)
+
+def replay_ac508fa88f04388b9f6a : C RootCode 4 :=
+.trans (replay_1a9d76367441b8c5779f) (replay_e156174e55cf6de3e87f)
+
+def replay_653bc429e2ceeaaf09f2 : C RootCode 4 :=
+.trans (replay_6b3c16a57fb690297f41) (replay_ac508fa88f04388b9f6a)
+
+def replay_eb0e344d5dc60c85ba1c : C RootCode 4 :=
+.trans (replay_653bc429e2ceeaaf09f2) (replay_2de870992057c71c2bc4)
+
+def replay_44e75dc1a3937a276616 : S RootCode 4 :=
+.betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5978e1f6d4b31cb31598) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9c85be851750b97e18c4)
+
+def replay_bb088407676c983e31a9 : S RootCode 4 :=
+.congPiDom (replay_44e75dc1a3937a276616) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d8ca52afad2c41f0f5b6)
+
+def replay_dd932bb5733ef97a3136 : C RootCode 4 :=
+.single (replay_bb088407676c983e31a9)
+
+def replay_f24a1fc269f0a5793adc : C RootCode 4 :=
+.refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6c7e1957e491aa7700d3)
+
+def replay_7c32949d09fa63b60ffc : C RootCode 4 :=
+.trans (replay_dd932bb5733ef97a3136) (replay_f24a1fc269f0a5793adc)
+
+def replay_3380077989d5330ab89f : C RootCode 4 :=
+.trans (replay_eb0e344d5dc60c85ba1c) (replay_7c32949d09fa63b60ffc)
 
 def replay_ba144b03a147c1ec8284 : S RootCode 7 :=
 .betaPi (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_7e2e7dd5e7d68c6b4110) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2ce2edb4b4eedb8ccc70)
@@ -5048,6 +5510,30 @@ def replay_35b9f3d218a015d12b24 : S RootCode 11 :=
 
 def replay_35edae6cb3226d0d56b6 : C RootCode 11 :=
 .trans (replay_31334e6cf4cf7520c285) (replay_28072d96be7d88b32aed)
+
+def replay_6dc01cb414d840e5a591 : C RootCode 4 :=
+.trans (replay_f24a1fc269f0a5793adc) (replay_f24a1fc269f0a5793adc)
+
+def replay_a79b3988f54b05d6e801 : S RootCode 5 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_02c898a5fa9dca7e390e) (replay_10e2a978566ddaa32bd4)
+
+def replay_7704dc2f552051c6de55 : S RootCode 5 :=
+.congPiDom (replay_a79b3988f54b05d6e801) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_585fb9b3c0c9ed71e68d)
+
+def replay_40c2f34bb03c7acac268 : S RootCode 4 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (replay_7704dc2f552051c6de55)
+
+def replay_e8d6fc5a27d00dc831a5 : C RootCode 4 :=
+.single (replay_40c2f34bb03c7acac268)
+
+def replay_748fdec942557d5414e2 : C RootCode 4 :=
+.trans (replay_e8d6fc5a27d00dc831a5) (replay_26dcc81a4b405854c8f4)
+
+def replay_4f72f727f50d96a06bab : C RootCode 4 :=
+.trans (replay_6dc01cb414d840e5a591) (replay_748fdec942557d5414e2)
+
+def replay_35f2200966ea1c864ec5 : C RootCode 4 :=
+.trans (replay_4f72f727f50d96a06bab) (replay_26dcc81a4b405854c8f4)
 
 def replay_363c3cf8893b10695b5e : C RootCode 9 :=
 .refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_968c46dd5326570756a7)
@@ -5265,6 +5751,15 @@ def replay_817cf9b344e231aab64a : C RootCode 11 :=
 def replay_3dad9260d77e41899fbd : C RootCode 11 :=
 .trans (replay_3897566f4f903ed004cc) (replay_817cf9b344e231aab64a)
 
+def replay_46d87b945667e8b9c6f9 : T RootCode 6 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (replay_629e69ece1b1fb7e3753) (replay_0263d1c79861444bbc2b)
+
+def replay_b7955d87d66cc2356da8 : T RootCode 5 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_926d1059d18a7acb855f) (replay_088a7fed4563d6a06e7a) (replay_46d87b945667e8b9c6f9)
+
+def replay_3dba47e0d66dd5881da1 : T RootCode 4 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (replay_909a1aacbbe83fd007eb) (replay_b7955d87d66cc2356da8)
+
 def replay_e21ac326fbc5a0c1888d : C RootCode 9 :=
 .refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_91feb772ae723aed1602)
 
@@ -5333,6 +5828,9 @@ def replay_3f57d38e9d7080759926 : T RootCode 9 :=
 
 def replay_3fd2a33de6868b69da98 : T RootCode 10 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d3bc479f5fb249b99ac2) (replay_2dfd9dc2004aaef0d010) (replay_3ca4f3b8d8be70e10845)
+
+def replay_4008a638dbd860147bff : S RootCode 4 :=
+.congPiDom (replay_2fba8f58bc4026c1eb2c) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_8285f5653fa68f00f7c1)
 
 def replay_4066fb5b33379c35f222 : T RootCode 13 :=
 .const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c9eb3646631aeca3536e) (replay_b584482ec97989538436)
@@ -5439,6 +5937,30 @@ def replay_76e9fe7f9b422fd0ac25 : C RootCode 11 :=
 def replay_43d4700812b0fd930f55 : C RootCode 11 :=
 .trans (replay_76e9fe7f9b422fd0ac25) (replay_c56d8bc91436750863bf)
 
+def replay_577e73928e08b42ec4be : T RootCode 8 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_364e906c32a1fece265a) (replay_cf26163fe59a0dbcc31b)
+
+def replay_e9a5d8b5ca3b7a7b2440 : T RootCode 7 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (replay_d46b9e98b3e6a82d2405) (replay_577e73928e08b42ec4be)
+
+def replay_c58f5ee563163ec98e5e : T RootCode 6 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_926d1059d18a7acb855f) (replay_fb92de9ad2d284eba393) (replay_e9a5d8b5ca3b7a7b2440)
+
+def replay_fd4487ba68e11ef18d50 : T RootCode 5 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_338d0b8a48f1a43dbe00) (replay_c51a69238051ce6df937) (replay_c58f5ee563163ec98e5e)
+
+def replay_811c48c79398f6d0dc39 : T RootCode 6 :=
+.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_604561302f0133e1fa78) (replay_7a268c731e7a9afff236)
+
+def replay_babc055b401e56aed4f7 : T RootCode 7 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_08ae2de3ec478e9612f9) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (replay_d46b9e98b3e6a82d2405) (replay_364e906c32a1fece265a)
+
+def replay_d30f97e01abda1e19a64 : T RootCode 6 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_98d997835633e79202d9) (replay_811c48c79398f6d0dc39) (replay_babc055b401e56aed4f7)
+
+def replay_44a730a9af655ec3da0e : T RootCode 5 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0a4c305bb1a5f667cf5a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b5fcf8a047e56612b09d) (replay_fd4487ba68e11ef18d50) (replay_d30f97e01abda1e19a64)
+
 def replay_44f53bd0f56deec4a2f1 : T RootCode 8 :=
 .cumul (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (replay_17baa006c595fbe3eeee)
 
@@ -5453,6 +5975,9 @@ def replay_453cb659dfeee894ebec : C RootCode 7 :=
 
 def replay_45c243bec42b79b7e1ab : C RootCode 11 :=
 .refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5311376b7f10fc9097c4)
+
+def replay_460a4220a9fcc7c0d868 : T RootCode 6 :=
+.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (replay_f3cb5775e55c84d569cb)
 
 def replay_460d6c9d5a998e7b7823 : S RootCode 13 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b56a1922a5a71afc4661) (replay_1b01641a65cdbf03afcc)
@@ -5507,6 +6032,33 @@ def replay_c4e3b53d5d50795e1fea : S RootCode 11 :=
 
 def replay_472b20625cf56c060808 : C RootCode 11 :=
 .single (replay_c4e3b53d5d50795e1fea)
+
+def replay_68f84e274a2c0d0790fd : C RootCode 4 :=
+.trans (replay_ce4880379eb07319e33e) (replay_f0289782439035726eb7)
+
+def replay_acca8dc9bb982b7c4a8b : S RootCode 7 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d64c30b5d3d809a06ed9) (replay_4114569bc89818085360)
+
+def replay_e45639f20a58d617e789 : S RootCode 6 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_545fb4a3c03c82a175c1) (replay_acca8dc9bb982b7c4a8b)
+
+def replay_ca492757a56afac58ffa : S RootCode 5 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2215ac1cab4d57eec91a) (replay_e45639f20a58d617e789)
+
+def replay_5656062f1e0a1fbf95e1 : S RootCode 4 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (replay_ca492757a56afac58ffa)
+
+def replay_e99e663ee9f4f6f1e02e : C RootCode 4 :=
+.single (replay_5656062f1e0a1fbf95e1)
+
+def replay_b0d4dbf156455ccb8efd : C RootCode 4 :=
+.trans (replay_e99e663ee9f4f6f1e02e) (replay_cc03e66ef56884bf2929)
+
+def replay_e40365f212c0a2e297ea : C RootCode 4 :=
+.trans (replay_01f81f690591940c267f) (replay_b0d4dbf156455ccb8efd)
+
+def replay_47527dc679bcf45e7a6c : C RootCode 4 :=
+.trans (replay_68f84e274a2c0d0790fd) (replay_e40365f212c0a2e297ea)
 
 def replay_e4eb0e74c133bcdfa100 : S RootCode 11 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_1bed53fd97751c172144) (replay_1f06de17583f317fac9a)
@@ -5664,6 +6216,9 @@ def replay_c5cec73a7266bcfe54f3 : C RootCode 10 :=
 def replay_4d3573478065e81bed39 : C RootCode 10 :=
 .trans (replay_5b0152f1de647eb73b7e) (replay_c5cec73a7266bcfe54f3)
 
+def replay_4e2917b28fdbc9922ee4 : T RootCode 5 :=
+.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a8a040a7dc522e2a057b) (replay_9e526d31287da105258f) (replay_ff33acd87c5b03c2f11e)
+
 def replay_66c8295c3a9ee83628b2 : S RootCode 9 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_23593caaab521d12b976) (replay_23f3615d1c2977f45493)
 
@@ -5718,11 +6273,17 @@ def replay_52d5e1c73394382ec1eb : C RootCode 4 :=
 def replay_52f723589321d8fc7696 : T RootCode 5 :=
 .const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c9eb3646631aeca3536e) (replay_b584482ec97989538436)
 
+def replay_5382fb6105d4f8b0b26b : C RootCode 4 :=
+.trans (replay_f0289782439035726eb7) (replay_47527dc679bcf45e7a6c)
+
 def replay_8df455f94ca42b2cd447 : C RootCode 7 :=
 .refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_e148daa12264b8ed5547)
 
 def replay_5397f8a95666c71b9c45 : C RootCode 7 :=
 .trans (replay_107c5ffc0906d9ca0859) (replay_8df455f94ca42b2cd447)
+
+def replay_53e55488e59ef94fd227 : S RootCode 4 :=
+.congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (replay_30563676b89b89f23ab8)
 
 def replay_8340950a601b4e2744e8 : S RootCode 5 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_02c898a5fa9dca7e390e) (replay_24aec54f7980e5bd2459)
@@ -5732,6 +6293,18 @@ def replay_a6ea1e63289100aa256d : S RootCode 5 :=
 
 def replay_554b3aafe895e0cdfad8 : S RootCode 4 :=
 .congPiCod (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ef6e0e4f36d08ea7d9c5) (replay_a6ea1e63289100aa256d)
+
+def replay_6e94bcf182e6173489db : T RootCode 4 :=
+.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a5f313e17bf6f92fda5d) (replay_2b3d36bec0f47f4acb62)
+
+def replay_cabf97cafae5c4ca17b2 : T RootCode 4 :=
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_134b6fb901b45973d3cc) (replay_6e94bcf182e6173489db) (replay_f89a0d3fd4af1bf7786d)
+
+def replay_ea9cc8343c9c3aa2f4c2 : T RootCode 4 :=
+.lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3b69fc5965686a991caa) (replay_0c4d9ab28420dbb33af7) (replay_4e2917b28fdbc9922ee4)
+
+def replay_55d18aefe3bf3e50e115 : T RootCode 4 :=
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5b33b9fe7931fd8258ae) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_76dc3e2382c3319235d6) (replay_cabf97cafae5c4ca17b2) (replay_ea9cc8343c9c3aa2f4c2)
 
 def replay_b4e3a8ac0319e82d697e : C RootCode 11 :=
 .refl (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_3121096ddc01f954a897)
@@ -5825,6 +6398,30 @@ def replay_b1ab5b67d67731711c07 : T RootCode 12 :=
 
 def replay_5d3ee164d0fd58f61332 : T RootCode 11 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_eca3dc2b6caf4867e1d4) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b1a28e9d42d7f3e26777) (replay_e78213c920befa21e944) (replay_b1ab5b67d67731711c07)
+
+def replay_d32ece8bb6fbd1d7fdd7 : C RootCode 4 :=
+.trans (replay_6dc01cb414d840e5a591) (replay_f24a1fc269f0a5793adc)
+
+def replay_e9b9f0e6b97407839a62 : C RootCode 4 :=
+.trans (replay_35f2200966ea1c864ec5) (replay_09103c946c55ee420ae9)
+
+def replay_c227c4e7fc644c147900 : C RootCode 4 :=
+.single (replay_53e55488e59ef94fd227)
+
+def replay_8d1bb11f2a072263794c : C RootCode 4 :=
+.trans (replay_c227c4e7fc644c147900) (replay_f0289782439035726eb7)
+
+def replay_7d96750e9a1fef718e72 : C RootCode 4 :=
+.trans (replay_0cb2547080e72302bdb2) (replay_8d1bb11f2a072263794c)
+
+def replay_f6b2906ad8483c1d8fb9 : C RootCode 4 :=
+.trans (replay_e9b9f0e6b97407839a62) (replay_7d96750e9a1fef718e72)
+
+def replay_84bfc5264765d8ff8604 : C RootCode 4 :=
+.trans (replay_d32ece8bb6fbd1d7fdd7) (replay_f6b2906ad8483c1d8fb9)
+
+def replay_5e00c4712214014efc10 : C RootCode 4 :=
+.trans (replay_f24a1fc269f0a5793adc) (replay_84bfc5264765d8ff8604)
 
 def replay_9dac8e50b1dfd1c73bb0 : T RootCode 12 :=
 .const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2ff527e667e033dd20bc) (replay_b09ed5596b6916f74be9)
@@ -6078,6 +6675,48 @@ def replay_6b2965139ed23ce2e3db : T RootCode 5 :=
 def replay_6c0ed749823c40260b83 : C RootCode 4 :=
 .trans (replay_5f358289f1b4a0716863) (replay_d1150e85bd06611d6487)
 
+def replay_7148a683365c52196a48 : T RootCode 4 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_145482549cab95f9be25) (replay_9a8c52ee0ece732b2898) (replay_44a730a9af655ec3da0e)
+
+def replay_de600d7eff7f36e912cd : C RootCode 4 :=
+.trans (replay_f24a1fc269f0a5793adc) (replay_5e00c4712214014efc10)
+
+def replay_74242c56b717744807d1 : C RootCode 4 :=
+.trans (replay_de600d7eff7f36e912cd) (replay_5382fb6105d4f8b0b26b)
+
+def replay_eced7acf5c5d8cff737d : C RootCode 4 :=
+.trans (replay_3380077989d5330ab89f) (replay_74242c56b717744807d1)
+
+def replay_d2a08cf66d8e63c6ed5d : C RootCode 4 :=
+.single (replay_4008a638dbd860147bff)
+
+def replay_7a44c40334ef6e505a88 : C RootCode 4 :=
+.trans (replay_168e55ae8fc8cc44edb9) (replay_0e460e5299b8d1bb6091)
+
+def replay_7bc4bdb359c79e5295dc : C RootCode 4 :=
+.trans (replay_d2a08cf66d8e63c6ed5d) (replay_7a44c40334ef6e505a88)
+
+def replay_f60269632ee3a8d1245f : C RootCode 4 :=
+.trans (replay_cc03e66ef56884bf2929) (replay_19fd1fc2d46f69b3bb0e)
+
+def replay_dd97df0300346e83020b : C RootCode 4 :=
+.symm (replay_f60269632ee3a8d1245f)
+
+def replay_7d0f0a6aeae531f8438b : C RootCode 4 :=
+.trans (replay_7bc4bdb359c79e5295dc) (replay_dd97df0300346e83020b)
+
+def replay_a3fe2c069fa9da4885d8 : C RootCode 4 :=
+.trans (replay_eced7acf5c5d8cff737d) (replay_7d0f0a6aeae531f8438b)
+
+def replay_f29f15ff4b17e6f3a543 : T RootCode 4 :=
+.convert (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9725e8a1d7cc252e4b48) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_4119145459c228af2ee2) (replay_55d18aefe3bf3e50e115) (replay_7148a683365c52196a48) (replay_a3fe2c069fa9da4885d8)
+
+def replay_74ee98dff50bb31e1ba0 : T RootCode 4 :=
+.cumul (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (replay_4cc623b12c4b86cfe50a)
+
+def replay_6c7163c1b19e471e9892 : T RootCode 4 :=
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0c7cb76ff373981f8647) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_8285f5653fa68f00f7c1) (replay_f29f15ff4b17e6f3a543) (replay_74ee98dff50bb31e1ba0)
+
 def replay_6c787d86e4bf380539a6 : S RootCode 12 :=
 .congPiDom (replay_5278c11c99cc212c50ab) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_8a630b8efb917cd90402)
 
@@ -6150,9 +6789,6 @@ def replay_9ab9d18a394622a6d49c : C RootCode 7 :=
 def replay_734eb55d6fa1ee856aae : C RootCode 7 :=
 .trans (replay_969af094fa51ae447d28) (replay_9ab9d18a394622a6d49c)
 
-def replay_74ee98dff50bb31e1ba0 : T RootCode 4 :=
-.cumul (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (replay_4cc623b12c4b86cfe50a)
-
 def replay_a8c0f1e5b51ed08bb45e : C RootCode 11 :=
 .single (replay_42056fe2bcb5e69dbaae)
 
@@ -6207,14 +6843,8 @@ def replay_7c8f27862e996a982313 : C RootCode 9 :=
 def replay_80aaec9f914651cac440 : T RootCode 5 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_45e80a32c899dfd6b11b) (replay_c51a69238051ce6df937) (replay_5a7cceec38683602eacb)
 
-def replay_811c48c79398f6d0dc39 : T RootCode 6 :=
-.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_604561302f0133e1fa78) (replay_7a268c731e7a9afff236)
-
 def replay_827a3e78871e902abbf5 : T RootCode 5 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_b7e6cb354a8df3738086) (replay_c51a69238051ce6df937) (replay_5ec50523c2085f963d11)
-
-def replay_844b001091b2055dfd9d : X RootCode 0 :=
-.nil
 
 def replay_8478c25f21b5e72000e4 : T RootCode 9 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_45e80a32c899dfd6b11b) (replay_ccd89ba91d77b76699f4) (replay_13b3cc3ae79611258bfb)
@@ -6351,9 +6981,6 @@ def replay_93732000e39cd3f6187e : C RootCode 10 :=
 def replay_93ee2d65f1164b786699 : C RootCode 10 :=
 .trans (replay_2e177cccaec9a9190cc2) (replay_64fa7d30378ce9e1c860)
 
-def replay_9a8c52ee0ece732b2898 : T RootCode 4 :=
-.headType
-
 def replay_e06dde46c640ce9d3a8d : T RootCode 6 :=
 .piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_2006796238039c1078f5) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_5fcd81028f8a0038e5e4) (replay_811c48c79398f6d0dc39) (replay_8cc1789cb3d3cb617ea1)
 
@@ -6441,6 +7068,9 @@ def replay_9aeaea10ccd199c7f6f6 : C RootCode 10 :=
 def replay_9b8253ced4c65fbdd05c : T RootCode 5 :=
 .lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_0b123886a2f1ca52dc20) (replay_7dc6b8e83ee36a07c70d) (replay_02223b3ad3c04ae8fb4f)
 
+def replay_9bb95864b7a437c86ef2 : T RootCode 8 :=
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ed88dce83fa3ae5d4c4a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8) (replay_534aece673191f529e08) (replay_534aece673191f529e08)
+
 def replay_9c83f75934ef70c96f23 : C RootCode 7 :=
 .trans (replay_265a1e0fc0aeee635309) (replay_734eb55d6fa1ee856aae)
 
@@ -6509,6 +7139,9 @@ def replay_a741e99f590b5934792e : T RootCode 7 :=
 
 def replay_a7f656bf03d3ee29aea8 : C RootCode 4 :=
 .trans (replay_8cee74d56b2418c6f40b) (replay_9582da9f88bc02123dab)
+
+def replay_aafd23c0a7e2bb8a1fda : T RootCode 8 :=
+.appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_ed88dce83fa3ae5d4c4a) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c537445f28d8d4cca5c8) (replay_08beffafd39672d7aa20) (replay_534aece673191f529e08)
 
 def replay_f358fdbe24832d62b672 : T RootCode 5 :=
 .appElim (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_a27060780ae3276936d3) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_6e449af2c972e8fbc98c) (replay_52f723589321d8fc7696) (replay_3525b0875924370d4991)
@@ -6612,6 +7245,9 @@ def replay_f319524280512d498183 : C RootCode 5 :=
 def replay_d1babc0fa40f79609820 : C RootCode 5 :=
 .trans (replay_f319524280512d498183) (replay_0f904f8bc8dfa4baed48)
 
+def replay_d4bf3b6c78ab8c6058a3 : T RootCode 0 :=
+.piForm (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_d9099ae41a1c6a1cb998) (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_80b287b2e390ab5b84ec) (replay_7a268c731e7a9afff236) (replay_224eb38c41bac0e28d1c)
+
 def replay_d54011a6a8cb2a23b315 : T RootCode 12 :=
 .const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c9eb3646631aeca3536e) (replay_b584482ec97989538436)
 
@@ -6659,6 +7295,9 @@ def replay_e5d66ab7f12349712d6a : C RootCode 7 :=
 
 def replay_e903842a64dc5872002a : T RootCode 4 :=
 .lamIntro (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_c7c74dd6d73ced3b4686) (replay_aec4c85cb0ac134bc5ba) (replay_9b8253ced4c65fbdd05c)
+
+def replay_ea03df5e9090f26d7b4c : T RootCode 5 :=
+.const (Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorEvidenceSyntax.syntax_9293fa3cbe0cc12a361b) (replay_f3cb5775e55c84d569cb)
 
 def replay_eac1540dcf5ad6d5167f : C RootCode 11 :=
 .trans (replay_c61fb5f5c7d18301d4e3) (replay_61de45ad52ff4b71ce16)

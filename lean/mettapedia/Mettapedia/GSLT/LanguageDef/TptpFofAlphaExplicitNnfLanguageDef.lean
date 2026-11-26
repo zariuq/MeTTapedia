@@ -1,3 +1,5 @@
+import Mettapedia.GSLT.LanguageDef.StructuralInclusion
+import Mettapedia.GSLT.LanguageDef.RewriteFreeLanguage
 import Mettapedia.GSLT.LanguageDef.TptpFofAlphaExplicitNnf
 import Mettapedia.GSLT.LanguageDef.TotalGSLT
 import Mettapedia.GSLT.LanguageDef.CanonicalWire
@@ -89,20 +91,16 @@ theorem language_validate : language.validate = [] := by
 def validated : ValidatedLanguageDef := ⟨language, language_validate⟩
 
 def nnfInclusion :
-    StructuralMorphism TptpFofNnfLanguageDef.validated validated where
-  symbols := LanguageDefSymbolMap.id
-  mapsTypes declaration membership := by
-    rw [mapTypeDecl_id]
-    exact List.mem_append_left _ membership
-  mapsTerms declaration membership := by
-    rw [mapGrammarRule_id]
-    exact List.mem_append_left _ membership
-  mapsEquations declaration membership := by
-    change declaration ∈ TptpFofNnfLanguageDef.language.equations at membership
-    simp [TptpFofNnfLanguageDef.no_equations] at membership
-  mapsRewrites declaration membership := by
-    change declaration ∈ TptpFofNnfLanguageDef.language.rewrites at membership
-    simp [TptpFofNnfLanguageDef.no_rewrites] at membership
+    StructuralMorphism TptpFofNnfLanguageDef.validated validated :=
+  StructuralMorphism.ofDeclarationInclusion {
+    types := fun _ member => List.mem_append_left _ member
+    terms := fun _ member => List.mem_append_left _ member
+    equations := by
+      change TptpFofNnfLanguageDef.language.equations ⊆ _
+      exact TptpFofNnfLanguageDef.no_equations ▸ List.nil_subset _
+    rewrites := by
+      change TptpFofNnfLanguageDef.language.rewrites ⊆ _
+      exact TptpFofNnfLanguageDef.no_rewrites ▸ List.nil_subset _ }
 
 theorem every_constructor_is_inert :
     language.terms.all (fun term => term.evalPolicy? = none) = true := by
@@ -116,16 +114,9 @@ def theory : Mettapedia.GSLT.GSLT :=
     (ReductionRespectsEquations.of_equation_free rfl)
 
 theorem theory_no_step (source target : Pattern) :
-    ¬ theory.Step source target := by
-  intro reduction
-  unfold theory at reduction
-  rw [languageGSLT_step] at reduction
-  unfold langReducesUsing at reduction
-  rcases reduction with ⟨_, step⟩
-  cases step with
-  | rule ruleMember =>
-      change _ ∈ ([] : List RewriteRule) at ruleMember
-      simp at ruleMember
+    ¬ theory.Step source target :=
+  languageGSLT_no_step_of_no_rewrites (language := language)
+    (laws := ReductionRespectsEquations.of_equation_free rfl) no_rewrites
 
 private def a (label : String) (arguments : List Pattern := []) : Pattern :=
   .apply label arguments

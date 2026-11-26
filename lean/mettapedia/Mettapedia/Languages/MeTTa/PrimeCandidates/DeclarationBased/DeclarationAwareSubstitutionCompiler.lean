@@ -234,6 +234,41 @@ the intrinsic scoped syntax. -/
     argumentValidAt 0 (towerHeadCodec.encode head) = true := by
   simpa [towerHeadCodec] using encodeTowerHead_argumentValid head
 
+/-- The authored roster supplies lookup. The two instantiation premises
+specify the exact ordered child judgments and the expected conclusion. -/
+private theorem check_authored_node {schema : RuleSchema} {args : List Pattern}
+    {goals : List Pattern} {goal : Pattern} {children : List RawProof}
+    (listed : schema ∈ allRules)
+    (valid : argumentsValidAt schema.metavariables args = true)
+    (side : RuleSchema.sideConditionsHold schema args = true)
+    (premises : instantiateSchemas? schema.metavariables args schema.premises = some goals)
+    (conclusion : instantiateSchema? schema.metavariables args schema.conclusion = some goal)
+    (checked : checkRawChildren definition goals children = true) :
+    checkRaw definition goal (.node ⟨schema.id, args⟩ children) = true := by
+  have lookup : definition.1.lookupRule? schema.id = some schema := by
+    apply lookupRule?_eq_some_of_mem definition
+    exact List.mem_append_right _ listed
+  have application : instantiateRule? definition ⟨schema.id, args⟩ = some (goals, goal) := by
+    simp [instantiateRule?, lookup, valid, side, premises, conclusion]
+  rw [checkRaw, application]
+  simp only [decide_true, Bool.true_and, checked]
+
+local macro "instantiate_authored" schema:ident : tactic =>
+  `(tactic| simp (config := { decide := true }) [$schema:ident, rule, formal, m,
+    instantiateSchema?, instantiateSchemas?, instantiateSchemaAt?, instantiateSchemasAt?,
+    lookupArgumentAt?, indexLt, weakensAt, substitutesAt, rootBeta, zero, succ,
+    tmVar, tmConst, tmHead, tmPi, tmSigma, tmId, tmLam, tmApp, tmPair, tmFst, tmSnd, tmRefl])
+
+local macro "check_authored" schema:ident : tactic =>
+  `(tactic| (
+    apply check_authored_node (schema := $schema:ident)
+    · simp [allRules]
+    · simp [$schema:ident, rule, formal, argumentsValidAt, encodeNat_argumentValid]
+    · rfl
+    · instantiate_authored $schema:ident <;> rfl
+    · instantiate_authored $schema:ident <;> rfl
+    all_goals simp only [checkRawChildren, Bool.and_true, Bool.and_eq_true]))
+
 /-! ## Peano order certificates -/
 
 /-- Compile the unique proof of a true Peano inequality.  False comparisons
@@ -256,42 +291,15 @@ theorem ltRawProof_accepts {left right : Nat} (less : left < right) :
       cases right with
       | zero => omega
       | succ right =>
-          simp (config := { maxSteps := 1000000, decide := true })
-            [definition, substitutionExtension,
-             ValidatedCalculusLanguageExtension.target,
-             substitutionDelta, CalculusLanguageExtension.apply, allRules,
-             ltRawProof, rawProof, ltZeroSuccRule, rule, formal, m,
-             InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-             instantiateRule?, CalculusLanguageDef.lookupRule?,
-             instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
-             instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
-             encodeNat_argumentValid, indexLt, encodeNat, zero, succ, ruleId,
-             DeclarationAwareDataLanguage.checked,
-             DeclarationAwareDataLanguage.definition]
+          simp only [ltRawProof]
+          check_authored ltZeroSuccRule
   | succ left leftIH =>
       cases right with
       | zero => omega
       | succ right =>
-          have previous : left < right := by omega
-          have child := leftIH previous
-          simp (config := { maxSteps := 1000000, decide := true })
-            [definition, substitutionExtension,
-             ValidatedCalculusLanguageExtension.target,
-             substitutionDelta, CalculusLanguageExtension.apply, allRules,
-             ltRawProof, rawProof, ltSuccSuccRule, rule, formal, m,
-             InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-             instantiateRule?, CalculusLanguageDef.lookupRule?,
-             instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
-             instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
-             encodeNat_argumentValid, indexLt, encodeNat, succ, ruleId,
-             DeclarationAwareDataLanguage.checked,
-             DeclarationAwareDataLanguage.definition]
-          simpa [definition, substitutionExtension,
-            ValidatedCalculusLanguageExtension.target,
-            substitutionDelta, CalculusLanguageExtension.apply, allRules,
-            ltSuccSuccRule, rule, formal, m, indexLt, succ, ruleId,
-            DeclarationAwareDataLanguage.checked,
-            DeclarationAwareDataLanguage.definition] using child
+          simp only [ltRawProof, encodeNat]
+          check_authored ltSuccSuccRule
+          exact leftIH (by omega)
 
 /-! ## Weakening certificates -/
 
@@ -370,220 +378,54 @@ theorem weakenRawProof_accepts (cutoff : Nat) (term : RawTerm) :
   induction term generalizing cutoff with
   | var index =>
       by_cases below : index < cutoff
-      · have child := ltRawProof_accepts below
-        simp (config := { maxSteps := 1000000, decide := true })
-          [definition, substitutionExtension,
-           ValidatedCalculusLanguageExtension.target,
-           substitutionDelta, CalculusLanguageExtension.apply, allRules,
-           weakenRawProof,
-           rawProof, weakenVarBelowRule, rule, formal, m,
-           InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-           instantiateRule?, CalculusLanguageDef.lookupRule?,
-           instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
-           instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
-           encodeNat_argumentValid, weakensAt, indexLt, tmVar,            ruleId, below,
-           DeclarationAwareDataLanguage.checked,
-           DeclarationAwareDataLanguage.definition]
-        simpa [definition, substitutionExtension,
-          ValidatedCalculusLanguageExtension.target,
-          substitutionDelta, CalculusLanguageExtension.apply, allRules,
-          weakenVarBelowRule, rule, formal, m, weakensAt, indexLt, tmVar,
-          ruleId, DeclarationAwareDataLanguage.checked,
-          DeclarationAwareDataLanguage.definition] using child
-      · have above : cutoff < index + 1 := by omega
-        have child := ltRawProof_accepts above
-        simp (config := { maxSteps := 1000000, decide := true })
-          [definition, substitutionExtension,
-           ValidatedCalculusLanguageExtension.target,
-           substitutionDelta, CalculusLanguageExtension.apply, allRules,
-           weakenRawProof,
-           rawProof, weakenVarAtOrAboveRule, rule, formal, m,
-           InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-           instantiateRule?, CalculusLanguageDef.lookupRule?,
-           instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
-           instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
-           encodeNat_argumentValid, weakensAt, indexLt, tmVar, encodeNat,
-           succ, ruleId, below,
-           DeclarationAwareDataLanguage.checked,
-           DeclarationAwareDataLanguage.definition]
-        simpa [definition, substitutionExtension,
-          ValidatedCalculusLanguageExtension.target,
-          substitutionDelta, CalculusLanguageExtension.apply, allRules,
-          weakenVarAtOrAboveRule, rule, formal, m, weakensAt, indexLt,
-          tmVar, encodeNat, succ, ruleId,
-          DeclarationAwareDataLanguage.checked,
-          DeclarationAwareDataLanguage.definition] using child
+      · simp only [weakenRawProof, if_pos below, weakenRaw_var_below below]
+        check_authored weakenVarBelowRule
+        exact ltRawProof_accepts below
+      · simp only [weakenRawProof, if_neg below, weakenRaw_var_atOrAbove below]
+        check_authored weakenVarAtOrAboveRule
+        have above : cutoff < index + 1 := by omega
+        exact ltRawProof_accepts above
   | const name =>
-      simp (config := { maxSteps := 1000000, decide := true })
-        [definition, substitutionExtension,
-         ValidatedCalculusLanguageExtension.target,
-         substitutionDelta, CalculusLanguageExtension.apply, allRules,
-           weakenRawProof,
-         rawProof, weakenConstRule, rule, formal, m,
-         InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-         instantiateRule?, CalculusLanguageDef.lookupRule?,
-         instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
-         instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
-         encodeNat_argumentValid,          weakensAt, tmConst, ruleId,
-         DeclarationAwareDataLanguage.checked,
-         DeclarationAwareDataLanguage.definition]
+      simp only [weakenRawProof]
+      check_authored weakenConstRule
   | head head =>
-      simp (config := { maxSteps := 1000000, decide := true })
-        [definition, substitutionExtension,
-         ValidatedCalculusLanguageExtension.target,
-         substitutionDelta, CalculusLanguageExtension.apply, allRules,
-           weakenRawProof,
-         rawProof, weakenHeadRule, rule, formal, m,
-         InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-         instantiateRule?, CalculusLanguageDef.lookupRule?,
-         instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
-         instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
-         encodeNat_argumentValid,          weakensAt, tmHead, ruleId,
-         DeclarationAwareDataLanguage.checked,
-         DeclarationAwareDataLanguage.definition]
+      simp only [weakenRawProof]
+      check_authored weakenHeadRule
   | pi domain body domainIH bodyIH =>
-      simp (config := { maxSteps := 1000000, decide := true })
-        [definition, substitutionExtension,
-         ValidatedCalculusLanguageExtension.target,
-         substitutionDelta, CalculusLanguageExtension.apply, allRules,
-           weakenRawProof,
-         rawProof, weakenPiRule, rule, formal, m,
-         InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-         instantiateRule?, CalculusLanguageDef.lookupRule?,
-         instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
-         instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
-         encodeNat_argumentValid, encodeRaw_argumentValid,
-         weakensAt, tmPi, succ, ruleId,
-         DeclarationAwareDataLanguage.checked,
-         DeclarationAwareDataLanguage.definition]
+      simp only [weakenRawProof]
+      check_authored weakenPiRule
       exact ⟨domainIH cutoff, bodyIH (cutoff + 1)⟩
   | sigma domain body domainIH bodyIH =>
-      simp (config := { maxSteps := 1000000, decide := true })
-        [definition, substitutionExtension,
-         ValidatedCalculusLanguageExtension.target,
-         substitutionDelta, CalculusLanguageExtension.apply, allRules,
-           weakenRawProof,
-         rawProof, weakenSigmaRule, rule, formal, m,
-         InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-         instantiateRule?, CalculusLanguageDef.lookupRule?,
-         instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
-         instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
-         encodeNat_argumentValid, encodeRaw_argumentValid,
-         weakensAt, tmSigma, succ, ruleId,
-         DeclarationAwareDataLanguage.checked,
-         DeclarationAwareDataLanguage.definition]
+      simp only [weakenRawProof]
+      check_authored weakenSigmaRule
       exact ⟨domainIH cutoff, bodyIH (cutoff + 1)⟩
   | id type left right typeIH leftIH rightIH =>
-      simp (config := { maxSteps := 1000000, decide := true })
-        [definition, substitutionExtension,
-         ValidatedCalculusLanguageExtension.target,
-         substitutionDelta, CalculusLanguageExtension.apply, allRules,
-           weakenRawProof,
-         rawProof, weakenIdRule, rule, formal, m,
-         InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-         instantiateRule?, CalculusLanguageDef.lookupRule?,
-         instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
-         instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
-         encodeNat_argumentValid, encodeRaw_argumentValid,
-         weakensAt, tmId, ruleId,
-         DeclarationAwareDataLanguage.checked,
-         DeclarationAwareDataLanguage.definition]
+      simp only [weakenRawProof]
+      check_authored weakenIdRule
       exact ⟨typeIH cutoff, leftIH cutoff, rightIH cutoff⟩
   | lam body bodyIH =>
-      simp (config := { maxSteps := 1000000, decide := true })
-        [definition, substitutionExtension,
-         ValidatedCalculusLanguageExtension.target,
-         substitutionDelta, CalculusLanguageExtension.apply, allRules,
-           weakenRawProof,
-         rawProof, weakenLamRule, rule, formal, m,
-         InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-         instantiateRule?, CalculusLanguageDef.lookupRule?,
-         instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
-         instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
-         encodeNat_argumentValid, encodeRaw_argumentValid,
-         weakensAt, tmLam, succ, ruleId,
-         DeclarationAwareDataLanguage.checked,
-         DeclarationAwareDataLanguage.definition]
+      simp only [weakenRawProof]
+      check_authored weakenLamRule
       exact bodyIH (cutoff + 1)
   | app function argument functionIH argumentIH =>
-      simp (config := { maxSteps := 1000000, decide := true })
-        [definition, substitutionExtension,
-         ValidatedCalculusLanguageExtension.target,
-         substitutionDelta, CalculusLanguageExtension.apply, allRules,
-           weakenRawProof,
-         rawProof, weakenAppRule, rule, formal, m,
-         InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-         instantiateRule?, CalculusLanguageDef.lookupRule?,
-         instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
-         instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
-         encodeNat_argumentValid, encodeRaw_argumentValid,
-         weakensAt, tmApp, ruleId,
-         DeclarationAwareDataLanguage.checked,
-         DeclarationAwareDataLanguage.definition]
+      simp only [weakenRawProof]
+      check_authored weakenAppRule
       exact ⟨functionIH cutoff, argumentIH cutoff⟩
   | pair first second firstIH secondIH =>
-      simp (config := { maxSteps := 1000000, decide := true })
-        [definition, substitutionExtension,
-         ValidatedCalculusLanguageExtension.target,
-         substitutionDelta, CalculusLanguageExtension.apply, allRules,
-           weakenRawProof,
-         rawProof, weakenPairRule, rule, formal, m,
-         InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-         instantiateRule?, CalculusLanguageDef.lookupRule?,
-         instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
-         instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
-         encodeNat_argumentValid, encodeRaw_argumentValid,
-         weakensAt, tmPair, ruleId,
-         DeclarationAwareDataLanguage.checked,
-         DeclarationAwareDataLanguage.definition]
+      simp only [weakenRawProof]
+      check_authored weakenPairRule
       exact ⟨firstIH cutoff, secondIH cutoff⟩
   | fst pair pairIH =>
-      simp (config := { maxSteps := 1000000, decide := true })
-        [definition, substitutionExtension,
-         ValidatedCalculusLanguageExtension.target,
-         substitutionDelta, CalculusLanguageExtension.apply, allRules,
-           weakenRawProof,
-         rawProof, weakenFstRule, rule, formal, m,
-         InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-         instantiateRule?, CalculusLanguageDef.lookupRule?,
-         instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
-         instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
-         encodeNat_argumentValid, encodeRaw_argumentValid,
-         weakensAt, tmFst, ruleId,
-         DeclarationAwareDataLanguage.checked,
-         DeclarationAwareDataLanguage.definition]
+      simp only [weakenRawProof]
+      check_authored weakenFstRule
       exact pairIH cutoff
   | snd pair pairIH =>
-      simp (config := { maxSteps := 1000000, decide := true })
-        [definition, substitutionExtension,
-         ValidatedCalculusLanguageExtension.target,
-         substitutionDelta, CalculusLanguageExtension.apply, allRules,
-           weakenRawProof,
-         rawProof, weakenSndRule, rule, formal, m,
-         InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-         instantiateRule?, CalculusLanguageDef.lookupRule?,
-         instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
-         instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
-         encodeNat_argumentValid, encodeRaw_argumentValid,
-         weakensAt, tmSnd, ruleId,
-         DeclarationAwareDataLanguage.checked,
-         DeclarationAwareDataLanguage.definition]
+      simp only [weakenRawProof]
+      check_authored weakenSndRule
       exact pairIH cutoff
   | refl term termIH =>
-      simp (config := { maxSteps := 1000000, decide := true })
-        [definition, substitutionExtension,
-         ValidatedCalculusLanguageExtension.target,
-         substitutionDelta, CalculusLanguageExtension.apply, allRules,
-         weakenRawProof,
-         rawProof, weakenReflRule, rule, formal, m,
-         InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-         instantiateRule?, CalculusLanguageDef.lookupRule?,
-         instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
-         instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
-         encodeNat_argumentValid, encodeRaw_argumentValid,
-         weakensAt, tmRefl, ruleId,
-         DeclarationAwareDataLanguage.checked,
-         DeclarationAwareDataLanguage.definition]
+      simp only [weakenRawProof]
+      check_authored weakenReflRule
       exact termIH cutoff
 
 /-! ## Substitution certificates -/
@@ -697,228 +539,66 @@ theorem substituteRawProof_accepts
   | var variableIndex =>
       by_cases equal : variableIndex = index
       · subst variableIndex
-        simp (config := { maxSteps := 1000000, decide := true })
-          [definition, substitutionExtension,
-           ValidatedCalculusLanguageExtension.target,
-           substitutionDelta, CalculusLanguageExtension.apply, allRules,
-           substituteRawProof, rawProof, substVarEqualRule, rule, formal, m,
-           InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-           instantiateRule?, CalculusLanguageDef.lookupRule?,
-           instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
-           instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
-           encodeNat_argumentValid, encodeRaw_argumentValid,
-           substitutesAt, tmVar, ruleId,
-           DeclarationAwareDataLanguage.checked,
-           DeclarationAwareDataLanguage.definition]
+        simp only [substituteRawProof, substituteRaw_var_equal]
+        check_authored substVarEqualRule
       · by_cases below : variableIndex < index
-        · have child := ltRawProof_accepts below
-          simp (config := { maxSteps := 1000000, decide := true })
-            [definition, substitutionExtension,
-             ValidatedCalculusLanguageExtension.target,
-             substitutionDelta, CalculusLanguageExtension.apply, allRules,
-             substituteRawProof, rawProof, substVarBelowRule, rule, formal, m,
-             InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-             instantiateRule?, CalculusLanguageDef.lookupRule?,
-             instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
-             instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
-             encodeNat_argumentValid, encodeRaw_argumentValid,
-             substitutesAt, indexLt, tmVar, equal, below, ruleId,
-             DeclarationAwareDataLanguage.checked,
-             DeclarationAwareDataLanguage.definition]
-          simpa [definition, substitutionExtension,
-            ValidatedCalculusLanguageExtension.target,
-            substitutionDelta, CalculusLanguageExtension.apply, allRules,
-            substVarBelowRule, rule, formal, m, substitutesAt, indexLt, tmVar,
-            ruleId, DeclarationAwareDataLanguage.checked,
-            DeclarationAwareDataLanguage.definition] using child
+        · simp only [substituteRawProof, if_neg equal, if_pos below,
+            substituteRaw_var_below replacement equal below]
+          check_authored substVarBelowRule
+          exact ltRawProof_accepts below
         · have above : index < variableIndex := by omega
-          have positive : 0 < variableIndex := by omega
-          have encoded := encodeNat_pred_succ positive
-          have child := ltRawProof_accepts above
-          have predecessorChild :
-              checkRaw definition
-                (indexLt (encodeNat index)
-                  (succ (encodeNat (variableIndex - 1))))
-                (ltRawProof index variableIndex) = true := by
-            rw [encoded]
-            exact child
-          simp (config := { maxSteps := 1000000, decide := true })
-            [definition, substitutionExtension,
-             ValidatedCalculusLanguageExtension.target,
-             substitutionDelta, CalculusLanguageExtension.apply, allRules,
-             substituteRawProof, rawProof, substVarAboveRule, rule, formal, m,
-             InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-             instantiateRule?, CalculusLanguageDef.lookupRule?,
-             instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
-             instantiateSchemasAt?, lookupArgumentAt?, argumentsValidAt,
-             encodeNat_argumentValid, encodeRaw_argumentValid,
-             substitutesAt, indexLt, tmVar, succ, equal, below,
-             ruleId,
-             DeclarationAwareDataLanguage.checked,
-             DeclarationAwareDataLanguage.definition]
-          constructor
-          · exact encoded
-          · simpa [definition, substitutionExtension,
-              ValidatedCalculusLanguageExtension.target,
-              substitutionDelta, CalculusLanguageExtension.apply, allRules,
-              substVarAboveRule, rule, formal, m, substitutesAt, indexLt, tmVar,
-              succ, ruleId, DeclarationAwareDataLanguage.checked,
-              DeclarationAwareDataLanguage.definition] using predecessorChild
+          have encoded := encodeNat_pred_succ (value := variableIndex) (by omega)
+          simp only [substituteRawProof, if_neg equal, if_neg below,
+            substituteRaw_var_above replacement equal below, encodeRaw_var, ← encoded]
+          check_authored substVarAboveRule
+          rw [show Pattern.apply "prime-nat-succ" [encodeNat (variableIndex - 1)] =
+            encodeNat variableIndex from encoded]
+          exact ltRawProof_accepts above
   | const name =>
-      simp (config := { maxSteps := 1000000, decide := true })
-        [definition, substitutionExtension,
-         ValidatedCalculusLanguageExtension.target,
-         substitutionDelta, CalculusLanguageExtension.apply, allRules,
-         substituteRawProof, rawProof, substConstRule, rule, formal, m,
-         InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-         instantiateRule?, CalculusLanguageDef.lookupRule?, instantiateSchema?,
-         instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
-         lookupArgumentAt?, argumentsValidAt, encodeNat_argumentValid,
-         encodeRaw_argumentValid, substitutesAt, tmConst, ruleId,
-         DeclarationAwareDataLanguage.checked,
-         DeclarationAwareDataLanguage.definition]
+      simp only [substituteRawProof]
+      check_authored substConstRule
   | head head =>
-      simp (config := { maxSteps := 1000000, decide := true })
-        [definition, substitutionExtension,
-         ValidatedCalculusLanguageExtension.target,
-         substitutionDelta, CalculusLanguageExtension.apply, allRules,
-         substituteRawProof, rawProof, substHeadRule, rule, formal, m,
-         InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-         instantiateRule?, CalculusLanguageDef.lookupRule?, instantiateSchema?,
-         instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
-         lookupArgumentAt?, argumentsValidAt, encodeNat_argumentValid,
-         encodeRaw_argumentValid, substitutesAt, tmHead, ruleId,
-         DeclarationAwareDataLanguage.checked,
-         DeclarationAwareDataLanguage.definition]
+      simp only [substituteRawProof]
+      check_authored substHeadRule
   | pi domain body domainIH bodyIH =>
-      simp (config := { maxSteps := 1000000, decide := true })
-        [definition, substitutionExtension,
-         ValidatedCalculusLanguageExtension.target,
-         substitutionDelta, CalculusLanguageExtension.apply, allRules,
-         substituteRawProof, rawProof, substPiRule, rule, formal, m,
-         InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-         instantiateRule?, CalculusLanguageDef.lookupRule?, instantiateSchema?,
-         instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
-         lookupArgumentAt?, argumentsValidAt, encodeNat_argumentValid,
-         encodeRaw_argumentValid, substitutesAt, weakensAt, zero, succ,
-         tmPi, ruleId, DeclarationAwareDataLanguage.checked,
-         DeclarationAwareDataLanguage.definition]
+      simp only [substituteRawProof]
+      check_authored substPiRule
       exact ⟨domainIH index replacement, weakenRawProof_accepts 0 replacement,
         bodyIH (index + 1) (weakenRaw 0 replacement)⟩
   | sigma domain body domainIH bodyIH =>
-      simp (config := { maxSteps := 1000000, decide := true })
-        [definition, substitutionExtension,
-         ValidatedCalculusLanguageExtension.target,
-         substitutionDelta, CalculusLanguageExtension.apply, allRules,
-         substituteRawProof, rawProof, substSigmaRule, rule, formal, m,
-         InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-         instantiateRule?, CalculusLanguageDef.lookupRule?, instantiateSchema?,
-         instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
-         lookupArgumentAt?, argumentsValidAt, encodeNat_argumentValid,
-         encodeRaw_argumentValid, substitutesAt, weakensAt, zero, succ,
-         tmSigma, ruleId, DeclarationAwareDataLanguage.checked,
-         DeclarationAwareDataLanguage.definition]
+      simp only [substituteRawProof]
+      check_authored substSigmaRule
       exact ⟨domainIH index replacement, weakenRawProof_accepts 0 replacement,
         bodyIH (index + 1) (weakenRaw 0 replacement)⟩
   | id type left right typeIH leftIH rightIH =>
-      simp (config := { maxSteps := 1000000, decide := true })
-        [definition, substitutionExtension,
-         ValidatedCalculusLanguageExtension.target,
-         substitutionDelta, CalculusLanguageExtension.apply, allRules,
-         substituteRawProof, rawProof, substIdRule, rule, formal, m,
-         InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-         instantiateRule?, CalculusLanguageDef.lookupRule?, instantiateSchema?,
-         instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
-         lookupArgumentAt?, argumentsValidAt, encodeNat_argumentValid,
-         encodeRaw_argumentValid, substitutesAt, tmId, ruleId,
-         DeclarationAwareDataLanguage.checked,
-         DeclarationAwareDataLanguage.definition]
+      simp only [substituteRawProof]
+      check_authored substIdRule
       exact ⟨typeIH index replacement, leftIH index replacement,
         rightIH index replacement⟩
   | lam body bodyIH =>
-      simp (config := { maxSteps := 1000000, decide := true })
-        [definition, substitutionExtension,
-         ValidatedCalculusLanguageExtension.target,
-         substitutionDelta, CalculusLanguageExtension.apply, allRules,
-         substituteRawProof, rawProof, substLamRule, rule, formal, m,
-         InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-         instantiateRule?, CalculusLanguageDef.lookupRule?, instantiateSchema?,
-         instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
-         lookupArgumentAt?, argumentsValidAt, encodeNat_argumentValid,
-         encodeRaw_argumentValid, substitutesAt, weakensAt, zero, succ,
-         tmLam, ruleId, DeclarationAwareDataLanguage.checked,
-         DeclarationAwareDataLanguage.definition]
+      simp only [substituteRawProof]
+      check_authored substLamRule
       exact ⟨weakenRawProof_accepts 0 replacement,
         bodyIH (index + 1) (weakenRaw 0 replacement)⟩
   | app function argument functionIH argumentIH =>
-      simp (config := { maxSteps := 1000000, decide := true })
-        [definition, substitutionExtension,
-         ValidatedCalculusLanguageExtension.target,
-         substitutionDelta, CalculusLanguageExtension.apply, allRules,
-         substituteRawProof, rawProof, substAppRule, rule, formal, m,
-         InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-         instantiateRule?, CalculusLanguageDef.lookupRule?, instantiateSchema?,
-         instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
-         lookupArgumentAt?, argumentsValidAt, encodeNat_argumentValid,
-         encodeRaw_argumentValid, substitutesAt, tmApp, ruleId,
-         DeclarationAwareDataLanguage.checked,
-         DeclarationAwareDataLanguage.definition]
+      simp only [substituteRawProof]
+      check_authored substAppRule
       exact ⟨functionIH index replacement, argumentIH index replacement⟩
   | pair first second firstIH secondIH =>
-      simp (config := { maxSteps := 1000000, decide := true })
-        [definition, substitutionExtension,
-         ValidatedCalculusLanguageExtension.target,
-         substitutionDelta, CalculusLanguageExtension.apply, allRules,
-         substituteRawProof, rawProof, substPairRule, rule, formal, m,
-         InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-         instantiateRule?, CalculusLanguageDef.lookupRule?, instantiateSchema?,
-         instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
-         lookupArgumentAt?, argumentsValidAt, encodeNat_argumentValid,
-         encodeRaw_argumentValid, substitutesAt, tmPair, ruleId,
-         DeclarationAwareDataLanguage.checked,
-         DeclarationAwareDataLanguage.definition]
+      simp only [substituteRawProof]
+      check_authored substPairRule
       exact ⟨firstIH index replacement, secondIH index replacement⟩
   | fst pair pairIH =>
-      simp (config := { maxSteps := 1000000, decide := true })
-        [definition, substitutionExtension,
-         ValidatedCalculusLanguageExtension.target,
-         substitutionDelta, CalculusLanguageExtension.apply, allRules,
-         substituteRawProof, rawProof, substFstRule, rule, formal, m,
-         InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-         instantiateRule?, CalculusLanguageDef.lookupRule?, instantiateSchema?,
-         instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
-         lookupArgumentAt?, argumentsValidAt, encodeNat_argumentValid,
-         encodeRaw_argumentValid, substitutesAt, tmFst, ruleId,
-         DeclarationAwareDataLanguage.checked,
-         DeclarationAwareDataLanguage.definition]
+      simp only [substituteRawProof]
+      check_authored substFstRule
       exact pairIH index replacement
   | snd pair pairIH =>
-      simp (config := { maxSteps := 1000000, decide := true })
-        [definition, substitutionExtension,
-         ValidatedCalculusLanguageExtension.target,
-         substitutionDelta, CalculusLanguageExtension.apply, allRules,
-         substituteRawProof, rawProof, substSndRule, rule, formal, m,
-         InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-         instantiateRule?, CalculusLanguageDef.lookupRule?, instantiateSchema?,
-         instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
-         lookupArgumentAt?, argumentsValidAt, encodeNat_argumentValid,
-         encodeRaw_argumentValid, substitutesAt, tmSnd, ruleId,
-         DeclarationAwareDataLanguage.checked,
-         DeclarationAwareDataLanguage.definition]
+      simp only [substituteRawProof]
+      check_authored substSndRule
       exact pairIH index replacement
   | refl term termIH =>
-      simp (config := { maxSteps := 1000000, decide := true })
-        [definition, substitutionExtension,
-         ValidatedCalculusLanguageExtension.target,
-         substitutionDelta, CalculusLanguageExtension.apply, allRules,
-         substituteRawProof, rawProof, substReflRule, rule, formal, m,
-         InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-         instantiateRule?, CalculusLanguageDef.lookupRule?, instantiateSchema?,
-         instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
-         lookupArgumentAt?, argumentsValidAt, encodeNat_argumentValid,
-         encodeRaw_argumentValid, substitutesAt, tmRefl, ruleId,
-         DeclarationAwareDataLanguage.checked,
-         DeclarationAwareDataLanguage.definition]
+      simp only [substituteRawProof]
+      check_authored substReflRule
       exact termIH index replacement
 
 /-- Compile one root beta contraction from the same independently computed
@@ -936,25 +616,9 @@ theorem betaRawProof_accepts (body argument : RawTerm) :
       (rootBeta (tmApp (tmLam (encodeRaw body)) (encodeRaw argument))
         (encodeRaw (substituteRaw 0 argument body)))
       (betaRawProof body argument) = true := by
-  have child := substituteRawProof_accepts 0 argument body
-  simp (config := { maxSteps := 1000000, decide := true })
-    [definition, substitutionExtension,
-     ValidatedCalculusLanguageExtension.target,
-     substitutionDelta, CalculusLanguageExtension.apply, allRules,
-     betaRawProof, rawProof, rootBetaRule, rule, formal, m,
-     InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-     instantiateRule?, CalculusLanguageDef.lookupRule?, instantiateSchema?,
-     instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
-     lookupArgumentAt?, argumentsValidAt, encodeRaw_argumentValid,
-     rootBeta, substitutesAt, zero, tmApp, tmLam, ruleId,
-     DeclarationAwareDataLanguage.checked,
-     DeclarationAwareDataLanguage.definition]
-  simpa [definition, substitutionExtension,
-    ValidatedCalculusLanguageExtension.target,
-    substitutionDelta, CalculusLanguageExtension.apply, allRules,
-    rootBetaRule, rule, formal, m, rootBeta, substitutesAt, zero, encodeNat,
-    tmApp, tmLam, ruleId, DeclarationAwareDataLanguage.checked,
-    DeclarationAwareDataLanguage.definition] using child
+  simp only [betaRawProof]
+  check_authored rootBetaRule
+  exact substituteRawProof_accepts 0 argument body
 
 /-! ## Arbitrary-target no-invention for generated artifacts -/
 

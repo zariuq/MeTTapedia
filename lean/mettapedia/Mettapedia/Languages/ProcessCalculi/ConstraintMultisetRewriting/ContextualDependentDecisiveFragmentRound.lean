@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentDecisiveFragmentPrune
 
 /-!
@@ -32,13 +33,9 @@ variable (rigid : ∀ name, S.roles name = .rigid) (facts : FormFacts S.R S.role
   (heads : HeadPreserving S.R) (algebra : CumulativeAlgebra S.R) (declared : DeclaredTypesFormed S.R)
   (choices : ExecutableChecking.HeadChoices S.R) (reducer : ExecutableReduction.Reducer S.R)
   (root : ExecutableReduction.RootEvaluator S.R)
-  (normalizes : ∀ {Θ : Context S.R} {type : TypeOver Θ} (term : Term Θ type),
-    ∃ code : Tm Head Θ.arity, ContextualDependentNormalChecking.Normal (S := S) code ∧
-      Equal S.R Θ.raw term.code code type.code)
-  (certifyNormal : ∀ {n : Nat} (term : Tm Head n),
-    Option (PLift (ContextualDependentNormalChecking.Normal (S := S) term)))
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
+  (normalizes : SolverPremises.HasNormalForms S)
+  (certifyNormal : SolverPremises.NormalityCertifier S)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
 
 /-- The first of the pattern, prune and exchange rules that fires, in the full round's order. -/
 def firstRule (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ)) : Option (Found problem) :=
@@ -77,8 +74,7 @@ theorem fullRound_eq (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (T
           | some found => cases found <;> rfl
           | none => rfl
 
-variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
-  Keeps (reducer fuel term) (reducer (fuel + 1) term))
+variable (stable : SolverPremises.StableReducer (rules := S.R) reducer)
 
 include stable in
 /-- **The first rule that fires is eventually constant on every store.** -/
@@ -86,22 +82,18 @@ theorem firstRule_const {Θ : Context S.R} (problem : EquationStore (TotalTerm �
     EventuallyConst fun fuel =>
       firstRule rigid facts complete roots heads algebra declared choices reducer root normalizes certifyNormal
         headTypingUnique fuel problem := by
-  obtain ⟨t₁, pattern⟩ := (patternRule_const rigid facts complete roots heads algebra declared choices reducer root
-    normalizes certifyNormal stable problem).spec
-  obtain ⟨t₂, pruned⟩ := (pruneRule_const rigid facts complete roots heads algebra declared choices reducer root
-    normalizes certifyNormal headTypingUnique stable problem).spec
-  obtain ⟨t₃, exchanged⟩ := (exchangeRule_const rigid facts complete roots heads algebra declared choices reducer root
-    normalizes certifyNormal stable problem).spec
-  refine ⟨max t₁ (max t₂ t₃), fun fuel enough => ?_⟩
-  have e₁ : t₁ ≤ fuel := by omega
-  have e₂ : t₂ ≤ fuel := by omega
-  have e₃ : t₃ ≤ fuel := by omega
-  have f₁ : t₁ ≤ max t₁ (max t₂ t₃) := by omega
-  have f₂ : t₂ ≤ max t₁ (max t₂ t₃) := by omega
-  have f₃ : t₃ ≤ max t₁ (max t₂ t₃) := by omega
-  dsimp only
+  refine ContextualDependentFragment.EventuallyConst.of_eq ?_ (EventuallyConst.orElse
+    (patternRule_const rigid facts complete roots heads algebra declared choices reducer root
+      normalizes certifyNormal stable problem)
+    (EventuallyConst.orElse
+      (pruneRule_const rigid facts complete roots heads algebra declared choices reducer root
+        normalizes certifyNormal headTypingUnique stable problem)
+      (exchangeRule_const rigid facts complete roots heads algebra declared choices reducer root
+        normalizes certifyNormal stable problem)))
+  intro fuel
   unfold firstRule
-  erw [pattern fuel e₁, pattern _ f₁, pruned fuel e₂, pruned _ f₂, exchanged fuel e₃, exchanged _ f₃]
+  split <;> simp_all only
+  split <;> simp_all only
 
 include stable in
 /-- **The rigid round settles wherever a rule fires.** Let a class of stores be given such that at

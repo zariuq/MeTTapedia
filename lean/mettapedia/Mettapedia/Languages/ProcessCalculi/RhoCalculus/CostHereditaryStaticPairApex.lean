@@ -1,3 +1,4 @@
+import Mettapedia.GSLT.LanguageDef.ReflectiveNormalizationTyping
 import Mettapedia.GSLT.LanguageDef.TwoDepthRestorationApex
 import Mettapedia.GSLT.LanguageDef.CostRestorationRelationQuoteArm
 import Mettapedia.GSLT.LanguageDef.CostRestorationCut
@@ -1239,6 +1240,54 @@ private theorem rhoProc_collapsingRoot_is_parallel
     exact (rhoProc_typed_apply_ne_quote color typed rfl).elim
   · exact parallel
 
+/-- A unique authored unary row fixes the ordered spine and both typing indices.
+The payload retains the caller's constructor predicate and binding context. -/
+private theorem hasTypeWithConstructors_unaryShape
+    {language : LanguageDef} {allowed : String → Prop}
+    {free : FreeTypeContext} {bound : List TypeExpr}
+    {constructor : String} {rule : GrammarRule} {parameter : String}
+    {argument result : TypeExpr} {arguments : List Pattern}
+    (unique : language.terms.filter (fun candidate => candidate.label == constructor) = [rule])
+    (parameters : rule.params = [.simple parameter argument])
+    (typed : HasTypeWithConstructors language allowed free bound
+      (.apply constructor arguments) result) :
+    ∃ payload, arguments = [payload] ∧ result = .base rule.category ∧
+      HasTypeWithConstructors language allowed free bound payload argument := by
+  obtain ⟨actual, _, member, label, _, resultEq, args⟩ :=
+    hasTypeWithConstructors_apply_inversion typed
+  have selected : actual ∈ language.terms.filter (fun candidate => candidate.label == constructor) :=
+    List.mem_filter.mpr ⟨member, by simp [label]⟩
+  rw [unique, List.mem_singleton] at selected
+  subst actual
+  rw [parameters] at args
+  cases args with
+  | @cons _ payload tail selectedParameter remaining expected representation parameterType
+      payloadTyped tailTyped =>
+      cases tailTyped
+      have sameType : expected = argument := by
+        simpa [parameterType?] using parameterType.symm
+      subst expected
+      exact ⟨payload, rfl, resultEq, payloadTyped⟩
+
+private abbrev rhoCostStatic_declaration (color : CostStaticColor) :=
+  costStaticReflectivePresentationDecl rhoCIGSLT color
+    rhoReflectivePresentation.toReflectivePresentationDecl
+
+private theorem rhoCostStatic_declaration_mem (color : CostStaticColor) :
+    rhoCostStatic_declaration color ∈ rhoCIGSLT.costWholeReflectionProfile.presentations :=
+  costStaticReflectivePresentationDecl_mem rhoCIGSLT color
+    rhoReflectivePresentation.toReflectivePresentationDecl (by
+      change rhoReflectivePresentation.toReflectivePresentationDecl ∈
+        ReflectionExtension.rhoReflectionProfile.presentations
+      simp [ReflectionExtension.rhoReflectionProfile])
+
+private theorem rhoCostStatic_declaration_witness (color : CostStaticColor) :
+    Nonempty (LanguageDef.ReflectivePresentationWitness rhoCIGSLT.costWholeLanguage
+      (rhoCostStatic_declaration color)) :=
+  LanguageDef.reflectivePresentationWitness_of_validate_eq_nil _ _
+    (Mettapedia.OSLF.MeTTaIL.Reflection.presentation_validate_eq_nil_of_validate_eq_nil
+      rhoCIGSLT.costWholeAdmittedReflection.2 (rhoCostStatic_declaration_mem color))
+
 /-- Typing inversion for one selected generated rho Drop without requiring a
 surrounding Quote shell. -/
 private theorem rhoCostStatic_drop_inner_hasType
@@ -1253,28 +1302,8 @@ private theorem rhoCostStatic_drop_inner_hasType
     HasType rhoCIGSLT.costWholeLanguage free bound inner
       (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
         rhoReflectivePresentation.toReflectivePresentationDecl).nameSort) := by
-  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
-    rhoReflectivePresentation.toReflectivePresentationDecl
-  have declarationMembership : declaration ∈
-      rhoCIGSLT.costWholeReflectionProfile.presentations := by
-    simpa [declaration] using
-      costStaticReflectivePresentationDecl_mem rhoCIGSLT color
-        rhoReflectivePresentation.toReflectivePresentationDecl
-        (by
-          change rhoReflectivePresentation.toReflectivePresentationDecl ∈
-            ReflectionExtension.rhoReflectionProfile.presentations
-          simp [ReflectionExtension.rhoReflectionProfile])
-  obtain ⟨argument, argumentTyped, argumentsShape, _argumentSafe⟩ :=
-    typed.selectedOrdinaryDropArgument
-      rhoCIGSLT.costWholeLanguage_validate
-      rhoCIGSLT.costWholeReflectionProfile_validate declarationMembership
-      (by simpa [declaration] using
-        CostCanonicalLaws.rho_costStatic_drop_isOrdinary color)
-      (typed.reflectiveSupportSafeAt_empty bound)
-  have argumentEquality : inner = argument := by
-    simpa [declaration] using (List.cons.inj argumentsShape).1
-  subst argument
-  exact argumentTyped
+  obtain ⟨witness⟩ := rhoCostStatic_declaration_witness color
+  exact (ReflectiveNormalizationTyping.drop_inv witness typed).2
 
 /-- Typing inversion for one selected generated rho Quote. -/
 private theorem rhoCostStatic_quote_inner_hasType
@@ -1289,26 +1318,8 @@ private theorem rhoCostStatic_quote_inner_hasType
     HasType rhoCIGSLT.costWholeLanguage free bound inner
       (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
         rhoReflectivePresentation.toReflectivePresentationDecl).processSort) := by
-  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
-    rhoReflectivePresentation.toReflectivePresentationDecl
-  have declarationMembership : declaration ∈
-      rhoCIGSLT.costWholeReflectionProfile.presentations := by
-    simpa [declaration] using
-      costStaticReflectivePresentationDecl_mem rhoCIGSLT color
-        rhoReflectivePresentation.toReflectivePresentationDecl
-        (by
-          change rhoReflectivePresentation.toReflectivePresentationDecl ∈
-            ReflectionExtension.rhoReflectionProfile.presentations
-          simp [ReflectionExtension.rhoReflectionProfile])
-  obtain ⟨argument, argumentTyped, argumentsShape, _argumentSafe⟩ :=
-    typed.selectedQuoteArgument rhoCIGSLT.costWholeLanguage_validate
-      rhoCIGSLT.costWholeReflectionProfile_validate declarationMembership
-      (CostCanonicalLaws.rho_costWholeReflectionProfile_closed _ declarationMembership)
-      (typed.reflectiveSupportSafeAt_empty bound)
-  have argumentEquality : inner = argument := by
-    simpa [declaration] using (List.cons.inj argumentsShape).1
-  subst argument
-  exact argumentTyped
+  obtain ⟨witness⟩ := rhoCostStatic_declaration_witness color
+  exact (ReflectiveNormalizationTyping.quote_inv witness typed).2
 
 /-- Proof-relevant inversion of the selected generated rho Quote.  Unlike
 ordinary typing inversion, this retains the hereditary declaration fragment
@@ -1329,57 +1340,11 @@ private theorem rhoCostStatic_quote_inner_hasTypeWithConstructors
       free bound inner
       (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
         rhoReflectivePresentation.toReflectivePresentationDecl).processSort) := by
-  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
-    rhoReflectivePresentation.toReflectivePresentationDecl
-  obtain ⟨rule, _allowedRule, membership, selected, _notBare, _typeEq,
-      argumentsTyped⟩ :=
-    hasTypeWithConstructors_apply_inversion typed
-  have declarationMembership : declaration ∈
-      rhoCIGSLT.costWholeReflectionProfile.presentations := by
-    simpa [declaration] using
-      costStaticReflectivePresentationDecl_mem rhoCIGSLT color
-        rhoReflectivePresentation.toReflectivePresentationDecl
-        (by
-          change rhoReflectivePresentation.toReflectivePresentationDecl ∈
-            ReflectionExtension.rhoReflectionProfile.presentations
-          simp [ReflectionExtension.rhoReflectionProfile])
-  have declarationValid :=
-    Mettapedia.OSLF.MeTTaIL.Reflection.presentation_validate_eq_nil_of_validate_eq_nil
-      rhoCIGSLT.costWholeAdmittedReflection.2 declarationMembership
-  obtain ⟨witness⟩ :=
-    LanguageDef.reflectivePresentationWitness_of_validate_eq_nil
-      rhoCIGSLT.costWholeLanguage declaration declarationValid
-  have quoteFiltered : witness.quote ∈
-      rhoCIGSLT.costWholeLanguage.terms.filter
-        (fun candidate => candidate.label == declaration.quoteConstructor) := by
-    rw [witness.quoteUnique]
-    simp
-  have quoteMembership : witness.quote ∈ rhoCIGSLT.costWholeLanguage.terms :=
-    (List.mem_filter.mp quoteFiltered).1
-  have sameLabel : witness.quote.label = rule.label :=
-    (beq_iff_eq.mp (List.mem_filter.mp quoteFiltered).2).trans selected
-  have sameRule : witness.quote = rule :=
-    List.inj_on_of_nodup_map
-      (LanguageDef.constructorLabels_nodup_of_validate_eq_nil
-        rhoCIGSLT.costWholeLanguage rhoCIGSLT.costWholeLanguage_validate)
-      quoteMembership membership sameLabel
-  have parameterShape : rule.params =
-      [.simple witness.quoteParameter (.base declaration.processSort)] := by
-    rw [← sameRule, witness.quoteParameters]
-  have exactTyped : ArgumentsHaveTypesWithConstructors
-      rhoCIGSLT.costWholeLanguage
-      (CostStaticColor.hereditaryConstructorImage rhoCIGSLT color)
-      free bound [inner]
-      [.simple witness.quoteParameter (.base declaration.processSort)] := by
-    simpa only [parameterShape] using argumentsTyped
-  cases exactTyped with
-  | @cons _ _ _ parameter parameters expected representation parameterType
-      argumentTyped tailTyped =>
-      cases tailTyped
-      have expectedEq : expected = .base declaration.processSort := by
-        simpa [parameterType?] using parameterType.symm
-      subst expected
-      exact argumentTyped
+  obtain ⟨witness⟩ := rhoCostStatic_declaration_witness color
+  obtain ⟨payload, exactArgs, _, payloadTyped⟩ :=
+    hasTypeWithConstructors_unaryShape witness.quoteUnique witness.quoteParameters typed
+  obtain rfl := (List.cons.inj exactArgs).1
+  exact payloadTyped
 
 /-- Invert an arbitrary selected Quote application while retaining both its
 exact unary spine and the hereditary typing of the process payload. -/
@@ -1404,63 +1369,9 @@ private theorem rhoCostStatic_quote_shapeWithConstructors
         (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
           rhoReflectivePresentation.toReflectivePresentationDecl
           ).processSort) := by
-  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
-    rhoReflectivePresentation.toReflectivePresentationDecl
-  obtain ⟨rule, _allowedRule, membership, selected, _notBare, typeEq,
-      argumentsTyped⟩ :=
-    hasTypeWithConstructors_apply_inversion typed
-  have declarationMembership : declaration ∈
-      rhoCIGSLT.costWholeReflectionProfile.presentations := by
-    simpa [declaration] using
-      costStaticReflectivePresentationDecl_mem rhoCIGSLT color
-        rhoReflectivePresentation.toReflectivePresentationDecl
-        (by
-          change rhoReflectivePresentation.toReflectivePresentationDecl ∈
-            ReflectionExtension.rhoReflectionProfile.presentations
-          simp [ReflectionExtension.rhoReflectionProfile])
-  have declarationValid :=
-    Mettapedia.OSLF.MeTTaIL.Reflection.presentation_validate_eq_nil_of_validate_eq_nil
-      rhoCIGSLT.costWholeAdmittedReflection.2 declarationMembership
-  obtain ⟨witness⟩ :=
-    LanguageDef.reflectivePresentationWitness_of_validate_eq_nil
-      rhoCIGSLT.costWholeLanguage declaration declarationValid
-  have quoteFiltered : witness.quote ∈
-      rhoCIGSLT.costWholeLanguage.terms.filter
-        (fun candidate => candidate.label == declaration.quoteConstructor) := by
-    rw [witness.quoteUnique]
-    simp
-  have quoteMembership : witness.quote ∈ rhoCIGSLT.costWholeLanguage.terms :=
-    (List.mem_filter.mp quoteFiltered).1
-  have sameLabel : witness.quote.label = rule.label :=
-    (beq_iff_eq.mp (List.mem_filter.mp quoteFiltered).2).trans selected
-  have sameRule : witness.quote = rule :=
-    List.inj_on_of_nodup_map
-      (LanguageDef.constructorLabels_nodup_of_validate_eq_nil
-        rhoCIGSLT.costWholeLanguage rhoCIGSLT.costWholeLanguage_validate)
-      quoteMembership membership sameLabel
-  have parameterShape : rule.params =
-      [.simple witness.quoteParameter (.base declaration.processSort)] := by
-    rw [← sameRule, witness.quoteParameters]
-  have exactTyped : ArgumentsHaveTypesWithConstructors
-      rhoCIGSLT.costWholeLanguage
-      (CostStaticColor.hereditaryConstructorImage rhoCIGSLT color)
-      free bound arguments
-      [.simple witness.quoteParameter (.base declaration.processSort)] := by
-    simpa only [parameterShape] using argumentsTyped
-  cases exactTyped with
-  | @cons _ argument tail parameter parameters expected representation
-      parameterType argumentTyped tailTyped =>
-      cases tailTyped
-      have expectedEq : expected = .base declaration.processSort := by
-        simpa [parameterType?] using parameterType.symm
-      subst expected
-      have resultCategory : rule.category = declaration.nameSort := by
-        calc
-          rule.category = witness.quote.category :=
-            congrArg GrammarRule.category sameRule.symm
-          _ = declaration.nameSort := witness.quoteCategory
-      refine ⟨argument, rfl, ?_, argumentTyped⟩
-      exact typeEq.trans (congrArg TypeExpr.base resultCategory)
+  obtain ⟨witness⟩ := rhoCostStatic_declaration_witness color
+  have shaped := hasTypeWithConstructors_unaryShape witness.quoteUnique witness.quoteParameters typed
+  simpa only [witness.quoteCategory] using shaped
 
 /-- Proof-relevant inversion of the selected generated rho Drop. -/
 private theorem rhoCostStatic_drop_inner_hasTypeWithConstructors
@@ -1479,57 +1390,11 @@ private theorem rhoCostStatic_drop_inner_hasTypeWithConstructors
       free bound inner
       (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
         rhoReflectivePresentation.toReflectivePresentationDecl).nameSort) := by
-  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
-    rhoReflectivePresentation.toReflectivePresentationDecl
-  obtain ⟨rule, _allowedRule, membership, selected, _notBare, _typeEq,
-      argumentsTyped⟩ :=
-    hasTypeWithConstructors_apply_inversion typed
-  have declarationMembership : declaration ∈
-      rhoCIGSLT.costWholeReflectionProfile.presentations := by
-    simpa [declaration] using
-      costStaticReflectivePresentationDecl_mem rhoCIGSLT color
-        rhoReflectivePresentation.toReflectivePresentationDecl
-        (by
-          change rhoReflectivePresentation.toReflectivePresentationDecl ∈
-            ReflectionExtension.rhoReflectionProfile.presentations
-          simp [ReflectionExtension.rhoReflectionProfile])
-  have declarationValid :=
-    Mettapedia.OSLF.MeTTaIL.Reflection.presentation_validate_eq_nil_of_validate_eq_nil
-      rhoCIGSLT.costWholeAdmittedReflection.2 declarationMembership
-  obtain ⟨witness⟩ :=
-    LanguageDef.reflectivePresentationWitness_of_validate_eq_nil
-      rhoCIGSLT.costWholeLanguage declaration declarationValid
-  have dropFiltered : witness.drop ∈
-      rhoCIGSLT.costWholeLanguage.terms.filter
-        (fun candidate => candidate.label == declaration.dropConstructor) := by
-    rw [witness.dropUnique]
-    simp
-  have dropMembership : witness.drop ∈ rhoCIGSLT.costWholeLanguage.terms :=
-    (List.mem_filter.mp dropFiltered).1
-  have sameLabel : witness.drop.label = rule.label :=
-    (beq_iff_eq.mp (List.mem_filter.mp dropFiltered).2).trans selected
-  have sameRule : witness.drop = rule :=
-    List.inj_on_of_nodup_map
-      (LanguageDef.constructorLabels_nodup_of_validate_eq_nil
-        rhoCIGSLT.costWholeLanguage rhoCIGSLT.costWholeLanguage_validate)
-      dropMembership membership sameLabel
-  have parameterShape : rule.params =
-      [.simple witness.dropParameter (.base declaration.nameSort)] := by
-    rw [← sameRule, witness.dropParameters]
-  have exactTyped : ArgumentsHaveTypesWithConstructors
-      rhoCIGSLT.costWholeLanguage
-      (CostStaticColor.hereditaryConstructorImage rhoCIGSLT color)
-      free bound [inner]
-      [.simple witness.dropParameter (.base declaration.nameSort)] := by
-    simpa only [parameterShape] using argumentsTyped
-  cases exactTyped with
-  | @cons _ _ _ parameter parameters expected representation parameterType
-      argumentTyped tailTyped =>
-      cases tailTyped
-      have expectedEq : expected = .base declaration.nameSort := by
-        simpa [parameterType?] using parameterType.symm
-      subst expected
-      exact argumentTyped
+  obtain ⟨witness⟩ := rhoCostStatic_declaration_witness color
+  obtain ⟨payload, exactArgs, _, payloadTyped⟩ :=
+    hasTypeWithConstructors_unaryShape witness.dropUnique witness.dropParameters typed
+  obtain rfl := (List.cons.inj exactArgs).1
+  exact payloadTyped
 
 /-- The selected generated rho Quote and Drop labels are distinct by the
 validated reflective presentation, uniformly in the Cost colour. -/
@@ -1540,18 +1405,8 @@ private theorem rhoCostStatic_quote_ne_drop (color : CostStaticColor) :
       (costStaticReflectivePresentationDecl rhoCIGSLT color
         rhoReflectivePresentation.toReflectivePresentationDecl
         ).dropConstructor := by
-  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
-    rhoReflectivePresentation.toReflectivePresentationDecl
-  apply quoteConstructor_ne_dropConstructor_of_validate
-    rhoCIGSLT.costWholeLanguage declaration
-  apply rhoCIGSLT.costStaticReflectivePresentation_validate declaration
-  simpa [declaration] using
-    costStaticReflectivePresentationDecl_mem rhoCIGSLT color
-      rhoReflectivePresentation.toReflectivePresentationDecl
-      (by
-        change rhoReflectivePresentation.toReflectivePresentationDecl ∈
-          ReflectionExtension.rhoReflectionProfile.presentations
-        simp [ReflectionExtension.rhoReflectionProfile])
+  obtain ⟨witness⟩ := rhoCostStatic_declaration_witness color
+  exact witness.quoteDropDistinct
 
 /-- The selected Quote label of either generated rho Cost colour is marked as
 a quote boundary by the generated reflection profile. -/
@@ -1561,19 +1416,7 @@ private theorem rhoCostStatic_quote_isQuote (color : CostStaticColor) :
         (costStaticReflectivePresentationDecl rhoCIGSLT color
           rhoReflectivePresentation.toReflectivePresentationDecl
           ).quoteConstructor = true := by
-  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
-    rhoReflectivePresentation.toReflectivePresentationDecl
-  have membership : declaration ∈
-      rhoCIGSLT.costWholeReflectionProfile.presentations := by
-    simpa [declaration] using
-      costStaticReflectivePresentationDecl_mem rhoCIGSLT color
-        rhoReflectivePresentation.toReflectivePresentationDecl
-        (by
-          change rhoReflectivePresentation.toReflectivePresentationDecl ∈
-            ReflectionExtension.rhoReflectionProfile.presentations
-          simp [ReflectionExtension.rhoReflectionProfile])
-  change ReflectiveContextSupport.isQuoteConstructor
-    rhoCIGSLT.costWholeReflectionProfile declaration.quoteConstructor = true
+  have membership := rhoCostStatic_declaration_mem color
   exact ReflectiveContextSupport.isQuoteConstructor_of_mem membership
     (CostCanonicalLaws.rho_costWholeReflectionProfile_closed _ membership)
 
@@ -1954,6 +1797,18 @@ private theorem rhoProc_canonicalizeByAt_notParallel
   rhoProc_canonicalizeByAt_notParallelAt key color color typed notParallel
     depth
 
+/-- For either selected bare parallel row, the element sort is its result sort.
+The row membership and parameter evidence come from typing inversion. -/
+private theorem rhoParallel_element_category {rule : GrammarRule}
+    {parameter : String} {collection : CollType} {elementType : TypeExpr}
+    (member : rule ∈ rhoCIGSLT.costWholeLanguage.terms)
+    (parameters : rule.bareParams = [.simple parameter (.collection collection elementType)]) :
+    elementType = .base rule.category := by
+  rcases rho_collectionRule_cases member
+      ((GrammarRule.bareParams_cons_iff _ _ _).mp parameters).2 with
+    ⟨_, category, element⟩ | ⟨_, category, element⟩ <;>
+    exact element.trans (congrArg TypeExpr.base category.symm)
+
 private theorem rhoParallel_elements_hasType
     (color : CostStaticColor)
     {free : FreeTypeContext} {bound : List TypeExpr}
@@ -1969,36 +1824,10 @@ private theorem rhoParallel_elements_hasType
       (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
         rhoReflectivePresentation.toReflectivePresentationDecl).processSort) := by
   rcases hasType_collection_inversion typed with
-    ⟨elementType, typeEq, elementsTyped⟩ |
-      ⟨rule, parameterName, elementType, membership, parameterShape,
-        typeEq, elementsTyped⟩
-  · cases typeEq
-  · rcases rho_collectionRule_cases membership
-            ((GrammarRule.bareParams_cons_iff _ _ _).mp parameterShape).2 with
-      ⟨parallelType, category, element⟩ |
-      ⟨parallelType, category, element⟩
-    · cases color with
-      | base =>
-          rw [element] at elementsTyped
-          change ElementsHaveType rhoCIGSLT.costWholeLanguage free bound
-            elements (.base (costBaseSortName "Proc"))
-          exact elementsTyped
-      | wrapped =>
-          have impossible : costWrappedSortName = costBaseSortName "Proc" :=
-            TypeExpr.base.inj (typeEq.trans (congrArg TypeExpr.base category))
-          exact (by decide : costWrappedSortName ≠ costBaseSortName "Proc")
-            impossible |>.elim
-    · cases color with
-      | base =>
-          have impossible : costBaseSortName "Proc" = costWrappedSortName :=
-            TypeExpr.base.inj (typeEq.trans (congrArg TypeExpr.base category))
-          exact (by decide : costBaseSortName "Proc" ≠ costWrappedSortName)
-            impossible |>.elim
-      | wrapped =>
-          rw [element] at elementsTyped
-          change ElementsHaveType rhoCIGSLT.costWholeLanguage free bound
-            elements (.base costWrappedSortName)
-          exact elementsTyped
+    ⟨_, resultEq, _⟩ | ⟨_, _, _, member, parameters, resultEq, elementsTyped⟩
+  · cases resultEq
+  · have same := (rhoParallel_element_category member parameters).trans resultEq.symm
+    simpa only [same] using elementsTyped
 
 /-- Proof-relevant companion of `rhoParallel_elements_hasType`.  The result
 retains the selected static declaration at every nested bare collection. -/
@@ -2021,40 +1850,10 @@ private theorem rhoParallel_elements_hasTypeWithConstructors
       (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
         rhoReflectivePresentation.toReflectivePresentationDecl).processSort) := by
   rcases hasTypeWithConstructors_collection_inversion typed with
-    ⟨elementType, typeEq, elementsTyped⟩ |
-      ⟨rule, parameterName, elementType, _allowedRule, membership,
-        parameterShape, typeEq, elementsTyped⟩
-  · cases typeEq
-  · rcases rho_collectionRule_cases membership
-            ((GrammarRule.bareParams_cons_iff _ _ _).mp parameterShape).2 with
-      ⟨parallelType, category, element⟩ |
-        ⟨parallelType, category, element⟩
-    · cases color with
-      | base =>
-          rw [element] at elementsTyped
-          change ElementsHaveTypeWithConstructors
-            rhoCIGSLT.costWholeLanguage
-            (CostStaticColor.hereditaryConstructorImage rhoCIGSLT .base)
-            free bound elements (.base (costBaseSortName "Proc"))
-          exact elementsTyped
-      | wrapped =>
-          have impossible : costWrappedSortName = costBaseSortName "Proc" :=
-            TypeExpr.base.inj (typeEq.trans (congrArg TypeExpr.base category))
-          exact (by decide : costWrappedSortName ≠ costBaseSortName "Proc")
-            impossible |>.elim
-    · cases color with
-      | base =>
-          have impossible : costBaseSortName "Proc" = costWrappedSortName :=
-            TypeExpr.base.inj (typeEq.trans (congrArg TypeExpr.base category))
-          exact (by decide : costBaseSortName "Proc" ≠ costWrappedSortName)
-            impossible |>.elim
-      | wrapped =>
-          rw [element] at elementsTyped
-          change ElementsHaveTypeWithConstructors
-            rhoCIGSLT.costWholeLanguage
-            (CostStaticColor.hereditaryConstructorImage rhoCIGSLT .wrapped)
-            free bound elements (.base costWrappedSortName)
-          exact elementsTyped
+    ⟨_, resultEq, _⟩ | ⟨_, _, _, _, member, parameters, resultEq, elementsTyped⟩
+  · cases resultEq
+  · have same := (rhoParallel_element_category member parameters).trans resultEq.symm
+    simpa only [same] using elementsTyped
 
 /-- A reachable bare collection carrying the selected-colour hereditary
 declaration witness is typed by that colour's PPar, not by the opposite
@@ -2128,30 +1927,9 @@ private theorem rhoParallel_shapeWithConstructors
         CostStaticColor.reflectiveSymbols_sort,
         rhoReflectivePresentation, rhoCalc,
         TypeExpr.proc, TypeExpr.baseType] using mappedCategory
-    rcases rho_collectionRule_cases membership
-            ((GrammarRule.bareParams_cons_iff _ _ _).mp parameterShape).2 with
-      ⟨_parallelType, baseCategory, baseElement⟩ |
-        ⟨_parallelType, wrappedCategory, wrappedElement⟩
-    · cases color with
-      | base =>
-          refine ⟨typeEq.trans (congrArg TypeExpr.base categorySelected), ?_⟩
-          rw [baseElement] at elementsTyped
-          exact elementsTyped
-      | wrapped =>
-          have impossible : costBaseSortName "Proc" = costWrappedSortName :=
-            baseCategory.symm.trans categorySelected
-          exact (by decide : costBaseSortName "Proc" ≠ costWrappedSortName)
-            impossible |>.elim
-    · cases color with
-      | base =>
-          have impossible : costWrappedSortName = costBaseSortName "Proc" :=
-            wrappedCategory.symm.trans categorySelected
-          exact (by decide : costWrappedSortName ≠ costBaseSortName "Proc")
-            impossible |>.elim
-      | wrapped =>
-          refine ⟨typeEq.trans (congrArg TypeExpr.base categorySelected), ?_⟩
-          rw [wrappedElement] at elementsTyped
-          exact elementsTyped
+    refine ⟨typeEq.trans (congrArg TypeExpr.base categorySelected), ?_⟩
+    have same := rhoParallel_element_category membership parameterShape
+    simpa only [same, categorySelected] using elementsTyped
 
 mutual
   /-- Recursive parallel flattening preserves the selected-colour hereditary

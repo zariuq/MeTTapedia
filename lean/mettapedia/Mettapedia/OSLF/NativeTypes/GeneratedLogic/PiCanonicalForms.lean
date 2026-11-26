@@ -1,3 +1,4 @@
+import Mettapedia.OSLF.NativeTypes.GeneratedLogic.TypedReadingDomain
 import Mettapedia.OSLF.NativeTypes.GeneratedLogic.ComputedNormalForm
 import Mettapedia.Languages.ProcessCalculi.PiCalculus.Blocks
 import Mettapedia.GSLT.LanguageDef.RestrictionBlocks.Typed
@@ -505,24 +506,13 @@ theorem sort_unique {term : Pattern} {first second : String}
     (firstTyped : HasType piParallelFragment names [] term (.base first))
     (secondTyped : HasType piParallelFragment names [] term (.base second)) (object : isObjectPattern term = true) :
     first = second := by
-  cases firstTyped with
-  | bvar lookup => simp at lookup
-  | fvar lookup =>
-      cases secondTyped with
-      | fvar lookup' =>
-          simp only [names, EquationReading.nameContext, Option.some.injEq, TypeExpr.base.injEq] at lookup lookup'
-          exact lookup.symm.trans lookup'
-  | constructor member =>
-      obtain ⟨rule', member', labelIs, -, typeIs, -⟩ := hasType_apply_inversion secondTyped
-      simp only [TypeExpr.base.injEq] at typeIs
-      rw [category_of_member member, typeIs, category_of_member member']
-  | subst => simp [isObjectPattern] at object
-  | collectionConstructor member =>
-      rw [category_of_member member]
-      have sortIs := (bag_typing bareBagTheory.toBareBagPresentation secondTyped rfl).2.1
-      simp only [TypeExpr.base.injEq] at sortIs
-      rw [sortIs]
-      rfl
+  refine object_base_sort_unique ?_ ?_ firstTyped secondTyped object
+  · intro _ _ member member' _
+    exact (category_of_member member).trans (category_of_member member').symm
+  · intro _ _ _ _ _ left right
+    have leftSort := (bag_typing bareBagTheory.toBareBagPresentation left rfl).2.1
+    have rightSort := (bag_typing bareBagTheory.toBareBagPresentation right rfl).2.1
+    exact TypeExpr.base.inj (leftSort.trans rightSort.symm)
 
 /-- A typed object of the fragment carries no binder names, so it is in the domain. -/
 theorem domain_of_typed {term : Pattern} (typed : HasType piParallelFragment names [] term (.base "Proc"))
@@ -531,27 +521,22 @@ theorem domain_of_typed {term : Pattern} (typed : HasType piParallelFragment nam
     (HasType.of_terms_subset (source := piParallelFragment) (target := piCalc) (fun _ member => member) typed)
     object).1 ⟨_, rfl⟩, object⟩
 
+private theorem typedDomain : TypedReadingDomain piParallelFragment (some "Name") "Proc"
+    (fun term => domain term = true) where
+  typed := fun {_} accepted => (domain_iff.mp accepted).typed
+  ofTyped := @domain_of_typed
+  sortUnique := @sort_unique
+
 /-- **A step of π's reading relates the domain only to the domain**, both ways. -/
 theorem domain_iff_of_step {relEnv : RelationEnv} {first second : Pattern}
     (step : ObjectStep relEnv piParallelFragment reading first second) :
     domain first = true ↔ domain second = true := by
-  obtain ⟨-, -, type, ⟨sort, rfl⟩, firstFormed, secondFormed, -⟩ := step
-  constructor
-  · intro admitted
-    obtain rfl := sort_unique firstFormed.typed (domain_iff.mp admitted).typed firstFormed.object
-    exact domain_of_typed secondFormed.typed secondFormed.object
-  · intro admitted
-    obtain rfl := sort_unique secondFormed.typed (domain_iff.mp admitted).typed secondFormed.object
-    exact domain_of_typed firstFormed.typed firstFormed.object
+  exact typedDomain.step_iff step
 
 theorem domain_iff_of_equivalent {relEnv : RelationEnv} {first second : Pattern}
     (equivalent : ObjectEquivalent relEnv piParallelFragment reading first second) :
     domain first = true ↔ domain second = true := by
-  induction equivalent with
-  | rel _ _ step => exact domain_iff_of_step step
-  | refl => exact Iff.rfl
-  | symm _ _ _ same => exact same.symm
-  | trans _ _ _ _ _ first second => exact first.trans second
+  exact typedDomain.equivalent_iff equivalent
 
 /-- **A chain of the bag's laws from a typed object is an equivalence of π's reading.** -/
 theorem objectEquivalent_of_path {relEnv : RelationEnv} {base : BasePremiseEvaluator} {source target : Pattern}

@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.PeTTa.AppendAgreement
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.RuleExecutionProgram
 
 /-!
@@ -58,18 +59,8 @@ private theorem extension_declarations_fresh :
 
 theorem retained_program_agreement :
     ProgramAgreementOn retainedHead RuleExecutionProgram.program program := by
-  apply appended_program_agreement
-  · intro equation member
-    have checked := List.all_eq_true.mp extension_equations_fresh equation member
-    cases result : retainedHead equation.head with
-    | false => rfl
-    | true => simp [result] at checked
-  · intro name types member
-    have checked := List.all_eq_true.mp extension_declarations_fresh
-      (.expression [.symbol ":", .symbol name, .expression (.symbol "->" :: types)]) member
-    cases result : retainedHead name with
-    | false => rfl
-    | true => simp [result] at checked
+  exact appended_program_agreement_of_checks _ _ _ extension_equations_fresh
+    extension_declarations_fresh (fun _ _ => rfl)
 
 /-- Existing rule-helper executions retain their answers, stores and I/O after
 loading the independently authored equation source. -/

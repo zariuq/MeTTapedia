@@ -1,3 +1,4 @@
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.FormationSensitiveConversionReplay
 import Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.FormationSensitiveNativeVectorAllUniverseMapEvidence
 
 /-!
@@ -35,8 +36,12 @@ def forwardReplayed := FormationSensitiveElaboration.replay rules decoder
 def backwardReplayed := FormationSensitiveElaboration.replay rules decoder
   Universes.context backward backwardType Certificate.backwardSubmission
 
-theorem forward_replayed : forwardReplayed = true := by decide +kernel
-theorem backward_replayed : backwardReplayed = true := by decide +kernel
+theorem forward_replayed : forwardReplayed = true := by
+  rw [forwardReplayed, ← FormationSensitiveElaboration.replayWithSyntaxConversions_eq]
+  decide +kernel
+theorem backward_replayed : backwardReplayed = true := by
+  rw [backwardReplayed, ← FormationSensitiveElaboration.replayWithSyntaxConversions_eq]
+  decide +kernel
 
 theorem forward_formed : FormationSensitive.Judgment rules Universes.context forward forwardType :=
   FormationSensitiveElaboration.replay_sound rules decoder forward_replayed
@@ -181,10 +186,14 @@ def swappedReplay := FormationSensitiveElaboration.replay rules decoder
   Universes.context forward forwardType Certificate.backwardSubmission
 
 /-- A certificate for the full indexed map does not certify a projection shortcut. -/
-theorem projection_certificate_refused : projectionReplay = false := by decide +kernel
+theorem projection_certificate_refused : projectionReplay = false := by
+  rw [projectionReplay, ← FormationSensitiveElaboration.replayWithSyntaxConversions_eq]
+  decide +kernel
 
 /-- The reverse map's evidence cannot be substituted for the forward map's evidence. -/
-theorem swapped_certificate_refused : swappedReplay = false := by decide +kernel
+theorem swapped_certificate_refused : swappedReplay = false := by
+  rw [swappedReplay, ← FormationSensitiveElaboration.replayWithSyntaxConversions_eq]
+  decide +kernel
 
 def conversionAccepted {n : Nat} (left right : Tower.Tm n) : Bool :=
   match choices.conversion 64 left right with

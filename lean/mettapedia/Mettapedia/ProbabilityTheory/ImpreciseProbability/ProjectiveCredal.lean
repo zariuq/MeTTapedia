@@ -40,6 +40,86 @@ open MeasureTheory
 open Mettapedia.ProbabilityTheory.FiniteMeasureSupport
 open Mettapedia.ProbabilityTheory.ImpreciseProbability
 
+section ExpectationImages
+
+variable {P Q : Type*}
+
+/-- An exact transport of completions preserves the values of each observation
+that factors through the transport. -/
+private theorem observation_image_eq_of_exact
+    (C : Set P) (D : Set Q) (transport : P → Q) (observe : Q → ℝ)
+    (maps : Set.MapsTo transport C D) (covers : Set.SurjOn transport C D) :
+    (observe ∘ transport) '' C = observe '' D := by
+  rw [Set.image_comp, Set.Subset.antisymm maps.image_subset covers]
+
+private theorem observation_image_smul
+    (C : Set P) (f g : P → ℝ) (r : ℝ)
+    (hf : ∀ p ∈ C, g p = r * f p) :
+    g '' C = r • (f '' C) := by
+  rw [← Set.image_smul, ← Set.image_comp]
+  exact Set.image_congr hf
+
+/-- Compactification preserves both real endpoints of a continuous observation
+on a nonempty carrier with bounded image. -/
+private theorem observation_endpoints_closure
+    [TopologicalSpace P] (C : Set P) (f : P → ℝ)
+    (hC : C.Nonempty) (hf : Continuous f)
+    (lower : BddBelow (f '' C)) (upper : BddAbove (f '' C)) :
+    sInf (f '' closure C) = sInf (f '' C) ∧
+      sSup (f '' closure C) = sSup (f '' C) := by
+  have hincl := Set.image_mono (f := f) (subset_closure : C ⊆ closure C)
+  have hlimit := image_closure_subset_closure_image (s := C) hf
+  have hne := (hC.mono (subset_closure : C ⊆ closure C)).image f
+  exact ⟨((isGLB_iff_of_subset_of_subset_closure hincl hlimit).mp
+      (isGLB_csInf (hC.image f) lower)).csInf_eq hne,
+    ((isLUB_iff_of_subset_of_subset_closure hincl hlimit).mp
+      (isLUB_csSup (hC.image f) upper)).csSup_eq hne⟩
+
+private theorem observation_strict_pair_iff
+    (C : Set P) (f : P → ℝ) :
+    (∃ p ∈ C, ∃ q ∈ C, f p < f q) ↔
+      ¬ (∀ p ∈ C, ∀ q ∈ C, f p = f q) := by
+  constructor
+  · rintro ⟨p, hp, q, hq, hlt⟩ hall
+    exact (ne_of_lt hlt) (hall p hp q hq)
+  · intro h
+    by_contra hnone
+    apply h
+    intro p hp q hq
+    exact le_antisymm
+      (le_of_not_gt fun hl => hnone ⟨q, hq, p, hp, hl⟩)
+      (le_of_not_gt fun hl => hnone ⟨p, hp, q, hq, hl⟩)
+
+private theorem observation_endpoints_lt
+    (C : Set P) (f : P → ℝ) (lower : BddBelow (f '' C)) (upper : BddAbove (f '' C))
+    {p q : P} (hp : p ∈ C) (hq : q ∈ C) (disagree : f p < f q) :
+    sInf (f '' C) < sSup (f '' C) :=
+  (csInf_le lower ⟨p, hp, rfl⟩).trans_lt (disagree.trans_le (le_csSup upper ⟨q, hq, rfl⟩))
+
+private theorem observation_endpoints_of_isCompact
+    [TopologicalSpace P] (C : Set P) (hC : IsCompact C)
+    (f : P → ℝ) (hf : ContinuousOn f C) (hne : C.Nonempty)
+    (lower : BddBelow (f '' C)) (upper : BddAbove (f '' C))
+    (width : ∃ p ∈ C, ∃ q ∈ C, f p < f q) :
+    ∃ p ∈ C, ∃ q ∈ C, f p = sInf (f '' C) ∧ f q = sSup (f '' C) ∧ f p < f q := by
+  obtain ⟨p, hp, hlo⟩ := hC.exists_sInf_image_eq hne hf
+  obtain ⟨q, hq, hhi⟩ := hC.exists_sSup_image_eq hne hf
+  obtain ⟨x, hx, y, hy, hxy⟩ := width
+  refine ⟨p, hp, q, hq, hlo.symm, hhi.symm, ?_⟩
+  rw [← hlo, ← hhi]
+  exact observation_endpoints_lt C f lower upper hx hy hxy
+
+private theorem observation_image_eq_singleton
+    (C : Set P) (f : P → ℝ) {p : P} (hp : p ∈ C)
+    (hf : ∀ q ∈ C, f q = f p) :
+    f '' C = {f p} := by
+  refine Set.Subset.antisymm ?_ ?_
+  · rintro _ ⟨q, hq, rfl⟩
+    exact hf q hq
+  · exact Set.singleton_subset_iff.mpr ⟨p, hp, rfl⟩
+
+end ExpectationImages
+
 /-! ## Bounded measurable observable carrier -/
 
 /-- A bounded measurable gamble: the honest σ-additive observable carrier.
@@ -1235,40 +1315,10 @@ theorem boundedMeasurableLowerEnvelope_evaluationClosure_eq
       boundedMeasurableLowerEnvelope C X := by
   let : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
     BoundedMeasurablePrecisePrevision.evaluationTopology (Ω := Ω)
-  apply le_antisymm
-  · refine le_boundedMeasurableLowerEnvelope_of_forall_le C hC X ?_
-    intro P hP
-    exact boundedMeasurableLowerEnvelope_le_of_mem
-      (boundedMeasurableCredalSetEvaluationClosure C) X
-      (boundedMeasurableCredalRange_bddBelow
-        (boundedMeasurableCredalSetEvaluationClosure C) X)
-      (boundedMeasurableCredalSet_subset_evaluationClosure C hP)
-  · have hClosed :
-        IsClosed
-          {P : BoundedMeasurablePrecisePrevision Ω |
-            boundedMeasurableLowerEnvelope C X ≤ P X} :=
-      BoundedMeasurablePrecisePrevision.isClosed_le_eval X
-        (boundedMeasurableLowerEnvelope C X)
-    have hRawSubset :
-        C ⊆
-          {P : BoundedMeasurablePrecisePrevision Ω |
-            boundedMeasurableLowerEnvelope C X ≤ P X} := by
-      intro P hP
-      exact boundedMeasurableLowerEnvelope_le_of_mem C X
-        (boundedMeasurableCredalRange_bddBelow C X) hP
-    have hClosureSubset :
-        boundedMeasurableCredalSetEvaluationClosure C ⊆
-          {P : BoundedMeasurablePrecisePrevision Ω |
-            boundedMeasurableLowerEnvelope C X ≤ P X} := by
-      change closure C ⊆
-        {P : BoundedMeasurablePrecisePrevision Ω |
-          boundedMeasurableLowerEnvelope C X ≤ P X}
-      exact (hClosed.closure_subset_iff).2 hRawSubset
-    refine le_boundedMeasurableLowerEnvelope_of_forall_le
-      (boundedMeasurableCredalSetEvaluationClosure C)
-      (boundedMeasurableCredalSetEvaluationClosure_nonempty C hC) X ?_
-    intro P hP
-    exact hClosureSubset hP
+  exact (observation_endpoints_closure C (fun P => P X) hC
+    (BoundedMeasurablePrecisePrevision.eval_continuous X)
+    (boundedMeasurableCredalRange_bddBelow C X)
+    (boundedMeasurableCredalRange_bddAbove C X)).1
 
 /-- Evaluation-closure compactification supplies an actual precise completion
 that attains the original lower envelope.  The completion may be a limit point
@@ -1299,40 +1349,10 @@ theorem boundedMeasurableUpperEnvelope_evaluationClosure_eq
       boundedMeasurableUpperEnvelope C X := by
   let : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
     BoundedMeasurablePrecisePrevision.evaluationTopology (Ω := Ω)
-  apply le_antisymm
-  · have hClosed :
-        IsClosed
-          {P : BoundedMeasurablePrecisePrevision Ω |
-            P X ≤ boundedMeasurableUpperEnvelope C X} :=
-      BoundedMeasurablePrecisePrevision.isClosed_eval_le X
-        (boundedMeasurableUpperEnvelope C X)
-    have hRawSubset :
-        C ⊆
-          {P : BoundedMeasurablePrecisePrevision Ω |
-            P X ≤ boundedMeasurableUpperEnvelope C X} := by
-      intro P hP
-      exact le_boundedMeasurableUpperEnvelope_of_mem C X
-        (boundedMeasurableCredalRange_bddAbove C X) hP
-    have hClosureSubset :
-        boundedMeasurableCredalSetEvaluationClosure C ⊆
-          {P : BoundedMeasurablePrecisePrevision Ω |
-            P X ≤ boundedMeasurableUpperEnvelope C X} := by
-      change closure C ⊆
-        {P : BoundedMeasurablePrecisePrevision Ω |
-          P X ≤ boundedMeasurableUpperEnvelope C X}
-      exact (hClosed.closure_subset_iff).2 hRawSubset
-    refine boundedMeasurableUpperEnvelope_le_of_forall_le
-      (boundedMeasurableCredalSetEvaluationClosure C)
-      (boundedMeasurableCredalSetEvaluationClosure_nonempty C hC) X ?_
-    intro P hP
-    exact hClosureSubset hP
-  · refine boundedMeasurableUpperEnvelope_le_of_forall_le C hC X ?_
-    intro P hP
-    exact le_boundedMeasurableUpperEnvelope_of_mem
-      (boundedMeasurableCredalSetEvaluationClosure C) X
-      (boundedMeasurableCredalRange_bddAbove
-        (boundedMeasurableCredalSetEvaluationClosure C) X)
-      (boundedMeasurableCredalSet_subset_evaluationClosure C hP)
+  exact (observation_endpoints_closure C (fun P => P X) hC
+    (BoundedMeasurablePrecisePrevision.eval_continuous X)
+    (boundedMeasurableCredalRange_bddBelow C X)
+    (boundedMeasurableCredalRange_bddAbove C X)).2
 
 /-- Evaluation-closure compactification supplies an actual precise completion
 that attains the original upper envelope. -/
@@ -1490,9 +1510,7 @@ theorem boundedMeasurableCredalSet_not_determines_of_strictWidth
     (X : BoundedMeasurableGamble Ω)
     (hWidth : boundedMeasurableCredalSetHasStrictWidth C X) :
     ¬ boundedMeasurableCredalSetDetermines C X := by
-  rintro hDet
-  rcases hWidth with ⟨P, hP, Q, hQ, hlt⟩
-  exact (ne_of_lt hlt) (hDet P hP Q hQ)
+  exact (observation_strict_pair_iff C (fun P : BoundedMeasurablePrecisePrevision Ω => P X)).mp hWidth
 
 /-- Failure of determination exhibits strict width.  Since expectations are
 real-valued, two unequal completion values can be oriented into a strict pair. -/
@@ -1502,15 +1520,7 @@ theorem boundedMeasurableCredalSetHasStrictWidth_of_not_determines
     (X : BoundedMeasurableGamble Ω)
     (hNotDet : ¬ boundedMeasurableCredalSetDetermines C X) :
     boundedMeasurableCredalSetHasStrictWidth C X := by
-  classical
-  by_contra hNoWidth
-  apply hNotDet
-  intro P hP Q hQ
-  by_cases hlt : P X < Q X
-  · exact False.elim (hNoWidth ⟨P, hP, Q, hQ, hlt⟩)
-  · by_cases hgt : Q X < P X
-    · exact False.elim (hNoWidth ⟨Q, hQ, P, hP, hgt⟩)
-    · exact le_antisymm (le_of_not_gt hgt) (le_of_not_gt hlt)
+  exact (observation_strict_pair_iff C (fun P : BoundedMeasurablePrecisePrevision Ω => P X)).mpr hNotDet
 
 /-- Strict width is exactly failure of determination. -/
 theorem boundedMeasurableCredalSetHasStrictWidth_iff_not_determines
@@ -1519,9 +1529,7 @@ theorem boundedMeasurableCredalSetHasStrictWidth_iff_not_determines
     (X : BoundedMeasurableGamble Ω) :
     boundedMeasurableCredalSetHasStrictWidth C X ↔
       ¬ boundedMeasurableCredalSetDetermines C X := by
-  constructor
-  · exact boundedMeasurableCredalSet_not_determines_of_strictWidth C X
-  · exact boundedMeasurableCredalSetHasStrictWidth_of_not_determines C X
+  exact observation_strict_pair_iff C (fun P : BoundedMeasurablePrecisePrevision Ω => P X)
 
 /-- Strict width in the evaluation-topology closure reflects back to the raw
 bounded-measurable credal set.  Compactifying a nonempty carrier therefore does
@@ -1667,6 +1675,7 @@ theorem boundedMeasurableLowerEnvelope_lower_bound
   le_boundedMeasurableLowerEnvelope_of_forall_le C hC X fun P _hP =>
     P.lower_bound X c hc
 
+set_option linter.unusedVariables false in
 theorem boundedMeasurableLowerEnvelope_pos_homog
     {Ω : Type*} [MeasurableSpace Ω]
     (C : BoundedMeasurableCredalSet Ω) (hC : C.Nonempty)
@@ -1674,46 +1683,9 @@ theorem boundedMeasurableLowerEnvelope_pos_homog
     boundedMeasurableLowerEnvelope C (r • X) =
       r * boundedMeasurableLowerEnvelope C X := by
   unfold boundedMeasurableLowerEnvelope
-  by_cases hr0 : r = 0
-  · subst hr0
-    simp only [zero_mul]
-    have hset :
-        ((fun P : BoundedMeasurablePrecisePrevision Ω =>
-          P ((0 : ℝ) • X)) '' C) = ({0} : Set ℝ) := by
-      ext y
-      constructor
-      · rintro ⟨P, _hP, rfl⟩
-        have hzero : (0 : ℝ) • X =
-            (0 : BoundedMeasurableGamble Ω) := by
-          ext ω
-          simp
-        rw [hzero]
-        exact P.map_zero
-      · intro hy
-        rcases hy with rfl
-        rcases hC with ⟨P, hP⟩
-        refine ⟨P, hP, ?_⟩
-        have hzero : (0 : ℝ) • X =
-            (0 : BoundedMeasurableGamble Ω) := by
-          ext ω
-          simp
-        rw [hzero]
-        exact P.map_zero
-    rw [hset, csInf_singleton]
-  · have hset :
-        ((fun P : BoundedMeasurablePrecisePrevision Ω =>
-          P (r • X)) '' C) =
-          r • ((fun P : BoundedMeasurablePrecisePrevision Ω => P X) '' C) := by
-      ext y
-      constructor
-      · rintro ⟨P, hP, rfl⟩
-        exact ⟨P X, ⟨P, hP, rfl⟩, by
-          simp [smul_eq_mul, P.pos_homog r X hr]⟩
-      · rintro ⟨x, ⟨P, hP, hx⟩, hy⟩
-        exact ⟨P, hP, by
-          rw [← hy, ← hx]
-          simp [smul_eq_mul, P.pos_homog r X hr]⟩
-    rw [hset, Real.sInf_smul_of_nonneg hr, smul_eq_mul]
+  rw [observation_image_smul C (fun P : BoundedMeasurablePrecisePrevision Ω => P X)
+    (fun P => P (r • X)) r (fun P _ => P.pos_homog r X hr),
+    Real.sInf_smul_of_nonneg hr, smul_eq_mul]
 
 theorem boundedMeasurableLowerEnvelope_superadditive
     {Ω : Type*} [MeasurableSpace Ω]
@@ -1742,6 +1714,7 @@ theorem boundedMeasurableUpperEnvelope_upper_bound
   boundedMeasurableUpperEnvelope_le_of_forall_le C hC X fun P _hP =>
     P.upper_bound X c hc
 
+set_option linter.unusedVariables false in
 theorem boundedMeasurableUpperEnvelope_pos_homog
     {Ω : Type*} [MeasurableSpace Ω]
     (C : BoundedMeasurableCredalSet Ω) (hC : C.Nonempty)
@@ -1749,46 +1722,9 @@ theorem boundedMeasurableUpperEnvelope_pos_homog
     boundedMeasurableUpperEnvelope C (r • X) =
       r * boundedMeasurableUpperEnvelope C X := by
   unfold boundedMeasurableUpperEnvelope
-  by_cases hr0 : r = 0
-  · subst hr0
-    simp only [zero_mul]
-    have hset :
-        ((fun P : BoundedMeasurablePrecisePrevision Ω =>
-          P ((0 : ℝ) • X)) '' C) = ({0} : Set ℝ) := by
-      ext y
-      constructor
-      · rintro ⟨P, _hP, rfl⟩
-        have hzero : (0 : ℝ) • X =
-            (0 : BoundedMeasurableGamble Ω) := by
-          ext ω
-          simp
-        rw [hzero]
-        exact P.map_zero
-      · intro hy
-        rcases hy with rfl
-        rcases hC with ⟨P, hP⟩
-        refine ⟨P, hP, ?_⟩
-        have hzero : (0 : ℝ) • X =
-            (0 : BoundedMeasurableGamble Ω) := by
-          ext ω
-          simp
-        rw [hzero]
-        exact P.map_zero
-    rw [hset, csSup_singleton]
-  · have hset :
-        ((fun P : BoundedMeasurablePrecisePrevision Ω =>
-          P (r • X)) '' C) =
-          r • ((fun P : BoundedMeasurablePrecisePrevision Ω => P X) '' C) := by
-      ext y
-      constructor
-      · rintro ⟨P, hP, rfl⟩
-        exact ⟨P X, ⟨P, hP, rfl⟩, by
-          simp [smul_eq_mul, P.pos_homog r X hr]⟩
-      · rintro ⟨x, ⟨P, hP, hx⟩, hy⟩
-        exact ⟨P, hP, by
-          rw [← hy, ← hx]
-          simp [smul_eq_mul, P.pos_homog r X hr]⟩
-    rw [hset, Real.sSup_smul_of_nonneg hr, smul_eq_mul]
+  rw [observation_image_smul C (fun P : BoundedMeasurablePrecisePrevision Ω => P X)
+    (fun P => P (r • X)) r (fun P _ => P.pos_homog r X hr),
+    Real.sSup_smul_of_nonneg hr, smul_eq_mul]
 
 theorem boundedMeasurableUpperEnvelope_subadditive
     {Ω : Type*} [MeasurableSpace Ω]
@@ -2924,6 +2860,7 @@ theorem boundedMeasurableNaturalExtensionPrevision_exists_dominatingStrictEndpoi
     exact hLowerUpper
   exact ⟨Plo, hPlo, Phi, hPhi, hlo, hhi, hlt, hWidthEq, hComp, hMid⟩
 
+set_option linter.unusedVariables false in
 theorem boundedMeasurableLowerEnvelope_eq_of_determines
     {Ω : Type*} [MeasurableSpace Ω]
     (C : BoundedMeasurableCredalSet Ω)
@@ -2934,11 +2871,11 @@ theorem boundedMeasurableLowerEnvelope_eq_of_determines
     {P : BoundedMeasurablePrecisePrevision Ω} (hP : P ∈ C)
     (hDet : boundedMeasurableCredalSetDetermines C X) :
     boundedMeasurableLowerEnvelope C X = P X := by
-  refine le_antisymm ?_ ?_
-  · exact boundedMeasurableLowerEnvelope_le_of_mem C X hBddBelow hP
-  · exact le_boundedMeasurableLowerEnvelope_of_forall_le C hC X fun Q hQ =>
-      le_of_eq (hDet P hP Q hQ)
+  unfold boundedMeasurableLowerEnvelope
+  rw [observation_image_eq_singleton C (fun Q => Q X) hP (fun Q hQ => hDet Q hQ P hP),
+    csInf_singleton]
 
+set_option linter.unusedVariables false in
 theorem boundedMeasurableUpperEnvelope_eq_of_determines
     {Ω : Type*} [MeasurableSpace Ω]
     (C : BoundedMeasurableCredalSet Ω)
@@ -2949,10 +2886,9 @@ theorem boundedMeasurableUpperEnvelope_eq_of_determines
     {P : BoundedMeasurablePrecisePrevision Ω} (hP : P ∈ C)
     (hDet : boundedMeasurableCredalSetDetermines C X) :
     boundedMeasurableUpperEnvelope C X = P X := by
-  refine le_antisymm ?_ ?_
-  · exact boundedMeasurableUpperEnvelope_le_of_forall_le C hC X fun Q hQ =>
-      le_of_eq (hDet Q hQ P hP)
-  · exact le_boundedMeasurableUpperEnvelope_of_mem C X hBddAbove hP
+  unfold boundedMeasurableUpperEnvelope
+  rw [observation_image_eq_singleton C (fun Q => Q X) hP (fun Q hQ => hDet Q hQ P hP),
+    csSup_singleton]
 
 theorem boundedMeasurableEnvelopeWidth_eq_zero_of_determines
     {Ω : Type*} [MeasurableSpace Ω]
@@ -3020,12 +2956,7 @@ theorem boundedMeasurableLower_upperEnvelope_nontrivial_of_disagreement
     (hP : P ∈ C) (hQ : Q ∈ C) (hPQ : P X < Q X) :
     boundedMeasurableLowerEnvelope C X <
       boundedMeasurableUpperEnvelope C X := by
-  calc
-    boundedMeasurableLowerEnvelope C X ≤ P X :=
-      boundedMeasurableLowerEnvelope_le_of_mem C X hBddBelow hP
-    _ < Q X := hPQ
-    _ ≤ boundedMeasurableUpperEnvelope C X :=
-      le_boundedMeasurableUpperEnvelope_of_mem C X hBddAbove hQ
+  exact observation_endpoints_lt C (fun P : BoundedMeasurablePrecisePrevision Ω => P X) hBddBelow hBddAbove hP hQ hPQ
 
 theorem boundedMeasurableLower_upperEnvelope_nontrivial_of_strictWidth
     {Ω : Type*} [MeasurableSpace Ω]
@@ -3056,19 +2987,11 @@ theorem boundedMeasurableEnvelope_exists_endpointPair_of_isCompact_strictWidth
       ∃ Phi : BoundedMeasurablePrecisePrevision Ω, Phi ∈ C ∧
         Plo X = boundedMeasurableLowerEnvelope C X ∧
           Phi X = boundedMeasurableUpperEnvelope C X ∧ Plo X < Phi X := by
-  rcases boundedMeasurableLowerEnvelope_exists_mem_eq_of_isCompact
-      C hCompact hC X with
-    ⟨Plo, hPlo, hlo⟩
-  rcases boundedMeasurableUpperEnvelope_exists_mem_eq_of_isCompact
-      C hCompact hC X with
-    ⟨Phi, hPhi, hhi⟩
-  have hlt :=
-    boundedMeasurableLower_upperEnvelope_nontrivial_of_strictWidth
-      C X (boundedMeasurableCredalRange_bddBelow C X)
-      (boundedMeasurableCredalRange_bddAbove C X) hWidth
-  refine ⟨Plo, hPlo, Phi, hPhi, hlo, hhi, ?_⟩
-  rw [hlo, hhi]
-  exact hlt
+  let : TopologicalSpace (BoundedMeasurablePrecisePrevision Ω) :=
+    BoundedMeasurablePrecisePrevision.evaluationTopology (Ω := Ω)
+  exact observation_endpoints_of_isCompact C hCompact (fun P => P X)
+    (BoundedMeasurablePrecisePrevision.eval_continuous X).continuousOn hC
+    (boundedMeasurableCredalRange_bddBelow C X) (boundedMeasurableCredalRange_bddAbove C X) hWidth
 
 /-- Compact strict width has endpoint witnesses whose values directly compute
 the PLN-facing width, width-complement, and midpoint coordinates. -/
@@ -3110,19 +3033,15 @@ theorem boundedMeasurableEnvelope_exists_endpointPair_evaluationClosure_of_stric
         Phi ∈ boundedMeasurableCredalSetEvaluationClosure C ∧
         Plo X = boundedMeasurableLowerEnvelope C X ∧
           Phi X = boundedMeasurableUpperEnvelope C X ∧ Plo X < Phi X := by
-  rcases boundedMeasurableLowerEnvelope_exists_mem_evaluationClosure_eq
-      C hC X with
-    ⟨Plo, hPlo, hlo⟩
-  rcases boundedMeasurableUpperEnvelope_exists_mem_evaluationClosure_eq
-      C hC X with
-    ⟨Phi, hPhi, hhi⟩
-  have hlt :=
-    boundedMeasurableLower_upperEnvelope_nontrivial_of_strictWidth
-      C X (boundedMeasurableCredalRange_bddBelow C X)
-      (boundedMeasurableCredalRange_bddAbove C X) hWidth
-  refine ⟨Plo, hPlo, Phi, hPhi, hlo, hhi, ?_⟩
-  rw [hlo, hhi]
-  exact hlt
+  obtain ⟨Plo, hPlo, Phi, hPhi, hlo, hhi, hlt⟩ :=
+    boundedMeasurableEnvelope_exists_endpointPair_of_isCompact_strictWidth
+      (boundedMeasurableCredalSetEvaluationClosure C)
+      (boundedMeasurableCredalSetEvaluationClosure_isCompact C)
+      (boundedMeasurableCredalSetEvaluationClosure_nonempty C hC) X
+      (boundedMeasurableCredalSetHasStrictWidth_evaluationClosure_of_strictWidth C X hWidth)
+  rw [boundedMeasurableLowerEnvelope_evaluationClosure_eq C hC X] at hlo
+  rw [boundedMeasurableUpperEnvelope_evaluationClosure_eq C hC X] at hhi
+  exact ⟨Plo, hPlo, Phi, hPhi, hlo, hhi, hlt⟩
 
 /-- Evaluation-closure form of the endpoint readout theorem: strict width in a
 raw carrier gives compact limit completions that compute the original interval
@@ -4729,39 +4648,15 @@ theorem upperEnvelope_upper_bound {Ω : Type*}
   upperEnvelope_le_of_forall_le C hC X fun P _hP =>
     P.upper_bound X c hc
 
+set_option linter.unusedVariables false in
 theorem upperEnvelope_pos_homog {Ω : Type*}
     (C : CredalPrevisionSet Ω) (hC : C.Nonempty)
     (r : ℝ) (X : Gamble Ω) (hr : 0 ≤ r) :
     upperEnvelope C (r • X) = r * upperEnvelope C X := by
   unfold upperEnvelope
-  by_cases hr0 : r = 0
-  · subst hr0
-    simp only [zero_smul, zero_mul]
-    have hset :
-        ((fun P : PrecisePrevision Ω => P (0 : Gamble Ω)) '' C) =
-          ({0} : Set ℝ) := by
-      ext y
-      constructor
-      · rintro ⟨P, _hP, rfl⟩
-        exact P.map_zero
-      · intro hy
-        rcases hy with rfl
-        rcases hC with ⟨P, hP⟩
-        exact ⟨P, hP, P.map_zero⟩
-    rw [hset, csSup_singleton]
-  · have hset :
-        ((fun P : PrecisePrevision Ω => P (r • X)) '' C) =
-          r • ((fun P : PrecisePrevision Ω => P X) '' C) := by
-      ext y
-      constructor
-      · rintro ⟨P, hP, rfl⟩
-        exact ⟨P X, ⟨P, hP, rfl⟩, by
-          simp [smul_eq_mul, P.pos_homog r X hr]⟩
-      · rintro ⟨x, ⟨P, hP, hx⟩, hy⟩
-        exact ⟨P, hP, by
-          rw [← hy, ← hx]
-          simp [smul_eq_mul, P.pos_homog r X hr]⟩
-    rw [hset, Real.sSup_smul_of_nonneg hr, smul_eq_mul]
+  rw [observation_image_smul C (fun P : PrecisePrevision Ω => P X)
+    (fun P => P (r • X)) r (fun P _ => P.pos_homog r X hr),
+    Real.sSup_smul_of_nonneg hr, smul_eq_mul]
 
 theorem lowerEnvelope_le_upperEnvelope_of_nonempty {Ω : Type*}
     (C : CredalPrevisionSet Ω) (X : Gamble Ω)
@@ -4882,23 +4777,9 @@ theorem credalEnvelope_exists_endpointPair_of_isCompact_strictWidth
       ∃ Phi : PrecisePrevision Ω, Phi ∈ C ∧
         Plo X = lowerEnvelope C X ∧
           Phi X = upperEnvelope C X ∧ Plo X < Phi X := by
-  rcases lowerEnvelope_exists_mem_eq_of_isCompact
-      C hCompact hC X hCont with
-    ⟨Plo, hPlo, hlo⟩
-  rcases upperEnvelope_exists_mem_eq_of_isCompact
-      C hCompact hC X hCont with
-    ⟨Phi, hPhi, hhi⟩
-  have hImageCompact :
-      IsCompact ((fun P : PrecisePrevision Ω => P X) '' C) :=
-    hCompact.image_of_continuousOn hCont
-  rcases hWidth with ⟨P, hP, Q, hQ, hPQ⟩
-  have hlt : lowerEnvelope C X < upperEnvelope C X :=
-    (lowerEnvelope_le_of_mem C X hImageCompact.bddBelow hP).trans_lt
-      (hPQ.trans_le
-        (le_upperEnvelope_of_mem C X hImageCompact.bddAbove hQ))
-  refine ⟨Plo, hPlo, Phi, hPhi, hlo, hhi, ?_⟩
-  rw [hlo, hhi]
-  exact hlt
+  have hImage := hCompact.image_of_continuousOn hCont
+  exact observation_endpoints_of_isCompact C hCompact _ hCont hC
+    hImage.bddBelow hImage.bddAbove hWidth
 
 /-- Compact raw strict width has endpoint witnesses whose values compute the
 PLN-facing width, width-complement, and midpoint coordinates. -/
@@ -4988,6 +4869,7 @@ theorem credalSetDetermines_singleton {Ω : Type*}
   have hRP : R = P := by simpa using hR
   rw [hQP, hRP]
 
+set_option linter.unusedVariables false in
 theorem lowerEnvelope_eq_of_credalSetDetermines {Ω : Type*}
     (C : CredalPrevisionSet Ω) (X : Gamble Ω)
     (hC : C.Nonempty)
@@ -4995,11 +4877,11 @@ theorem lowerEnvelope_eq_of_credalSetDetermines {Ω : Type*}
     {P : PrecisePrevision Ω} (hP : P ∈ C)
     (hDet : credalSetDetermines C X) :
     lowerEnvelope C X = P X := by
-  refine le_antisymm ?_ ?_
-  · exact lowerEnvelope_le_of_mem C X hBddBelow hP
-  · exact le_lowerEnvelope_of_forall_le C hC X fun Q hQ =>
-      le_of_eq (hDet P hP Q hQ)
+  unfold lowerEnvelope
+  rw [observation_image_eq_singleton C (fun Q => Q X) hP (fun Q hQ => hDet Q hQ P hP),
+    csInf_singleton]
 
+set_option linter.unusedVariables false in
 theorem upperEnvelope_eq_of_credalSetDetermines {Ω : Type*}
     (C : CredalPrevisionSet Ω) (X : Gamble Ω)
     (hC : C.Nonempty)
@@ -5007,10 +4889,9 @@ theorem upperEnvelope_eq_of_credalSetDetermines {Ω : Type*}
     {P : PrecisePrevision Ω} (hP : P ∈ C)
     (hDet : credalSetDetermines C X) :
     upperEnvelope C X = P X := by
-  refine le_antisymm ?_ ?_
-  · exact upperEnvelope_le_of_forall_le C hC X fun Q hQ =>
-      le_of_eq (hDet Q hQ P hP)
-  · exact le_upperEnvelope_of_mem C X hBddAbove hP
+  unfold upperEnvelope
+  rw [observation_image_eq_singleton C (fun Q => Q X) hP (fun Q hQ => hDet Q hQ P hP),
+    csSup_singleton]
 
 theorem lower_eq_upperEnvelope_of_credalSetDetermines {Ω : Type*}
     (C : CredalPrevisionSet Ω) (X : Gamble Ω)
@@ -5074,10 +4955,7 @@ theorem not_credalSetDetermines_of_strictWidth {Ω : Type*}
     {C : CredalPrevisionSet Ω} {X : Gamble Ω}
     (hWidth : credalSetHasStrictWidth C X) :
     ¬ credalSetDetermines C X := by
-  intro hDet
-  rcases hWidth with ⟨P, hP, Q, hQ, hPQ⟩
-  have hEq := hDet P hP Q hQ
-  exact (ne_of_lt hPQ) hEq
+  exact (observation_strict_pair_iff C (fun P : PrecisePrevision Ω => P X)).mp hWidth
 
 /-- Failure of determination exhibits strict width for ordinary precise-prevision
 credal sets.  Since expectations are real-valued, two unequal completion values
@@ -5086,24 +4964,14 @@ theorem credalSetHasStrictWidth_of_not_determines {Ω : Type*}
     (C : CredalPrevisionSet Ω) (X : Gamble Ω)
     (hNotDet : ¬ credalSetDetermines C X) :
     credalSetHasStrictWidth C X := by
-  classical
-  by_contra hNoWidth
-  apply hNotDet
-  intro P hP Q hQ
-  by_cases hlt : P X < Q X
-  · exact False.elim (hNoWidth ⟨P, hP, Q, hQ, hlt⟩)
-  · by_cases hgt : Q X < P X
-    · exact False.elim (hNoWidth ⟨Q, hQ, P, hP, hgt⟩)
-    · exact le_antisymm (le_of_not_gt hgt) (le_of_not_gt hlt)
+  exact (observation_strict_pair_iff C (fun P : PrecisePrevision Ω => P X)).mpr hNotDet
 
 /-- A precise-prevision credal set has strict width on a gamble exactly when it
 does not determine that gamble. -/
 theorem credalSetHasStrictWidth_iff_not_determines {Ω : Type*}
     (C : CredalPrevisionSet Ω) (X : Gamble Ω) :
     credalSetHasStrictWidth C X ↔ ¬ credalSetDetermines C X := by
-  constructor
-  · exact not_credalSetDetermines_of_strictWidth
-  · exact credalSetHasStrictWidth_of_not_determines C X
+  exact observation_strict_pair_iff C (fun P : PrecisePrevision Ω => P X)
 
 /-- Restricting raw precise completions to bounded measurable observables
 preserves the determination predicate on every bounded observable. -/
@@ -5261,12 +5129,7 @@ theorem lower_upperEnvelope_nontrivial_of_disagreement {Ω : Type*}
     {P Q : PrecisePrevision Ω} (hP : P ∈ C) (hQ : Q ∈ C)
     (hPQ : P X < Q X) :
     lowerEnvelope C X < upperEnvelope C X := by
-  calc
-    lowerEnvelope C X ≤ P X :=
-      lowerEnvelope_le_of_mem C X hBddBelow hP
-    _ < Q X := hPQ
-    _ ≤ upperEnvelope C X :=
-      le_upperEnvelope_of_mem C X hBddAbove hQ
+  exact observation_endpoints_lt C (fun P : PrecisePrevision Ω => P X) hBddBelow hBddAbove hP hQ hPQ
 
 theorem lower_upperEnvelope_nontrivial_of_strictWidth {Ω : Type*}
     (C : CredalPrevisionSet Ω) (X : Gamble Ω)
@@ -5310,40 +5173,15 @@ theorem lowerEnvelope_lower_bound {Ω : Type*}
   le_lowerEnvelope_of_forall_le C hC X fun P _hP =>
     P.lower_bound X c hc
 
+set_option linter.unusedVariables false in
 theorem lowerEnvelope_pos_homog {Ω : Type*}
     (C : CredalPrevisionSet Ω) (hC : C.Nonempty)
     (r : ℝ) (X : Gamble Ω) (hr : 0 ≤ r) :
     lowerEnvelope C (r • X) = r * lowerEnvelope C X := by
   unfold lowerEnvelope
-  by_cases hr0 : r = 0
-  · subst hr0
-    simp only [zero_smul, zero_mul]
-    have hset :
-        ((fun P : PrecisePrevision Ω => P (0 : Gamble Ω)) '' C) =
-          ({0} : Set ℝ) := by
-      ext y
-      constructor
-      · rintro ⟨P, hP, rfl⟩
-        exact P.map_zero
-      · intro hy
-        rcases hy with rfl
-        rcases hC with ⟨P, hP⟩
-        exact ⟨P, hP, P.map_zero⟩
-    rw [hset, csInf_singleton]
-  · have hrpos : 0 < r := lt_of_le_of_ne hr (Ne.symm hr0)
-    have hset :
-        ((fun P : PrecisePrevision Ω => P (r • X)) '' C) =
-          r • ((fun P : PrecisePrevision Ω => P X) '' C) := by
-      ext y
-      constructor
-      · rintro ⟨P, hP, rfl⟩
-        exact ⟨P X, ⟨P, hP, rfl⟩, by
-          simp [smul_eq_mul, P.pos_homog r X hr]⟩
-      · rintro ⟨x, ⟨P, hP, hx⟩, hy⟩
-        exact ⟨P, hP, by
-          rw [← hy, ← hx]
-          simp [smul_eq_mul, P.pos_homog r X hr]⟩
-    rw [hset, Real.sInf_smul_of_nonneg hr, smul_eq_mul]
+  rw [observation_image_smul C (fun P : PrecisePrevision Ω => P X)
+    (fun P => P (r • X)) r (fun P _ => P.pos_homog r X hr),
+    Real.sInf_smul_of_nonneg hr, smul_eq_mul]
 
 theorem lowerEnvelope_superadditive {Ω : Type*}
     (C : CredalPrevisionSet Ω) (hC : C.Nonempty)
@@ -7566,6 +7404,20 @@ theorem finiteCylinderUpperEnvelopePrevision_conjugate_eq_naturalExtension
   S.cylinderUpperEnvelopePrevision_conjugate_eq_naturalExtension hS i
     (finite_credalRange_bddAbove (S.cylinderLocalCredalSet i)) X
 
+/-- Exact window lifting retains the realized expectations of each local
+gamble on the cylinder-completion carrier. -/
+private theorem cylinderExpectationImage_eq_local_of_exact
+    (S : ProjectiveLocalCredalSpec Window Global)
+    (i : Window) (X : Gamble (S.cylinders.Local i))
+    (hExact : S.localCylinderCredalExactAt i) :
+    ((fun K : S.cylinders.CylinderPrevision => K.toFun i X) ''
+        S.projectiveCylinderCredalSet) =
+      ((fun R : PrecisePrevision (S.cylinders.Local i) => R X) ''
+        S.localCredal i) :=
+  observation_image_eq_of_exact S.projectiveCylinderCredalSet (S.localCredal i)
+    (fun K => K.localPrevision i) (fun R => R X) (fun _ hK => hK i) hExact
+
+set_option linter.unusedVariables false in
 /-- Exact-cylinder lower-envelope theorem, restricted to the cylinder domain:
 when local completions lift exactly to compatible cylinder previsions, the
 cylinder-domain lower envelope agrees with the local lower envelope. -/
@@ -7582,26 +7434,10 @@ theorem cylinderNaturalExtension_eq_localLowerEnvelope_of_exact
         S.projectiveCylinderCredalSet))
     (hExact : S.localCylinderCredalExactAt i) :
     S.cylinderNaturalExtension i X = lowerEnvelope (S.localCredal i) X := by
-  refine le_antisymm ?_ ?_
-  · apply le_lowerEnvelope_of_forall_le (S.localCredal i) hLocalNonempty
-    intro R hR
-    rcases hExact R hR with ⟨K, hK, hKi⟩
-    have hle :
-        S.cylinderNaturalExtension i X ≤ K.toFun i X := by
-      exact csInf_le hCylinderBdd ⟨K, hK, rfl⟩
-    have hKX : K.toFun i X = R X := by
-      change K.localPrevision i X = R X
-      rw [hKi]
-    exact hle.trans_eq hKX
-  · unfold cylinderNaturalExtension
-    refine le_csInf ?nonempty ?lower
-    · rcases hCylinderNonempty with ⟨K, hK⟩
-      exact ⟨K.toFun i X, ⟨K, hK, rfl⟩⟩
-    · intro y hy
-      rcases hy with ⟨K, hK, rfl⟩
-      exact lowerEnvelope_le_of_mem (S.localCredal i) X hLocalBdd
-        (hK i)
+  unfold cylinderNaturalExtension lowerEnvelope
+  rw [S.cylinderExpectationImage_eq_local_of_exact i X hExact]
 
+set_option linter.unusedVariables false in
 /-- Exact-cylinder upper-envelope theorem, restricted to the cylinder domain:
 when local completions lift exactly to compatible cylinder previsions, the
 cylinder-domain upper envelope agrees with the local upper envelope. -/
@@ -7618,26 +7454,8 @@ theorem cylinderUpperEnvelope_eq_localUpperEnvelope_of_exact
         S.projectiveCylinderCredalSet))
     (hExact : S.localCylinderCredalExactAt i) :
     S.cylinderUpperEnvelope i X = upperEnvelope (S.localCredal i) X := by
-  refine le_antisymm ?_ ?_
-  · unfold cylinderUpperEnvelope
-    refine csSup_le ?nonempty ?upper
-    · rcases hCylinderNonempty with ⟨K, hK⟩
-      exact ⟨K.toFun i X, ⟨K, hK, rfl⟩⟩
-    · intro y hy
-      rcases hy with ⟨K, hK, rfl⟩
-      exact le_upperEnvelope_of_mem (S.localCredal i) X hLocalBdd
-        (hK i)
-  · apply upperEnvelope_le_of_forall_le (S.localCredal i) hLocalNonempty
-    intro R hR
-    rcases hExact R hR with ⟨K, hK, hKi⟩
-    have hle :
-        K.toFun i X ≤ S.cylinderUpperEnvelope i X := by
-      exact le_csSup hCylinderBdd ⟨K, hK, rfl⟩
-    have hKX : K.toFun i X = R X := by
-      change K.localPrevision i X = R X
-      rw [hKi]
-    rw [← hKX]
-    exact hle
+  unfold cylinderUpperEnvelope upperEnvelope
+  rw [S.cylinderExpectationImage_eq_local_of_exact i X hExact]
 
 theorem projectiveLimitCredalSet_isConvex
     (S : ProjectiveLocalCredalSpec Window Global)
@@ -8772,6 +8590,19 @@ def localCredalExactAt
     ∃ P : PrecisePrevision Global,
       P ∈ S.projectiveLimitCredalSet ∧ S.cylinders.marginalPrevision i P = R
 
+/-- The global observation factors through its marginal, and exact lifting
+makes the resulting local expectation image exhaustive. -/
+private theorem globalCylinderExpectationImage_eq_local_of_exact
+    (S : ProjectiveLocalCredalSpec Window Global)
+    (i : Window) (X : Gamble (S.cylinders.Local i))
+    (hExact : S.localCredalExactAt i) :
+    ((fun P : PrecisePrevision Global => P (S.cylinders.cylinderGamble i X)) ''
+        S.projectiveLimitCredalSet) =
+      ((fun R : PrecisePrevision (S.cylinders.Local i) => R X) ''
+        S.localCredal i) :=
+  observation_image_eq_of_exact _ _ (S.cylinders.marginalPrevision i)
+    (fun R => R X) (fun _ hP => hP i) hExact
+
 /-- Local credal determination always lifts to global determination of the
 corresponding cylinder gamble: compatible global completions have admissible
 local marginals. -/
@@ -8829,6 +8660,7 @@ theorem hasStrictGlobalWidth_cylinder_iff_localCredal_strictWidth_of_exact
       i hExact X]
   exact (credalSetHasStrictWidth_iff_not_determines (S.localCredal i) X).symm
 
+set_option linter.unusedVariables false in
 /-- Natural-extension theorem for cylinder gambles: when the local credal set
 is exactly the image of compatible global completions at a window, the global
 lower envelope on the pulled-back cylinder gamble agrees with the local lower
@@ -8847,20 +8679,8 @@ theorem globalNaturalExtension_cylinder_eq_localNaturalExtension_of_exact
     (hExact : S.localCredalExactAt i) :
     S.globalNaturalExtension (S.cylinders.cylinderGamble i X) =
       S.localNaturalExtension i X := by
-  refine le_antisymm ?_ ?_
-  · apply le_lowerEnvelope_of_forall_le (S.localCredal i) hLocalNonempty
-    intro R hR
-    rcases hExact R hR with ⟨P, hP, hMarg⟩
-    have hle :
-        S.globalNaturalExtension (S.cylinders.cylinderGamble i X) ≤
-          P (S.cylinders.cylinderGamble i X) :=
-      S.globalNaturalExtension_le_completion hP
-        (S.cylinders.cylinderGamble i X) hGlobalBdd
-    have hPX : P (S.cylinders.cylinderGamble i X) = R X := by
-      exact congrArg (fun T : PrecisePrevision (S.cylinders.Local i) => T X) hMarg
-    exact hle.trans_eq hPX
-  · exact S.localNaturalExtension_le_globalNaturalExtension_on_cylinder
-      hGlobalNonempty i X hLocalBdd
+  unfold globalNaturalExtension localNaturalExtension lowerEnvelope
+  rw [S.globalCylinderExpectationImage_eq_local_of_exact i X hExact]
 
 /-- Finite cylinder exactness: for finite nonempty local and global state
 spaces, the boundedness hypotheses in the exact-cylinder natural-extension
@@ -8882,6 +8702,7 @@ theorem globalNaturalExtension_cylinder_eq_localNaturalExtension_of_exact_finite
       (S.cylinders.cylinderGamble i X))
     hExact
 
+set_option linter.unusedVariables false in
 /-- Exact-cylinder upper-envelope theorem: when the local credal set is exactly
 the image of compatible global completions at a window, the global upper
 envelope on the pulled-back cylinder gamble agrees with the local upper
@@ -8901,23 +8722,8 @@ theorem globalUpperEnvelope_cylinder_eq_localUpperEnvelope_of_exact
     upperEnvelope S.projectiveLimitCredalSet
         (S.cylinders.cylinderGamble i X) =
       S.localUpperEnvelope i X := by
-  refine le_antisymm ?_ ?_
-  · exact S.globalUpperEnvelope_le_localUpperEnvelope_on_cylinder
-      hGlobalNonempty i X hLocalBdd
-  · apply upperEnvelope_le_of_forall_le (S.localCredal i) hLocalNonempty
-    intro R hR
-    rcases hExact R hR with ⟨P, hP, hMarg⟩
-    have hle :
-        R X ≤
-          upperEnvelope S.projectiveLimitCredalSet
-            (S.cylinders.cylinderGamble i X) := by
-      have hPX :
-          P (S.cylinders.cylinderGamble i X) = R X := by
-        exact congrArg (fun T : PrecisePrevision (S.cylinders.Local i) => T X) hMarg
-      rw [← hPX]
-      exact le_upperEnvelope_of_mem S.projectiveLimitCredalSet
-        (S.cylinders.cylinderGamble i X) hGlobalBdd hP
-    exact hle
+  unfold localUpperEnvelope upperEnvelope
+  rw [S.globalCylinderExpectationImage_eq_local_of_exact i X hExact]
 
 /-- Finite cylinder upper exactness: for finite nonempty local and global
 state spaces, the boundedness hypotheses in the exact-cylinder upper-envelope
@@ -9709,56 +9515,22 @@ theorem globalNaturalExtensionPrevision_exists_dominatingStrictEndpointPairReado
   have hLocalNonempty : (S.localCredal i).Nonempty := by
     rcases hWidth with ⟨P, hP, _Q, _hQ, _hlt⟩
     exact ⟨P, hP⟩
-  have hProjectiveWidth :
-      S.hasStrictGlobalWidth (S.cylinders.cylinderGamble i X) :=
-    (S.hasStrictGlobalWidth_cylinder_iff_localCredal_strictWidth_of_exact
-      i hExact X).2 hWidth
-  rcases
-      S.globalNaturalExtensionPrevision_exists_dominatingStrictEndpointPairReadout
-        hGlobalNonempty hGlobalBddBelow hGlobalBddAbove
-        (S.cylinders.cylinderGamble i X) hProjectiveWidth with
-    ⟨Plo, hPlo, Phi, hPhi, hlo, hhi, hlt, hWidthEq, hCompEq, hMidEq⟩
-  have hloLocal :
-      Plo (S.cylinders.cylinderGamble i X) = S.localNaturalExtension i X :=
-    hlo.trans
-      (S.globalNaturalExtension_cylinder_eq_localNaturalExtension_of_exact
-        hGlobalNonempty i X hLocalNonempty hLocalBddBelow
-        (hGlobalBddBelow (S.cylinders.cylinderGamble i X)) hExact)
-  have hhiLocal :
-      Phi (S.cylinders.cylinderGamble i X) = S.localUpperEnvelope i X :=
-    hhi.trans
-      (S.globalUpperEnvelope_cylinder_eq_localUpperEnvelope_of_exact
-        hGlobalNonempty i X hLocalNonempty hLocalBddAbove
-        (hGlobalBddAbove (S.cylinders.cylinderGamble i X)) hExact)
-  refine ⟨Plo, hPlo, Phi, hPhi, hloLocal, hhiLocal, hlt, ?_, ?_, ?_⟩
-  · calc
-      S.localEnvelopeWidth i X =
-          S.globalEnvelopeWidth (S.cylinders.cylinderGamble i X) :=
-        (S.globalEnvelopeWidth_cylinder_eq_localEnvelopeWidth_of_exact
-          hGlobalNonempty i X hLocalNonempty hLocalBddBelow hLocalBddAbove
-          (hGlobalBddBelow (S.cylinders.cylinderGamble i X))
-          (hGlobalBddAbove (S.cylinders.cylinderGamble i X)) hExact).symm
-      _ = Phi (S.cylinders.cylinderGamble i X) -
-          Plo (S.cylinders.cylinderGamble i X) := hWidthEq
-  · calc
-      S.localEnvelopeWidthComplement i X =
-          S.globalEnvelopeWidthComplement
-            (S.cylinders.cylinderGamble i X) :=
-        (S.globalEnvelopeWidthComplement_cylinder_eq_localEnvelopeWidthComplement_of_exact
-          hGlobalNonempty i X hLocalNonempty hLocalBddBelow hLocalBddAbove
-          (hGlobalBddBelow (S.cylinders.cylinderGamble i X))
-          (hGlobalBddAbove (S.cylinders.cylinderGamble i X)) hExact).symm
-      _ = 1 - (Phi (S.cylinders.cylinderGamble i X) -
-          Plo (S.cylinders.cylinderGamble i X)) := hCompEq
-  · calc
-      S.localEnvelopeMidpoint i X =
-          S.globalEnvelopeMidpoint (S.cylinders.cylinderGamble i X) :=
-        (S.globalEnvelopeMidpoint_cylinder_eq_localEnvelopeMidpoint_of_exact
-          hGlobalNonempty i X hLocalNonempty hLocalBddBelow hLocalBddAbove
-          (hGlobalBddBelow (S.cylinders.cylinderGamble i X))
-          (hGlobalBddAbove (S.cylinders.cylinderGamble i X)) hExact).symm
-      _ = (Plo (S.cylinders.cylinderGamble i X) +
-          Phi (S.cylinders.cylinderGamble i X)) / 2 := hMidEq
+  let Y := S.cylinders.cylinderGamble i X
+  have hProjectiveWidth : S.hasStrictGlobalWidth Y :=
+    (S.hasStrictGlobalWidth_cylinder_iff_localCredal_strictWidth_of_exact i hExact X).2 hWidth
+  obtain ⟨Plo, hPlo, Phi, hPhi, hlo, hhi, hlt, _, _, _⟩ :=
+    S.globalNaturalExtensionPrevision_exists_dominatingStrictEndpointPairReadout
+      hGlobalNonempty hGlobalBddBelow hGlobalBddAbove Y hProjectiveWidth
+  have hloLocal := hlo.trans
+    (S.globalNaturalExtension_cylinder_eq_localNaturalExtension_of_exact
+      hGlobalNonempty i X hLocalNonempty hLocalBddBelow (hGlobalBddBelow Y) hExact)
+  have hhiLocal := hhi.trans
+    (S.globalUpperEnvelope_cylinder_eq_localUpperEnvelope_of_exact
+      hGlobalNonempty i X hLocalNonempty hLocalBddAbove (hGlobalBddAbove Y) hExact)
+  exact ⟨Plo, hPlo, Phi, hPhi, hloLocal, hhiLocal, hlt,
+    congrArg₂ (· - ·) hhiLocal.symm hloLocal.symm,
+    congrArg (fun width : ℝ => 1 - width) (congrArg₂ (· - ·) hhiLocal.symm hloLocal.symm),
+    congrArg (fun total : ℝ => total / 2) (congrArg₂ (· + ·) hloLocal.symm hhiLocal.symm)⟩
 
 /-- Finite exact-cylinder endpoint readout for the global natural extension.
 
@@ -9794,49 +9566,14 @@ theorem finiteGlobalNaturalExtensionPrevision_exists_dominatingStrictEndpointPai
         S.localEnvelopeMidpoint i X =
           (Plo (S.cylinders.cylinderGamble i X) +
             Phi (S.cylinders.cylinderGamble i X)) / 2 := by
-  have hLocalNonempty : (S.localCredal i).Nonempty := by
-    rcases hWidth with ⟨P, hP, _Q, _hQ, _hlt⟩
-    exact ⟨P, hP⟩
-  have hProjectiveWidth :
-      S.hasStrictGlobalWidth (S.cylinders.cylinderGamble i X) :=
-    (S.hasStrictGlobalWidth_cylinder_iff_localCredal_strictWidth_of_exact
-      i hExact X).2 hWidth
-  rcases
-      S.finiteGlobalNaturalExtensionPrevision_exists_dominatingStrictEndpointPairReadout
-        hGlobalNonempty (S.cylinders.cylinderGamble i X) hProjectiveWidth with
-    ⟨Plo, hPlo, Phi, hPhi, hlo, hhi, hlt, hWidthEq, hCompEq, hMidEq⟩
-  have hloLocal :
-      Plo (S.cylinders.cylinderGamble i X) = S.localNaturalExtension i X :=
-    hlo.trans
-      (S.globalNaturalExtension_cylinder_eq_localNaturalExtension_of_exact_finite
-        hGlobalNonempty i X hLocalNonempty hExact)
-  have hhiLocal :
-      Phi (S.cylinders.cylinderGamble i X) = S.localUpperEnvelope i X :=
-    hhi.trans
-      (S.globalUpperEnvelope_cylinder_eq_localUpperEnvelope_of_exact_finite
-        hGlobalNonempty i X hLocalNonempty hExact)
-  refine ⟨Plo, hPlo, Phi, hPhi, hloLocal, hhiLocal, hlt, ?_, ?_, ?_⟩
-  · calc
-      S.localEnvelopeWidth i X =
-          S.globalEnvelopeWidth (S.cylinders.cylinderGamble i X) :=
-        (S.globalEnvelopeWidth_cylinder_eq_localEnvelopeWidth_of_exact_finite
-          hGlobalNonempty i X hLocalNonempty hExact).symm
-      _ = Phi (S.cylinders.cylinderGamble i X) -
-          Plo (S.cylinders.cylinderGamble i X) := hWidthEq
-  · calc
-      S.localEnvelopeWidthComplement i X =
-          S.globalEnvelopeWidthComplement (S.cylinders.cylinderGamble i X) :=
-        (S.globalEnvelopeWidthComplement_cylinder_eq_localEnvelopeWidthComplement_of_exact_finite
-          hGlobalNonempty i X hLocalNonempty hExact).symm
-      _ = 1 - (Phi (S.cylinders.cylinderGamble i X) -
-          Plo (S.cylinders.cylinderGamble i X)) := hCompEq
-  · calc
-      S.localEnvelopeMidpoint i X =
-          S.globalEnvelopeMidpoint (S.cylinders.cylinderGamble i X) :=
-        (S.globalEnvelopeMidpoint_cylinder_eq_localEnvelopeMidpoint_of_exact_finite
-          hGlobalNonempty i X hLocalNonempty hExact).symm
-      _ = (Plo (S.cylinders.cylinderGamble i X) +
-          Phi (S.cylinders.cylinderGamble i X)) / 2 := hMidEq
+  exact S.globalNaturalExtensionPrevision_exists_dominatingStrictEndpointPairReadout_cylinder_of_localCredal_strictWidth_of_exact
+    hGlobalNonempty
+    (finite_credalRange_bddBelow S.projectiveLimitCredalSet)
+    (finite_credalRange_bddAbove S.projectiveLimitCredalSet)
+    i X
+    (finite_credalRange_bddBelow (S.localCredal i) X)
+    (finite_credalRange_bddAbove (S.localCredal i) X)
+    hExact hWidth
 
 /-! ## Compact convex projective systems -/
 

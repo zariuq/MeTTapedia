@@ -5,6 +5,12 @@
 #                                       generated/TARGET/{Evidence,Qualification}.tsv, generated/TARGET/Skipped.txt
 #                                       and controls/TARGET/reject_*.mg
 #   generate-target.sh TARGET --check   regenerates them beside the committed ones and compares
+#   generate-target.sh TARGET --inputs DIR
+#                                       writes the reader's inputs to DIR and stops: families-in.metta
+#                                       (the target's families with the borrowed ones), answers.metta
+#                                       (CeTTa's answers to the target's tests) and typing.metta (the
+#                                       typing lemmas proved by hand), as the follower of Lean's proofs
+#                                       reads them
 #
 # Inputs, for TARGET (for example functional-correspondence):
 #   artifacts/lean-declarations/TARGET/families.metta   (scripts/ExportLeanDeclarations.lean)
@@ -19,7 +25,9 @@ set -euo pipefail
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 project=$(cd "$here/../../../.." && pwd)
 cetta=${CETTA:-cetta}
-target=${1:?usage: generate-target.sh TARGET [--check]}
+target=${1:?usage: generate-target.sh TARGET [--check | --inputs DIR]}
+inputs=
+if [ "${2:-}" = --inputs ]; then inputs=${3:?usage: generate-target.sh TARGET --inputs DIR}; fi
 decls=$project/artifacts/lean-declarations/$target
 tests_tsv=$project/artifacts/lean-code-equations/$target/tests.tsv
 work=$(mktemp -d "${TMPDIR:-/tmp}/lean-egal-target.XXXXXX")
@@ -54,6 +62,34 @@ if os.path.exists(borrow):
                 text += fact
 open(out, "w").write(text)
 EOF
+
+# Observe this build executing the exported program; expected values are
+# comparison inputs, not substitute observations.
+answers() {
+  if [[ -e "$tests_tsv" ]]; then
+    if ! python3 "$project/scripts/lean_code_equations_diff.py" --cetta "$cetta" \
+        --slice "$target" --report "$work/execution.json" > "$work/execution.txt"; then
+      cat "$work/execution.txt"; exit 1
+    fi
+    "$cetta" --lang petta --quiet "$here/answers.metta" "$work/execution.json" \
+      "$work/answers.metta" "$work/binary.txt" without-source "$tests_tsv" > /dev/null
+  elif grep -q '^(LeanComputation ' "$decls/terms.metta"; then
+    echo "generate: $target exports computations, and artifacts/lean-code-equations/$target/tests.tsv is absent" >&2
+    exit 1
+  else
+    : > "$work/answers.metta"
+  fi
+}
+# The typing lemmas proved in Egal by hand (proofs/functions/).
+typing() {
+  "$cetta" --lang petta "$here/splice.metta" facts "$here/proofs/functions" "$work/typing.metta" > /dev/null
+}
+if [ -n "$inputs" ]; then
+  answers; typing
+  mkdir -p "$inputs"
+  cp -- "$work/families-in.metta" "$work/answers.metta" "$work/typing.metta" "$inputs/"
+  exit 0
+fi
 
 # The functions' definitions are opaque in the computations, which use the
 # proved equations only; checking needs no unfolding of large definitions.
@@ -120,27 +156,12 @@ for line in sys.stdin:
   run_metta "$work/families.metta"
 } > "$work/Families.mg"
 
-# Observe this build executing the exported program; expected values are
-# comparison inputs, not substitute observations.
-if [[ -e "$tests_tsv" ]]; then
-  if ! python3 "$project/scripts/lean_code_equations_diff.py" --cetta "$cetta" \
-      --slice "$target" --report "$work/execution.json" > "$work/execution.txt"; then
-    cat "$work/execution.txt"; exit 1
-  fi
-  "$cetta" --lang petta --quiet "$here/answers.metta" "$work/execution.json" \
-    "$work/answers.metta" "$work/binary.txt" without-source "$tests_tsv" > /dev/null
-elif grep -q '^(LeanComputation ' "$decls/terms.metta"; then
-  echo "generate: $target exports computations, and artifacts/lean-code-equations/$target/tests.tsv is absent" >&2
-  exit 1
-else
-  : > "$work/answers.metta"
-fi
+answers
 # The expected tests: every row of tests.tsv, answered by CeTTa or not.
 ids=$(sed -n 's/^(LeanTest \([0-9]*\))$/\1/p' "$work/answers.metta")
 tests=$(wc -w <<< "$ids")
 
-# The typing lemmas proved in Egal by hand (proofs/functions/).
-"$cetta" --lang petta "$here/splice.metta" facts "$here/proofs/functions" "$work/typing.metta" > /dev/null
+typing
 
 reader() {
   cat "$work/families-in.metta" "$decls/terms.metta" "$work/answers.metta" "$work/typing.metta" \

@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentUniverseApart
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentLeastFamily
 
@@ -108,8 +109,7 @@ variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R) (heads : H
   (algebra : CumulativeAlgebra S.R) (rigid : ∀ name, S.roles name = .rigid)
   (complete : AlgorithmicComplete S.R S.roles) (declared : DeclaredTypesFormed S.R)
   (choices : ExecutableChecking.HeadChoices S.R) (reducer : ExecutableReduction.Reducer S.R)
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
 
 /-- **A certificate that a code holds, at a type position under formers, a universe that `u` does not hold or a
 marked variable.** The universe of a universe is read from the head typing of the package, which is unique. The
@@ -209,8 +209,7 @@ def clashStore (candidates : List Head) (fuel : Nat) {Θ : Context S.R} :
 
 /-! ## Eventual constancy -/
 
-variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
-  Keeps (reducer fuel term) (reducer (fuel + 1) term))
+variable (stable : SolverPremises.StableReducer (rules := S.R) reducer)
 
 include stable in
 /-- Reading at one candidate universe is eventually constant: type formation and checking keep their results. -/

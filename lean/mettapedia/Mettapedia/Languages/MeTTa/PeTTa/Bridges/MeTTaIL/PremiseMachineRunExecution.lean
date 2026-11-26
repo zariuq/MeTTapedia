@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.PeTTa.AppendAgreement
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.PremiseSchedulerExecution
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.GeneralPremiseMachineExecution.Core
 import Mettapedia.OSLF.MeTTaIL.GeneralPremiseExecution
@@ -119,24 +120,7 @@ private theorem helper_capture (target : Program)
 private theorem scheduler_reference_agreement :
     ProgramAgreementOn PremiseSchedulerExecution.executionHeads
       PremiseSchedulerExecution.runtime referenceRuntime := by
-  apply appended_program_agreement
-  · intro equation member
-    have checked : sourceProgram.equations.all (fun equation =>
-        !PremiseSchedulerExecution.executionHeads equation.head) = true := by decide +kernel
-    have row := List.all_eq_true.mp checked equation member
-    cases selected : PremiseSchedulerExecution.executionHeads equation.head with
-    | false => rfl
-    | true => simp [selected] at row
-  · intro name types member
-    have checked : sourceProgram.declarations.all (fun declaration => match declaration with
-        | .expression [.symbol ":", .symbol head, .expression (.symbol "->" :: _)] =>
-            !PremiseSchedulerExecution.executionHeads head
-        | _ => true) = true := by decide +kernel
-    have row := List.all_eq_true.mp checked
-      (.expression [.symbol ":", .symbol name, .expression (.symbol "->" :: types)]) member
-    cases selected : PremiseSchedulerExecution.executionHeads name with
-    | false => rfl
-    | true => simp [selected] at row
+  exact appended_program_agreement_of_all _ _ _ (by decide +kernel) (by decide +kernel)
 
 private theorem scheduler_target_agreement (target : Program)
     (agreement : ProgramAgreementOn executionHeads referenceRuntime target) :

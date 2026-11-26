@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentDecisiveFragmentEventual
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentDecisiveDriver
 
@@ -37,13 +38,9 @@ variable (rigid : ∀ name, S.roles name = .rigid) (facts : FormFacts S.R S.role
   (heads : HeadPreserving S.R) (algebra : CumulativeAlgebra S.R) (declared : DeclaredTypesFormed S.R)
   (choices : ExecutableChecking.HeadChoices S.R) (reducer : ExecutableReduction.Reducer S.R)
   (root : ExecutableReduction.RootEvaluator S.R)
-  (normalizes : ∀ {Θ : Context S.R} {type : TypeOver Θ} (term : Term Θ type),
-    ∃ code : Tm Head Θ.arity, ContextualDependentNormalChecking.Normal (S := S) code ∧
-      Equal S.R Θ.raw term.code code type.code)
-  (certifyNormal : ∀ {n : Nat} (term : Tm Head n),
-    Option (PLift (ContextualDependentNormalChecking.Normal (S := S) term)))
-variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
-  Keeps (reducer fuel term) (reducer (fuel + 1) term))
+  (normalizes : SolverPremises.HasNormalForms S)
+  (certifyNormal : SolverPremises.NormalityCertifier S)
+variable (stable : SolverPremises.StableReducer (rules := S.R) reducer)
 
 section Rule
 
@@ -122,33 +119,28 @@ theorem tryEquation_const {Γ : Context S.R} (type : TypeOver Γ) (equation : Eq
     EventuallyConst fun fuel =>
       tryEquation rigid facts complete roots heads algebra declared choices reducer root normalizes certifyNormal fuel
         type equation rest := by
-  obtain ⟨t₁, viewed⟩ := (viewEquation_const facts roots heads algebra declared choices reducer root stable
-    equation).spec
-  cases reading : viewEquation facts roots heads algebra declared choices reducer root t₁ equation with
+  refine ContextualDependentFragment.EventuallyConst.onReading
+    (viewEquation_const facts roots heads algebra declared choices reducer root stable equation) ?_
+  intro observed
+  cases observed with
   | none =>
-      refine ⟨t₁, fun fuel enough => ?_⟩
-      dsimp only
+      refine ⟨fun _ => none, EventuallyConst.const _, ?_⟩
+      intro fuel same
       unfold tryEquation
-      erw [viewed fuel enough, reading]
-  | some found =>
-      obtain ⟨scope, active, view⟩ := found
-      obtain ⟨t₂, first⟩ := (tryActive_const rigid facts complete roots heads algebra declared choices reducer
-        normalizes certifyNormal stable type scope active equation view rest).spec
-      obtain ⟨t₃, second⟩ := (tryActive_const rigid facts complete roots heads algebra declared choices reducer
-        normalizes certifyNormal stable type scope ⟨active.type, active.right, active.left⟩ equation
-        (fun solution => (view solution).trans (toScoped_swap scope active solution).symm) rest).spec
-      refine ⟨max t₁ (max t₂ t₃), fun fuel enough => ?_⟩
-      have e₁ : t₁ ≤ fuel := by omega
-      have e₂ : t₂ ≤ fuel := by omega
-      have e₃ : t₃ ≤ fuel := by omega
-      have f₁ : t₁ ≤ max t₁ (max t₂ t₃) := by omega
-      have f₂ : t₂ ≤ max t₁ (max t₂ t₃) := by omega
-      have f₃ : t₃ ≤ max t₁ (max t₂ t₃) := by omega
-      dsimp only
+      erw [same]
+  | some contents =>
+      obtain ⟨scope, active, view⟩ := contents
+      refine ⟨_, EventuallyConst.orElse
+        (tryActive_const rigid facts complete roots heads algebra declared choices reducer
+          normalizes certifyNormal stable type scope active equation view rest)
+        (tryActive_const rigid facts complete roots heads algebra declared choices reducer
+          normalizes certifyNormal stable type scope ⟨active.type, active.right, active.left⟩
+          equation (fun solution => (view solution).trans (toScoped_swap scope active solution).symm) rest), ?_⟩
+      intro fuel same
       unfold tryEquation
-      erw [viewed fuel e₁, reading, viewed _ f₁, reading]
+      erw [same]
       dsimp only
-      erw [first fuel e₂, first _ f₂, second fuel e₃, second _ f₃]
+      split <;> simp_all only
 
 /-- **The search through the store is eventually constant.** -/
 theorem searchStore_const {Γ : Context S.R} (type : TypeOver Γ) :
@@ -157,13 +149,14 @@ theorem searchStore_const {Γ : Context S.R} (type : TypeOver Γ) :
         type problem
   | [] => ⟨0, fun _ _ => rfl⟩
   | equation :: rest => by
-      obtain ⟨t₁, first⟩ := (tryEquation_const rigid facts complete roots heads algebra declared choices reducer root
-        normalizes certifyNormal stable type equation rest).spec
-      obtain ⟨t₂, later⟩ := (searchStore_const type rest).spec
-      refine ⟨max t₁ t₂, fun fuel enough => ?_⟩
+      refine ContextualDependentFragment.EventuallyConst.of_eq ?_ (EventuallyConst.orElse
+        (tryEquation_const rigid facts complete roots heads algebra declared choices reducer root
+          normalizes certifyNormal stable type equation rest)
+        (ContextualDependentFragment.EventuallyConst.comp
+          (Option.map (Found.keepLeft equation)) (searchStore_const type rest)))
+      intro fuel
       simp only [searchStore]
-      erw [first fuel (le_of_max_le_left enough), first _ (le_max_left _ _), later fuel (le_of_max_le_right enough),
-        later _ (le_max_right _ _)]
+      split <;> simp_all only
 
 omit stable [DecidableEq Head] [DecidableRel S.R.headEq] [∀ head, Decidable (S.R.isUniverse head)]
   [DecidableRel S.R.cumulative] in
@@ -205,8 +198,7 @@ end Rule
 
 section Settle
 
-variable (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
+variable (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
 
 /-- The rigid round at every budget, as a fuel-indexed family. -/
 def rigidFamily : ContextualDependentDecisiveDriver.Family S.levels where

@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentScopeConsequence
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentFlex
 
@@ -70,8 +71,7 @@ theorem inverse_forced (Γ : Context S.R) (domain codomain : TypeOver Γ)
 
 variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R)
   (heads : HeadPreserving S.R) (algebra : CumulativeAlgebra S.R)
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
   (declared : DeclaredTypesFormed S.R)
 
 include rigid complete facts roots heads algebra headTypingUnique declared in

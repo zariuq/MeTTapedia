@@ -79,6 +79,49 @@ inductive AdminCanonicalTarget : Pattern → Pattern → Prop where
           (rhoInput (piNameToRhoName x) y (encode P (n ++ "_rep") v))
           (encode (.replicate x y P) n v))
 
+/-- Progress to the canonical administrative target at the specified observations. -/
+abbrev AdminProgress (N : Finset String) (src : Pattern) : Prop :=
+  ∃ tgt canon, Nonempty (src ⇝ᵈ* tgt) ∧ AdminCanonicalTarget src canon ∧
+    WeakRestrictedBisimD N tgt canon
+
+/-- A π step whose encoding matches the source and reflects a derived ρ trace. -/
+abbrev ReflectedPiStep (N : Finset String) (src : Pattern) : Prop :=
+  ∃ P Q n v tgt,
+    Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P n v) ∧
+    Nonempty (P ⇝ Q) ∧ Nonempty ((encode P n v) ⇝ᵈ* tgt) ∧
+    WeakRestrictedBisimD N tgt (encode Q n v)
+
+/-- Restrict the observation set while retaining the administrative trace and its target. -/
+theorem AdminProgress.restrictObservations {N N' : Finset String} {src : Pattern}
+    (h : AdminProgress N src) (hsub : N' ⊆ N) : AdminProgress N' src := by
+  rcases h with ⟨tgt, canon, hstar, hcanon, hbisim⟩
+  exact ⟨tgt, canon, hstar, hcanon, hbisim.mono hsub⟩
+
+/-- Restrict the observation set while retaining the encoded source and both traces. -/
+theorem ReflectedPiStep.restrictObservations {N N' : Finset String} {src : Pattern}
+    (h : ReflectedPiStep N src) (hsub : N' ⊆ N) : ReflectedPiStep N' src := by
+  rcases h with ⟨P, Q, n, v, tgt, hsrc, hpi, hstar, hbisim⟩
+  exact ⟨P, Q, n, v, tgt, hsrc, hpi, hstar, hbisim.mono hsub⟩
+
+/-- Decomposition into a derived head step and a tail, with a judgment at the head target. -/
+abbrev DerivedTraceHead (src tgt : Pattern) (holdsAtHead : Pattern → Prop) : Prop :=
+  ∃ mid, Nonempty (src ⇝ᵈ mid) ∧ Nonempty (mid ⇝ᵈ* tgt) ∧ holdsAtHead mid
+
+theorem DerivedTraceHead.imp {src tgt : Pattern} {P Q : Pattern → Prop}
+    (h : DerivedTraceHead src tgt P) (step : ∀ mid, P mid → Q mid) :
+    DerivedTraceHead src tgt Q := by
+  rcases h with ⟨mid, hhead, htail, hP⟩
+  exact ⟨mid, hhead, htail, step mid hP⟩
+
+/-- A reflexive trace has equal endpoints. A nonempty trace exposes the actual first step. -/
+theorem DerivedTraceHead.eq_or_of_star {src tgt : Pattern} {P : Pattern → Prop}
+    (h : Nonempty (src ⇝ᵈ* tgt)) (first : ∀ mid, Nonempty (src ⇝ᵈ mid) → P mid) :
+    src = tgt ∨ DerivedTraceHead src tgt P := by
+  rcases h with ⟨hs⟩
+  cases hs with
+  | refl => exact Or.inl rfl
+  | step head tail => exact Or.inr ⟨_, ⟨head⟩, ⟨tail⟩, first _ ⟨head⟩⟩
+
 /-- First backward theorem endpoint for non-RF admin sources:
 derived progress to a canonical admin target up to derived weak bisimilarity. -/
 theorem admin_source_forward_progress {N : Finset String} {src : Pattern}
@@ -982,11 +1025,7 @@ theorem rfStepAt_oneStep_partition_right
         src
         (encode P n v))
     (_hstep : Nonempty (src ⇝ᵈ tgt)) :
-    ∃ P' P'' n' v' tgt',
-      Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P' n' v') ∧
-      Nonempty (P' ⇝ P'') ∧
-      Nonempty ((encode P' n' v') ⇝ᵈ* tgt') ∧
-      WeakRestrictedBisimD N tgt' (encode P'' n' v') := by
+    ReflectedPiStep N src := by
   have hpi : Nonempty (P ⇝ Q) := reducesRF_to_reduces h
   rcases ForwardSimulation.forward_single_step_rf h hrf hsafe n v with
     ⟨tgt', hstepCore, hscTgt⟩
@@ -1075,10 +1114,7 @@ endpoint, in a single statement. -/
 theorem weak_backward_reflection_trace_encodedRF
     {N : Finset String} {src : Pattern}
     (hsrc : EncodedRFTraceSource N src) :
-    (∃ tgt canon,
-      Nonempty (src ⇝ᵈ* tgt) ∧
-      AdminCanonicalTarget src canon ∧
-      WeakRestrictedBisimD N tgt canon)
+    AdminProgress N src
     ∨
     (∃ P Q n v T,
       src = encode P n v ∧
@@ -1108,11 +1144,7 @@ theorem weak_backward_reflection_step_rfStepAt_target_sensitive
         (encode P n v))
     (hstep : Nonempty (src ⇝ᵈ tgt)) :
     Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src tgt) ∧
-    (∃ P' P'' n' v' tgt',
-      Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P' n' v') ∧
-      Nonempty (P' ⇝ P'') ∧
-      Nonempty ((encode P' n' v') ⇝ᵈ* tgt') ∧
-      WeakRestrictedBisimD N tgt' (encode P'' n' v')) := by
+    ReflectedPiStep N src := by
   refine ⟨?_, ?_⟩
   · exact rfStepAt_oneStep_toCore
       (src := src) (tgt := tgt)
@@ -1138,11 +1170,7 @@ theorem weak_backward_reflection_step_rfStepAt_target_sensitive_fresh_userObs
     (hstep : Nonempty (src ⇝ᵈ tgt)) :
     Disjoint N ({ n, v } : Finset Name) ∧
     (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src tgt) ∧
-      (∃ P' P'' n' v' tgt',
-        Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P' n' v') ∧
-        Nonempty (P' ⇝ P'') ∧
-        Nonempty ((encode P' n' v') ⇝ᵈ* tgt') ∧
-        WeakRestrictedBisimD N tgt' (encode P'' n' v'))) := by
+      ReflectedPiStep N src) := by
   have hdisj : Disjoint N ({ n, v } : Finset Name) :=
     obs_disjoint_seedPair_of_subset_freeNames (P := P) (N := N) (n := n) (v := v) hobs hfresh
   have htarget :=
@@ -1191,15 +1219,9 @@ theorem weak_backward_reflection_star_rfStepAt_trace_sensitive_target_sensitive
     (hstep : Nonempty (src ⇝ᵈ* tgt)) :
     src = tgt
     ∨
-    (∃ mid,
-      Nonempty (src ⇝ᵈ mid) ∧
-      Nonempty (mid ⇝ᵈ* tgt) ∧
+    DerivedTraceHead src tgt (fun mid =>
       (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
-        ∃ P' P'' n' v' tgt',
-          Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P' n' v') ∧
-          Nonempty (P' ⇝ P'') ∧
-          Nonempty ((encode P' n' v') ⇝ᵈ* tgt') ∧
-          WeakRestrictedBisimD N tgt' (encode P'' n' v'))) := by
+        ReflectedPiStep N src)) := by
   rcases hstep with ⟨hs⟩
   cases hs with
   | refl =>
@@ -1229,15 +1251,9 @@ theorem weak_backward_reflection_star_rfStepAt_trace_sensitive_target_sensitive_
     Disjoint N ({ n, v } : Finset Name) ∧
     (src = tgt
       ∨
-      (∃ mid,
-        Nonempty (src ⇝ᵈ mid) ∧
-        Nonempty (mid ⇝ᵈ* tgt) ∧
-        (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
-          ∃ P' P'' n' v' tgt',
-            Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P' n' v') ∧
-            Nonempty (P' ⇝ P'') ∧
-            Nonempty ((encode P' n' v') ⇝ᵈ* tgt') ∧
-            WeakRestrictedBisimD N tgt' (encode P'' n' v')))) := by
+      DerivedTraceHead src tgt (fun mid =>
+      (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
+          ReflectedPiStep N src))) := by
   have hdisj : Disjoint N ({ n, v } : Finset Name) :=
     obs_disjoint_seedPair_of_subset_freeNames (P := P) (N := N) (n := n) (v := v) hobs hfresh
   have htarget :=
@@ -1262,11 +1278,7 @@ theorem weak_backward_reflection_step_rfStepAt_target_sensitive_of_obsSuperset
         (encode P n v))
     (hstep : Nonempty (src ⇝ᵈ tgt)) :
     Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src tgt) ∧
-    (∃ P' P'' n' v' tgt',
-      Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P' n' v') ∧
-      Nonempty (P' ⇝ P'') ∧
-      Nonempty ((encode P' n' v') ⇝ᵈ* tgt') ∧
-      WeakRestrictedBisimD N tgt' (encode P'' n' v')) := by
+    ReflectedPiStep N src := by
   rcases weak_backward_reflection_step_rfStepAt_target_sensitive
       (N := Nsup) (src := src) (tgt := tgt)
       (P := P) (Q := Q) (n := n) (v := v)
@@ -1290,15 +1302,9 @@ theorem weak_backward_reflection_star_rfStepAt_trace_sensitive_target_sensitive_
     (hstep : Nonempty (src ⇝ᵈ* tgt)) :
     src = tgt
     ∨
-    (∃ mid,
-      Nonempty (src ⇝ᵈ mid) ∧
-      Nonempty (mid ⇝ᵈ* tgt) ∧
+    DerivedTraceHead src tgt (fun mid =>
       (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
-        ∃ P' P'' n' v' tgt',
-          Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P' n' v') ∧
-          Nonempty (P' ⇝ P'') ∧
-          Nonempty ((encode P' n' v') ⇝ᵈ* tgt') ∧
-          WeakRestrictedBisimD N tgt' (encode P'' n' v'))) := by
+        ReflectedPiStep N src)) := by
   rcases weak_backward_reflection_star_rfStepAt_trace_sensitive_target_sensitive
       (N := Nsup) (src := src) (tgt := tgt)
       (P := P) (Q := Q) (n := n) (v := v)
@@ -1336,17 +1342,10 @@ theorem weak_backward_reflection_step_encodedSC_branch_sensitive
     {N : Finset String} {src tgt : Pattern}
     (hsrc : EncodedSCStepSource N src)
     (hstep : Nonempty (src ⇝ᵈ tgt)) :
-    (∃ tgt' canon,
-      Nonempty (src ⇝ᵈ* tgt') ∧
-      AdminCanonicalTarget src canon ∧
-      WeakRestrictedBisimD N tgt' canon)
+    AdminProgress N src
     ∨
     (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src tgt) ∧
-      ∃ P' P'' n v tgt',
-        Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P' n v) ∧
-        Nonempty (P' ⇝ P'') ∧
-        Nonempty ((encode P' n v) ⇝ᵈ* tgt') ∧
-        WeakRestrictedBisimD N tgt' (encode P'' n v)) := by
+      ReflectedPiStep N src) := by
   cases EncodedSCStepSource.to_admin_or_rf hsrc with
   | inl hAdmin =>
       rcases admin_source_forward_progress (N := N) hAdmin with
@@ -1372,17 +1371,10 @@ theorem weak_backward_reflection_step_comm_candidate_sc_branch_sensitive
       Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence
         src (encode (Process.par (Process.input x y P) (Process.output x z)) n v))
     (hstep : Nonempty (src ⇝ᵈ tgt)) :
-    (∃ tgt' canon,
-      Nonempty (src ⇝ᵈ* tgt') ∧
-      AdminCanonicalTarget src canon ∧
-      WeakRestrictedBisimD N tgt' canon)
+    AdminProgress N src
     ∨
     (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src tgt) ∧
-      ∃ P' P'' n v tgt',
-        Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P' n v) ∧
-        Nonempty (P' ⇝ P'') ∧
-        Nonempty ((encode P' n v) ⇝ᵈ* tgt') ∧
-        WeakRestrictedBisimD N tgt' (encode P'' n v)) := by
+      ReflectedPiStep N src) := by
   have hclass :
       EncodedSCStepSource N src :=
     (encodedSC_step_classifier_rf_comm_candidate_sc
@@ -1401,22 +1393,13 @@ theorem weak_backward_reflection_star_encodedSC_branch_sensitive
     {N : Finset String} {src tgt : Pattern}
     (hsrc : EncodedSCStepSource N src)
     (hstep : Nonempty (src ⇝ᵈ* tgt)) :
-    (∃ tgt' canon,
-      Nonempty (src ⇝ᵈ* tgt') ∧
-      AdminCanonicalTarget src canon ∧
-      WeakRestrictedBisimD N tgt' canon)
+    AdminProgress N src
     ∨
     (src = tgt
       ∨
-      (∃ mid,
-        Nonempty (src ⇝ᵈ mid) ∧
-        Nonempty (mid ⇝ᵈ* tgt) ∧
-        (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
-          ∃ P' P'' n v tgt',
-            Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P' n v) ∧
-            Nonempty (P' ⇝ P'') ∧
-            Nonempty ((encode P' n v) ⇝ᵈ* tgt') ∧
-            WeakRestrictedBisimD N tgt' (encode P'' n v)))) := by
+      DerivedTraceHead src tgt (fun mid =>
+      (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
+          ReflectedPiStep N src))) := by
   cases EncodedSCStepSource.to_admin_or_rf hsrc with
   | inl hAdmin =>
       rcases admin_source_forward_progress (N := N) hAdmin with
@@ -1445,11 +1428,7 @@ theorem weak_backward_reflection_step_encodedSC_branch_sensitive_fresh_userObs
     (∃ n v,
       Disjoint N ({ n, v } : Finset Name) ∧
       (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src tgt) ∧
-        ∃ P' P'' n' v' tgt',
-          Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P' n' v') ∧
-          Nonempty (P' ⇝ P'') ∧
-          Nonempty ((encode P' n' v') ⇝ᵈ* tgt') ∧
-          WeakRestrictedBisimD N tgt' (encode P'' n' v'))) := by
+        ReflectedPiStep N src)) := by
   cases hsrc with
   | admin hAdmin =>
       rcases admin_source_forward_progress_fresh (N := N) (src := src) hAdmin with
@@ -1512,11 +1491,7 @@ theorem weak_backward_reflection_step_comm_candidate_sc_branch_sensitive_fresh_u
     (∃ n v,
       Disjoint N ({ n, v } : Finset Name) ∧
       (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src tgt) ∧
-        ∃ P' P'' n' v' tgt',
-          Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P' n' v') ∧
-          Nonempty (P' ⇝ P'') ∧
-          Nonempty ((encode P' n' v') ⇝ᵈ* tgt') ∧
-          WeakRestrictedBisimD N tgt' (encode P'' n' v'))) := by
+        ReflectedPiStep N src)) := by
   have hclass :
       EncodedSCStepSourceFresh N src :=
     (encodedSC_step_classifier_rf_comm_candidate_sc_fresh
@@ -1542,15 +1517,9 @@ theorem weak_backward_reflection_star_encodedSC_branch_sensitive_fresh_userObs
       Disjoint N ({ n, v } : Finset Name) ∧
       (src = tgt
         ∨
-        (∃ mid,
-          Nonempty (src ⇝ᵈ mid) ∧
-          Nonempty (mid ⇝ᵈ* tgt) ∧
-          (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
-            ∃ P' P'' n' v' tgt',
-              Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P' n' v') ∧
-              Nonempty (P' ⇝ P'') ∧
-              Nonempty ((encode P' n' v') ⇝ᵈ* tgt') ∧
-              WeakRestrictedBisimD N tgt' (encode P'' n' v'))))) := by
+        DerivedTraceHead src tgt (fun mid =>
+      (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
+            ReflectedPiStep N src)))) := by
   cases hsrc with
   | admin hAdmin =>
       rcases admin_source_forward_progress_fresh (N := N) (src := src) hAdmin with
@@ -1605,23 +1574,13 @@ theorem weak_backward_reflection_step_encodedSC_branch_sensitive_of_obsSuperset
     (hsub : N ⊆ Nsup)
     (hsrc : EncodedSCStepSource Nsup src)
     (hstep : Nonempty (src ⇝ᵈ tgt)) :
-    (∃ tgt' canon,
-      Nonempty (src ⇝ᵈ* tgt') ∧
-      AdminCanonicalTarget src canon ∧
-      WeakRestrictedBisimD N tgt' canon)
+    AdminProgress N src
     ∨
     (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src tgt) ∧
-      ∃ P' P'' n v tgt',
-        Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P' n v) ∧
-        Nonempty (P' ⇝ P'') ∧
-        Nonempty ((encode P' n v) ⇝ᵈ* tgt') ∧
-        WeakRestrictedBisimD N tgt' (encode P'' n v)) := by
-  rcases weak_backward_reflection_step_encodedSC_branch_sensitive
-      (N := Nsup) (src := src) (tgt := tgt) hsrc hstep with hleft | hright
-  · rcases hleft with ⟨tgt', canon, hstar, hcanon, hbisim⟩
-    exact Or.inl ⟨tgt', canon, hstar, hcanon, WeakRestrictedBisimD.mono hbisim hsub⟩
-  · rcases hright with ⟨hcore, P', P'', n, v, tgt', hsrcSC, hpi, hstar, hbisim⟩
-    exact Or.inr ⟨hcore, P', P'', n, v, tgt', hsrcSC, hpi, hstar, WeakRestrictedBisimD.mono hbisim hsub⟩
+      ReflectedPiStep N src) := by
+  exact Or.imp (fun h => AdminProgress.restrictObservations h hsub)
+    (fun h => ⟨h.1, ReflectedPiStep.restrictObservations h.2 hsub⟩)
+    (weak_backward_reflection_step_encodedSC_branch_sensitive hsrc hstep)
 
 /-- Observation-set weakening for constructor-sensitive star EncodedSC
 decomposition endpoints. -/
@@ -1630,22 +1589,13 @@ theorem weak_backward_reflection_star_encodedSC_branch_sensitive_of_obsSuperset
     (hsub : N ⊆ Nsup)
     (hsrc : EncodedSCStepSource Nsup src)
     (hstep : Nonempty (src ⇝ᵈ* tgt)) :
-    (∃ tgt' canon,
-      Nonempty (src ⇝ᵈ* tgt') ∧
-      AdminCanonicalTarget src canon ∧
-      WeakRestrictedBisimD N tgt' canon)
+    AdminProgress N src
     ∨
     (src = tgt
       ∨
-      (∃ mid,
-        Nonempty (src ⇝ᵈ mid) ∧
-        Nonempty (mid ⇝ᵈ* tgt) ∧
-        (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
-          ∃ P' P'' n v tgt',
-            Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P' n v) ∧
-            Nonempty (P' ⇝ P'') ∧
-            Nonempty ((encode P' n v) ⇝ᵈ* tgt') ∧
-            WeakRestrictedBisimD N tgt' (encode P'' n v)))) := by
+      DerivedTraceHead src tgt (fun mid =>
+      (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
+          ReflectedPiStep N src))) := by
   rcases weak_backward_reflection_star_encodedSC_branch_sensitive
       (N := Nsup) (src := src) (tgt := tgt) hsrc hstep with hleft | hright
   · rcases hleft with ⟨tgt', canon, hstar, hcanon, hbisim⟩
@@ -1701,16 +1651,9 @@ theorem weak_backward_reflection_step_encodedSC_partition
     {N : Finset String} {src tgt : Pattern}
     (hsrc : EncodedSCStepSource N src)
     (hstep : Nonempty (src ⇝ᵈ tgt)) :
-    (∃ tgt' canon,
-      Nonempty (src ⇝ᵈ* tgt') ∧
-      AdminCanonicalTarget src canon ∧
-      WeakRestrictedBisimD N tgt' canon)
+    AdminProgress N src
     ∨
-    (∃ P P' n v tgt',
-      Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P n v) ∧
-      Nonempty (P ⇝ P') ∧
-      Nonempty ((encode P n v) ⇝ᵈ* tgt') ∧
-      WeakRestrictedBisimD N tgt' (encode P' n v)) := by
+    ReflectedPiStep N src := by
   cases EncodedSCStepSource.to_admin_or_rf hsrc with
   | inl hAdmin =>
       rcases admin_source_forward_progress (N := N) hAdmin with
@@ -1720,11 +1663,7 @@ theorem weak_backward_reflection_step_encodedSC_partition
       rcases hrfData with ⟨P, Q, n, v, h, hrf, hsafe, hsrcSC⟩
       have htarget :
           Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src tgt) ∧
-          (∃ P' P'' n' v' tgt',
-            Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P' n' v') ∧
-            Nonempty (P' ⇝ P'') ∧
-            Nonempty ((encode P' n' v') ⇝ᵈ* tgt') ∧
-            WeakRestrictedBisimD N tgt' (encode P'' n' v')) :=
+          ReflectedPiStep N src :=
         weak_backward_reflection_step_rfStepAt_target_sensitive
           (N := N) (src := src) (tgt := tgt)
           (P := P) (Q := Q) (n := n) (v := v)
@@ -1739,22 +1678,12 @@ theorem weak_backward_reflection_step_encodedSC_partition_of_obsSuperset
     (hsub : N ⊆ Nsup)
     (hsrc : EncodedSCStepSource Nsup src)
     (hstep : Nonempty (src ⇝ᵈ tgt)) :
-    (∃ tgt' canon,
-      Nonempty (src ⇝ᵈ* tgt') ∧
-      AdminCanonicalTarget src canon ∧
-      WeakRestrictedBisimD N tgt' canon)
+    AdminProgress N src
     ∨
-    (∃ P P' n v tgt',
-      Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P n v) ∧
-      Nonempty (P ⇝ P') ∧
-      Nonempty ((encode P n v) ⇝ᵈ* tgt') ∧
-      WeakRestrictedBisimD N tgt' (encode P' n v)) := by
-  rcases weak_backward_reflection_step_encodedSC_partition
-      (N := Nsup) (src := src) (tgt := tgt) hsrc hstep with hpart | hpart
-  · rcases hpart with ⟨tgt', canon, hstar, hcanon, hbisim⟩
-    exact Or.inl ⟨tgt', canon, hstar, hcanon, WeakRestrictedBisimD.mono hbisim hsub⟩
-  · rcases hpart with ⟨P, P', n, v, tgt', hsrcSC, hpi, hstar, hbisim⟩
-    exact Or.inr ⟨P, P', n, v, tgt', hsrcSC, hpi, hstar, WeakRestrictedBisimD.mono hbisim hsub⟩
+    ReflectedPiStep N src := by
+  exact Or.imp (fun h => AdminProgress.restrictObservations h hsub)
+    (fun h => ReflectedPiStep.restrictObservations h hsub)
+    (weak_backward_reflection_step_encodedSC_partition hsrc hstep)
 
 /-- Target-sensitive one-step partition over EncodedSC step-sources:
 admin sources produce admin-progress branch; RF-step sources additionally
@@ -1763,17 +1692,10 @@ theorem weak_backward_reflection_step_encodedSC_partition_target_sensitive
     {N : Finset String} {src tgt : Pattern}
     (hsrc : EncodedSCStepSource N src)
     (hstep : Nonempty (src ⇝ᵈ tgt)) :
-    (∃ tgt' canon,
-      Nonempty (src ⇝ᵈ* tgt') ∧
-      AdminCanonicalTarget src canon ∧
-      WeakRestrictedBisimD N tgt' canon)
+    AdminProgress N src
     ∨
     (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src tgt) ∧
-      ∃ P P' n v tgt',
-        Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P n v) ∧
-        Nonempty (P ⇝ P') ∧
-        Nonempty ((encode P n v) ⇝ᵈ* tgt') ∧
-        WeakRestrictedBisimD N tgt' (encode P' n v)) := by
+      ReflectedPiStep N src) := by
   cases EncodedSCStepSource.to_admin_or_rf hsrc with
   | inl hAdmin =>
       rcases admin_source_forward_progress (N := N) hAdmin with
@@ -1795,23 +1717,13 @@ theorem weak_backward_reflection_step_encodedSC_partition_target_sensitive_of_ob
     (hsub : N ⊆ Nsup)
     (hsrc : EncodedSCStepSource Nsup src)
     (hstep : Nonempty (src ⇝ᵈ tgt)) :
-    (∃ tgt' canon,
-      Nonempty (src ⇝ᵈ* tgt') ∧
-      AdminCanonicalTarget src canon ∧
-      WeakRestrictedBisimD N tgt' canon)
+    AdminProgress N src
     ∨
     (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src tgt) ∧
-      ∃ P P' n v tgt',
-        Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P n v) ∧
-        Nonempty (P ⇝ P') ∧
-        Nonempty ((encode P n v) ⇝ᵈ* tgt') ∧
-        WeakRestrictedBisimD N tgt' (encode P' n v)) := by
-  rcases weak_backward_reflection_step_encodedSC_partition_target_sensitive
-      (N := Nsup) (src := src) (tgt := tgt) hsrc hstep with hleft | hright
-  · rcases hleft with ⟨tgt', canon, hstar, hcanon, hbisim⟩
-    exact Or.inl ⟨tgt', canon, hstar, hcanon, WeakRestrictedBisimD.mono hbisim hsub⟩
-  · rcases hright with ⟨hcore, P, P', n, v, tgt', hsrcSC, hpi, hstar, hbisim⟩
-    exact Or.inr ⟨hcore, P, P', n, v, tgt', hsrcSC, hpi, hstar, WeakRestrictedBisimD.mono hbisim hsub⟩
+      ReflectedPiStep N src) := by
+  exact Or.imp (fun h => AdminProgress.restrictObservations h hsub)
+    (fun h => ⟨h.1, ReflectedPiStep.restrictObservations h.2 hsub⟩)
+    (weak_backward_reflection_step_encodedSC_partition_target_sensitive hsrc hstep)
 
 /-- Star-level partition theorem over EncodedSC step-sources:
 consumes a full derived trace witness and returns explicit branch data. -/
@@ -1819,16 +1731,9 @@ theorem weak_backward_reflection_star_encodedSC_partition
     {N : Finset String} {src tgt : Pattern}
     (hsrc : EncodedSCStepSource N src)
     (hstep : Nonempty (src ⇝ᵈ* tgt)) :
-    (∃ tgt' canon,
-      Nonempty (src ⇝ᵈ* tgt') ∧
-      AdminCanonicalTarget src canon ∧
-      WeakRestrictedBisimD N tgt' canon)
+    AdminProgress N src
     ∨
-    (∃ P P' n v tgt',
-      Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P n v) ∧
-      Nonempty (P ⇝ P') ∧
-      Nonempty ((encode P n v) ⇝ᵈ* tgt') ∧
-      WeakRestrictedBisimD N tgt' (encode P' n v)) := by
+    ReflectedPiStep N src := by
   rcases hstep with ⟨hs⟩
   cases hs with
   | refl =>
@@ -1855,38 +1760,12 @@ theorem weak_backward_reflection_star_encodedSC_partition_trace_sensitive
     (hstep : Nonempty (src ⇝ᵈ* tgt)) :
     src = tgt
     ∨
-    (∃ mid,
-      Nonempty (src ⇝ᵈ mid) ∧
-      Nonempty (mid ⇝ᵈ* tgt) ∧
-      ((∃ tgt' canon,
-        Nonempty (src ⇝ᵈ* tgt') ∧
-        AdminCanonicalTarget src canon ∧
-        WeakRestrictedBisimD N tgt' canon)
+    DerivedTraceHead src tgt (fun _ =>
+      (AdminProgress N src
       ∨
-      (∃ P P' n v tgt',
-        Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P n v) ∧
-        Nonempty (P ⇝ P') ∧
-        Nonempty ((encode P n v) ⇝ᵈ* tgt') ∧
-        WeakRestrictedBisimD N tgt' (encode P' n v)))) := by
-  rcases hstep with ⟨hs⟩
-  cases hs with
-  | refl =>
-      exact Or.inl rfl
-  | step hfirst hrest =>
-      have hpart :
-          (∃ tgt' canon,
-            Nonempty (src ⇝ᵈ* tgt') ∧
-            AdminCanonicalTarget src canon ∧
-            WeakRestrictedBisimD N tgt' canon)
-          ∨
-          (∃ P P' n v tgt',
-            Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P n v) ∧
-            Nonempty (P ⇝ P') ∧
-            Nonempty ((encode P n v) ⇝ᵈ* tgt') ∧
-            WeakRestrictedBisimD N tgt' (encode P' n v)) :=
-        weak_backward_reflection_step_encodedSC_partition
-          (N := N) (src := src) (tgt := _) hsrc ⟨hfirst⟩
-      exact Or.inr ⟨_, ⟨hfirst⟩, ⟨hrest⟩, by simpa using hpart⟩
+      ReflectedPiStep N src)) := by
+  exact DerivedTraceHead.eq_or_of_star hstep fun _ hfirst =>
+    weak_backward_reflection_step_encodedSC_partition hsrc hfirst
 
 /-- Trace-sensitive + target-sensitive star decomposition over EncodedSC
 step-sources: on non-refl traces, exposes head/tail decomposition and keeps
@@ -1897,40 +1776,13 @@ theorem weak_backward_reflection_star_encodedSC_partition_trace_sensitive_target
     (hstep : Nonempty (src ⇝ᵈ* tgt)) :
     src = tgt
     ∨
-    (∃ mid,
-      Nonempty (src ⇝ᵈ mid) ∧
-      Nonempty (mid ⇝ᵈ* tgt) ∧
-      ((∃ tgt' canon,
-        Nonempty (src ⇝ᵈ* tgt') ∧
-        AdminCanonicalTarget src canon ∧
-        WeakRestrictedBisimD N tgt' canon)
+    DerivedTraceHead src tgt (fun mid =>
+      (AdminProgress N src
       ∨
       (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
-        ∃ P P' n v tgt',
-          Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P n v) ∧
-          Nonempty (P ⇝ P') ∧
-          Nonempty ((encode P n v) ⇝ᵈ* tgt') ∧
-          WeakRestrictedBisimD N tgt' (encode P' n v)))) := by
-  rcases hstep with ⟨hs⟩
-  cases hs with
-  | refl =>
-      exact Or.inl rfl
-  | step hfirst hrest =>
-      have hpart :
-          (∃ tgt' canon,
-            Nonempty (src ⇝ᵈ* tgt') ∧
-            AdminCanonicalTarget src canon ∧
-            WeakRestrictedBisimD N tgt' canon)
-          ∨
-          (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src _) ∧
-            ∃ P P' n v tgt',
-              Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P n v) ∧
-              Nonempty (P ⇝ P') ∧
-              Nonempty ((encode P n v) ⇝ᵈ* tgt') ∧
-              WeakRestrictedBisimD N tgt' (encode P' n v)) :=
-        weak_backward_reflection_step_encodedSC_partition_target_sensitive
-          (N := N) (src := src) (tgt := _) hsrc ⟨hfirst⟩
-      exact Or.inr ⟨_, ⟨hfirst⟩, ⟨hrest⟩, by simpa using hpart⟩
+        ReflectedPiStep N src))) := by
+  exact DerivedTraceHead.eq_or_of_star hstep fun _ hfirst =>
+    weak_backward_reflection_step_encodedSC_partition_target_sensitive hsrc hfirst
 
 /-- Fully general backward-simulation endpoint over EncodedSC step-sources.
 It flattens the trace-sensitive decomposition into three branches:
@@ -1941,20 +1793,11 @@ theorem weak_backward_full_simulation_encodedSC
     (hstep : Nonempty (src ⇝ᵈ* tgt)) :
     src = tgt
     ∨
-    (∃ tgt' canon,
-      Nonempty (src ⇝ᵈ* tgt') ∧
-      AdminCanonicalTarget src canon ∧
-      WeakRestrictedBisimD N tgt' canon)
+    AdminProgress N src
     ∨
-    (∃ mid,
-      Nonempty (src ⇝ᵈ mid) ∧
-      Nonempty (mid ⇝ᵈ* tgt) ∧
+    DerivedTraceHead src tgt (fun mid =>
       Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
-      ∃ P P' n v tgt',
-        Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P n v) ∧
-        Nonempty (P ⇝ P') ∧
-        Nonempty ((encode P n v) ⇝ᵈ* tgt') ∧
-        WeakRestrictedBisimD N tgt' (encode P' n v)) := by
+      ReflectedPiStep N src) := by
   rcases weak_backward_reflection_star_encodedSC_partition_trace_sensitive_target_sensitive
       (N := N) (src := src) (tgt := tgt) hsrc hstep with hrefl | htail
   · exact Or.inl hrefl
@@ -1974,22 +1817,12 @@ theorem weak_backward_full_simulation_encode
     (hstep : Nonempty ((encode P n v) ⇝ᵈ* tgt)) :
     encode P n v = tgt
     ∨
-    (∃ tgt' canon,
-      Nonempty ((encode P n v) ⇝ᵈ* tgt') ∧
-      AdminCanonicalTarget (encode P n v) canon ∧
-      WeakRestrictedBisimD N tgt' canon)
+    AdminProgress N (encode P n v)
     ∨
-    (∃ mid,
-      Nonempty ((encode P n v) ⇝ᵈ mid) ∧
-      Nonempty (mid ⇝ᵈ* tgt) ∧
+    DerivedTraceHead (encode P n v) tgt (fun mid =>
       Nonempty
         (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces (encode P n v) mid) ∧
-      ∃ P0 P1 n0 v0 tgt',
-        Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence
-          (encode P n v) (encode P0 n0 v0) ∧
-        Nonempty (P0 ⇝ P1) ∧
-        Nonempty ((encode P0 n0 v0) ⇝ᵈ* tgt') ∧
-        WeakRestrictedBisimD N tgt' (encode P1 n0 v0)) := by
+      ReflectedPiStep N (encode P n v)) := by
   exact weak_backward_full_simulation_encodedSC
     (N := N) (src := encode P n v) (tgt := tgt) hsrc hstep
 
@@ -2004,22 +1837,12 @@ theorem weak_backward_full_simulation_encode_rfStepAt
     (hstep : Nonempty ((encode P n v) ⇝ᵈ* tgt)) :
     encode P n v = tgt
     ∨
-    (∃ tgt' canon,
-      Nonempty ((encode P n v) ⇝ᵈ* tgt') ∧
-      AdminCanonicalTarget (encode P n v) canon ∧
-      WeakRestrictedBisimD N tgt' canon)
+    AdminProgress N (encode P n v)
     ∨
-    (∃ mid,
-      Nonempty ((encode P n v) ⇝ᵈ mid) ∧
-      Nonempty (mid ⇝ᵈ* tgt) ∧
+    DerivedTraceHead (encode P n v) tgt (fun mid =>
       Nonempty
         (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces (encode P n v) mid) ∧
-      ∃ P0 P1 n0 v0 tgt',
-        Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence
-          (encode P n v) (encode P0 n0 v0) ∧
-        Nonempty (P0 ⇝ P1) ∧
-        Nonempty ((encode P0 n0 v0) ⇝ᵈ* tgt') ∧
-        WeakRestrictedBisimD N tgt' (encode P1 n0 v0)) := by
+      ReflectedPiStep N (encode P n v)) := by
   exact weak_backward_full_simulation_encode
     (N := N) (P := P) (n := n) (v := v) (tgt := tgt)
     (hsrc := EncodedSCStepSource.rfStepAt
@@ -2036,31 +1859,15 @@ theorem weak_backward_reflection_star_encodedSC_partition_trace_sensitive_target
     (hstep : Nonempty (src ⇝ᵈ* tgt)) :
     src = tgt
     ∨
-    (∃ mid,
-      Nonempty (src ⇝ᵈ mid) ∧
-      Nonempty (mid ⇝ᵈ* tgt) ∧
-      ((∃ tgt' canon,
-        Nonempty (src ⇝ᵈ* tgt') ∧
-        AdminCanonicalTarget src canon ∧
-        WeakRestrictedBisimD N tgt' canon)
+    DerivedTraceHead src tgt (fun mid =>
+      (AdminProgress N src
       ∨
       (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
-        ∃ P P' n v tgt',
-          Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P n v) ∧
-          Nonempty (P ⇝ P') ∧
-          Nonempty ((encode P n v) ⇝ᵈ* tgt') ∧
-          WeakRestrictedBisimD N tgt' (encode P' n v)))) := by
-  rcases weak_backward_reflection_star_encodedSC_partition_trace_sensitive_target_sensitive
-      (N := Nsup) (src := src) (tgt := tgt) hsrc hstep with hrefl | hstepd
-  · exact Or.inl hrefl
-  · rcases hstepd with ⟨mid, hmid, hrest, hpart⟩
-    rcases hpart with hleft | hright
-    · rcases hleft with ⟨tgt', canon, hstar, hcanon, hbisim⟩
-      exact Or.inr ⟨mid, hmid, hrest, Or.inl
-        ⟨tgt', canon, hstar, hcanon, WeakRestrictedBisimD.mono hbisim hsub⟩⟩
-    · rcases hright with ⟨hcore, P, P', n, v, tgt', hsrcSC, hpi, hstar, hbisim⟩
-      exact Or.inr ⟨mid, hmid, hrest, Or.inr
-        ⟨hcore, P, P', n, v, tgt', hsrcSC, hpi, hstar, WeakRestrictedBisimD.mono hbisim hsub⟩⟩
+        ReflectedPiStep N src))) := by
+  exact Or.imp id (fun h => DerivedTraceHead.imp h fun _ =>
+    Or.imp (fun a => AdminProgress.restrictObservations a hsub)
+      (fun p => ⟨p.1, ReflectedPiStep.restrictObservations p.2 hsub⟩))
+    (weak_backward_reflection_star_encodedSC_partition_trace_sensitive_target_sensitive hsrc hstep)
 
 /-- Observation-set weakening for star-level EncodedSC partition endpoints. -/
 theorem weak_backward_reflection_star_encodedSC_partition_of_obsSuperset
@@ -2068,22 +1875,12 @@ theorem weak_backward_reflection_star_encodedSC_partition_of_obsSuperset
     (hsub : N ⊆ Nsup)
     (hsrc : EncodedSCStepSource Nsup src)
     (hstep : Nonempty (src ⇝ᵈ* tgt)) :
-    (∃ tgt' canon,
-      Nonempty (src ⇝ᵈ* tgt') ∧
-      AdminCanonicalTarget src canon ∧
-      WeakRestrictedBisimD N tgt' canon)
+    AdminProgress N src
     ∨
-    (∃ P P' n v tgt',
-      Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P n v) ∧
-      Nonempty (P ⇝ P') ∧
-      Nonempty ((encode P n v) ⇝ᵈ* tgt') ∧
-      WeakRestrictedBisimD N tgt' (encode P' n v)) := by
-  rcases weak_backward_reflection_star_encodedSC_partition
-      (N := Nsup) (src := src) (tgt := tgt) hsrc hstep with hleft | hright
-  · rcases hleft with ⟨tgt', canon, hstar, hcanon, hbisim⟩
-    exact Or.inl ⟨tgt', canon, hstar, hcanon, WeakRestrictedBisimD.mono hbisim hsub⟩
-  · rcases hright with ⟨P, P', n, v, tgt', hsrcSC, hpi, hstar, hbisim⟩
-    exact Or.inr ⟨P, P', n, v, tgt', hsrcSC, hpi, hstar, WeakRestrictedBisimD.mono hbisim hsub⟩
+    ReflectedPiStep N src := by
+  exact Or.imp (fun h => AdminProgress.restrictObservations h hsub)
+    (fun h => ReflectedPiStep.restrictObservations h hsub)
+    (weak_backward_reflection_star_encodedSC_partition hsrc hstep)
 
 /-- Non-empty-observation canary for the adminProgress branch. -/
 theorem weak_backward_reflection_nonRF_admin_canary_nonempty :
@@ -2335,10 +2132,8 @@ theorem weak_backward_reflection_star_rfStepAt_trace_sensitive_target_sensitive_
   have hsup :
       src = src
       ∨
-      (∃ mid,
-        Nonempty (src ⇝ᵈ mid) ∧
-        Nonempty (mid ⇝ᵈ* src) ∧
-        (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
+      DerivedTraceHead src src (fun mid =>
+      (Nonempty (Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction.Reduces src mid) ∧
           ∃ P' P'' n v tgt',
             Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence src (encode P' n v) ∧
             Nonempty (P' ⇝ P'') ∧
@@ -2431,145 +2226,69 @@ theorem weak_backward_outcome_admin_and_piStep_obs_superset_regression
         simp at hx ⊢
         exact Or.inl hx)
 
+/-- Backward outcomes for the three admitted administrative source shapes. -/
+private abbrev NonRFAdminBackwardOutcomes (N : Finset String)
+    (x : Name) (P : Process) (nuListenerBody seedListenerBody : Pattern)
+    (xr yr : Name) (Pr : Process) (n v : String) : Prop :=
+  WeakBackwardOutcome N
+    (rhoPar (encode (.nu x P) "n_init" "v_init")
+      (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody])) ∧
+  WeakBackwardOutcome N
+    (rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
+      (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody])) ∧
+  WeakBackwardOutcome N (encode (.replicate xr yr Pr) n v)
+
+/-- Both directions of the administrative observation for the derived
+encoding, with the observer's name set explicit. -/
+abbrev NonRFAdminOutcome (N : Finset String)
+    (x : Name) (P : Process) (nuListenerBody seedListenerBody : Pattern)
+    (xr yr : Name) (Pr : Process) (n v : String) : Prop :=
+  ReplicationUnfoldOutcome N xr yr Pr n v ∧
+  NuAdminOutcome N x P nuListenerBody seedListenerBody ∧
+  NonRFAdminBackwardOutcomes N x P nuListenerBody seedListenerBody xr yr Pr n v
+
+private theorem nonRF_admin_backward_outcomes {N : Finset String}
+    (x : Name) (P : Process) (nuListenerBody seedListenerBody : Pattern)
+    (xr yr : Name) (Pr : Process) (n v : String) :
+    NonRFAdminBackwardOutcomes N x P nuListenerBody seedListenerBody xr yr Pr n v :=
+  ⟨weak_backward_reflection_nonRF_admin (N := N)
+      (AdminSource.nuListener x P "n_init" "v_init" nuListenerBody),
+    weak_backward_reflection_nonRF_admin (N := N)
+      (AdminSource.seedListener "ns_x" "ns_z" "v_init" "ns_seed" seedListenerBody),
+    weak_backward_reflection_nonRF_admin (N := N) (AdminSource.replicate xr yr Pr n v)⟩
+
+/-- Restrict the observer while retaining the existing rewrite traces and
+endpoints. Only the weak bisimulations and backward outcomes are projected. -/
+theorem NonRFAdminOutcome.mono {N Nsup : Finset String} {x xr yr : Name} {P Pr : Process}
+    {nuListenerBody seedListenerBody : Pattern} {n v : String}
+    (outcome : NonRFAdminOutcome Nsup x P nuListenerBody seedListenerBody xr yr Pr n v)
+    (subset : N ⊆ Nsup) : NonRFAdminOutcome N x P nuListenerBody seedListenerBody xr yr Pr n v := by
+  rcases outcome with ⟨rep, combined, nuBack, seedBack, repBack⟩
+  rcases rep with ⟨Trep, repTrace, repBisim⟩
+  rcases combined with ⟨Tnu, Tseed, TrepNu, encoding, trace, swap, nuBisim, seedBisim, repNuBisim⟩
+  exact ⟨⟨Trep, repTrace, repBisim.mono subset⟩,
+    ⟨Tnu, Tseed, TrepNu, encoding, trace, swap, nuBisim.mono subset, seedBisim.mono subset,
+      repNuBisim.mono subset⟩, nuBack.mono subset, seedBack.mono subset, repBack.mono subset⟩
+
 /-- Full non-RF admin correspondence (both directions, derived weak form):
 forward wrappers plus backward reflection outcomes for ν/seed/replicate admin sources. -/
 theorem full_nonRF_admin_correspondence_bidir {N : Finset String}
     (x : Name) (P : Process) (nuListenerBody seedListenerBody : Pattern)
     (xr yr : Name) (Pr : Process) (n v : String) :
-    (∃ Trep, Nonempty ((encode (.replicate xr yr Pr) n v) ⇝ᵈ* Trep) ∧
-      Trep ≈ᵈ{N}
-        (rhoPar
-          (rhoInput (piNameToRhoName xr) yr (encode Pr (n ++ "_rep") v))
-          (encode (.replicate xr yr Pr) n v))) ∧
-    (∃ Tnu Tseed TrepNu,
-      fullEncode (.nu x P) =
-        rhoPar (encode (.nu x P) "n_init" "v_init")
-          (nameServer "ns_x" "ns_z" "v_init" "ns_seed") ∧
-      Nonempty
-        ((.collection .hashBag
-          [rhoPar (encode (.nu x P) "n_init" "v_init")
-             (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody]),
-           rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-             (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody]),
-           encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"] none) ⇝ᵈ*
-          (.collection .hashBag [Tnu, Tseed, TrepNu] none)) ∧
-      (.collection .hashBag [Tnu, Tseed] none ≡
-        .collection .hashBag [Tseed, Tnu] none) ∧
-      WeakRestrictedBisimD N Tnu
-        (.collection .hashBag
-          [semanticCommSubst nuListenerBody (.fvar "n_init"),
-           rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
-      WeakRestrictedBisimD N Tseed
-        (.collection .hashBag
-          [semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
-           rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
-           dropOperation "ns_x"] none) ∧
-      WeakRestrictedBisimD N TrepNu
-        (rhoPar
-          (rhoInput (piNameToRhoName "ns_x") "_drop" (encode .nil ("n_init" ++ "_rep") "v_init"))
-          (encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"))) ∧
-    WeakBackwardOutcome N
-      (rhoPar (encode (.nu x P) "n_init" "v_init")
-        (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody])) ∧
-    WeakBackwardOutcome N
-      (rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-        (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody])) ∧
-    WeakBackwardOutcome N (encode (.replicate xr yr Pr) n v) := by
-  rcases full_nonRF_forward_correspondence_derived
-      (N := N) x P nuListenerBody seedListenerBody xr yr Pr n v with
-    ⟨hrepFwd, hnuFwd⟩
-  have hbackNu :
-      WeakBackwardOutcome N
-        (rhoPar (encode (.nu x P) "n_init" "v_init")
-          (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody])) :=
-    weak_backward_reflection_nonRF_admin
-      (N := N) (src := rhoPar (encode (.nu x P) "n_init" "v_init")
-        (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody]))
-      (AdminSource.nuListener x P "n_init" "v_init" nuListenerBody)
-  have hbackSeed :
-      WeakBackwardOutcome N
-        (rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-          (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody])) :=
-    weak_backward_reflection_nonRF_admin
-      (N := N) (src := rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-        (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody]))
-      (AdminSource.seedListener "ns_x" "ns_z" "v_init" "ns_seed" seedListenerBody)
-  have hbackRep :
-      WeakBackwardOutcome N (encode (.replicate xr yr Pr) n v) :=
-    weak_backward_reflection_nonRF_admin
-      (N := N) (src := encode (.replicate xr yr Pr) n v)
-      (AdminSource.replicate xr yr Pr n v)
-  exact ⟨hrepFwd, hnuFwd, hbackNu, hbackSeed, hbackRep⟩
+    NonRFAdminOutcome N x P nuListenerBody seedListenerBody xr yr Pr n v := by
+  obtain ⟨rep, nu⟩ := full_nonRF_forward_correspondence_derived
+    (N := N) x P nuListenerBody seedListenerBody xr yr Pr n v
+  exact ⟨rep, nu, nonRF_admin_backward_outcomes x P nuListenerBody seedListenerBody xr yr Pr n v⟩
 
 /-- Freshness-threaded variant of the full non-RF admin bidirectional package. -/
 theorem full_nonRF_admin_correspondence_bidir_fresh {N : Finset String}
     (x : Name) (P : Process) (nuListenerBody seedListenerBody : Pattern)
     (xr yr : Name) (Pr : Process) (n v : String)
     (hfresh : EncodingFresh P) :
-    (∃ Trep, Nonempty ((encode (.replicate xr yr Pr) n v) ⇝ᵈ* Trep) ∧
-      Trep ≈ᵈ{N}
-        (rhoPar
-          (rhoInput (piNameToRhoName xr) yr (encode Pr (n ++ "_rep") v))
-          (encode (.replicate xr yr Pr) n v))) ∧
-    (∃ Tnu Tseed TrepNu,
-      fullEncode (.nu x P) =
-        rhoPar (encode (.nu x P) "n_init" "v_init")
-          (nameServer "ns_x" "ns_z" "v_init" "ns_seed") ∧
-      Nonempty
-        ((.collection .hashBag
-          [rhoPar (encode (.nu x P) "n_init" "v_init")
-             (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody]),
-           rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-             (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody]),
-           encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"] none) ⇝ᵈ*
-          (.collection .hashBag [Tnu, Tseed, TrepNu] none)) ∧
-      (.collection .hashBag [Tnu, Tseed] none ≡
-        .collection .hashBag [Tseed, Tnu] none) ∧
-      WeakRestrictedBisimD N Tnu
-        (.collection .hashBag
-          [semanticCommSubst nuListenerBody (.fvar "n_init"),
-           rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
-      WeakRestrictedBisimD N Tseed
-        (.collection .hashBag
-          [semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
-           rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
-           dropOperation "ns_x"] none) ∧
-      WeakRestrictedBisimD N TrepNu
-        (rhoPar
-          (rhoInput (piNameToRhoName "ns_x") "_drop" (encode .nil ("n_init" ++ "_rep") "v_init"))
-          (encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"))) ∧
-    WeakBackwardOutcome N
-      (rhoPar (encode (.nu x P) "n_init" "v_init")
-        (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody])) ∧
-    WeakBackwardOutcome N
-      (rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-        (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody])) ∧
-    WeakBackwardOutcome N (encode (.replicate xr yr Pr) n v) := by
-  rcases full_nonRF_forward_correspondence_derived_fresh
-      (N := N) x P nuListenerBody seedListenerBody xr yr Pr n v hfresh with
-    ⟨hrepFwd, hnuFwd⟩
-  have hbackNu :
-      WeakBackwardOutcome N
-        (rhoPar (encode (.nu x P) "n_init" "v_init")
-          (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody])) :=
-    weak_backward_reflection_nonRF_admin
-      (N := N) (src := rhoPar (encode (.nu x P) "n_init" "v_init")
-        (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody]))
-      (AdminSource.nuListener x P "n_init" "v_init" nuListenerBody)
-  have hbackSeed :
-      WeakBackwardOutcome N
-        (rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-          (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody])) :=
-    weak_backward_reflection_nonRF_admin
-      (N := N) (src := rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-        (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody]))
-      (AdminSource.seedListener "ns_x" "ns_z" "v_init" "ns_seed" seedListenerBody)
-  have hbackRep :
-      WeakBackwardOutcome N (encode (.replicate xr yr Pr) n v) :=
-    weak_backward_reflection_nonRF_admin
-      (N := N) (src := encode (.replicate xr yr Pr) n v)
-      (AdminSource.replicate xr yr Pr n v)
-  exact ⟨hrepFwd, hnuFwd, hbackNu, hbackSeed, hbackRep⟩
+    NonRFAdminOutcome N x P nuListenerBody seedListenerBody xr yr Pr n v := by
+  obtain ⟨rep, nu⟩ := full_nonRF_forward_correspondence_derived_fresh
+    (N := N) x P nuListenerBody seedListenerBody xr yr Pr n v hfresh
+  exact ⟨rep, nu, nonRF_admin_backward_outcomes x P nuListenerBody seedListenerBody xr yr Pr n v⟩
 
 /-- Freshness plus user-observation discipline yields explicit non-interference
 of reserved full-encode names alongside the backward/admin outcomes. -/
@@ -2579,45 +2298,7 @@ theorem full_nonRF_admin_correspondence_bidir_fresh_userObs {N : Finset String}
     (hobs : N ⊆ P.freeNames)
     (hfresh : EncodingFresh P) :
     Disjoint N fullEncodeReservedNames ∧
-    (∃ Trep, Nonempty ((encode (.replicate xr yr Pr) n v) ⇝ᵈ* Trep) ∧
-      Trep ≈ᵈ{N}
-        (rhoPar
-          (rhoInput (piNameToRhoName xr) yr (encode Pr (n ++ "_rep") v))
-          (encode (.replicate xr yr Pr) n v))) ∧
-    (∃ Tnu Tseed TrepNu,
-      fullEncode (.nu x P) =
-        rhoPar (encode (.nu x P) "n_init" "v_init")
-          (nameServer "ns_x" "ns_z" "v_init" "ns_seed") ∧
-      Nonempty
-        ((.collection .hashBag
-          [rhoPar (encode (.nu x P) "n_init" "v_init")
-             (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody]),
-           rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-             (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody]),
-           encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"] none) ⇝ᵈ*
-          (.collection .hashBag [Tnu, Tseed, TrepNu] none)) ∧
-      (.collection .hashBag [Tnu, Tseed] none ≡
-        .collection .hashBag [Tseed, Tnu] none) ∧
-      WeakRestrictedBisimD N Tnu
-        (.collection .hashBag
-          [semanticCommSubst nuListenerBody (.fvar "n_init"),
-           rhoInput (.fvar "n_init") x (encode P ("n_init" ++ "_" ++ "n_init") "v_init")] none) ∧
-      WeakRestrictedBisimD N Tseed
-        (.collection .hashBag
-          [semanticCommSubst seedListenerBody (.apply "PDrop" [.fvar "ns_seed"]),
-           rhoReplicate (Mettapedia.Languages.ProcessCalculi.PiCalculus.nameServerBody "ns_x" "ns_z" "v_init"),
-           dropOperation "ns_x"] none) ∧
-      WeakRestrictedBisimD N TrepNu
-        (rhoPar
-          (rhoInput (piNameToRhoName "ns_x") "_drop" (encode .nil ("n_init" ++ "_rep") "v_init"))
-          (encode (.replicate "ns_x" "_drop" .nil) "n_init" "v_init"))) ∧
-    WeakBackwardOutcome N
-      (rhoPar (encode (.nu x P) "n_init" "v_init")
-        (.apply "PInput" [.fvar "v_init", .lambda none nuListenerBody])) ∧
-    WeakBackwardOutcome N
-      (rhoPar (nameServer "ns_x" "ns_z" "v_init" "ns_seed")
-        (.apply "PInput" [.fvar "ns_z", .lambda none seedListenerBody])) ∧
-    WeakBackwardOutcome N (encode (.replicate xr yr Pr) n v) := by
+    NonRFAdminOutcome N x P nuListenerBody seedListenerBody xr yr Pr n v := by
   have hdisj : Disjoint N fullEncodeReservedNames :=
     obs_disjoint_reserved_of_subset_freeNames (P := P) (N := N) hobs hfresh
   have hrest :=

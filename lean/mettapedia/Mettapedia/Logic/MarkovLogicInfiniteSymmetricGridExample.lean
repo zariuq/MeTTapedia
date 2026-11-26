@@ -1,6 +1,7 @@
 import Mettapedia.Analysis.ENNRealGeometric
 import Mettapedia.Logic.MarkovLogicInfiniteGridExample
 import Mettapedia.Logic.MarkovLogicInfiniteExistence
+import Mettapedia.Logic.MarkovLogicInfiniteFiniteVolumeTransport
 import Mathlib.Order.Hom.PowersetCard
 import Mathlib.Order.SuccPred.Relation
 import Mathlib.Combinatorics.SimpleGraph.Acyclic
@@ -6654,31 +6655,24 @@ theorem two_le_originConnectedHullContainingSubregionCutCard
   unfold originContainingSubregionCutCard
   simpa using hcard
 
+private theorem filter_eq_empty_below_rank {ι : Type*} (indices : Finset ι)
+    (rank : ι → ℕ) {lower k : ℕ} (h : ∀ i ∈ indices, lower ≤ rank i) (hk : k < lower) :
+    indices.filter (fun i => rank i = k) = ∅ :=
+  Finset.filter_eq_empty_iff.mpr fun i hi eq => (not_lt_of_ge (eq ▸ h i hi)) hk
+
 theorem originConnectedHullContainingSubregions_filter_cutCard_zero_eq_empty
     (n : ℕ) :
     (originConnectedHullContainingSubregions n).filter
-        (fun hull => originContainingSubregionCutCard n hull = 0) = ∅ := by
-  classical
-  apply Finset.filter_false_of_mem
-  intro hull hhull hcut
-  have hge : 2 ≤ originContainingSubregionCutCard n hull :=
-    two_le_originConnectedHullContainingSubregionCutCard hhull
-  have hpos : 0 < originContainingSubregionCutCard n hull :=
-    lt_of_lt_of_le (by decide : 0 < 2) hge
-  exact Nat.ne_of_gt hpos hcut
+        (fun hull => originContainingSubregionCutCard n hull = 0) = ∅ :=
+  filter_eq_empty_below_rank _ (originContainingSubregionCutCard n)
+    (fun _ => two_le_originConnectedHullContainingSubregionCutCard) (by decide)
 
 theorem originConnectedHullContainingSubregions_filter_cutCard_one_eq_empty
     (n : ℕ) :
     (originConnectedHullContainingSubregions n).filter
-        (fun hull => originContainingSubregionCutCard n hull = 1) = ∅ := by
-  classical
-  apply Finset.filter_false_of_mem
-  intro hull hhull hcut
-  have hge : 2 ≤ originContainingSubregionCutCard n hull :=
-    two_le_originConnectedHullContainingSubregionCutCard hhull
-  have hone : 1 < originContainingSubregionCutCard n hull :=
-    lt_of_lt_of_le (by decide : 1 < 2) hge
-  exact Nat.ne_of_gt hone hcut
+        (fun hull => originContainingSubregionCutCard n hull = 1) = ∅ :=
+  filter_eq_empty_below_rank _ (originContainingSubregionCutCard n)
+    (fun _ => two_le_originConnectedHullContainingSubregionCutCard) (by decide)
 
 theorem originConnectedHullContainingSubregions_cutCard_zero_count
     (n : ℕ) :
@@ -6697,19 +6691,9 @@ theorem originConnectedHullContainingSubregions_cutCard_count_eq_zero_of_lt_two
     (hm : m < 2) :
     (((originConnectedHullContainingSubregions n).filter
         (fun hull => originContainingSubregionCutCard n hull = m)).card : ENNReal) = 0 := by
-  cases m with
-  | zero =>
-      simpa using originConnectedHullContainingSubregions_cutCard_zero_count n
-  | succ m =>
-      cases m with
-      | zero =>
-          simpa using originConnectedHullContainingSubregions_cutCard_one_count n
-      | succ m' =>
-          exfalso
-          have h2 : 2 ≤ Nat.succ (Nat.succ m') :=
-            Nat.succ_le_succ (Nat.succ_le_succ (Nat.zero_le m'))
-          have hmle : Nat.succ (Nat.succ m') ≤ 1 := Nat.lt_succ_iff.mp hm
-          exact (Nat.not_succ_le_self 1) (le_trans h2 hmle)
+  rw [filter_eq_empty_below_rank _ (originContainingSubregionCutCard n)
+    (fun _ => two_le_originConnectedHullContainingSubregionCutCard) hm]
+  simp
 
 /-- The canonical boundary-connected hull extracted from the origin-connected
 false-spin component of a finite assignment. -/
@@ -8803,28 +8787,16 @@ theorem two_le_originConnectedContainingSubregionCutCard
 theorem originConnectedContainingSubregions_filter_cutCard_zero_eq_empty
     (n : ℕ) :
     (originConnectedContainingSubregions n).filter
-        (fun inside => originContainingSubregionCutCard n inside = 0) = ∅ := by
-  classical
-  apply Finset.filter_false_of_mem
-  intro inside hinside hcut
-  have hge : 2 ≤ originContainingSubregionCutCard n inside :=
-    two_le_originConnectedContainingSubregionCutCard hinside
-  have hpos : 0 < originContainingSubregionCutCard n inside :=
-    lt_of_lt_of_le (by decide : 0 < 2) hge
-  exact Nat.ne_of_gt hpos hcut
+        (fun inside => originContainingSubregionCutCard n inside = 0) = ∅ :=
+  filter_eq_empty_below_rank _ (originContainingSubregionCutCard n)
+    (fun _ => two_le_originConnectedContainingSubregionCutCard) (by decide)
 
 theorem originConnectedContainingSubregions_filter_cutCard_one_eq_empty
     (n : ℕ) :
     (originConnectedContainingSubregions n).filter
-        (fun inside => originContainingSubregionCutCard n inside = 1) = ∅ := by
-  classical
-  apply Finset.filter_false_of_mem
-  intro inside hinside hcut
-  have hge : 2 ≤ originContainingSubregionCutCard n inside :=
-    two_le_originConnectedContainingSubregionCutCard hinside
-  have hone : 1 < originContainingSubregionCutCard n inside :=
-    lt_of_lt_of_le (by decide : 1 < 2) hge
-  exact Nat.ne_of_gt hone hcut
+        (fun inside => originContainingSubregionCutCard n inside = 1) = ∅ :=
+  filter_eq_empty_below_rank _ (originContainingSubregionCutCard n)
+    (fun _ => two_le_originConnectedContainingSubregionCutCard) (by decide)
 
 theorem originConnectedContainingSubregions_cutCard_zero_count
     (n : ℕ) :
@@ -8843,45 +8815,23 @@ theorem originConnectedContainingSubregions_cutCard_count_eq_zero_of_lt_two
     (hm : m < 2) :
     (((originConnectedContainingSubregions n).filter
         (fun inside => originContainingSubregionCutCard n inside = m)).card : ENNReal) = 0 := by
-  cases m with
-  | zero =>
-      simpa using originConnectedContainingSubregions_cutCard_zero_count n
-  | succ m =>
-      cases m with
-      | zero =>
-          simpa using originConnectedContainingSubregions_cutCard_one_count n
-      | succ m' =>
-          exfalso
-          have h2 : 2 ≤ Nat.succ (Nat.succ m') :=
-            Nat.succ_le_succ (Nat.succ_le_succ (Nat.zero_le m'))
-          have hmle : Nat.succ (Nat.succ m') ≤ 1 := Nat.lt_succ_iff.mp hm
-          exact (Nat.not_succ_le_self 1) (le_trans h2 hmle)
+  rw [filter_eq_empty_below_rank _ (originContainingSubregionCutCard n)
+    (fun _ => two_le_originConnectedContainingSubregionCutCard) hm]
+  simp
 
 theorem originConnectedContainingSubregions_filter_outerCutCard_zero_eq_empty
     (n : ℕ) :
     (originConnectedContainingSubregions n).filter
-        (fun inside => originContainingSubregionOuterCutCard n inside = 0) = ∅ := by
-  classical
-  apply Finset.filter_false_of_mem
-  intro inside hinside hcut
-  have hge : 2 ≤ originContainingSubregionOuterCutCard n inside :=
-    two_le_originConnectedContainingSubregionOuterCutCard hinside
-  have hpos : 0 < originContainingSubregionOuterCutCard n inside :=
-    lt_of_lt_of_le (by decide : 0 < 2) hge
-  exact Nat.ne_of_gt hpos hcut
+        (fun inside => originContainingSubregionOuterCutCard n inside = 0) = ∅ :=
+  filter_eq_empty_below_rank _ (originContainingSubregionOuterCutCard n)
+    (fun _ => two_le_originConnectedContainingSubregionOuterCutCard) (by decide)
 
 theorem originConnectedContainingSubregions_filter_outerCutCard_one_eq_empty
     (n : ℕ) :
     (originConnectedContainingSubregions n).filter
-        (fun inside => originContainingSubregionOuterCutCard n inside = 1) = ∅ := by
-  classical
-  apply Finset.filter_false_of_mem
-  intro inside hinside hcut
-  have hge : 2 ≤ originContainingSubregionOuterCutCard n inside :=
-    two_le_originConnectedContainingSubregionOuterCutCard hinside
-  have hone : 1 < originContainingSubregionOuterCutCard n inside :=
-    lt_of_lt_of_le (by decide : 1 < 2) hge
-  exact Nat.ne_of_gt hone hcut
+        (fun inside => originContainingSubregionOuterCutCard n inside = 1) = ∅ :=
+  filter_eq_empty_below_rank _ (originContainingSubregionOuterCutCard n)
+    (fun _ => two_le_originConnectedContainingSubregionOuterCutCard) (by decide)
 
 theorem originConnectedContainingSubregions_outerCutCard_zero_count
     (n : ℕ) :
@@ -8900,19 +8850,9 @@ theorem originConnectedContainingSubregions_outerCutCard_count_eq_zero_of_lt_two
     (hm : m < 2) :
     (((originConnectedContainingSubregions n).filter
         (fun inside => originContainingSubregionOuterCutCard n inside = m)).card : ENNReal) = 0 := by
-  cases m with
-  | zero =>
-      simpa using originConnectedContainingSubregions_outerCutCard_zero_count n
-  | succ m =>
-      cases m with
-      | zero =>
-          simpa using originConnectedContainingSubregions_outerCutCard_one_count n
-      | succ m' =>
-          exfalso
-          have h2 : 2 ≤ Nat.succ (Nat.succ m') :=
-            Nat.succ_le_succ (Nat.succ_le_succ (Nat.zero_le m'))
-          have hmle : Nat.succ (Nat.succ m') ≤ 1 := Nat.lt_succ_iff.mp hm
-          exact (Nat.not_succ_le_self 1) (le_trans h2 hmle)
+  rw [filter_eq_empty_below_rank _ (originContainingSubregionOuterCutCard n)
+    (fun _ => two_le_originConnectedContainingSubregionOuterCutCard) hm]
+  simp
 
 /-- The assignment event attached to a candidate inside region in the stage box.
 For regions not actually contained in the box we return the empty event, so this
@@ -9042,28 +8982,6 @@ noncomputable def originConnectedHullWorldEvent
     Set (InfiniteWorld GridNode) :=
   MeasureTheory.cylinder (gridExhaustion.region n)
     (originConnectedHullAssignmentEvent n hull)
-
-private theorem measure_iUnion_finset_le_sum
-    {α β : Type*} [MeasurableSpace α] [DecidableEq β]
-    (μ : Measure α) (s : Finset β) (f : β → Set α) :
-    μ (⋃ b, if b ∈ s then f b else ∅) ≤ Finset.sum s (fun b => μ (f b)) := by
-  induction s using Finset.induction_on with
-  | empty =>
-      simp
-  | insert a s ha ih =>
-      have hunion :
-          (⋃ b, if b ∈ insert a s then f b else ∅) =
-            f a ∪ ⋃ b, if b ∈ s then f b else ∅ := by
-        ext x
-        simp
-      rw [hunion]
-      calc
-        μ (f a ∪ ⋃ b, if b ∈ s then f b else ∅) ≤ μ (f a) + μ (⋃ b, if b ∈ s then f b else ∅) :=
-          MeasureTheory.measure_union_le _ _
-        _ ≤ μ (f a) + Finset.sum s (fun b => μ (f b)) := by
-          simpa [add_comm, add_left_comm, add_assoc] using add_le_add_right ih (μ (f a))
-        _ = Finset.sum (insert a s) (fun b => μ (f b)) := by
-          simp [ha]
 
 /-- The stage-box local assignment event that the origin spin is false. -/
 noncomputable def originSpinDownAssignmentEvent (n : ℕ) :
@@ -9799,207 +9717,61 @@ theorem exists_bottomHorizontalCut_leftVerticalCut_of_mem_originConnectedHullCut
   · rw [hsEq, hcutEq]
     exact hvertOuter
 
-theorem outerCutCard_lower_of_insideEndpoints
-    {n : ℕ} {inside : Region GridNode}
-    (hinside : inside ∈ originConnectedContainingSubregions n)
-    {a b : GridNode}
-    (ha : a ∈ inside) (hb : b ∈ inside) :
-    a.1 + b.2 + 2 ≤ originContainingSubregionOuterCutCard n inside := by
-  classical
-  rcases mem_originConnectedContainingSubregions_iff.1 hinside with ⟨hInside, hconn⟩
-  have hinside' : inside ∈ originContainingSubregions n :=
-    mem_originContainingSubregions_iff.2 ⟨hInside, hconn.1⟩
-  let fV : Fin (a.1 + 1) → GridClauseId := fun k =>
-    GridClauseId.vertical
-      k.1
-      (Classical.choose
-        (originContainingSubregion_exists_outerVerticalCut_on_col
-          (n := n) (i := k.1) (inside := inside) hinside'
-          (exists_mem_col_of_originConnected hconn ha k.1 (Nat.le_of_lt_succ k.2))))
-  let fH : Fin (b.2 + 1) → GridClauseId := fun k =>
-    GridClauseId.horizontal
-      (Classical.choose
-        (originContainingSubregion_exists_outerHorizontalCut_on_row
-          (n := n) (j := k.1) (inside := inside) hinside'
-          (exists_mem_row_of_originConnected hconn hb k.1 (Nat.le_of_lt_succ k.2))))
-      k.1
-  have hsubsetV :
-      (Finset.univ.image fV) ⊆ originContainingSubregionOuterCutBaseClauses n inside := by
-    intro j hj
-    rcases Finset.mem_image.1 hj with ⟨k, _hk, rfl⟩
-    exact Classical.choose_spec
-      (originContainingSubregion_exists_outerVerticalCut_on_col
-        (n := n) (i := k.1) (inside := inside) hinside'
-        (exists_mem_col_of_originConnected hconn ha k.1 (Nat.le_of_lt_succ k.2)))
-  have hsubsetH :
-      (Finset.univ.image fH) ⊆ originContainingSubregionOuterCutBaseClauses n inside := by
-    intro j hj
-    rcases Finset.mem_image.1 hj with ⟨k, _hk, rfl⟩
-    exact Classical.choose_spec
-      (originContainingSubregion_exists_outerHorizontalCut_on_row
-        (n := n) (j := k.1) (inside := inside) hinside'
-        (exists_mem_row_of_originConnected hconn hb k.1 (Nat.le_of_lt_succ k.2)))
-  have hinjV : Function.Injective fV := by
-    intro k₁ k₂ hEq
-    have hfst :
-        (match fV k₁ with
-          | GridClauseId.vertical i _ => i
-          | _ => 0) =
-        (match fV k₂ with
-          | GridClauseId.vertical i _ => i
-          | _ => 0) := by
-      simpa [fV] using congrArg
-        (fun c =>
-          match c with
-          | GridClauseId.vertical i _ => i
-          | _ => 0) hEq
-    exact Fin.ext hfst
-  have hinjH : Function.Injective fH := by
-    intro k₁ k₂ hEq
-    have hsnd :
-        (match fH k₁ with
-          | GridClauseId.horizontal _ j => j
-          | _ => 0) =
-        (match fH k₂ with
-          | GridClauseId.horizontal _ j => j
-          | _ => 0) := by
-      simpa [fH] using congrArg
-        (fun c =>
-          match c with
-          | GridClauseId.horizontal _ j => j
-          | _ => 0) hEq
-    exact Fin.ext hsnd
-  have hdisj :
-      Disjoint (Finset.univ.image fV) (Finset.univ.image fH) := by
-    rw [Finset.disjoint_left]
-    intro j hjV hjH
-    rcases Finset.mem_image.1 hjV with ⟨kV, _hkV, hEqV⟩
-    rcases Finset.mem_image.1 hjH with ⟨kH, _hkH, hEqH⟩
-    have hEq : fV kV = fH kH := hEqV.trans hEqH.symm
-    simp [fV, fH] at hEq
-  have hcard :
-      ((Finset.univ : Finset (Fin (a.1 + 1))).card +
-        (Finset.univ : Finset (Fin (b.2 + 1))).card) ≤
-      (originContainingSubregionOuterCutBaseClauses n inside).card := by
-    calc
-      ((Finset.univ : Finset (Fin (a.1 + 1))).card +
-          (Finset.univ : Finset (Fin (b.2 + 1))).card)
-          = ((Finset.univ.image fV).card + (Finset.univ.image fH).card) := by
-              rw [Finset.card_image_of_injective _ hinjV,
-                Finset.card_image_of_injective _ hinjH]
-      _ = ((Finset.univ.image fV) ∪ (Finset.univ.image fH)).card := by
-              exact (Finset.card_union_of_disjoint hdisj).symm
-      _ ≤ (originContainingSubregionOuterCutBaseClauses n inside).card := by
-              apply Finset.card_le_card
-              intro j hj
-              rcases Finset.mem_union.1 hj with hjV | hjH
-              · exact hsubsetV hjV
-              · exact hsubsetH hjH
-  unfold originContainingSubregionOuterCutCard
-  simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using hcard
+/-- The chosen cuts retain their row and column coordinates. The two
+orientations are disjoint even when they start at the same node. -/
+private def selectedRowColumnCuts {i j : ℕ}
+    (columns : Fin (i + 1) → ℕ) (rows : Fin (j + 1) → ℕ) : Finset GridClauseId :=
+  (Finset.univ.image (fun k : Fin (i + 1) => GridClauseId.vertical k.1 (columns k))) ∪
+    (Finset.univ.image (fun k : Fin (j + 1) => GridClauseId.horizontal (rows k) k.1))
 
-theorem exists_outerCutRowColSkeleton_of_insideEndpoints
-    {n : ℕ} {inside : Region GridNode}
+private theorem selectedRowColumnCuts_subset_card {i j : ℕ} {cuts : Finset GridClauseId}
+    {columns : Fin (i + 1) → ℕ} {rows : Fin (j + 1) → ℕ}
+    (colMem : ∀ k, GridClauseId.vertical k.1 (columns k) ∈ cuts)
+    (rowMem : ∀ k, GridClauseId.horizontal (rows k) k.1 ∈ cuts) :
+    selectedRowColumnCuts columns rows ⊆ cuts ∧
+      (selectedRowColumnCuts columns rows).card = i + j + 2 := by
+  let vertical (k : Fin (i + 1)) := GridClauseId.vertical k.1 (columns k)
+  let horizontal (k : Fin (j + 1)) := GridClauseId.horizontal (rows k) k.1
+  have vertical_injective : Function.Injective vertical :=
+    fun _ _ eq => Fin.ext (GridClauseId.vertical.inj eq).1
+  have horizontal_injective : Function.Injective horizontal :=
+    fun _ _ eq => Fin.ext (GridClauseId.horizontal.inj eq).2
+  have disjoint : Disjoint (Finset.univ.image vertical) (Finset.univ.image horizontal) := by
+    refine Finset.disjoint_left.2 ?_
+    intro e heV heH
+    obtain ⟨v, _, rfl⟩ := Finset.mem_image.1 heV
+    obtain ⟨h, _, eq⟩ := Finset.mem_image.1 heH
+    exact GridClauseId.noConfusion (show GridClauseId.horizontal (rows h) h.1 =
+      GridClauseId.vertical v.1 (columns v) from eq)
+  constructor
+  · exact Finset.union_subset
+      (Finset.image_subset_iff.2 fun k _ => colMem k)
+      (Finset.image_subset_iff.2 fun k _ => rowMem k)
+  · change (Finset.univ.image vertical ∪ Finset.univ.image horizontal).card = i + j + 2
+    rw [Finset.card_union_of_disjoint disjoint, Finset.card_image_of_injective _ vertical_injective,
+      Finset.card_image_of_injective _ horizontal_injective]
+    simp only [Finset.card_univ, Fintype.card_fin]
+    omega
+
+private theorem exists_rowColumnCutWitnesses_of_insideEndpoints
+    {n i j : ℕ} {inside : Region GridNode}
     (hinside : inside ∈ originConnectedContainingSubregions n)
-    {a b : GridNode}
-    (ha : a ∈ inside) (hb : b ∈ inside) :
-    ∃ skel : Finset GridClauseId,
-      skel ⊆ originContainingSubregionOuterCutBaseClauses n inside ∧
-        skel.card = a.1 + b.2 + 2 := by
-  classical
-  rcases mem_originConnectedContainingSubregions_iff.1 hinside with ⟨hInside, hconn⟩
-  have hinside' : inside ∈ originContainingSubregions n :=
+    {a b : GridNode} (ha : a ∈ inside) (hb : b ∈ inside)
+    (hia : i ≤ a.1) (hjb : j ≤ b.2) :
+    ∃ columns : Fin (i + 1) → ℕ, ∃ rows : Fin (j + 1) → ℕ,
+      (∀ k, GridClauseId.vertical k.1 (columns k) ∈ originContainingSubregionOuterCutBaseClauses n inside) ∧
+      (∀ k, GridClauseId.horizontal (rows k) k.1 ∈ originContainingSubregionOuterCutBaseClauses n inside) := by
+  obtain ⟨hInside, hconn⟩ := mem_originConnectedContainingSubregions_iff.1 hinside
+  have origin : inside ∈ originContainingSubregions n :=
     mem_originContainingSubregions_iff.2 ⟨hInside, hconn.1⟩
-  let fV : Fin (a.1 + 1) → GridClauseId := fun k =>
-    GridClauseId.vertical
-      k.1
-      (Classical.choose
-        (originContainingSubregion_exists_outerVerticalCut_on_col
-          (n := n) (i := k.1) (inside := inside) hinside'
-          (exists_mem_col_of_originConnected hconn ha k.1 (Nat.le_of_lt_succ k.2))))
-  let fH : Fin (b.2 + 1) → GridClauseId := fun k =>
-    GridClauseId.horizontal
-      (Classical.choose
-        (originContainingSubregion_exists_outerHorizontalCut_on_row
-          (n := n) (j := k.1) (inside := inside) hinside'
-          (exists_mem_row_of_originConnected hconn hb k.1 (Nat.le_of_lt_succ k.2))))
-      k.1
-  let skel : Finset GridClauseId := (Finset.univ.image fV) ∪ (Finset.univ.image fH)
-  have hsubsetV :
-      (Finset.univ.image fV) ⊆ originContainingSubregionOuterCutBaseClauses n inside := by
-    intro j hj
-    rcases Finset.mem_image.1 hj with ⟨k, _hk, rfl⟩
-    exact Classical.choose_spec
-      (originContainingSubregion_exists_outerVerticalCut_on_col
-        (n := n) (i := k.1) (inside := inside) hinside'
-        (exists_mem_col_of_originConnected hconn ha k.1 (Nat.le_of_lt_succ k.2)))
-  have hsubsetH :
-      (Finset.univ.image fH) ⊆ originContainingSubregionOuterCutBaseClauses n inside := by
-    intro j hj
-    rcases Finset.mem_image.1 hj with ⟨k, _hk, rfl⟩
-    exact Classical.choose_spec
-      (originContainingSubregion_exists_outerHorizontalCut_on_row
-        (n := n) (j := k.1) (inside := inside) hinside'
-        (exists_mem_row_of_originConnected hconn hb k.1 (Nat.le_of_lt_succ k.2)))
-  have hinjV : Function.Injective fV := by
-    intro k₁ k₂ hEq
-    have hfst :
-        (match fV k₁ with
-          | GridClauseId.vertical i _ => i
-          | _ => 0) =
-        (match fV k₂ with
-          | GridClauseId.vertical i _ => i
-          | _ => 0) := by
-      simpa [fV] using congrArg
-        (fun c =>
-          match c with
-          | GridClauseId.vertical i _ => i
-          | _ => 0) hEq
-    exact Fin.ext hfst
-  have hinjH : Function.Injective fH := by
-    intro k₁ k₂ hEq
-    have hsnd :
-        (match fH k₁ with
-          | GridClauseId.horizontal _ j => j
-          | _ => 0) =
-        (match fH k₂ with
-          | GridClauseId.horizontal _ j => j
-          | _ => 0) := by
-      simpa [fH] using congrArg
-        (fun c =>
-          match c with
-          | GridClauseId.horizontal _ j => j
-          | _ => 0) hEq
-    exact Fin.ext hsnd
-  have hdisj :
-      Disjoint (Finset.univ.image fV) (Finset.univ.image fH) := by
-    rw [Finset.disjoint_left]
-    intro j hjV hjH
-    rcases Finset.mem_image.1 hjV with ⟨kV, _hkV, hEqV⟩
-    rcases Finset.mem_image.1 hjH with ⟨kH, _hkH, hEqH⟩
-    have hEq : fV kV = fH kH := hEqV.trans hEqH.symm
-    simp [fV, fH] at hEq
-  have hsubset : skel ⊆ originContainingSubregionOuterCutBaseClauses n inside := by
-    intro j hj
-    have hj' : j ∈ (Finset.univ.image fV) ∪ (Finset.univ.image fH) := by
-      simpa [skel] using hj
-    rcases Finset.mem_union.1 hj' with hjV | hjH
-    · exact hsubsetV hjV
-    · exact hsubsetH hjH
-  have hcard :
-      skel.card = a.1 + b.2 + 2 := by
-    calc
-      skel.card = ((Finset.univ.image fV) ∪ (Finset.univ.image fH)).card := by
-        rfl
-      _ = (Finset.univ.image fV).card + (Finset.univ.image fH).card := by
-        exact Finset.card_union_of_disjoint hdisj
-      _ = (Finset.univ : Finset (Fin (a.1 + 1))).card +
-            (Finset.univ : Finset (Fin (b.2 + 1))).card := by
-        rw [Finset.card_image_of_injective _ hinjV, Finset.card_image_of_injective _ hinjH]
-      _ = a.1 + b.2 + 2 := by
-        rw [Finset.card_univ, Fintype.card_fin, Finset.card_univ, Fintype.card_fin]
-        omega
-  exact ⟨skel, hsubset, hcard⟩
+  have cols (k : Fin (i + 1)) := originContainingSubregion_exists_outerVerticalCut_on_col
+    origin (exists_mem_col_of_originConnected hconn ha k.1 ((Nat.le_of_lt_succ k.2).trans hia))
+  have rows (k : Fin (j + 1)) := originContainingSubregion_exists_outerHorizontalCut_on_row
+    origin (exists_mem_row_of_originConnected hconn hb k.1 ((Nat.le_of_lt_succ k.2).trans hjb))
+  choose column hColumn using cols
+  choose row hRow using rows
+  exact ⟨column, row, hColumn, hRow⟩
+
 
 theorem exists_outerCutRowColSkeleton_of_insideEndpoints_bounded
     {n : ℕ} {inside : Region GridNode}
@@ -10011,104 +9783,30 @@ theorem exists_outerCutRowColSkeleton_of_insideEndpoints_bounded
     ∃ skel : Finset GridClauseId,
       skel ⊆ originContainingSubregionOuterCutBaseClauses n inside ∧
         skel.card = i + j + 2 := by
-  classical
-  rcases mem_originConnectedContainingSubregions_iff.1 hinside with ⟨hInside, hconn⟩
-  have hinside' : inside ∈ originContainingSubregions n :=
-    mem_originContainingSubregions_iff.2 ⟨hInside, hconn.1⟩
-  let fV : Fin (i + 1) → GridClauseId := fun k =>
-    GridClauseId.vertical
-      k.1
-      (Classical.choose
-        (originContainingSubregion_exists_outerVerticalCut_on_col
-          (n := n) (i := k.1) (inside := inside) hinside'
-          (exists_mem_col_of_originConnected hconn ha k.1
-            (le_trans (Nat.le_of_lt_succ k.2) hia))))
-  let fH : Fin (j + 1) → GridClauseId := fun k =>
-    GridClauseId.horizontal
-      (Classical.choose
-        (originContainingSubregion_exists_outerHorizontalCut_on_row
-          (n := n) (j := k.1) (inside := inside) hinside'
-          (exists_mem_row_of_originConnected hconn hb k.1
-            (le_trans (Nat.le_of_lt_succ k.2) hjb))))
-      k.1
-  let skel : Finset GridClauseId := (Finset.univ.image fV) ∪ (Finset.univ.image fH)
-  have hsubsetV :
-      (Finset.univ.image fV) ⊆ originContainingSubregionOuterCutBaseClauses n inside := by
-    intro x hx
-    rcases Finset.mem_image.1 hx with ⟨k, _hk, rfl⟩
-    exact Classical.choose_spec
-      (originContainingSubregion_exists_outerVerticalCut_on_col
-        (n := n) (i := k.1) (inside := inside) hinside'
-        (exists_mem_col_of_originConnected hconn ha k.1
-          (le_trans (Nat.le_of_lt_succ k.2) hia)))
-  have hsubsetH :
-      (Finset.univ.image fH) ⊆ originContainingSubregionOuterCutBaseClauses n inside := by
-    intro x hx
-    rcases Finset.mem_image.1 hx with ⟨k, _hk, rfl⟩
-    exact Classical.choose_spec
-      (originContainingSubregion_exists_outerHorizontalCut_on_row
-        (n := n) (j := k.1) (inside := inside) hinside'
-        (exists_mem_row_of_originConnected hconn hb k.1
-          (le_trans (Nat.le_of_lt_succ k.2) hjb)))
-  have hinjV : Function.Injective fV := by
-    intro k₁ k₂ hEq
-    have hfst :
-        (match fV k₁ with
-          | GridClauseId.vertical i _ => i
-          | _ => 0) =
-        (match fV k₂ with
-          | GridClauseId.vertical i _ => i
-          | _ => 0) := by
-      simpa [fV] using congrArg
-        (fun c =>
-          match c with
-          | GridClauseId.vertical i _ => i
-          | _ => 0) hEq
-    exact Fin.ext hfst
-  have hinjH : Function.Injective fH := by
-    intro k₁ k₂ hEq
-    have hsnd :
-        (match fH k₁ with
-          | GridClauseId.horizontal _ j => j
-          | _ => 0) =
-        (match fH k₂ with
-          | GridClauseId.horizontal _ j => j
-          | _ => 0) := by
-      simpa [fH] using congrArg
-        (fun c =>
-          match c with
-          | GridClauseId.horizontal _ j => j
-          | _ => 0) hEq
-    exact Fin.ext hsnd
-  have hdisj :
-      Disjoint (Finset.univ.image fV) (Finset.univ.image fH) := by
-    rw [Finset.disjoint_left]
-    intro x hxV hxH
-    rcases Finset.mem_image.1 hxV with ⟨kV, _hkV, hEqV⟩
-    rcases Finset.mem_image.1 hxH with ⟨kH, _hkH, hEqH⟩
-    have hEq : fV kV = fH kH := hEqV.trans hEqH.symm
-    simp [fV, fH] at hEq
-  have hsubset : skel ⊆ originContainingSubregionOuterCutBaseClauses n inside := by
-    intro x hx
-    have hx' : x ∈ (Finset.univ.image fV) ∪ (Finset.univ.image fH) := by
-      simpa [skel] using hx
-    rcases Finset.mem_union.1 hx' with hxV | hxH
-    · exact hsubsetV hxV
-    · exact hsubsetH hxH
-  have hcard :
-      skel.card = i + j + 2 := by
-    calc
-      skel.card = ((Finset.univ.image fV) ∪ (Finset.univ.image fH)).card := by
-        rfl
-      _ = (Finset.univ.image fV).card + (Finset.univ.image fH).card := by
-        exact Finset.card_union_of_disjoint hdisj
-      _ = (Finset.univ : Finset (Fin (i + 1))).card +
-            (Finset.univ : Finset (Fin (j + 1))).card := by
-        rw [Finset.card_image_of_injective _ hinjV, Finset.card_image_of_injective _ hinjH]
-      _ = i + j + 2 := by
-        rw [Finset.card_univ, Fintype.card_fin, Finset.card_univ, Fintype.card_fin]
-        omega
-  exact ⟨skel, hsubset, hcard⟩
+  obtain ⟨columns, rows, colMem, rowMem⟩ :=
+    exists_rowColumnCutWitnesses_of_insideEndpoints hinside ha hb hia hjb
+  obtain ⟨subset, card⟩ := selectedRowColumnCuts_subset_card colMem rowMem
+  exact ⟨selectedRowColumnCuts columns rows, subset, card⟩
+
+theorem exists_outerCutRowColSkeleton_of_insideEndpoints
+    {n : ℕ} {inside : Region GridNode}
+    (hinside : inside ∈ originConnectedContainingSubregions n)
+    {a b : GridNode}
+    (ha : a ∈ inside) (hb : b ∈ inside) :
+    ∃ skel : Finset GridClauseId,
+      skel ⊆ originContainingSubregionOuterCutBaseClauses n inside ∧
+        skel.card = a.1 + b.2 + 2 := by
+  exact exists_outerCutRowColSkeleton_of_insideEndpoints_bounded hinside ha hb le_rfl le_rfl
+
+theorem outerCutCard_lower_of_insideEndpoints
+    {n : ℕ} {inside : Region GridNode}
+    (hinside : inside ∈ originConnectedContainingSubregions n)
+    {a b : GridNode}
+    (ha : a ∈ inside) (hb : b ∈ inside) :
+    a.1 + b.2 + 2 ≤ originContainingSubregionOuterCutCard n inside := by
+  obtain ⟨skeleton, subset, size⟩ := exists_outerCutRowColSkeleton_of_insideEndpoints hinside ha hb
+  rw [← size]
+  exact Finset.card_le_card subset
 
 theorem exists_extra_outerCut_of_insideEndpoints_of_slack
     {n : ℕ} {inside : Region GridNode}
@@ -10910,6 +10608,27 @@ theorem mem_inside_of_leftVertical_outerCut_of_card_eq
       rw [hcard] at hbase
       omega
 
+theorem originContainingSubregionOuterCutBaseClauses_eq_union_rowColCuts_of_card_eq_of_witnesses
+    {n i j : ℕ} {inside : Region GridNode}
+    (hcard : originContainingSubregionOuterCutCard n inside = i + j + 2)
+    {gV : Fin (i + 1) → ℕ}
+    {gH : Fin (j + 1) → ℕ}
+    (hV :
+      ∀ k,
+        GridClauseId.vertical k.1 (gV k) ∈
+          originContainingSubregionOuterCutBaseClauses n inside)
+    (hH :
+      ∀ k,
+        GridClauseId.horizontal (gH k) k.1 ∈
+          originContainingSubregionOuterCutBaseClauses n inside) :
+    originContainingSubregionOuterCutBaseClauses n inside =
+      (Finset.univ.image (fun k : Fin (i + 1) => GridClauseId.vertical k.1 (gV k))) ∪
+        (Finset.univ.image (fun k : Fin (j + 1) => GridClauseId.horizontal (gH k) k.1)) := by
+  obtain ⟨subset, size⟩ := selectedRowColumnCuts_subset_card hV hH
+  refine (Finset.eq_of_subset_of_card_le subset ?_).symm
+  change originContainingSubregionOuterCutCard n inside ≤ _
+  rw [hcard, size]
+
 theorem originContainingSubregionOuterCutBaseClauses_eq_union_rowColCuts_of_card_eq
     {n i j : ℕ} {inside : Region GridNode}
     (hinside : inside ∈ originConnectedContainingSubregions n)
@@ -10941,193 +10660,17 @@ theorem originContainingSubregionOuterCutBaseClauses_eq_union_rowColCuts_of_card
     originContainingSubregionOuterCutBaseClauses n inside =
       (Finset.univ.image fV) ∪ (Finset.univ.image fH) := by
   classical
-  rcases mem_originConnectedContainingSubregions_iff.1 hinside with ⟨hInside, hconn⟩
-  have hinside' : inside ∈ originContainingSubregions n :=
-    mem_originContainingSubregions_iff.2 ⟨hInside, hconn.1⟩
-  let fV : Fin (i + 1) → GridClauseId := fun k =>
-    GridClauseId.vertical
-      k.1
-      (Classical.choose
-        (originContainingSubregion_exists_outerVerticalCut_on_col
-          (n := n) (i := k.1) (inside := inside) hinside'
-          (exists_mem_col_of_originConnected hconn hi k.1 (Nat.le_of_lt_succ k.2))))
-  let fH : Fin (j + 1) → GridClauseId := fun k =>
-    GridClauseId.horizontal
-      (Classical.choose
-        (originContainingSubregion_exists_outerHorizontalCut_on_row
-          (n := n) (j := k.1) (inside := inside) hinside'
-          (exists_mem_row_of_originConnected hconn hj k.1 (Nat.le_of_lt_succ k.2))))
-      k.1
-  have hsubsetV :
-      (Finset.univ.image fV) ⊆ originContainingSubregionOuterCutBaseClauses n inside := by
-    intro x hx
-    rcases Finset.mem_image.1 hx with ⟨k, _hk, rfl⟩
-    exact Classical.choose_spec
-      (originContainingSubregion_exists_outerVerticalCut_on_col
-        (n := n) (i := k.1) (inside := inside) hinside'
-        (exists_mem_col_of_originConnected hconn hi k.1 (Nat.le_of_lt_succ k.2)))
-  have hsubsetH :
-      (Finset.univ.image fH) ⊆ originContainingSubregionOuterCutBaseClauses n inside := by
-    intro x hx
-    rcases Finset.mem_image.1 hx with ⟨k, _hk, rfl⟩
-    exact Classical.choose_spec
-      (originContainingSubregion_exists_outerHorizontalCut_on_row
-        (n := n) (j := k.1) (inside := inside) hinside'
-        (exists_mem_row_of_originConnected hconn hj k.1 (Nat.le_of_lt_succ k.2)))
-  have hinjV : Function.Injective fV := by
-    intro k₁ k₂ hEq
-    have hfst :
-        (match fV k₁ with
-          | GridClauseId.vertical i' _ => i'
-          | _ => 0) =
-        (match fV k₂ with
-          | GridClauseId.vertical i' _ => i'
-          | _ => 0) := by
-      simpa [fV] using congrArg
-        (fun c =>
-          match c with
-          | GridClauseId.vertical i' _ => i'
-          | _ => 0) hEq
-    exact Fin.ext hfst
-  have hinjH : Function.Injective fH := by
-    intro k₁ k₂ hEq
-    have hsnd :
-        (match fH k₁ with
-          | GridClauseId.horizontal _ j' => j'
-          | _ => 0) =
-        (match fH k₂ with
-          | GridClauseId.horizontal _ j' => j'
-          | _ => 0) := by
-      simpa [fH] using congrArg
-        (fun c =>
-          match c with
-          | GridClauseId.horizontal _ j' => j'
-          | _ => 0) hEq
-    exact Fin.ext hsnd
-  have hdisj :
-      Disjoint (Finset.univ.image fV) (Finset.univ.image fH) := by
-    rw [Finset.disjoint_left]
-    intro x hxV hxH
-    rcases Finset.mem_image.1 hxV with ⟨kV, _hkV, hEqV⟩
-    rcases Finset.mem_image.1 hxH with ⟨kH, _hkH, hEqH⟩
-    have hEq : fV kV = fH kH := hEqV.trans hEqH.symm
-    simp [fV, fH] at hEq
-  have hsubset :
-      (Finset.univ.image fV ∪ Finset.univ.image fH) ⊆
-        originContainingSubregionOuterCutBaseClauses n inside := by
-    intro x hx
-    rcases Finset.mem_union.1 hx with hxV | hxH
-    · exact hsubsetV hxV
-    · exact hsubsetH hxH
-  have hcardUnion :
-      ((Finset.univ.image fV) ∪ (Finset.univ.image fH)).card = i + j + 2 := by
-    calc
-      ((Finset.univ.image fV) ∪ (Finset.univ.image fH)).card
-          = (Finset.univ.image fV).card + (Finset.univ.image fH).card := by
-              exact Finset.card_union_of_disjoint hdisj
-      _ = (Finset.univ : Finset (Fin (i + 1))).card +
-            (Finset.univ : Finset (Fin (j + 1))).card := by
-              rw [Finset.card_image_of_injective _ hinjV,
-                Finset.card_image_of_injective _ hinjH]
-      _ = i + j + 2 := by simp [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
-  have hcardLe :
-      (originContainingSubregionOuterCutBaseClauses n inside).card ≤
-        ((Finset.univ.image fV) ∪ (Finset.univ.image fH)).card := by
-    unfold originContainingSubregionOuterCutCard at hcard
-    rw [hcard, hcardUnion]
-  have hEq :
-      (Finset.univ.image fV ∪ Finset.univ.image fH) =
-        originContainingSubregionOuterCutBaseClauses n inside :=
-    Finset.eq_of_subset_of_card_le hsubset hcardLe
-  simpa [fV, fH] using hEq.symm
-
-theorem originContainingSubregionOuterCutBaseClauses_eq_union_rowColCuts_of_card_eq_of_witnesses
-    {n i j : ℕ} {inside : Region GridNode}
-    (hcard : originContainingSubregionOuterCutCard n inside = i + j + 2)
-    {gV : Fin (i + 1) → ℕ}
-    {gH : Fin (j + 1) → ℕ}
-    (hV :
-      ∀ k,
-        GridClauseId.vertical k.1 (gV k) ∈
-          originContainingSubregionOuterCutBaseClauses n inside)
-    (hH :
-      ∀ k,
-        GridClauseId.horizontal (gH k) k.1 ∈
-          originContainingSubregionOuterCutBaseClauses n inside) :
-    originContainingSubregionOuterCutBaseClauses n inside =
-      (Finset.univ.image (fun k : Fin (i + 1) => GridClauseId.vertical k.1 (gV k))) ∪
-        (Finset.univ.image (fun k : Fin (j + 1) => GridClauseId.horizontal (gH k) k.1)) := by
-  classical
-  let fV : Fin (i + 1) → GridClauseId := fun k => GridClauseId.vertical k.1 (gV k)
-  let fH : Fin (j + 1) → GridClauseId := fun k => GridClauseId.horizontal (gH k) k.1
-  have hsubset :
-      (Finset.univ.image fV ∪ Finset.univ.image fH) ⊆
-        originContainingSubregionOuterCutBaseClauses n inside := by
-    intro x hx
-    rcases Finset.mem_union.1 hx with hxV | hxH
-    · rcases Finset.mem_image.1 hxV with ⟨k, _hk, rfl⟩
-      exact hV k
-    · rcases Finset.mem_image.1 hxH with ⟨k, _hk, rfl⟩
-      exact hH k
-  have hinjV : Function.Injective fV := by
-    intro k₁ k₂ hEq
-    have hfst :
-        (match fV k₁ with
-          | GridClauseId.vertical i _ => i
-          | _ => 0) =
-        (match fV k₂ with
-          | GridClauseId.vertical i _ => i
-          | _ => 0) := by
-      simpa [fV] using congrArg
-        (fun c =>
-          match c with
-          | GridClauseId.vertical i _ => i
-          | _ => 0) hEq
-    exact Fin.ext hfst
-  have hinjH : Function.Injective fH := by
-    intro k₁ k₂ hEq
-    have hsnd :
-        (match fH k₁ with
-          | GridClauseId.horizontal _ j => j
-          | _ => 0) =
-        (match fH k₂ with
-          | GridClauseId.horizontal _ j => j
-          | _ => 0) := by
-      simpa [fH] using congrArg
-        (fun c =>
-          match c with
-          | GridClauseId.horizontal _ j => j
-          | _ => 0) hEq
-    exact Fin.ext hsnd
-  have hdisj :
-      Disjoint (Finset.univ.image fV) (Finset.univ.image fH) := by
-    rw [Finset.disjoint_left]
-    intro x hxV hxH
-    rcases Finset.mem_image.1 hxV with ⟨kV, _hkV, hEqV⟩
-    rcases Finset.mem_image.1 hxH with ⟨kH, _hkH, hEqH⟩
-    have hEq : fV kV = fH kH := hEqV.trans hEqH.symm
-    simp [fV, fH] at hEq
-  have hcardUnion :
-      ((Finset.univ.image fV) ∪ (Finset.univ.image fH)).card = i + j + 2 := by
-    calc
-      ((Finset.univ.image fV) ∪ (Finset.univ.image fH)).card
-          = (Finset.univ.image fV).card + (Finset.univ.image fH).card := by
-              exact Finset.card_union_of_disjoint hdisj
-      _ = (Finset.univ : Finset (Fin (i + 1))).card +
-            (Finset.univ : Finset (Fin (j + 1))).card := by
-              rw [Finset.card_image_of_injective _ hinjV,
-                Finset.card_image_of_injective _ hinjH]
-      _ = i + j + 2 := by simp [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
-  have hcardLe :
-      (originContainingSubregionOuterCutBaseClauses n inside).card ≤
-        ((Finset.univ.image fV) ∪ (Finset.univ.image fH)).card := by
-    unfold originContainingSubregionOuterCutCard at hcard
-    rw [hcard, hcardUnion]
-  have hEq :
-      (Finset.univ.image fV ∪ Finset.univ.image fH) =
-        originContainingSubregionOuterCutBaseClauses n inside :=
-    Finset.eq_of_subset_of_card_le hsubset hcardLe
-  simpa [fV, fH] using hEq.symm
+  dsimp only
+  obtain ⟨hInside, hConn⟩ := mem_originConnectedContainingSubregions_iff.1 hinside
+  have hOrigin : inside ∈ originContainingSubregions n :=
+    mem_originContainingSubregions_iff.2 ⟨hInside, hConn.1⟩
+  apply originContainingSubregionOuterCutBaseClauses_eq_union_rowColCuts_of_card_eq_of_witnesses hcard
+  · intro k
+    exact Classical.choose_spec (originContainingSubregion_exists_outerVerticalCut_on_col
+      hOrigin (exists_mem_col_of_originConnected hConn hi k.1 (Nat.le_of_lt_succ k.2)))
+  · intro k
+    exact Classical.choose_spec (originContainingSubregion_exists_outerHorizontalCut_on_row
+      hOrigin (exists_mem_row_of_originConnected hConn hj k.1 (Nat.le_of_lt_succ k.2)))
 
 /-- The local cut-set candidates for cut-card `m`, rooted by a chosen bottom-row
 horizontal cut and left-column vertical cut. This is the natural next family
@@ -12180,6 +11723,33 @@ theorem exists_non_diag_axisAnchoredCutSetCandidate_from_hookSlackInside :
     hookSlackHullCutCard_gt_axisRootLower,
     hookSlackHullCutSet_mem_originConnectedHullCutSetCandidatesInCutCardBoxAxisAnchored⟩
 
+private theorem exists_axisAnchored_outerCut_of_diagonal
+    {m i j : ℕ} {s : Finset GridClauseId}
+    (hs : s ∈ originConnectedHullCutSetCandidatesInCutCardBoxAxisAnchored m i j)
+    (hdiag : m = i + j + 2) :
+    ∃ inside, inside ∈ originConnectedContainingSubregions (m - 1) ∧
+      s = originContainingSubregionOuterCutBaseClauses (m - 1) inside ∧
+      (i, 0) ∈ inside ∧ (0, j) ∈ inside ∧
+      originContainingSubregionOuterCutCard (m - 1) inside = i + j + 2 := by
+  obtain ⟨hsCut, hRoots⟩ := Finset.mem_filter.1 hs
+  obtain ⟨hull, hHullBox, hCard, hCutSet⟩ := mem_originConnectedHullCutSetCandidatesInCutCardBox_iff.1 hsCut
+  have hHull : hull ∈ originConnectedHullContainingSubregions (m - 1) := by
+    simpa [originConnectedHullContainingSubregionsInCutCardBox] using hHullBox
+  obtain ⟨inside, hConn, hHullEq⟩ := mem_originConnectedHullContainingSubregions_iff.1 hHull
+  have hInside := (mem_originConnectedContainingSubregions_iff.1 hConn).1
+  have hOuter : s = originContainingSubregionOuterCutBaseClauses (m - 1) inside := by
+    rw [hCutSet, ← hHullEq]
+    exact originContainingSubregionCutBaseClauses_boundaryConnectedHullRegion_eq_outerCutBaseClauses hInside
+  have hSize : originContainingSubregionOuterCutCard (m - 1) inside = i + j + 2 := by
+    unfold originContainingSubregionOuterCutCard
+    rw [← hOuter, hCutSet]
+    exact hCard.trans hdiag
+  obtain ⟨hHorizontal, hVertical⟩ := hRoots
+  rw [hOuter] at hHorizontal hVertical
+  exact ⟨inside, hConn, hOuter,
+    mem_inside_of_bottomHorizontal_outerCut_of_card_eq hConn hHorizontal hVertical hSize,
+    mem_inside_of_leftVertical_outerCut_of_card_eq hConn hHorizontal hVertical hSize, hSize⟩
+
 theorem originConnectedHullCutSetCandidatesInCutCardBoxAxisAnchored_exists_rowColCutDecomposition_of_diag
     {m i j : ℕ} {s : Finset GridClauseId}
     (hs : s ∈ originConnectedHullCutSetCandidatesInCutCardBoxAxisAnchored m i j)
@@ -12191,99 +11761,14 @@ theorem originConnectedHullCutSetCandidatesInCutCardBoxAxisAnchored_exists_rowCo
           (∀ k, ∃ t, fV k = GridClauseId.vertical k.1 t) ∧
           (∀ k, ∃ t, fH k = GridClauseId.horizontal t k.1) := by
   classical
-  rcases Finset.mem_filter.1 hs with ⟨hsCut, hroots⟩
-  rcases mem_originConnectedHullCutSetCandidatesInCutCardBox_iff.1 hsCut with
-    ⟨hull, hhullBox, hcutCard, hsEq⟩
-  have hhull :
-      hull ∈ originConnectedHullContainingSubregions (m - 1) := by
-    simpa [originConnectedHullContainingSubregionsInCutCardBox] using hhullBox
-  rcases mem_originConnectedHullContainingSubregions_iff.1 hhull with
-    ⟨inside, hinsideConn, hHullEq⟩
-  rcases mem_originConnectedContainingSubregions_iff.1 hinsideConn with ⟨hInside, _hconn⟩
-  have hcutEq :
-      (gridRegionSupport (gridExhaustion.region (m - 1))).filter
-          (gridBaseClauseCutsRegion hull) =
-        originContainingSubregionOuterCutBaseClauses (m - 1) inside := by
-    simpa [hHullEq] using
-      originContainingSubregionCutBaseClauses_boundaryConnectedHullRegion_eq_outerCutBaseClauses
-        (n := m - 1) hInside
-  rcases hroots with ⟨hhor, hvør⟩
-  have hhorOuter :
-      GridClauseId.horizontal i 0 ∈ originContainingSubregionOuterCutBaseClauses (m - 1) inside := by
-    rw [← hcutEq, ← hsEq]
-    exact hhor
-  have hvertOuter :
-      GridClauseId.vertical 0 j ∈ originContainingSubregionOuterCutBaseClauses (m - 1) inside := by
-    rw [← hcutEq, ← hsEq]
-    exact hvør
-  have houterCard :
-      originContainingSubregionOuterCutCard (m - 1) inside = i + j + 2 := by
-    have hHullCard :
-        originContainingSubregionCutCard (m - 1) hull =
-          originContainingSubregionOuterCutCard (m - 1) inside := by
-      simpa [hHullEq] using
-        originContainingSubregionCutCard_boundaryConnectedHullRegion_eq_outerCutCard
-          (n := m - 1) hInside
-    calc
-      originContainingSubregionOuterCutCard (m - 1) inside
-          = originContainingSubregionCutCard (m - 1) hull := by rw [hHullCard]
-      _ = m := hcutCard
-      _ = i + j + 2 := hdiag
-  have hi : (i, 0) ∈ inside :=
-    mem_inside_of_bottomHorizontal_outerCut_of_card_eq hinsideConn hhorOuter hvertOuter houterCard
-  have hj : (0, j) ∈ inside :=
-    mem_inside_of_leftVertical_outerCut_of_card_eq hinsideConn hhorOuter hvertOuter houterCard
-  let fV : Fin (i + 1) → GridClauseId := fun k =>
-    GridClauseId.vertical
-      k.1
-      (Classical.choose
-        (originContainingSubregion_exists_outerVerticalCut_on_col
-          (n := m - 1) (i := k.1) (inside := inside)
-          (mem_originContainingSubregions_iff.2
-            ⟨(mem_originConnectedContainingSubregions_iff.1 hinsideConn).1,
-              (mem_originConnectedContainingSubregions_iff.1 hinsideConn).2.1⟩)
-          (exists_mem_col_of_originConnected
-            (mem_originConnectedContainingSubregions_iff.1 hinsideConn).2 hi k.1
-            (Nat.le_of_lt_succ k.2))))
-  let fH : Fin (j + 1) → GridClauseId := fun k =>
-    GridClauseId.horizontal
-      (Classical.choose
-        (originContainingSubregion_exists_outerHorizontalCut_on_row
-          (n := m - 1) (j := k.1) (inside := inside)
-          (mem_originContainingSubregions_iff.2
-            ⟨(mem_originConnectedContainingSubregions_iff.1 hinsideConn).1,
-              (mem_originConnectedContainingSubregions_iff.1 hinsideConn).2.1⟩)
-          (exists_mem_row_of_originConnected
-            (mem_originConnectedContainingSubregions_iff.1 hinsideConn).2 hj k.1
-            (Nat.le_of_lt_succ k.2))))
-      k.1
-  have hEq :
-      s = (Finset.univ.image fV) ∪ (Finset.univ.image fH) := by
-    rw [hsEq, hcutEq]
-    simpa [fV, fH] using
-      originContainingSubregionOuterCutBaseClauses_eq_union_rowColCuts_of_card_eq
-        hinsideConn hi hj houterCard
-  refine ⟨inside, hinsideConn, fV, fH, hEq, ?_, ?_⟩
-  · intro k
-    refine ⟨Classical.choose
-      (originContainingSubregion_exists_outerVerticalCut_on_col
-        (n := m - 1) (i := k.1) (inside := inside)
-        (mem_originContainingSubregions_iff.2
-          ⟨(mem_originConnectedContainingSubregions_iff.1 hinsideConn).1,
-            (mem_originConnectedContainingSubregions_iff.1 hinsideConn).2.1⟩)
-        (exists_mem_col_of_originConnected
-          (mem_originConnectedContainingSubregions_iff.1 hinsideConn).2 hi k.1
-          (Nat.le_of_lt_succ k.2))), rfl⟩
-  · intro k
-    refine ⟨Classical.choose
-      (originContainingSubregion_exists_outerHorizontalCut_on_row
-        (n := m - 1) (j := k.1) (inside := inside)
-        (mem_originContainingSubregions_iff.2
-          ⟨(mem_originConnectedContainingSubregions_iff.1 hinsideConn).1,
-            (mem_originConnectedContainingSubregions_iff.1 hinsideConn).2.1⟩)
-        (exists_mem_row_of_originConnected
-          (mem_originConnectedContainingSubregions_iff.1 hinsideConn).2 hj k.1
-          (Nat.le_of_lt_succ k.2))), rfl⟩
+  obtain ⟨inside, hConn, hOuter, hi, hj, hSize⟩ := exists_axisAnchored_outerCut_of_diagonal hs hdiag
+  obtain ⟨columns, rows, colMem, rowMem⟩ :=
+    exists_rowColumnCutWitnesses_of_insideEndpoints hConn hi hj le_rfl le_rfl
+  refine ⟨inside, hConn, (fun k => .vertical k.1 (columns k)), (fun k => .horizontal (rows k) k.1),
+    hOuter.trans (originContainingSubregionOuterCutBaseClauses_eq_union_rowColCuts_of_card_eq_of_witnesses
+      hSize colMem rowMem), ?_, ?_⟩
+  · exact fun k => ⟨columns k, rfl⟩
+  · exact fun k => ⟨rows k, rfl⟩
 
 theorem originConnectedHullCutSetCandidatesInCutCardBoxAxisAnchored_exists_maxRowColCutDecomposition_of_diag
     {m i j : ℕ} {s : Finset GridClauseId}
@@ -12307,54 +11792,11 @@ theorem originConnectedHullCutSetCandidatesInCutCardBoxAxisAnchored_exists_maxRo
               (gH k, k.1) ∈ inside ∧
               ∀ t, gH k < t → (t, k.1) ∉ inside) := by
   classical
-  rcases Finset.mem_filter.1 hs with ⟨hsCut, hroots⟩
-  rcases mem_originConnectedHullCutSetCandidatesInCutCardBox_iff.1 hsCut with
-    ⟨hull, hhullBox, hcutCard, hsEq⟩
-  have hhull :
-      hull ∈ originConnectedHullContainingSubregions (m - 1) := by
-    simpa [originConnectedHullContainingSubregionsInCutCardBox] using hhullBox
-  rcases mem_originConnectedHullContainingSubregions_iff.1 hhull with
-    ⟨inside, hinsideConn, hHullEq⟩
-  rcases mem_originConnectedContainingSubregions_iff.1 hinsideConn with ⟨hInside, hconn⟩
-  have hcutEq :
-      (gridRegionSupport (gridExhaustion.region (m - 1))).filter
-          (gridBaseClauseCutsRegion hull) =
-        originContainingSubregionOuterCutBaseClauses (m - 1) inside := by
-    simpa [hHullEq] using
-      originContainingSubregionCutBaseClauses_boundaryConnectedHullRegion_eq_outerCutBaseClauses
-        (n := m - 1) hInside
-  rcases hroots with ⟨hhor, hvør⟩
-  have hhorOuter :
-      GridClauseId.horizontal i 0 ∈ originContainingSubregionOuterCutBaseClauses (m - 1) inside := by
-    rw [← hcutEq, ← hsEq]
-    exact hhor
-  have hvertOuter :
-      GridClauseId.vertical 0 j ∈ originContainingSubregionOuterCutBaseClauses (m - 1) inside := by
-    rw [← hcutEq, ← hsEq]
-    exact hvør
-  have houterCard :
-      originContainingSubregionOuterCutCard (m - 1) inside = i + j + 2 := by
-    have hHullCard :
-        originContainingSubregionCutCard (m - 1) hull =
-          originContainingSubregionOuterCutCard (m - 1) inside := by
-      simpa [hHullEq] using
-        originContainingSubregionCutCard_boundaryConnectedHullRegion_eq_outerCutCard
-          (n := m - 1) hInside
-    calc
-      originContainingSubregionOuterCutCard (m - 1) inside
-          = originContainingSubregionCutCard (m - 1) hull := by rw [hHullCard]
-      _ = m := hcutCard
-      _ = i + j + 2 := hdiag
-  have hi : (i, 0) ∈ inside :=
-    mem_inside_of_bottomHorizontal_outerCut_of_card_eq hinsideConn hhorOuter hvertOuter houterCard
-  have hj : (0, j) ∈ inside :=
-    mem_inside_of_leftVertical_outerCut_of_card_eq hinsideConn hhorOuter hvertOuter houterCard
-  have hinsideOrigin :
-      inside ∈ originContainingSubregions (m - 1) :=
+  obtain ⟨inside, hinsideConn, hOuterEq, hi, hj, houterCard⟩ :=
+    exists_axisAnchored_outerCut_of_diagonal hs hdiag
+  obtain ⟨hInside, hconn⟩ := mem_originConnectedContainingSubregions_iff.1 hinsideConn
+  have hinsideOrigin : inside ∈ originContainingSubregions (m - 1) :=
     mem_originContainingSubregions_iff.2 ⟨hInside, hconn.1⟩
-  have hOuterEq :
-      s = originContainingSubregionOuterCutBaseClauses (m - 1) inside := by
-    rw [hsEq, hcutEq]
   let gV : Fin (i + 1) → ℕ := fun k =>
     Classical.choose
       (originContainingSubregion_exists_outerVerticalCut_on_col_max
@@ -12391,7 +11833,7 @@ theorem originConnectedHullCutSetCandidatesInCutCardBoxAxisAnchored_exists_maxRo
       s =
         (Finset.univ.image (fun k : Fin (i + 1) => GridClauseId.vertical k.1 (gV k))) ∪
           (Finset.univ.image (fun k : Fin (j + 1) => GridClauseId.horizontal (gH k) k.1)) := by
-    rw [hsEq, hcutEq]
+    rw [hOuterEq]
     exact
       originContainingSubregionOuterCutBaseClauses_eq_union_rowColCuts_of_card_eq_of_witnesses
         houterCard
@@ -19859,17 +19301,26 @@ noncomputable def symmetricGridVerticalEdgePairWeight
   (classicalWeightedClause (gridVerticalClause i j) w).eval W *
     (classicalWeightedClause (gridVerticalReverseClause i j) w).eval W
 
+/-- A pair of opposing implications gives one factor for every pair of
+endpoint spins, with an extra factor exactly in the aligned case. -/
+private theorem opposing_implications_alignmentBonus
+    (w : ℝ) (a b : GridNode) (W : InfiniteWorld GridNode) :
+    (classicalWeightedClause ({Literal.neg a, Literal.pos b} : GroundClause GridNode) w).eval W *
+        (classicalWeightedClause ({Literal.pos a, Literal.neg b} : GroundClause GridNode) w).eval W =
+      ENNReal.ofReal (Real.exp w) *
+        (if W a = W b then ENNReal.ofReal (Real.exp w) else 1) := by
+  cases hA : W a <;> cases hB : W b <;>
+    simp [WeightedGroundClause.eval, classicalWeightedClause, GroundClause.holds, Literal.holds,
+      hA, hB]
+
 /-- Every symmetric horizontal edge contributes a base factor `exp(w)`, with an
 additional factor `exp(w)` exactly when the endpoint spins agree. -/
 theorem symmetricGridHorizontalEdgePairWeight_eq_alignmentBonus
     (w : ℝ) (i j : Nat) (W : InfiniteWorld GridNode) :
     symmetricGridHorizontalEdgePairWeight w i j W =
       ENNReal.ofReal (Real.exp w) *
-        (if W (i, j) = W (i + 1, j) then ENNReal.ofReal (Real.exp w) else 1) := by
-  cases hLeft : W (i, j) <;> cases hRight : W (i + 1, j) <;>
-    simp [symmetricGridHorizontalEdgePairWeight, WeightedGroundClause.eval,
-      classicalWeightedClause, gridHorizontalClause, gridHorizontalReverseClause,
-      GroundClause.holds, Literal.holds, hLeft, hRight]
+        (if W (i, j) = W (i + 1, j) then ENNReal.ofReal (Real.exp w) else 1) :=
+  opposing_implications_alignmentBonus w (i, j) (i + 1, j) W
 
 /-- Every symmetric vertical edge contributes a base factor `exp(w)`, with an
 additional factor `exp(w)` exactly when the endpoint spins agree. -/
@@ -19877,11 +19328,8 @@ theorem symmetricGridVerticalEdgePairWeight_eq_alignmentBonus
     (w : ℝ) (i j : Nat) (W : InfiniteWorld GridNode) :
     symmetricGridVerticalEdgePairWeight w i j W =
       ENNReal.ofReal (Real.exp w) *
-        (if W (i, j) = W (i, j + 1) then ENNReal.ofReal (Real.exp w) else 1) := by
-  cases hDown : W (i, j) <;> cases hUp : W (i, j + 1) <;>
-    simp [symmetricGridVerticalEdgePairWeight, WeightedGroundClause.eval,
-      classicalWeightedClause, gridVerticalClause, gridVerticalReverseClause,
-      GroundClause.holds, Literal.holds, hDown, hUp]
+        (if W (i, j) = W (i, j + 1) then ENNReal.ofReal (Real.exp w) else 1) :=
+  opposing_implications_alignmentBonus w (i, j) (i, j + 1) W
 
 theorem symmetricGridHorizontalEdgePairWeight_eq_of_eq
     (w : ℝ) (i j : Nat) (W : InfiniteWorld GridNode)
@@ -19935,6 +19383,34 @@ theorem symmetricGridVerticalEdgePairWeight_gain_of_eq_over_ne
   simp [symmetricGridVerticalEdgePairWeight_eq_of_eq, hEq,
     symmetricGridVerticalEdgePairWeight_eq_of_ne, hNe]
 
+/-- Membership in the flipped region determines which endpoint spins change.
+The endpoints agree afterward exactly when equal membership and prior agreement coincide. -/
+theorem patch_flipInsideLocalAssignment_aligned_iff
+    {Λ inside : Region GridNode} {hInsideΛ : inside ⊆ Λ}
+    (x : LocalAssignment GridNode Λ) (ξ : BoundaryCondition GridNode) (a b : GridNode) :
+    (patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ a =
+      patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ b) ↔
+      ((a ∈ inside ↔ b ∈ inside) ↔ (patch Λ x ξ a = patch Λ x ξ b)) := by
+  by_cases ha : a ∈ inside <;> by_cases hb : b ∈ inside
+  · rw [patch_flipInsideLocalAssignment_eq_not_of_mem x ξ ha,
+        patch_flipInsideLocalAssignment_eq_not_of_mem x ξ hb]
+    simp [ha, hb]
+  · rw [patch_flipInsideLocalAssignment_eq_not_of_mem x ξ ha,
+        patch_flipInsideLocalAssignment_eq_of_not_mem x ξ hb]
+    cases (patch Λ x ξ a) <;> cases (patch Λ x ξ b) <;> simp [ha, hb]
+  · rw [patch_flipInsideLocalAssignment_eq_of_not_mem x ξ ha,
+        patch_flipInsideLocalAssignment_eq_not_of_mem x ξ hb]
+    cases (patch Λ x ξ a) <;> cases (patch Λ x ξ b) <;> simp [ha, hb]
+  · rw [patch_flipInsideLocalAssignment_eq_of_not_mem x ξ ha,
+        patch_flipInsideLocalAssignment_eq_of_not_mem x ξ hb]
+    simp [ha, hb]
+
+private theorem mem_iff_mem_of_not_separated {inside : Region GridNode} {a b : GridNode}
+    (h : ¬ ((a ∈ inside ∧ b ∉ inside) ∨ (a ∉ inside ∧ b ∈ inside))) :
+    a ∈ inside ↔ b ∈ inside := by
+  exact ⟨fun ha => not_not.mp fun hb => h (Or.inl ⟨ha, hb⟩),
+    fun hb => not_not.mp fun ha => h (Or.inr ⟨ha, hb⟩)⟩
+
 theorem symmetricGridHorizontalEdgePairWeight_flipInside_gain_of_leftCut
     {Λ : Region GridNode} {inside : Region GridNode} {hInsideΛ : inside ⊆ Λ}
     (w : ℝ) (x : LocalAssignment GridNode Λ) (ξ : BoundaryCondition GridNode)
@@ -19947,27 +19423,13 @@ theorem symmetricGridHorizontalEdgePairWeight_flipInside_gain_of_leftCut
         (patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ) =
       ENNReal.ofReal (Real.exp w) *
         symmetricGridHorizontalEdgePairWeight w i j (patch Λ x ξ) := by
-  let W : InfiniteWorld GridNode := patch Λ x ξ
-  let W' : InfiniteWorld GridNode := patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ
-  have hLeftFlip : W' (i, j) = true := by
-    calc
-      W' (i, j) = !(W (i, j)) := by
-        simpa [W, W'] using
-          (patch_flipInsideLocalAssignment_eq_not_of_mem
-            (x := x) (ξ := ξ) (a := (i, j)) hLeftMem)
-      _ = true := by simp [W, hLeftFalse]
-  have hRightFlip : W' (i + 1, j) = true := by
-    calc
-      W' (i + 1, j) = W (i + 1, j) := by
-        simpa [W, W'] using
-          (patch_flipInsideLocalAssignment_eq_of_not_mem
-            (x := x) (ξ := ξ) (a := (i + 1, j)) hRightMem)
-      _ = true := by simp [W, hRightTrue]
-  have hEq : W' (i, j) = W' (i + 1, j) := hLeftFlip.trans hRightFlip.symm
-  have hNe : W (i, j) ≠ W (i + 1, j) := by
-    simp [W, hLeftFalse, hRightTrue]
-  simpa [W, W'] using
-    (symmetricGridHorizontalEdgePairWeight_gain_of_eq_over_ne w i j W W' hEq hNe)
+  have separated : ¬ ((i, j) ∈ inside ↔ (i + 1, j) ∈ inside) :=
+    fun h => hRightMem (h.mp hLeftMem)
+  have different : patch Λ x ξ (i, j) ≠ patch Λ x ξ (i + 1, j) := by
+    simp [hLeftFalse, hRightTrue]
+  have aligned := (patch_flipInsideLocalAssignment_aligned_iff
+      (hInsideΛ := hInsideΛ) x ξ (i, j) (i + 1, j)).mpr (by simp [separated, different])
+  exact symmetricGridHorizontalEdgePairWeight_gain_of_eq_over_ne w i j _ _ aligned different
 
 theorem symmetricGridHorizontalEdgePairWeight_flipInside_gain_of_rightCut
     {Λ : Region GridNode} {inside : Region GridNode} {hInsideΛ : inside ⊆ Λ}
@@ -19981,27 +19443,13 @@ theorem symmetricGridHorizontalEdgePairWeight_flipInside_gain_of_rightCut
         (patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ) =
       ENNReal.ofReal (Real.exp w) *
         symmetricGridHorizontalEdgePairWeight w i j (patch Λ x ξ) := by
-  let W : InfiniteWorld GridNode := patch Λ x ξ
-  let W' : InfiniteWorld GridNode := patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ
-  have hLeftFlip : W' (i, j) = true := by
-    calc
-      W' (i, j) = W (i, j) := by
-        simpa [W, W'] using
-          (patch_flipInsideLocalAssignment_eq_of_not_mem
-            (x := x) (ξ := ξ) (a := (i, j)) hLeftMem)
-      _ = true := by simp [W, hLeftTrue]
-  have hRightFlip : W' (i + 1, j) = true := by
-    calc
-      W' (i + 1, j) = !(W (i + 1, j)) := by
-        simpa [W, W'] using
-          (patch_flipInsideLocalAssignment_eq_not_of_mem
-            (x := x) (ξ := ξ) (a := (i + 1, j)) hRightMem)
-      _ = true := by simp [W, hRightFalse]
-  have hEq : W' (i, j) = W' (i + 1, j) := hLeftFlip.trans hRightFlip.symm
-  have hNe : W (i, j) ≠ W (i + 1, j) := by
-    simp [W, hLeftTrue, hRightFalse]
-  simpa [W, W'] using
-    (symmetricGridHorizontalEdgePairWeight_gain_of_eq_over_ne w i j W W' hEq hNe)
+  have separated : ¬ ((i, j) ∈ inside ↔ (i + 1, j) ∈ inside) :=
+    fun h => hLeftMem (h.mpr hRightMem)
+  have different : patch Λ x ξ (i, j) ≠ patch Λ x ξ (i + 1, j) := by
+    simp [hLeftTrue, hRightFalse]
+  have aligned := (patch_flipInsideLocalAssignment_aligned_iff
+      (hInsideΛ := hInsideΛ) x ξ (i, j) (i + 1, j)).mpr (by simp [separated, different])
+  exact symmetricGridHorizontalEdgePairWeight_gain_of_eq_over_ne w i j _ _ aligned different
 
 theorem symmetricGridVerticalEdgePairWeight_flipInside_gain_of_downCut
     {Λ : Region GridNode} {inside : Region GridNode} {hInsideΛ : inside ⊆ Λ}
@@ -20015,27 +19463,13 @@ theorem symmetricGridVerticalEdgePairWeight_flipInside_gain_of_downCut
         (patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ) =
       ENNReal.ofReal (Real.exp w) *
         symmetricGridVerticalEdgePairWeight w i j (patch Λ x ξ) := by
-  let W : InfiniteWorld GridNode := patch Λ x ξ
-  let W' : InfiniteWorld GridNode := patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ
-  have hDownFlip : W' (i, j) = true := by
-    calc
-      W' (i, j) = !(W (i, j)) := by
-        simpa [W, W'] using
-          (patch_flipInsideLocalAssignment_eq_not_of_mem
-            (x := x) (ξ := ξ) (a := (i, j)) hDownMem)
-      _ = true := by simp [W, hDownFalse]
-  have hUpFlip : W' (i, j + 1) = true := by
-    calc
-      W' (i, j + 1) = W (i, j + 1) := by
-        simpa [W, W'] using
-          (patch_flipInsideLocalAssignment_eq_of_not_mem
-            (x := x) (ξ := ξ) (a := (i, j + 1)) hUpMem)
-      _ = true := by simp [W, hUpTrue]
-  have hEq : W' (i, j) = W' (i, j + 1) := hDownFlip.trans hUpFlip.symm
-  have hNe : W (i, j) ≠ W (i, j + 1) := by
-    simp [W, hDownFalse, hUpTrue]
-  simpa [W, W'] using
-    (symmetricGridVerticalEdgePairWeight_gain_of_eq_over_ne w i j W W' hEq hNe)
+  have separated : ¬ ((i, j) ∈ inside ↔ (i, j + 1) ∈ inside) :=
+    fun h => hUpMem (h.mp hDownMem)
+  have different : patch Λ x ξ (i, j) ≠ patch Λ x ξ (i, j + 1) := by
+    simp [hDownFalse, hUpTrue]
+  have aligned := (patch_flipInsideLocalAssignment_aligned_iff
+      (hInsideΛ := hInsideΛ) x ξ (i, j) (i, j + 1)).mpr (by simp [separated, different])
+  exact symmetricGridVerticalEdgePairWeight_gain_of_eq_over_ne w i j _ _ aligned different
 
 theorem symmetricGridVerticalEdgePairWeight_flipInside_gain_of_upCut
     {Λ : Region GridNode} {inside : Region GridNode} {hInsideΛ : inside ⊆ Λ}
@@ -20049,27 +19483,13 @@ theorem symmetricGridVerticalEdgePairWeight_flipInside_gain_of_upCut
         (patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ) =
       ENNReal.ofReal (Real.exp w) *
         symmetricGridVerticalEdgePairWeight w i j (patch Λ x ξ) := by
-  let W : InfiniteWorld GridNode := patch Λ x ξ
-  let W' : InfiniteWorld GridNode := patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ
-  have hDownFlip : W' (i, j) = true := by
-    calc
-      W' (i, j) = W (i, j) := by
-        simpa [W, W'] using
-          (patch_flipInsideLocalAssignment_eq_of_not_mem
-            (x := x) (ξ := ξ) (a := (i, j)) hDownMem)
-      _ = true := by simp [W, hDownTrue]
-  have hUpFlip : W' (i, j + 1) = true := by
-    calc
-      W' (i, j + 1) = !(W (i, j + 1)) := by
-        simpa [W, W'] using
-          (patch_flipInsideLocalAssignment_eq_not_of_mem
-            (x := x) (ξ := ξ) (a := (i, j + 1)) hUpMem)
-      _ = true := by simp [W, hUpFalse]
-  have hEq : W' (i, j) = W' (i, j + 1) := hDownFlip.trans hUpFlip.symm
-  have hNe : W (i, j) ≠ W (i, j + 1) := by
-    simp [W, hDownTrue, hUpFalse]
-  simpa [W, W'] using
-    (symmetricGridVerticalEdgePairWeight_gain_of_eq_over_ne w i j W W' hEq hNe)
+  have separated : ¬ ((i, j) ∈ inside ↔ (i, j + 1) ∈ inside) :=
+    fun h => hDownMem (h.mpr hUpMem)
+  have different : patch Λ x ξ (i, j) ≠ patch Λ x ξ (i, j + 1) := by
+    simp [hDownTrue, hUpFalse]
+  have aligned := (patch_flipInsideLocalAssignment_aligned_iff
+      (hInsideΛ := hInsideΛ) x ξ (i, j) (i, j + 1)).mpr (by simp [separated, different])
+  exact symmetricGridVerticalEdgePairWeight_gain_of_eq_over_ne w i j _ _ aligned different
 
 theorem symmetricGridHorizontalEdgePairWeight_flipInside_eq_of_not_cut
     {Λ : Region GridNode} {inside : Region GridNode} {hInsideΛ : inside ⊆ Λ}
@@ -20079,61 +19499,14 @@ theorem symmetricGridHorizontalEdgePairWeight_flipInside_eq_of_not_cut
     symmetricGridHorizontalEdgePairWeight w i j
         (patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ) =
       symmetricGridHorizontalEdgePairWeight w i j (patch Λ x ξ) := by
-  let W : InfiniteWorld GridNode := patch Λ x ξ
-  let W' : InfiniteWorld GridNode := patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ
-  by_cases hLeftMem : (i, j) ∈ inside
-  · have hRightMem : (i + 1, j) ∈ inside := by
-      by_contra hRightMem
-      exact hnotcut (Or.inl ⟨hLeftMem, hRightMem⟩)
-    have hLeftFlip : W' (i, j) = !(W (i, j)) := by
-      simpa [W, W'] using
-        (patch_flipInsideLocalAssignment_eq_not_of_mem
-          (x := x) (ξ := ξ) (a := (i, j)) hLeftMem)
-    have hRightFlip : W' (i + 1, j) = !(W (i + 1, j)) := by
-      simpa [W, W'] using
-        (patch_flipInsideLocalAssignment_eq_not_of_mem
-          (x := x) (ξ := ξ) (a := (i + 1, j)) hRightMem)
-    by_cases hEq : W (i, j) = W (i + 1, j)
-    · have hEq' : W' (i, j) = W' (i + 1, j) := by
-        rw [hLeftFlip, hRightFlip]
-        simpa using congrArg Bool.not hEq
-      rw [symmetricGridHorizontalEdgePairWeight_eq_of_eq w i j W' hEq',
-        symmetricGridHorizontalEdgePairWeight_eq_of_eq w i j W hEq]
-    · have hNe' : W' (i, j) ≠ W' (i + 1, j) := by
-        intro hEq'
-        apply hEq
-        have : Bool.not (W (i, j)) = Bool.not (W (i + 1, j)) := by
-          calc
-            Bool.not (W (i, j)) = W' (i, j) := by
-              symm
-              exact hLeftFlip
-            _ = W' (i + 1, j) := hEq'
-            _ = Bool.not (W (i + 1, j)) := hRightFlip
-        simpa using congrArg Bool.not this
-      rw [symmetricGridHorizontalEdgePairWeight_eq_of_ne w i j W' hNe',
-        symmetricGridHorizontalEdgePairWeight_eq_of_ne w i j W hEq]
-  · have hRightMem : (i + 1, j) ∉ inside := by
-      by_contra hRightMem
-      exact hnotcut (Or.inr ⟨hLeftMem, hRightMem⟩)
-    have hLeftSame : W' (i, j) = W (i, j) := by
-      simpa [W, W'] using
-        (patch_flipInsideLocalAssignment_eq_of_not_mem
-          (x := x) (ξ := ξ) (a := (i, j)) hLeftMem)
-    have hRightSame : W' (i + 1, j) = W (i + 1, j) := by
-      simpa [W, W'] using
-        (patch_flipInsideLocalAssignment_eq_of_not_mem
-          (x := x) (ξ := ξ) (a := (i + 1, j)) hRightMem)
-    by_cases hEq : W (i, j) = W (i + 1, j)
-    · have hEq' : W' (i, j) = W' (i + 1, j) := by
-        rw [hLeftSame, hRightSame]
-        exact hEq
-      rw [symmetricGridHorizontalEdgePairWeight_eq_of_eq w i j W' hEq',
-        symmetricGridHorizontalEdgePairWeight_eq_of_eq w i j W hEq]
-    · have hNe' : W' (i, j) ≠ W' (i + 1, j) := by
-        rw [hLeftSame, hRightSame]
-        exact hEq
-      rw [symmetricGridHorizontalEdgePairWeight_eq_of_ne w i j W' hNe',
-        symmetricGridHorizontalEdgePairWeight_eq_of_ne w i j W hEq]
+  have sameSide : (i, j) ∈ inside ↔ (i + 1, j) ∈ inside :=
+    mem_iff_mem_of_not_separated hnotcut
+  have aligned : (patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ (i, j) =
+      patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ (i + 1, j)) ↔
+      (patch Λ x ξ (i, j) = patch Λ x ξ (i + 1, j)) := by
+    simpa [sameSide] using
+      patch_flipInsideLocalAssignment_aligned_iff (hInsideΛ := hInsideΛ) x ξ (i, j) (i + 1, j)
+  simp only [symmetricGridHorizontalEdgePairWeight_eq_alignmentBonus, aligned]
 
 theorem symmetricGridVerticalEdgePairWeight_flipInside_eq_of_not_cut
     {Λ : Region GridNode} {inside : Region GridNode} {hInsideΛ : inside ⊆ Λ}
@@ -20143,61 +19516,14 @@ theorem symmetricGridVerticalEdgePairWeight_flipInside_eq_of_not_cut
     symmetricGridVerticalEdgePairWeight w i j
         (patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ) =
       symmetricGridVerticalEdgePairWeight w i j (patch Λ x ξ) := by
-  let W : InfiniteWorld GridNode := patch Λ x ξ
-  let W' : InfiniteWorld GridNode := patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ
-  by_cases hDownMem : (i, j) ∈ inside
-  · have hUpMem : (i, j + 1) ∈ inside := by
-      by_contra hUpMem
-      exact hnotcut (Or.inl ⟨hDownMem, hUpMem⟩)
-    have hDownFlip : W' (i, j) = !(W (i, j)) := by
-      simpa [W, W'] using
-        (patch_flipInsideLocalAssignment_eq_not_of_mem
-          (x := x) (ξ := ξ) (a := (i, j)) hDownMem)
-    have hUpFlip : W' (i, j + 1) = !(W (i, j + 1)) := by
-      simpa [W, W'] using
-        (patch_flipInsideLocalAssignment_eq_not_of_mem
-          (x := x) (ξ := ξ) (a := (i, j + 1)) hUpMem)
-    by_cases hEq : W (i, j) = W (i, j + 1)
-    · have hEq' : W' (i, j) = W' (i, j + 1) := by
-        rw [hDownFlip, hUpFlip]
-        simpa using congrArg Bool.not hEq
-      rw [symmetricGridVerticalEdgePairWeight_eq_of_eq w i j W' hEq',
-        symmetricGridVerticalEdgePairWeight_eq_of_eq w i j W hEq]
-    · have hNe' : W' (i, j) ≠ W' (i, j + 1) := by
-        intro hEq'
-        apply hEq
-        have : Bool.not (W (i, j)) = Bool.not (W (i, j + 1)) := by
-          calc
-            Bool.not (W (i, j)) = W' (i, j) := by
-              symm
-              exact hDownFlip
-            _ = W' (i, j + 1) := hEq'
-            _ = Bool.not (W (i, j + 1)) := hUpFlip
-        simpa using congrArg Bool.not this
-      rw [symmetricGridVerticalEdgePairWeight_eq_of_ne w i j W' hNe',
-        symmetricGridVerticalEdgePairWeight_eq_of_ne w i j W hEq]
-  · have hUpMem : (i, j + 1) ∉ inside := by
-      by_contra hUpMem
-      exact hnotcut (Or.inr ⟨hDownMem, hUpMem⟩)
-    have hDownSame : W' (i, j) = W (i, j) := by
-      simpa [W, W'] using
-        (patch_flipInsideLocalAssignment_eq_of_not_mem
-          (x := x) (ξ := ξ) (a := (i, j)) hDownMem)
-    have hUpSame : W' (i, j + 1) = W (i, j + 1) := by
-      simpa [W, W'] using
-        (patch_flipInsideLocalAssignment_eq_of_not_mem
-          (x := x) (ξ := ξ) (a := (i, j + 1)) hUpMem)
-    by_cases hEq : W (i, j) = W (i, j + 1)
-    · have hEq' : W' (i, j) = W' (i, j + 1) := by
-        rw [hDownSame, hUpSame]
-        exact hEq
-      rw [symmetricGridVerticalEdgePairWeight_eq_of_eq w i j W' hEq',
-        symmetricGridVerticalEdgePairWeight_eq_of_eq w i j W hEq]
-    · have hNe' : W' (i, j) ≠ W' (i, j + 1) := by
-        rw [hDownSame, hUpSame]
-        exact hEq
-      rw [symmetricGridVerticalEdgePairWeight_eq_of_ne w i j W' hNe',
-        symmetricGridVerticalEdgePairWeight_eq_of_ne w i j W hEq]
+  have sameSide : (i, j) ∈ inside ↔ (i, j + 1) ∈ inside :=
+    mem_iff_mem_of_not_separated hnotcut
+  have aligned : (patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ (i, j) =
+      patch Λ (flipInsideLocalAssignment inside hInsideΛ x) ξ (i, j + 1)) ↔
+      (patch Λ x ξ (i, j) = patch Λ x ξ (i, j + 1)) := by
+    simpa [sameSide] using
+      patch_flipInsideLocalAssignment_aligned_iff (hInsideΛ := hInsideΛ) x ξ (i, j) (i, j + 1)
+  simp only [symmetricGridVerticalEdgePairWeight_eq_alignmentBonus, aligned]
 
 /-- Underlying clause attached to a symmetric grid clause id. -/
 def symmetricGridClause : SymmetricGridClauseId → GroundClause GridNode
@@ -20965,6 +20291,34 @@ theorem symmetricGridZeroField_flipGainAssignmentFinset_finiteVolumeWorldMeasure
     _ = 1 := by
           exact ENNReal.mul_inv_cancel hZ htop
 
+private theorem mul_cutFactor_le_one_of_subset_gain
+    (w : ℝ) {Λ : Region GridNode} (inside : Region GridNode) (hInside : inside ⊆ Λ)
+    (ξ : BoundaryCondition GridNode) (event : Set (LocalAssignment GridNode Λ))
+    (h : event ⊆ ↑(symmetricGridFlipGainAssignmentFinset inside hInside ξ)) :
+    (ENNReal.ofReal (Real.exp w)) ^
+        ((gridRegionSupport Λ).filter (gridBaseClauseCutsRegion inside)).card *
+      finiteVolumeWorldMeasure
+        (symmetricGridZeroFieldStrictSpec w).toInfiniteGroundMLNSpec Λ ξ
+        (Mettapedia.Logic.MarkovLogicInfinitePositive.StrictlyPositiveInfiniteGroundMLNSpec.finiteVolumePartition_ne_zero
+          (symmetricGridZeroFieldStrictSpec w) Λ ξ)
+        (MeasureTheory.cylinder Λ event) ≤ 1 := by
+  have hsubset : MeasureTheory.cylinder (α := fun _ => Bool) Λ event ⊆
+      MeasureTheory.cylinder (α := fun _ => Bool) Λ
+        (↑(symmetricGridFlipGainAssignmentFinset inside hInside ξ)) := by
+    intro ω hω
+    exact (MeasureTheory.mem_cylinder _ _ _).2 (h ((MeasureTheory.mem_cylinder _ _ _).1 hω))
+  exact (mul_le_mul_of_nonneg_left (measure_mono hsubset) zero_le).trans
+    (symmetricGridZeroField_flipGainAssignmentFinset_finiteVolumeWorldMeasure_mul_cutFactor_le_one
+      w inside hInside ξ)
+
+private theorem le_inv_exp_pow_of_mul_le_one (w : ℝ) (cut : ℕ) {mass : ENNReal}
+    (h : (ENNReal.ofReal (Real.exp w)) ^ cut * mass ≤ 1) :
+    mass ≤ ((ENNReal.ofReal (Real.exp w)) ^ cut)⁻¹ := by
+  have nonzero : (ENNReal.ofReal (Real.exp w)) ^ cut ≠ 0 := by simp [Real.exp_pos]
+  have finite : (ENNReal.ofReal (Real.exp w)) ^ cut ≠ ⊤ :=
+    ENNReal.pow_ne_top ENNReal.coe_ne_top
+  simpa only [mul_one] using (ENNReal.mul_le_iff_le_inv nonzero finite).1 h
+
 /-- The explicit generic separator event for an inside region also pays the
 reciprocal cut-factor penalty, since it lies inside the already-controlled
 gain class. -/
@@ -20980,72 +20334,10 @@ theorem falseInsideTrueCutBoundaryRegion_finiteVolumeWorldMeasure_mul_cutFactor_
         (MeasureTheory.cylinder Λ
           (((falseInsideTrueCutBoundaryRegionFinset inside hInsideΛ ξ :
               Finset (LocalAssignment GridNode Λ)) :
-            Set (LocalAssignment GridNode Λ)))) ≤ 1 := by
-  classical
-  let M := symmetricGridZeroFieldStrictSpec w
-  let Minf := M.toInfiniteGroundMLNSpec
-  let hZ :
-      Minf.finiteVolumePartition Λ ξ ≠ 0 :=
-    Mettapedia.Logic.MarkovLogicInfinitePositive.StrictlyPositiveInfiniteGroundMLNSpec.finiteVolumePartition_ne_zero
-      M Λ ξ
-  let A := symmetricGridFlipGainAssignmentFinset inside hInsideΛ ξ
-  let B := falseInsideTrueCutBoundaryRegionFinset inside hInsideΛ ξ
-  have hsubset :
-      (((B : Finset (LocalAssignment GridNode Λ)) :
-          Set (LocalAssignment GridNode Λ))) ⊆
-        (((A : Finset (LocalAssignment GridNode Λ)) :
-          Set (LocalAssignment GridNode Λ))) := by
-    intro x hx
-    exact falseInsideTrueCutBoundaryRegionFinset_subset_flipGainAssignmentFinset
-      inside hInsideΛ ξ hx
-  have hAmeas :
-      MeasurableSet (((A : Finset (LocalAssignment GridNode Λ)) :
-        Set (LocalAssignment GridNode Λ))) :=
-    A.finite_toSet.measurableSet
-  have hBmeas :
-      MeasurableSet (((B : Finset (LocalAssignment GridNode Λ)) :
-        Set (LocalAssignment GridNode Λ))) :=
-    B.finite_toSet.measurableSet
-  have hmono :
-      finiteVolumeWorldMeasure
-          Minf Λ ξ hZ
-          (MeasureTheory.cylinder Λ
-            (((B : Finset (LocalAssignment GridNode Λ)) :
-              Set (LocalAssignment GridNode Λ)))) ≤
-        finiteVolumeWorldMeasure
-          Minf Λ ξ hZ
-          (MeasureTheory.cylinder Λ
-            (((A : Finset (LocalAssignment GridNode Λ)) :
-              Set (LocalAssignment GridNode Λ)))) := by
-    rw [finiteVolumeWorldMeasure_cylinder_region_eq_assignmentPMF_toMeasure
-      (M := Minf) (Δ := Λ) (ξ := ξ) (hZ := hZ)
-      (S := (((B : Finset (LocalAssignment GridNode Λ)) :
-        Set (LocalAssignment GridNode Λ)))) hBmeas]
-    rw [finiteVolumeWorldMeasure_cylinder_region_eq_assignmentPMF_toMeasure
-      (M := Minf) (Δ := Λ) (ξ := ξ) (hZ := hZ)
-      (S := (((A : Finset (LocalAssignment GridNode Λ)) :
-        Set (LocalAssignment GridNode Λ)))) hAmeas]
-    exact MeasureTheory.measure_mono hsubset
-  calc
-    (ENNReal.ofReal (Real.exp w)) ^
-        ((gridRegionSupport Λ).filter (gridBaseClauseCutsRegion inside)).card *
-      finiteVolumeWorldMeasure
-        Minf Λ ξ hZ
-        (MeasureTheory.cylinder Λ
-          (((B : Finset (LocalAssignment GridNode Λ)) :
-            Set (LocalAssignment GridNode Λ)))) ≤
-      (ENNReal.ofReal (Real.exp w)) ^
-          ((gridRegionSupport Λ).filter (gridBaseClauseCutsRegion inside)).card *
-        finiteVolumeWorldMeasure
-          Minf Λ ξ hZ
-          (MeasureTheory.cylinder Λ
-            (((A : Finset (LocalAssignment GridNode Λ)) :
-              Set (LocalAssignment GridNode Λ)))) := by
-          exact mul_le_mul_of_nonneg_left hmono (by exact zero_le)
-    _ ≤ 1 := by
-          simpa [A] using
-            (symmetricGridZeroField_flipGainAssignmentFinset_finiteVolumeWorldMeasure_mul_cutFactor_le_one
-              (w := w) (Λ := Λ) inside hInsideΛ ξ)
+            Set (LocalAssignment GridNode Λ)))) ≤ 1 :=
+  mul_cutFactor_le_one_of_subset_gain w inside hInsideΛ ξ _
+    (fun _ h => falseInsideTrueCutBoundaryRegionFinset_subset_flipGainAssignmentFinset
+      inside hInsideΛ ξ h)
 
 /-- The plus-boundary finite-volume world measure on the stage-`n` box. -/
 noncomputable def symmetricGridZeroFieldPlusStageWorldMeasure
@@ -21069,6 +20361,36 @@ noncomputable def symmetricGridZeroFieldPlusStageAssignmentMeasure
       M (gridExhaustion.region n) gridPlusBoundary
   (finiteVolumeAssignmentPMF Minf (gridExhaustion.region n) gridPlusBoundary hZ).toMeasure
 
+private theorem plusStageWorldMeasure_cylinder (w : ℝ) (n : ℕ)
+    (event : Set (LocalAssignment GridNode (gridExhaustion.region n))) :
+    symmetricGridZeroFieldPlusStageWorldMeasure w n
+        (MeasureTheory.cylinder (gridExhaustion.region n) event) =
+      symmetricGridZeroFieldPlusStageAssignmentMeasure w n event := by
+  classical
+  exact finiteVolumeWorldMeasure_cylinder_region_eq_assignmentPMF_toMeasure
+    _ _ _ _ event event.toFinite.measurableSet
+
+private theorem originSpinDownWorldMeasure_le_sum_of_cover {ι : Type*}
+    (w : ℝ) (n : ℕ) (indices : Finset ι)
+    (events : ι → Set (LocalAssignment GridNode (gridExhaustion.region n)))
+    (hcover : originSpinDownAssignmentEvent n ⊆ ⋃ i ∈ indices, events i) :
+    symmetricGridZeroFieldPlusStageWorldMeasure w n (originSpinDownWorldEvent n) ≤
+      ∑ i ∈ indices, symmetricGridZeroFieldPlusStageWorldMeasure w n
+        (MeasureTheory.cylinder (gridExhaustion.region n) (events i)) := by
+  rw [originSpinDownWorldEvent, localQueryEvent_eq_cylinder]
+  have hsubset :
+      MeasureTheory.cylinder (α := fun _ => Bool) (gridExhaustion.region n)
+          (originSpinDownAssignmentEvent n) ⊆
+        ⋃ i ∈ indices, MeasureTheory.cylinder (α := fun _ => Bool)
+          (gridExhaustion.region n) (events i) := by
+    intro ω hω
+    have hx := (MeasureTheory.mem_cylinder _ _ _).1 hω
+    obtain ⟨i, hi⟩ := Set.mem_iUnion.mp (hcover hx)
+    obtain ⟨member, witnessed⟩ := Set.mem_iUnion.mp hi
+    exact Set.mem_iUnion.mpr ⟨i, Set.mem_iUnion.mpr ⟨member,
+      (MeasureTheory.mem_cylinder _ _ _).2 witnessed⟩⟩
+  exact (measure_mono hsubset).trans (measure_biUnion_finset_le indices _)
+
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_originContainingSubregions
     (w : ℝ) (n : ℕ) :
     symmetricGridZeroFieldPlusStageWorldMeasure w n
@@ -21076,88 +20398,9 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_or
       Finset.sum (originContainingSubregions n) (fun inside =>
         symmetricGridZeroFieldPlusStageWorldMeasure w n
           (originContainingSubregionWorldEvent n gridPlusBoundary inside)) := by
-  classical
-  let M := symmetricGridZeroFieldStrictSpec w
-  let Minf := M.toInfiniteGroundMLNSpec
-  let Λ := gridExhaustion.region n
-  let hZ :
-      InfiniteGroundMLNSpec.finiteVolumePartition Minf Λ gridPlusBoundary ≠ 0 :=
-    Mettapedia.Logic.MarkovLogicInfinitePositive.StrictlyPositiveInfiniteGroundMLNSpec.finiteVolumePartition_ne_zero
-      M Λ gridPlusBoundary
-  let qFalse := gridOriginSpinLocalQueryInRegion Λ (gridOrigin_mem_gridExhaustion_region n) false
-  let Sfalse : Set (LocalAssignment GridNode Λ) := originSpinDownAssignmentEvent n
-  have hSfalse_meas : MeasurableSet Sfalse := by
-    exact measurableSet_localConstraintSet Λ qFalse
-  have hsubset :
-      Sfalse ⊆ ⋃ inside, if inside ∈ originContainingSubregions n then
-          originContainingSubregionAssignmentEvent n gridPlusBoundary inside else ∅ :=
+  refine originSpinDownWorldMeasure_le_sum_of_cover w n _ (originContainingSubregionAssignmentEvent n gridPlusBoundary) ?_
+  simpa only [Set.iUnion_ite, Set.iUnion_empty, Set.union_empty, originSpinDownAssignmentEvent] using
     originSpinDownAssignmentEvent_subset_iUnion_originContainingSubregions n
-  have hleft :
-      symmetricGridZeroFieldPlusStageWorldMeasure w n (originSpinDownWorldEvent n) =
-        symmetricGridZeroFieldPlusStageAssignmentMeasure w n Sfalse := by
-    rw [originSpinDownWorldEvent, localQueryEvent_eq_cylinder]
-    change finiteVolumeWorldMeasure Minf Λ gridPlusBoundary hZ
-        (MeasureTheory.cylinder Λ Sfalse) =
-      (finiteVolumeAssignmentPMF Minf Λ gridPlusBoundary hZ).toMeasure Sfalse
-    exact finiteVolumeWorldMeasure_cylinder_region_eq_assignmentPMF_toMeasure
-      (M := Minf) (Δ := Λ) (ξ := gridPlusBoundary) (hZ := hZ) (S := Sfalse) hSfalse_meas
-  rw [hleft]
-  have hmono :
-      symmetricGridZeroFieldPlusStageAssignmentMeasure w n Sfalse ≤
-        symmetricGridZeroFieldPlusStageAssignmentMeasure w n
-          (⋃ inside, if inside ∈ originContainingSubregions n then
-            originContainingSubregionAssignmentEvent n gridPlusBoundary inside else ∅) := by
-    exact MeasureTheory.measure_mono hsubset
-  have hterm :
-      ∀ inside,
-        symmetricGridZeroFieldPlusStageAssignmentMeasure w n
-            (originContainingSubregionAssignmentEvent n gridPlusBoundary inside) =
-          symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originContainingSubregionWorldEvent n gridPlusBoundary inside) := by
-    intro inside
-    change
-      (finiteVolumeAssignmentPMF Minf Λ gridPlusBoundary hZ).toMeasure
-          (originContainingSubregionAssignmentEvent n gridPlusBoundary inside) =
-        finiteVolumeWorldMeasure Minf Λ gridPlusBoundary hZ
-          (MeasureTheory.cylinder Λ
-            (originContainingSubregionAssignmentEvent n gridPlusBoundary inside))
-    have hmeas :
-        MeasurableSet (originContainingSubregionAssignmentEvent n gridPlusBoundary inside) := by
-      by_cases hInside : inside ⊆ gridExhaustion.region n
-      · rw [originContainingSubregionAssignmentEvent]
-        simpa [hInside] using
-          ((((Finset.univ : Finset (LocalAssignment GridNode Λ)).filter
-              (fun x => FalseInsideTrueCutBoundaryRegion inside hInside x gridPlusBoundary))).finite_toSet.measurableSet)
-      · rw [originContainingSubregionAssignmentEvent]
-        simp [hInside]
-    exact (finiteVolumeWorldMeasure_cylinder_region_eq_assignmentPMF_toMeasure
-      (M := Minf) (Δ := Λ) (ξ := gridPlusBoundary) (hZ := hZ)
-      (S := originContainingSubregionAssignmentEvent n gridPlusBoundary inside) hmeas).symm
-  have hsum :
-      Finset.sum (originContainingSubregions n) (fun inside =>
-          symmetricGridZeroFieldPlusStageAssignmentMeasure w n
-            (originContainingSubregionAssignmentEvent n gridPlusBoundary inside)) =
-        Finset.sum (originContainingSubregions n) (fun inside =>
-          symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originContainingSubregionWorldEvent n gridPlusBoundary inside)) := by
-    refine Finset.sum_congr rfl ?_
-    intro inside hinside
-    exact hterm inside
-  calc
-    symmetricGridZeroFieldPlusStageAssignmentMeasure w n Sfalse ≤
-        symmetricGridZeroFieldPlusStageAssignmentMeasure w n
-          (⋃ inside, if inside ∈ originContainingSubregions n then
-            originContainingSubregionAssignmentEvent n gridPlusBoundary inside else ∅) := hmono
-    _ ≤ Finset.sum (originContainingSubregions n) (fun inside =>
-          symmetricGridZeroFieldPlusStageAssignmentMeasure w n
-            (originContainingSubregionAssignmentEvent n gridPlusBoundary inside)) :=
-        measure_iUnion_finset_le_sum
-          (symmetricGridZeroFieldPlusStageAssignmentMeasure w n)
-          (originContainingSubregions n)
-          (fun inside => originContainingSubregionAssignmentEvent n gridPlusBoundary inside)
-    _ = Finset.sum (originContainingSubregions n) (fun inside =>
-          symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originContainingSubregionWorldEvent n gridPlusBoundary inside)) := hsum
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_originConnectedContainingSubregions
     (w : ℝ) (n : ℕ) :
@@ -21166,88 +20409,9 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_or
       Finset.sum (originConnectedContainingSubregions n) (fun inside =>
         symmetricGridZeroFieldPlusStageWorldMeasure w n
           (originContainingSubregionWorldEvent n gridPlusBoundary inside)) := by
-  classical
-  let M := symmetricGridZeroFieldStrictSpec w
-  let Minf := M.toInfiniteGroundMLNSpec
-  let Λ := gridExhaustion.region n
-  let hZ :
-      InfiniteGroundMLNSpec.finiteVolumePartition Minf Λ gridPlusBoundary ≠ 0 :=
-    Mettapedia.Logic.MarkovLogicInfinitePositive.StrictlyPositiveInfiniteGroundMLNSpec.finiteVolumePartition_ne_zero
-      M Λ gridPlusBoundary
-  let qFalse := gridOriginSpinLocalQueryInRegion Λ (gridOrigin_mem_gridExhaustion_region n) false
-  let Sfalse : Set (LocalAssignment GridNode Λ) := originSpinDownAssignmentEvent n
-  have hSfalse_meas : MeasurableSet Sfalse := by
-    exact measurableSet_localConstraintSet Λ qFalse
-  have hsubset :
-      Sfalse ⊆ ⋃ inside, if inside ∈ originConnectedContainingSubregions n then
-          originContainingSubregionAssignmentEvent n gridPlusBoundary inside else ∅ :=
+  refine originSpinDownWorldMeasure_le_sum_of_cover w n _ (originContainingSubregionAssignmentEvent n gridPlusBoundary) ?_
+  simpa only [Set.iUnion_ite, Set.iUnion_empty, Set.union_empty, originSpinDownAssignmentEvent] using
     originSpinDownAssignmentEvent_subset_iUnion_originConnectedContainingSubregions n
-  have hleft :
-      symmetricGridZeroFieldPlusStageWorldMeasure w n (originSpinDownWorldEvent n) =
-        symmetricGridZeroFieldPlusStageAssignmentMeasure w n Sfalse := by
-    rw [originSpinDownWorldEvent, localQueryEvent_eq_cylinder]
-    change finiteVolumeWorldMeasure Minf Λ gridPlusBoundary hZ
-        (MeasureTheory.cylinder Λ Sfalse) =
-      (finiteVolumeAssignmentPMF Minf Λ gridPlusBoundary hZ).toMeasure Sfalse
-    exact finiteVolumeWorldMeasure_cylinder_region_eq_assignmentPMF_toMeasure
-      (M := Minf) (Δ := Λ) (ξ := gridPlusBoundary) (hZ := hZ) (S := Sfalse) hSfalse_meas
-  rw [hleft]
-  have hmono :
-      symmetricGridZeroFieldPlusStageAssignmentMeasure w n Sfalse ≤
-        symmetricGridZeroFieldPlusStageAssignmentMeasure w n
-          (⋃ inside, if inside ∈ originConnectedContainingSubregions n then
-            originContainingSubregionAssignmentEvent n gridPlusBoundary inside else ∅) := by
-    exact MeasureTheory.measure_mono hsubset
-  have hterm :
-      ∀ inside,
-        symmetricGridZeroFieldPlusStageAssignmentMeasure w n
-            (originContainingSubregionAssignmentEvent n gridPlusBoundary inside) =
-          symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originContainingSubregionWorldEvent n gridPlusBoundary inside) := by
-    intro inside
-    change
-      (finiteVolumeAssignmentPMF Minf Λ gridPlusBoundary hZ).toMeasure
-          (originContainingSubregionAssignmentEvent n gridPlusBoundary inside) =
-        finiteVolumeWorldMeasure Minf Λ gridPlusBoundary hZ
-          (MeasureTheory.cylinder Λ
-            (originContainingSubregionAssignmentEvent n gridPlusBoundary inside))
-    have hmeas :
-        MeasurableSet (originContainingSubregionAssignmentEvent n gridPlusBoundary inside) := by
-      by_cases hInside : inside ⊆ gridExhaustion.region n
-      · rw [originContainingSubregionAssignmentEvent]
-        simpa [hInside] using
-          ((((Finset.univ : Finset (LocalAssignment GridNode Λ)).filter
-              (fun x => FalseInsideTrueCutBoundaryRegion inside hInside x gridPlusBoundary))).finite_toSet.measurableSet)
-      · rw [originContainingSubregionAssignmentEvent]
-        simp [hInside]
-    exact (finiteVolumeWorldMeasure_cylinder_region_eq_assignmentPMF_toMeasure
-      (M := Minf) (Δ := Λ) (ξ := gridPlusBoundary) (hZ := hZ)
-      (S := originContainingSubregionAssignmentEvent n gridPlusBoundary inside) hmeas).symm
-  have hsum :
-      Finset.sum (originConnectedContainingSubregions n) (fun inside =>
-          symmetricGridZeroFieldPlusStageAssignmentMeasure w n
-            (originContainingSubregionAssignmentEvent n gridPlusBoundary inside)) =
-        Finset.sum (originConnectedContainingSubregions n) (fun inside =>
-          symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originContainingSubregionWorldEvent n gridPlusBoundary inside)) := by
-    refine Finset.sum_congr rfl ?_
-    intro inside hinside
-    exact hterm inside
-  calc
-    symmetricGridZeroFieldPlusStageAssignmentMeasure w n Sfalse ≤
-        symmetricGridZeroFieldPlusStageAssignmentMeasure w n
-          (⋃ inside, if inside ∈ originConnectedContainingSubregions n then
-            originContainingSubregionAssignmentEvent n gridPlusBoundary inside else ∅) := hmono
-    _ ≤ Finset.sum (originConnectedContainingSubregions n) (fun inside =>
-          symmetricGridZeroFieldPlusStageAssignmentMeasure w n
-            (originContainingSubregionAssignmentEvent n gridPlusBoundary inside)) :=
-        measure_iUnion_finset_le_sum
-          (symmetricGridZeroFieldPlusStageAssignmentMeasure w n)
-          (originConnectedContainingSubregions n)
-          (fun inside => originContainingSubregionAssignmentEvent n gridPlusBoundary inside)
-    _ = Finset.sum (originConnectedContainingSubregions n) (fun inside =>
-          symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originContainingSubregionWorldEvent n gridPlusBoundary inside)) := hsum
 
 theorem originContainingSubregionWorldEvent_finiteVolumeWorldMeasure_le_cutFactorInv
     (w : ℝ) {n : ℕ} {inside : Region GridNode}
@@ -21257,37 +20421,15 @@ theorem originContainingSubregionWorldEvent_finiteVolumeWorldMeasure_le_cutFacto
       ((ENNReal.ofReal (Real.exp w)) ^
         ((gridRegionSupport (gridExhaustion.region n)).filter
           (gridBaseClauseCutsRegion inside)).card)⁻¹ := by
-  classical
-  rw [mem_originContainingSubregions_iff] at hinside
-  rcases hinside with ⟨hInsideΛ, _⟩
-  let cutFactor : ENNReal :=
-    (ENNReal.ofReal (Real.exp w)) ^
-      ((gridRegionSupport (gridExhaustion.region n)).filter
-        (gridBaseClauseCutsRegion inside)).card
-  have hevent :
-      originContainingSubregionAssignmentEvent n gridPlusBoundary inside =
-        (((falseInsideTrueCutBoundaryRegionFinset inside hInsideΛ gridPlusBoundary :
-            Finset (LocalAssignment GridNode (gridExhaustion.region n))) :
-          Set (LocalAssignment GridNode (gridExhaustion.region n)))) := by
-    ext x
-    simp [originContainingSubregionAssignmentEvent, hInsideΛ,
-      falseInsideTrueCutBoundaryRegionFinset]
-  have hmul :
-      cutFactor *
-          symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originContainingSubregionWorldEvent n gridPlusBoundary inside) ≤
-        1 := by
-    rw [originContainingSubregionWorldEvent, hevent]
-    simp_rw [symmetricGridZeroFieldPlusStageWorldMeasure]
-    simpa [cutFactor] using
-      (falseInsideTrueCutBoundaryRegion_finiteVolumeWorldMeasure_mul_cutFactor_le_one
-        (w := w) (Λ := gridExhaustion.region n) inside hInsideΛ gridPlusBoundary)
-  have hcut_ne_zero : cutFactor ≠ 0 := by
-    simp [cutFactor, Real.exp_pos]
-  have hcut_ne_top : cutFactor ≠ ⊤ := by
-    exact ENNReal.pow_ne_top ENNReal.coe_ne_top
-  simpa [cutFactor] using
-    ((ENNReal.mul_le_iff_le_inv hcut_ne_zero hcut_ne_top).1 hmul)
+  have hInside := (mem_originContainingSubregions_iff.mp hinside).1
+  apply le_inv_exp_pow_of_mul_le_one
+  rw [originContainingSubregionWorldEvent]
+  apply mul_cutFactor_le_one_of_subset_gain w inside hInside gridPlusBoundary
+  intro assignment good
+  apply falseInsideTrueCutBoundaryRegionFinset_subset_flipGainAssignmentFinset
+    inside hInside gridPlusBoundary
+  simpa [originContainingSubregionAssignmentEvent, hInside,
+    falseInsideTrueCutBoundaryRegionFinset] using good
 
 theorem originContainingSubregionWorldEvent_finiteVolumeWorldMeasure_le_outerCutFactorInv_of_nonneg
     (w : ℝ) (hw : 0 ≤ w) {n : ℕ} {inside : Region GridNode}
@@ -21307,105 +20449,14 @@ theorem originContainingSubregionWorldEvent_finiteVolumeWorldMeasure_le_outerCut
     symmetricGridZeroFieldPlusStageWorldMeasure w n
         (originContainingSubregionWorldEvent n gridPlusBoundary inside) ≤
       ((ENNReal.ofReal (Real.exp w)) ^ originContainingSubregionOuterCutCard n inside)⁻¹ := by
-  classical
-  let M := symmetricGridZeroFieldStrictSpec w
-  let Minf := M.toInfiniteGroundMLNSpec
-  let Λ := gridExhaustion.region n
-  let hZ :
-      InfiniteGroundMLNSpec.finiteVolumePartition Minf Λ gridPlusBoundary ≠ 0 :=
-    Mettapedia.Logic.MarkovLogicInfinitePositive.StrictlyPositiveInfiniteGroundMLNSpec.finiteVolumePartition_ne_zero
-      M Λ gridPlusBoundary
-  rcases (mem_originContainingSubregions_iff.1 hinside) with ⟨hInsideΛ, _⟩
-  let hull := boundaryConnectedHullRegion n inside
-  let hHull : hull ⊆ Λ := boundaryConnectedHullRegion_subset_stage
-  let A := originContainingSubregionAssignmentEvent n gridPlusBoundary inside
-  let B := symmetricGridFlipGainAssignmentFinset hull hHull gridPlusBoundary
-  have hAmeas : MeasurableSet A := by
-    let F : Finset (LocalAssignment GridNode Λ) :=
-      (Finset.univ : Finset (LocalAssignment GridNode Λ)).filter
-        (fun x => FalseInsideTrueCutBoundaryRegion inside hInsideΛ x gridPlusBoundary)
-    have hA :
-        A = (((F : Finset (LocalAssignment GridNode Λ)) :
-          Set (LocalAssignment GridNode Λ))) := by
-      ext x
-      dsimp [A, F]
-      rw [mem_originContainingSubregionAssignmentEvent_of_subset hInsideΛ gridPlusBoundary x]
-      change FalseInsideTrueCutBoundaryRegion inside hInsideΛ x gridPlusBoundary ↔ x ∈ F
-      simp [F]
-    rw [hA]
-    exact F.finite_toSet.measurableSet
-  have hBmeas : MeasurableSet (((B :
-      Finset (LocalAssignment GridNode Λ)) : Set (LocalAssignment GridNode Λ))) :=
-    B.finite_toSet.measurableSet
-  have hsubset :
-      A ⊆ (((B : Finset (LocalAssignment GridNode Λ)) :
-        Set (LocalAssignment GridNode Λ))) :=
-    originContainingSubregionAssignmentEvent_subset_boundaryConnectedHullFlipGainAssignmentFinset
-      (n := n) hInsideΛ gridPlusBoundary
-  have hmono :
-      symmetricGridZeroFieldPlusStageWorldMeasure w n
-          (originContainingSubregionWorldEvent n gridPlusBoundary inside) ≤
-        finiteVolumeWorldMeasure Minf Λ gridPlusBoundary hZ
-          (MeasureTheory.cylinder Λ
-            (((B : Finset (LocalAssignment GridNode Λ)) :
-              Set (LocalAssignment GridNode Λ)))) := by
-    rw [originContainingSubregionWorldEvent]
-    change finiteVolumeWorldMeasure Minf Λ gridPlusBoundary hZ
-        (MeasureTheory.cylinder Λ A) ≤
-      finiteVolumeWorldMeasure Minf Λ gridPlusBoundary hZ
-        (MeasureTheory.cylinder Λ
-          (((B : Finset (LocalAssignment GridNode Λ)) :
-            Set (LocalAssignment GridNode Λ))))
-    rw [finiteVolumeWorldMeasure_cylinder_region_eq_assignmentPMF_toMeasure
-      (M := Minf) (Δ := Λ) (ξ := gridPlusBoundary) (hZ := hZ)
-      (S := A) hAmeas]
-    rw [finiteVolumeWorldMeasure_cylinder_region_eq_assignmentPMF_toMeasure
-      (M := Minf) (Δ := Λ) (ξ := gridPlusBoundary) (hZ := hZ)
-      (S := (((B : Finset (LocalAssignment GridNode Λ)) :
-        Set (LocalAssignment GridNode Λ)))) hBmeas]
-    exact MeasureTheory.measure_mono hsubset
-  let cutFactor : ENNReal :=
-    (ENNReal.ofReal (Real.exp w)) ^ originContainingSubregionOuterCutCard n inside
-  have hcard :
-      ((gridRegionSupport Λ).filter (gridBaseClauseCutsRegion hull)).card =
-        originContainingSubregionOuterCutCard n inside := by
-    simpa [Λ, hull, originContainingSubregionCutCard] using
-      (originContainingSubregionCutCard_boundaryConnectedHullRegion_eq_outerCutCard
-        (n := n) (inside := inside) hInsideΛ)
-  have hmul :
-      cutFactor *
-          finiteVolumeWorldMeasure Minf Λ gridPlusBoundary hZ
-            (MeasureTheory.cylinder Λ
-              (((B : Finset (LocalAssignment GridNode Λ)) :
-                Set (LocalAssignment GridNode Λ)))) ≤
-        1 := by
-    simp_rw [cutFactor]
-    rw [← hcard]
-    simpa [B, hull, hHull] using
-      (symmetricGridZeroField_flipGainAssignmentFinset_finiteVolumeWorldMeasure_mul_cutFactor_le_one
-        (w := w) (Λ := Λ) hull hHull gridPlusBoundary)
-  have hcut_ne_zero : cutFactor ≠ 0 := by
-    simp [cutFactor, Real.exp_pos]
-  have hcut_ne_top : cutFactor ≠ ⊤ := by
-    exact ENNReal.pow_ne_top ENNReal.coe_ne_top
-  have hB_le :
-      finiteVolumeWorldMeasure Minf Λ gridPlusBoundary hZ
-          (MeasureTheory.cylinder Λ
-            (((B : Finset (LocalAssignment GridNode Λ)) :
-              Set (LocalAssignment GridNode Λ)))) ≤
-        cutFactor⁻¹ := by
-    simpa using
-      ((ENNReal.mul_le_iff_le_inv hcut_ne_zero hcut_ne_top).1 hmul)
-  calc
-    symmetricGridZeroFieldPlusStageWorldMeasure w n
-        (originContainingSubregionWorldEvent n gridPlusBoundary inside) ≤
-      finiteVolumeWorldMeasure Minf Λ gridPlusBoundary hZ
-        (MeasureTheory.cylinder Λ
-          (((B : Finset (LocalAssignment GridNode Λ)) :
-            Set (LocalAssignment GridNode Λ)))) := hmono
-    _ ≤ cutFactor⁻¹ := hB_le
-    _ = ((ENNReal.ofReal (Real.exp w)) ^ originContainingSubregionOuterCutCard n inside)⁻¹ := by
-      rfl
+  have hInside := (mem_originContainingSubregions_iff.mp hinside).1
+  rw [← originContainingSubregionCutCard_boundaryConnectedHullRegion_eq_outerCutCard hInside]
+  apply le_inv_exp_pow_of_mul_le_one
+  rw [originContainingSubregionWorldEvent]
+  exact mul_cutFactor_le_one_of_subset_gain w (boundaryConnectedHullRegion n inside)
+    boundaryConnectedHullRegion_subset_stage gridPlusBoundary _
+    (originContainingSubregionAssignmentEvent_subset_boundaryConnectedHullFlipGainAssignmentFinset
+      (n := n) hInside gridPlusBoundary)
 
 theorem originConnectedHullWorldEvent_finiteVolumeWorldMeasure_le_cutFactorInv
     (w : ℝ) {n : ℕ} {hull : Region GridNode}
@@ -21413,85 +20464,12 @@ theorem originConnectedHullWorldEvent_finiteVolumeWorldMeasure_le_cutFactorInv
     symmetricGridZeroFieldPlusStageWorldMeasure w n
         (originConnectedHullWorldEvent n hull) ≤
       ((ENNReal.ofReal (Real.exp w)) ^ originContainingSubregionCutCard n hull)⁻¹ := by
-  classical
-  let M := symmetricGridZeroFieldStrictSpec w
-  let Minf := M.toInfiniteGroundMLNSpec
-  let Λ := gridExhaustion.region n
-  have hHullIn : hull ∈ originContainingSubregions n :=
-    mem_originConnectedHullContainingSubregions_imp_originContaining hhull
-  let hHullSub : hull ⊆ Λ :=
-    (mem_originContainingSubregions_iff.1 hHullIn).1
-  let hZ :
-      InfiniteGroundMLNSpec.finiteVolumePartition Minf Λ gridPlusBoundary ≠ 0 :=
-    Mettapedia.Logic.MarkovLogicInfinitePositive.StrictlyPositiveInfiniteGroundMLNSpec.finiteVolumePartition_ne_zero
-      M Λ gridPlusBoundary
-  let A := originConnectedHullAssignmentEvent n hull
-  let B := symmetricGridFlipGainAssignmentFinset hull hHullSub gridPlusBoundary
-  have hAmeas : MeasurableSet A := by
-    exact (originConnectedHullAssignmentFinset n hull).finite_toSet.measurableSet
-  have hBmeas :
-      MeasurableSet (((B : Finset (LocalAssignment GridNode Λ)) :
-        Set (LocalAssignment GridNode Λ))) :=
-    B.finite_toSet.measurableSet
-  have hsubset :
-      A ⊆ (((B : Finset (LocalAssignment GridNode Λ)) :
-        Set (LocalAssignment GridNode Λ))) :=
-    originConnectedHullAssignmentEvent_subset_flipGainAssignmentFinset hhull
-  have hmono :
-      symmetricGridZeroFieldPlusStageWorldMeasure w n
-          (originConnectedHullWorldEvent n hull) ≤
-        finiteVolumeWorldMeasure Minf Λ gridPlusBoundary hZ
-          (MeasureTheory.cylinder Λ
-            (((B : Finset (LocalAssignment GridNode Λ)) :
-              Set (LocalAssignment GridNode Λ)))) := by
-    rw [originConnectedHullWorldEvent]
-    change finiteVolumeWorldMeasure Minf Λ gridPlusBoundary hZ
-        (MeasureTheory.cylinder Λ A) ≤
-      finiteVolumeWorldMeasure Minf Λ gridPlusBoundary hZ
-        (MeasureTheory.cylinder Λ
-          (((B : Finset (LocalAssignment GridNode Λ)) :
-            Set (LocalAssignment GridNode Λ))))
-    rw [finiteVolumeWorldMeasure_cylinder_region_eq_assignmentPMF_toMeasure
-      (M := Minf) (Δ := Λ) (ξ := gridPlusBoundary) (hZ := hZ)
-      (S := A) hAmeas]
-    rw [finiteVolumeWorldMeasure_cylinder_region_eq_assignmentPMF_toMeasure
-      (M := Minf) (Δ := Λ) (ξ := gridPlusBoundary) (hZ := hZ)
-      (S := (((B : Finset (LocalAssignment GridNode Λ)) :
-        Set (LocalAssignment GridNode Λ)))) hBmeas]
-    exact MeasureTheory.measure_mono hsubset
-  let cutFactor : ENNReal :=
-    (ENNReal.ofReal (Real.exp w)) ^ originContainingSubregionCutCard n hull
-  have hmul :
-      cutFactor *
-          finiteVolumeWorldMeasure Minf Λ gridPlusBoundary hZ
-            (MeasureTheory.cylinder Λ
-              (((B : Finset (LocalAssignment GridNode Λ)) :
-                Set (LocalAssignment GridNode Λ)))) ≤
-        1 := by
-    simpa [cutFactor, B, hHullSub, originContainingSubregionCutCard] using
-      (symmetricGridZeroField_flipGainAssignmentFinset_finiteVolumeWorldMeasure_mul_cutFactor_le_one
-        (w := w) (Λ := Λ) hull hHullSub gridPlusBoundary)
-  have hcut_ne_zero : cutFactor ≠ 0 := by
-    simp [cutFactor, Real.exp_pos]
-  have hcut_ne_top : cutFactor ≠ ⊤ := by
-    exact ENNReal.pow_ne_top ENNReal.coe_ne_top
-  have hB_le :
-      finiteVolumeWorldMeasure Minf Λ gridPlusBoundary hZ
-          (MeasureTheory.cylinder Λ
-            (((B : Finset (LocalAssignment GridNode Λ)) :
-              Set (LocalAssignment GridNode Λ)))) ≤
-        cutFactor⁻¹ := by
-    simpa using ((ENNReal.mul_le_iff_le_inv hcut_ne_zero hcut_ne_top).1 hmul)
-  calc
-    symmetricGridZeroFieldPlusStageWorldMeasure w n
-        (originConnectedHullWorldEvent n hull) ≤
-      finiteVolumeWorldMeasure Minf Λ gridPlusBoundary hZ
-        (MeasureTheory.cylinder Λ
-          (((B : Finset (LocalAssignment GridNode Λ)) :
-            Set (LocalAssignment GridNode Λ)))) := hmono
-    _ ≤ cutFactor⁻¹ := hB_le
-    _ = ((ENNReal.ofReal (Real.exp w)) ^ originContainingSubregionCutCard n hull)⁻¹ := by
-      rfl
+  have hHull := (mem_originContainingSubregions_iff.mp
+    (mem_originConnectedHullContainingSubregions_imp_originContaining hhull)).1
+  apply le_inv_exp_pow_of_mul_le_one
+  rw [originConnectedHullWorldEvent]
+  exact mul_cutFactor_le_one_of_subset_gain w hull hHull gridPlusBoundary _
+    (originConnectedHullAssignmentEvent_subset_flipGainAssignmentFinset hhull)
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_originConnectedHullContainingSubregions
     (w : ℝ) (n : ℕ) :
@@ -21500,82 +20478,9 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_or
       Finset.sum (originConnectedHullContainingSubregions n) (fun hull =>
         symmetricGridZeroFieldPlusStageWorldMeasure w n
           (originConnectedHullWorldEvent n hull)) := by
-  classical
-  let M := symmetricGridZeroFieldStrictSpec w
-  let Minf := M.toInfiniteGroundMLNSpec
-  let Λ := gridExhaustion.region n
-  let hZ :
-      InfiniteGroundMLNSpec.finiteVolumePartition Minf Λ gridPlusBoundary ≠ 0 :=
-    Mettapedia.Logic.MarkovLogicInfinitePositive.StrictlyPositiveInfiniteGroundMLNSpec.finiteVolumePartition_ne_zero
-      M Λ gridPlusBoundary
-  let Sfalse : Set (LocalAssignment GridNode Λ) := originSpinDownAssignmentEvent n
-  have hSfalse_meas : MeasurableSet Sfalse := by
-    simpa [Sfalse, originSpinDownAssignmentEvent, gridOriginSpinLocalQueryInRegion] using
-      measurableSet_localConstraintSet Λ
-        (gridOriginSpinLocalQueryInRegion Λ (gridOrigin_mem_gridExhaustion_region n) false)
-  have hsubset :
-      Sfalse ⊆ ⋃ hull, if hull ∈ originConnectedHullContainingSubregions n then
-          originConnectedHullAssignmentEvent n hull else ∅ :=
+  refine originSpinDownWorldMeasure_le_sum_of_cover w n _ (originConnectedHullAssignmentEvent n) ?_
+  simpa only [Set.iUnion_ite, Set.iUnion_empty, Set.union_empty, originSpinDownAssignmentEvent] using
     originSpinDownAssignmentEvent_subset_iUnion_originConnectedHullContainingSubregions n
-  have hleft :
-      symmetricGridZeroFieldPlusStageWorldMeasure w n (originSpinDownWorldEvent n) =
-        symmetricGridZeroFieldPlusStageAssignmentMeasure w n Sfalse := by
-    rw [originSpinDownWorldEvent, localQueryEvent_eq_cylinder]
-    change finiteVolumeWorldMeasure Minf Λ gridPlusBoundary hZ
-        (MeasureTheory.cylinder Λ Sfalse) =
-      (finiteVolumeAssignmentPMF Minf Λ gridPlusBoundary hZ).toMeasure Sfalse
-    exact finiteVolumeWorldMeasure_cylinder_region_eq_assignmentPMF_toMeasure
-      (M := Minf) (Δ := Λ) (ξ := gridPlusBoundary) (hZ := hZ) (S := Sfalse) hSfalse_meas
-  rw [hleft]
-  have hmono :
-      symmetricGridZeroFieldPlusStageAssignmentMeasure w n Sfalse ≤
-        symmetricGridZeroFieldPlusStageAssignmentMeasure w n
-          (⋃ hull, if hull ∈ originConnectedHullContainingSubregions n then
-            originConnectedHullAssignmentEvent n hull else ∅) := by
-    exact MeasureTheory.measure_mono hsubset
-  have hterm :
-      ∀ hull,
-        symmetricGridZeroFieldPlusStageAssignmentMeasure w n
-            (originConnectedHullAssignmentEvent n hull) =
-          symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originConnectedHullWorldEvent n hull) := by
-    intro hull
-    change
-      (finiteVolumeAssignmentPMF Minf Λ gridPlusBoundary hZ).toMeasure
-          (originConnectedHullAssignmentEvent n hull) =
-        finiteVolumeWorldMeasure Minf Λ gridPlusBoundary hZ
-          (MeasureTheory.cylinder Λ (originConnectedHullAssignmentEvent n hull))
-    have hmeas :
-        MeasurableSet (originConnectedHullAssignmentEvent n hull) := by
-      exact (originConnectedHullAssignmentFinset n hull).finite_toSet.measurableSet
-    exact (finiteVolumeWorldMeasure_cylinder_region_eq_assignmentPMF_toMeasure
-      (M := Minf) (Δ := Λ) (ξ := gridPlusBoundary) (hZ := hZ)
-      (S := originConnectedHullAssignmentEvent n hull) hmeas).symm
-  have hsum :
-      Finset.sum (originConnectedHullContainingSubregions n) (fun hull =>
-          symmetricGridZeroFieldPlusStageAssignmentMeasure w n
-            (originConnectedHullAssignmentEvent n hull)) =
-        Finset.sum (originConnectedHullContainingSubregions n) (fun hull =>
-          symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originConnectedHullWorldEvent n hull)) := by
-    refine Finset.sum_congr rfl ?_
-    intro hull hhull
-    exact hterm hull
-  calc
-    symmetricGridZeroFieldPlusStageAssignmentMeasure w n Sfalse ≤
-        symmetricGridZeroFieldPlusStageAssignmentMeasure w n
-          (⋃ hull, if hull ∈ originConnectedHullContainingSubregions n then
-            originConnectedHullAssignmentEvent n hull else ∅) := hmono
-    _ ≤ Finset.sum (originConnectedHullContainingSubregions n) (fun hull =>
-          symmetricGridZeroFieldPlusStageAssignmentMeasure w n
-            (originConnectedHullAssignmentEvent n hull)) :=
-        measure_iUnion_finset_le_sum
-          (symmetricGridZeroFieldPlusStageAssignmentMeasure w n)
-          (originConnectedHullContainingSubregions n)
-          (fun hull => originConnectedHullAssignmentEvent n hull)
-    _ = Finset.sum (originConnectedHullContainingSubregions n) (fun hull =>
-          symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originConnectedHullWorldEvent n hull)) := hsum
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_originConnectedHullContainingSubregions_cutFactorInv
     (w : ℝ) (n : ℕ) :
@@ -21606,69 +20511,14 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_eq_sum_or
         symmetricGridZeroFieldPlusStageWorldMeasure w n
           (originConnectedHullWorldEvent n hull)) := by
   classical
-  let M := symmetricGridZeroFieldStrictSpec w
-  let Minf := M.toInfiniteGroundMLNSpec
-  let Λ := gridExhaustion.region n
-  let hZ :
-      InfiniteGroundMLNSpec.finiteVolumePartition Minf Λ gridPlusBoundary ≠ 0 :=
-    Mettapedia.Logic.MarkovLogicInfinitePositive.StrictlyPositiveInfiniteGroundMLNSpec.finiteVolumePartition_ne_zero
-      M Λ gridPlusBoundary
-  let Sfalse : Set (LocalAssignment GridNode Λ) := originSpinDownAssignmentEvent n
-  have hSfalse_meas : MeasurableSet Sfalse := by
-    simpa [Sfalse, originSpinDownAssignmentEvent, gridOriginSpinLocalQueryInRegion] using
-      measurableSet_localConstraintSet Λ
-        (gridOriginSpinLocalQueryInRegion Λ (gridOrigin_mem_gridExhaustion_region n) false)
-  have hleft :
-      symmetricGridZeroFieldPlusStageWorldMeasure w n (originSpinDownWorldEvent n) =
-        symmetricGridZeroFieldPlusStageAssignmentMeasure w n Sfalse := by
-    rw [originSpinDownWorldEvent, localQueryEvent_eq_cylinder]
-    change finiteVolumeWorldMeasure Minf Λ gridPlusBoundary hZ
-        (MeasureTheory.cylinder Λ Sfalse) =
-      (finiteVolumeAssignmentPMF Minf Λ gridPlusBoundary hZ).toMeasure Sfalse
-    exact finiteVolumeWorldMeasure_cylinder_region_eq_assignmentPMF_toMeasure
-      (M := Minf) (Δ := Λ) (ξ := gridPlusBoundary) (hZ := hZ) (S := Sfalse) hSfalse_meas
-  have hdecomp :
-      Sfalse = ⋃ hull ∈ originSpinDownExtractedHulls n,
-        originConnectedHullAssignmentEvent n hull := by
-    simpa [Sfalse] using originSpinDownAssignmentEvent_eq_iUnion_originSpinDownExtractedHulls n
-  have hdisjoint :
-      Set.PairwiseDisjoint (↑(originSpinDownExtractedHulls n) : Set (Region GridNode))
-        (originConnectedHullAssignmentEvent n) :=
-    originConnectedHullAssignmentEvent_pairwiseDisjoint_on_originSpinDownExtractedHulls n
-  have hmeas :
-      ∀ hull ∈ originSpinDownExtractedHulls n,
-        MeasurableSet (originConnectedHullAssignmentEvent n hull) := by
-    intro hull _hhull
-    exact (originConnectedHullAssignmentFinset n hull).finite_toSet.measurableSet
-  have hterm :
-      ∀ hull,
-        symmetricGridZeroFieldPlusStageAssignmentMeasure w n
-            (originConnectedHullAssignmentEvent n hull) =
-          symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originConnectedHullWorldEvent n hull) := by
-    intro hull
-    change
-      (finiteVolumeAssignmentPMF Minf Λ gridPlusBoundary hZ).toMeasure
-          (originConnectedHullAssignmentEvent n hull) =
-        finiteVolumeWorldMeasure Minf Λ gridPlusBoundary hZ
-          (MeasureTheory.cylinder Λ (originConnectedHullAssignmentEvent n hull))
-    have hmeasHull :
-        MeasurableSet (originConnectedHullAssignmentEvent n hull) := by
-      exact (originConnectedHullAssignmentFinset n hull).finite_toSet.measurableSet
-    exact (finiteVolumeWorldMeasure_cylinder_region_eq_assignmentPMF_toMeasure
-      (M := Minf) (Δ := Λ) (ξ := gridPlusBoundary) (hZ := hZ)
-      (S := originConnectedHullAssignmentEvent n hull) hmeasHull).symm
-  have hsum :
-      Finset.sum (originSpinDownExtractedHulls n) (fun hull =>
-          symmetricGridZeroFieldPlusStageAssignmentMeasure w n
-            (originConnectedHullAssignmentEvent n hull)) =
-        Finset.sum (originSpinDownExtractedHulls n) (fun hull =>
-          symmetricGridZeroFieldPlusStageWorldMeasure w n
-            (originConnectedHullWorldEvent n hull)) := by
-    refine Finset.sum_congr rfl ?_
-    intro hull hhull
-    exact hterm hull
-  rw [hleft, hdecomp, MeasureTheory.measure_biUnion_finset hdisjoint hmeas, hsum]
+  rw [originSpinDownWorldEvent, localQueryEvent_eq_cylinder]
+  change symmetricGridZeroFieldPlusStageWorldMeasure w n
+      (MeasureTheory.cylinder (gridExhaustion.region n) (originSpinDownAssignmentEvent n)) = _
+  simp only [originConnectedHullWorldEvent, plusStageWorldMeasure_cylinder]
+  rw [originSpinDownAssignmentEvent_eq_iUnion_originSpinDownExtractedHulls]
+  exact measure_biUnion_finset
+    (originConnectedHullAssignmentEvent_pairwiseDisjoint_on_originSpinDownExtractedHulls n)
+    (fun _ _ => Set.Finite.measurableSet (Set.toFinite _))
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_originSpinDownExtractedHulls
     (w : ℝ) (n : ℕ) :
@@ -21701,6 +20551,32 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_or
             (w := w)
             (mem_originSpinDownExtractedHulls_imp_mem_originConnectedHullContainingSubregions hhull)
 
+private theorem sum_weight_by_rank {ι : Type*} (indices : Finset ι) (ranks : Finset ℕ)
+    (rank : ι → ℕ) (weight : ℕ → ENNReal) (h : ∀ i ∈ indices, rank i ∈ ranks) :
+    (∑ i ∈ indices, weight (rank i)) =
+      ∑ k ∈ ranks, ((indices.filter fun i => rank i = k).card : ENNReal) * weight k := by
+  simpa only [Finset.sum_const, nsmul_eq_mul] using
+    (Finset.sum_fiberwise_of_maps_to' h weight).symm
+
+private theorem sum_weight_mono (support : Finset ℕ) {count bound weight : ℕ → ENNReal}
+    (hcount : ∀ k ∈ support, count k ≤ bound k) :
+    (∑ k ∈ support, count k * weight k) ≤ ∑ k ∈ support, bound k * weight k :=
+  Finset.sum_le_sum fun k hk => mul_le_mul_of_nonneg_right (hcount k hk) zero_le
+
+private theorem le_discounted_geometric_tail_of_count (support : Finset ℕ)
+    (scale growth discount : ENNReal) (cutoff : ℕ) {mass : ENNReal} {count : ℕ → ENNReal}
+    (hmass : mass ≤ ∑ k ∈ support, count k * (discount ^ k)⁻¹)
+    (hsmall : ∀ k ∈ support, k < cutoff → count k = 0)
+    (hlarge : ∀ k ∈ support, cutoff ≤ k → count k ≤ scale * growth ^ k) :
+    mass ≤ scale * (growth * discount⁻¹) ^ cutoff * (1 - growth * discount⁻¹)⁻¹ := by
+  refine hmass.trans ((sum_weight_mono (bound := fun k =>
+    if cutoff ≤ k then scale * growth ^ k else 0) support ?_).trans
+      (Mettapedia.Analysis.sum_discounted_geometric_tail_le support scale growth discount cutoff))
+  intro k hk
+  by_cases h : cutoff ≤ k
+  · simpa only [if_pos h] using hlarge k hk h
+  · simp only [if_neg h, hsmall k hk (Nat.lt_of_not_ge h), le_refl]
+
 theorem sum_originSpinDownExtractedHulls_cutFactorInv_eq_sum_cutCardRange
     (w : ℝ) (n : ℕ) :
     (∑ hull ∈ originSpinDownExtractedHulls n,
@@ -21722,23 +20598,10 @@ theorem sum_originSpinDownExtractedHulls_cutFactorInv_eq_sum_cutCardRange_counts
         (((originSpinDownExtractedHulls n).filter
             (fun hull => originContainingSubregionCutCard n hull = m)).card : ENNReal) *
           ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
-  rw [sum_originSpinDownExtractedHulls_cutFactorInv_eq_sum_cutCardRange]
-  refine Finset.sum_congr rfl ?_
-  intro m hm
-  have hinner :
-      (∑ hull ∈ originSpinDownExtractedHulls n with
-          originContainingSubregionCutCard n hull = m,
-          ((ENNReal.ofReal (Real.exp w)) ^ originContainingSubregionCutCard n hull)⁻¹) =
-        ∑ hull ∈ originSpinDownExtractedHulls n with
-          originContainingSubregionCutCard n hull = m,
-          ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
-    refine Finset.sum_congr rfl ?_
-    intro hull hhull
-    have hEq : originContainingSubregionCutCard n hull = m := by
-      exact (Finset.mem_filter.mp hhull).2
-    simp [hEq]
-  rw [hinner]
-  simp [Finset.sum_const, nsmul_eq_mul]
+  refine sum_weight_by_rank _ _ (originContainingSubregionCutCard n) (fun m => ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹) ?_
+  intro inside _
+  rw [Finset.mem_range, Nat.lt_succ_iff]
+  exact originContainingSubregionCutCard_le n inside
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_extractedHullCutCardRange_of_countBound
     (w : ℝ) (n : ℕ) (countBound : ℕ → ENNReal)
@@ -21751,31 +20614,9 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_ex
         (originSpinDownWorldEvent n) ≤
       ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
         countBound m * ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
-  calc
-    symmetricGridZeroFieldPlusStageWorldMeasure w n
-        (originSpinDownWorldEvent n) ≤
-      ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        (((originSpinDownExtractedHulls n).filter
-            (fun hull => originContainingSubregionCutCard n hull = m)).card : ENNReal) *
-          ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
-          calc
-            symmetricGridZeroFieldPlusStageWorldMeasure w n
-                (originSpinDownWorldEvent n) ≤
-              Finset.sum (originSpinDownExtractedHulls n) (fun hull =>
-                ((ENNReal.ofReal (Real.exp w)) ^ originContainingSubregionCutCard n hull)⁻¹) :=
-              symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_originSpinDownExtractedHulls_cutFactorInv
-                w n
-            _ =
-              ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-                (((originSpinDownExtractedHulls n).filter
-                    (fun hull => originContainingSubregionCutCard n hull = m)).card : ENNReal) *
-                  ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
-                    exact sum_originSpinDownExtractedHulls_cutFactorInv_eq_sum_cutCardRange_counts w n
-    _ ≤ ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        countBound m * ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
-          refine Finset.sum_le_sum ?_
-          intro m hm
-          exact mul_le_mul_of_nonneg_right (hcount m hm) (by exact zero_le)
+  have h := symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_originSpinDownExtractedHulls_cutFactorInv w n
+  rw [sum_originSpinDownExtractedHulls_cutFactorInv_eq_sum_cutCardRange_counts w n] at h
+  exact h.trans (sum_weight_mono _ hcount)
 
 theorem sum_originConnectedHullContainingSubregions_cutFactorInv_eq_sum_cutCardRange
     (w : ℝ) (n : ℕ) :
@@ -21798,23 +20639,10 @@ theorem sum_originConnectedHullContainingSubregions_cutFactorInv_eq_sum_cutCardR
         (((originConnectedHullContainingSubregions n).filter
             (fun hull => originContainingSubregionCutCard n hull = m)).card : ENNReal) *
           ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
-  rw [sum_originConnectedHullContainingSubregions_cutFactorInv_eq_sum_cutCardRange]
-  refine Finset.sum_congr rfl ?_
-  intro m hm
-  have hinner :
-      (∑ hull ∈ originConnectedHullContainingSubregions n with
-          originContainingSubregionCutCard n hull = m,
-          ((ENNReal.ofReal (Real.exp w)) ^ originContainingSubregionCutCard n hull)⁻¹) =
-        ∑ hull ∈ originConnectedHullContainingSubregions n with
-          originContainingSubregionCutCard n hull = m,
-          ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
-    refine Finset.sum_congr rfl ?_
-    intro hull hhull
-    have hEq : originContainingSubregionCutCard n hull = m := by
-      exact (Finset.mem_filter.mp hhull).2
-    simp [hEq]
-  rw [hinner]
-  simp [Finset.sum_const, nsmul_eq_mul]
+  refine sum_weight_by_rank _ _ (originContainingSubregionCutCard n) (fun m => ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹) ?_
+  intro inside _
+  rw [Finset.mem_range, Nat.lt_succ_iff]
+  exact originContainingSubregionCutCard_le n inside
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedHullCutCardRange_counts
     (w : ℝ) (n : ℕ) :
@@ -21849,21 +20677,9 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_co
     symmetricGridZeroFieldPlusStageWorldMeasure w n
         (originSpinDownWorldEvent n) ≤
       ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        countBound m * ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
-  calc
-    symmetricGridZeroFieldPlusStageWorldMeasure w n
-        (originSpinDownWorldEvent n) ≤
-      ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        (((originConnectedHullContainingSubregions n).filter
-            (fun hull => originContainingSubregionCutCard n hull = m)).card : ENNReal) *
-          ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ :=
-      symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedHullCutCardRange_counts
-        w n
-    _ ≤ ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        countBound m * ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
-          refine Finset.sum_le_sum ?_
-          intro m hm
-          exact mul_le_mul_of_nonneg_right (hcount m hm) (by exact zero_le)
+        countBound m * ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ :=
+  (symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedHullCutCardRange_counts w n).trans
+    (sum_weight_mono _ hcount)
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_originConnectedContainingSubregions_outerCutFactorInv
     (w : ℝ) (n : ℕ) :
@@ -21989,21 +20805,10 @@ theorem sum_originContainingSubregions_cutFactorInv_eq_sum_cutCardRange_counts
         (((originContainingSubregions n).filter
             (fun inside => originContainingSubregionCutCard n inside = m)).card : ENNReal) *
           ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
-  rw [sum_originContainingSubregions_cutFactorInv_eq_sum_cutCardRange]
-  refine Finset.sum_congr rfl ?_
-  intro m hm
-  have hinner :
-      (∑ inside ∈ originContainingSubregions n with originContainingSubregionCutCard n inside = m,
-          ((ENNReal.ofReal (Real.exp w)) ^ originContainingSubregionCutCard n inside)⁻¹) =
-        ∑ inside ∈ originContainingSubregions n with originContainingSubregionCutCard n inside = m,
-          ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
-    refine Finset.sum_congr rfl ?_
-    intro inside hinside
-    have hEq : originContainingSubregionCutCard n inside = m := by
-      exact (Finset.mem_filter.mp hinside).2
-    simp [hEq]
-  rw [hinner]
-  simp [Finset.sum_const, nsmul_eq_mul]
+  refine sum_weight_by_rank _ _ (originContainingSubregionCutCard n) (fun m => ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹) ?_
+  intro inside _
+  rw [Finset.mem_range, Nat.lt_succ_iff]
+  exact originContainingSubregionCutCard_le n inside
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_cutCardRange_counts
     (w : ℝ) (n : ℕ) :
@@ -22038,20 +20843,9 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_cu
     symmetricGridZeroFieldPlusStageWorldMeasure w n
         (originSpinDownWorldEvent n) ≤
       ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        countBound m * ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
-  calc
-    symmetricGridZeroFieldPlusStageWorldMeasure w n
-        (originSpinDownWorldEvent n) ≤
-      ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        (((originContainingSubregions n).filter
-            (fun inside => originContainingSubregionCutCard n inside = m)).card : ENNReal) *
-          ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ :=
-      symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_cutCardRange_counts w n
-    _ ≤ ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        countBound m * ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
-          refine Finset.sum_le_sum ?_
-          intro m hm
-          exact mul_le_mul_of_nonneg_right (hcount m hm) (by exact zero_le)
+        countBound m * ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ :=
+  (symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_cutCardRange_counts w n).trans
+    (sum_weight_mono _ hcount)
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_geometricCutCardBound
     (w : ℝ) (n : ℕ) (C q : ENNReal)
@@ -22063,33 +20857,10 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_geomet
     symmetricGridZeroFieldPlusStageWorldMeasure w n
         (originSpinDownWorldEvent n) ≤
       C * (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ := by
-  let e : ENNReal := ENNReal.ofReal (Real.exp w)
-  calc
-    symmetricGridZeroFieldPlusStageWorldMeasure w n
-        (originSpinDownWorldEvent n) ≤
-      ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        (C * q ^ m) * (e ^ m)⁻¹ := by
-          simpa [e] using
-            symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_cutCardRange_of_countBound
-              (w := w) (n := n) (countBound := fun m => C * q ^ m) hcount
-    _ = ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        C * (q * e⁻¹) ^ m := by
-          refine Finset.sum_congr rfl ?_
-          intro m hm
-          rw [ENNReal.inv_pow]
-          calc
-            (C * q ^ m) * (e⁻¹) ^ m = C * (q ^ m * (e⁻¹) ^ m) := by
-              simp [mul_assoc]
-            _ = C * (q * e⁻¹) ^ m := by
-              rw [← mul_pow]
-    _ ≤ ∑' m : ℕ, C * (q * e⁻¹) ^ m := by
-          exact ENNReal.sum_le_tsum (Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1))
-    _ = C * (∑' m : ℕ, (q * e⁻¹) ^ m) := by
-          rw [ENNReal.tsum_mul_left]
-    _ = C * (1 - q * e⁻¹)⁻¹ := by
-          rw [ENNReal.tsum_geometric]
-    _ = C * (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ := by
-          simp [e]
+  simpa only [pow_zero, mul_one] using
+    le_discounted_geometric_tail_of_count _ C q (ENNReal.ofReal (Real.exp w)) 0
+      (symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_cutCardRange_counts w n)
+      (fun m _ h => (Nat.not_lt_zero m h).elim) (fun m hm _ => hcount m hm)
 
 theorem sum_originConnectedContainingSubregions_cutFactorInv_eq_sum_cutCardRange
     (w : ℝ) (n : ℕ) :
@@ -22111,21 +20882,10 @@ theorem sum_originConnectedContainingSubregions_cutFactorInv_eq_sum_cutCardRange
         (((originConnectedContainingSubregions n).filter
             (fun inside => originContainingSubregionCutCard n inside = m)).card : ENNReal) *
           ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
-  rw [sum_originConnectedContainingSubregions_cutFactorInv_eq_sum_cutCardRange]
-  refine Finset.sum_congr rfl ?_
-  intro m hm
-  have hinner :
-      (∑ inside ∈ originConnectedContainingSubregions n with originContainingSubregionCutCard n inside = m,
-          ((ENNReal.ofReal (Real.exp w)) ^ originContainingSubregionCutCard n inside)⁻¹) =
-        ∑ inside ∈ originConnectedContainingSubregions n with originContainingSubregionCutCard n inside = m,
-          ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
-    refine Finset.sum_congr rfl ?_
-    intro inside hinside
-    have hEq : originContainingSubregionCutCard n inside = m := by
-      exact (Finset.mem_filter.mp hinside).2
-    simp [hEq]
-  rw [hinner]
-  simp [Finset.sum_const, nsmul_eq_mul]
+  refine sum_weight_by_rank _ _ (originContainingSubregionCutCard n) (fun m => ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹) ?_
+  intro inside _
+  rw [Finset.mem_range, Nat.lt_succ_iff]
+  exact originContainingSubregionCutCard_le n inside
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedCutCardRange_counts
     (w : ℝ) (n : ℕ) :
@@ -22160,20 +20920,9 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_co
     symmetricGridZeroFieldPlusStageWorldMeasure w n
         (originSpinDownWorldEvent n) ≤
       ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        countBound m * ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
-  calc
-    symmetricGridZeroFieldPlusStageWorldMeasure w n
-        (originSpinDownWorldEvent n) ≤
-      ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        (((originConnectedContainingSubregions n).filter
-            (fun inside => originContainingSubregionCutCard n inside = m)).card : ENNReal) *
-          ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ :=
-      symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedCutCardRange_counts w n
-    _ ≤ ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        countBound m * ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
-          refine Finset.sum_le_sum ?_
-          intro m hm
-          exact mul_le_mul_of_nonneg_right (hcount m hm) (by exact zero_le)
+        countBound m * ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ :=
+  (symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedCutCardRange_counts w n).trans
+    (sum_weight_mono _ hcount)
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connectedGeometricCutCardBound
     (w : ℝ) (n : ℕ) (C q : ENNReal)
@@ -22185,33 +20934,10 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connec
     symmetricGridZeroFieldPlusStageWorldMeasure w n
         (originSpinDownWorldEvent n) ≤
       C * (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ := by
-  let e : ENNReal := ENNReal.ofReal (Real.exp w)
-  calc
-    symmetricGridZeroFieldPlusStageWorldMeasure w n
-        (originSpinDownWorldEvent n) ≤
-      ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        (C * q ^ m) * (e ^ m)⁻¹ := by
-          simpa [e] using
-            symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedCutCardRange_of_countBound
-              (w := w) (n := n) (countBound := fun m => C * q ^ m) hcount
-    _ = ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        C * (q * e⁻¹) ^ m := by
-          refine Finset.sum_congr rfl ?_
-          intro m hm
-          rw [ENNReal.inv_pow]
-          calc
-            (C * q ^ m) * (e⁻¹) ^ m = C * (q ^ m * (e⁻¹) ^ m) := by
-              simp [mul_assoc]
-            _ = C * (q * e⁻¹) ^ m := by
-              rw [← mul_pow]
-    _ ≤ ∑' m : ℕ, C * (q * e⁻¹) ^ m := by
-          exact ENNReal.sum_le_tsum (Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1))
-    _ = C * (∑' m : ℕ, (q * e⁻¹) ^ m) := by
-          rw [ENNReal.tsum_mul_left]
-    _ = C * (1 - q * e⁻¹)⁻¹ := by
-          rw [ENNReal.tsum_geometric]
-    _ = C * (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ := by
-          simp [e]
+  simpa only [pow_zero, mul_one] using
+    le_discounted_geometric_tail_of_count _ C q (ENNReal.ofReal (Real.exp w)) 0
+      (symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedCutCardRange_counts w n)
+      (fun m _ h => (Nat.not_lt_zero m h).elim) (fun m hm _ => hcount m hm)
 
 theorem tsum_if_two_le_geometric (r : ENNReal) :
     (∑' m : ℕ, if 2 ≤ m then r ^ m else 0) =
@@ -22233,27 +20959,11 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connec
     symmetricGridZeroFieldPlusStageWorldMeasure w n
         (originSpinDownWorldEvent n) ≤
       C * (q * (ENNReal.ofReal (Real.exp w))⁻¹) ^ 2 *
-        (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ := by
-  let e : ENNReal := ENNReal.ofReal (Real.exp w)
-  have hcount' :
-      ∀ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        (((originConnectedContainingSubregions n).filter
-            (fun inside => originContainingSubregionCutCard n inside = m)).card : ENNReal) ≤
-          (if 2 ≤ m then C * q ^ m else 0) := by
-    intro m hm
-    by_cases hge2 : 2 ≤ m
-    · simpa [hge2] using hcount m hm hge2
-    · have hmLt : m < 2 := Nat.lt_of_not_ge hge2
-      simp [hge2, originConnectedContainingSubregions_cutCard_count_eq_zero_of_lt_two n m hmLt]
-  calc
-    symmetricGridZeroFieldPlusStageWorldMeasure w n
-        (originSpinDownWorldEvent n) ≤
-      ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        (if 2 ≤ m then C * q ^ m else 0) * (e ^ m)⁻¹ := by
-          simpa [e] using
-            symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedCutCardRange_of_countBound
-              (w := w) (n := n) (countBound := fun m => if 2 ≤ m then C * q ^ m else 0) hcount'
-    _ ≤ _ := Mettapedia.Analysis.sum_discounted_geometric_tail_le _ C q e 2
+        (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ :=
+  le_discounted_geometric_tail_of_count _ C q (ENNReal.ofReal (Real.exp w)) 2
+    (symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedCutCardRange_counts w n)
+    (fun m _ => originConnectedContainingSubregions_cutCard_count_eq_zero_of_lt_two n m)
+    hcount
 
 theorem sum_originConnectedContainingSubregions_outerCutFactorInv_eq_sum_outerCutCardRange
     (w : ℝ) (n : ℕ) :
@@ -22278,23 +20988,12 @@ theorem sum_originConnectedContainingSubregions_outerCutFactorInv_eq_sum_outerCu
         (((originConnectedContainingSubregions n).filter
             (fun inside => originContainingSubregionOuterCutCard n inside = m)).card : ENNReal) *
           ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
-  rw [sum_originConnectedContainingSubregions_outerCutFactorInv_eq_sum_outerCutCardRange]
-  refine Finset.sum_congr rfl ?_
-  intro m hm
-  have hinner :
-      (∑ inside ∈ originConnectedContainingSubregions n with
-          originContainingSubregionOuterCutCard n inside = m,
-          ((ENNReal.ofReal (Real.exp w)) ^ originContainingSubregionOuterCutCard n inside)⁻¹) =
-        ∑ inside ∈ originConnectedContainingSubregions n with
-          originContainingSubregionOuterCutCard n inside = m,
-          ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
-    refine Finset.sum_congr rfl ?_
-    intro inside hinside
-    have hEq : originContainingSubregionOuterCutCard n inside = m := by
-      exact (Finset.mem_filter.mp hinside).2
-    simp [hEq]
-  rw [hinner]
-  simp [Finset.sum_const, nsmul_eq_mul]
+  refine sum_weight_by_rank _ _ (originContainingSubregionOuterCutCard n) (fun m => ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹) ?_
+  intro inside hi
+  rw [Finset.mem_range, Nat.lt_succ_iff]
+  exact (originContainingSubregionOuterCutCard_le_cutCard
+    (mem_originConnectedContainingSubregions_iff.mp hi).1).trans
+    (originContainingSubregionCutCard_le n inside)
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedOuterCutCardRange_counts_of_nonneg
     (w : ℝ) (hw : 0 ≤ w) (n : ℕ) :
@@ -22328,21 +21027,9 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_co
     symmetricGridZeroFieldPlusStageWorldMeasure w n
         (originSpinDownWorldEvent n) ≤
       ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        countBound m * ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
-  calc
-    symmetricGridZeroFieldPlusStageWorldMeasure w n
-        (originSpinDownWorldEvent n) ≤
-      ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        (((originConnectedContainingSubregions n).filter
-            (fun inside => originContainingSubregionOuterCutCard n inside = m)).card : ENNReal) *
-          ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ :=
-      symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedOuterCutCardRange_counts_of_nonneg
-        w hw n
-    _ ≤ ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        countBound m * ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ := by
-          refine Finset.sum_le_sum ?_
-          intro m hm
-          exact mul_le_mul_of_nonneg_right (hcount m hm) (by exact zero_le)
+        countBound m * ((ENNReal.ofReal (Real.exp w)) ^ m)⁻¹ :=
+  (symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedOuterCutCardRange_counts_of_nonneg w hw n).trans
+    (sum_weight_mono _ hcount)
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connectedOuterGeometricCutCardBound_from_two_of_nonneg
     (w : ℝ) (hw : 0 ≤ w) (n : ℕ) (C q : ENNReal)
@@ -22354,29 +21041,11 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connec
     symmetricGridZeroFieldPlusStageWorldMeasure w n
         (originSpinDownWorldEvent n) ≤
       C * (q * (ENNReal.ofReal (Real.exp w))⁻¹) ^ 2 *
-        (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ := by
-  let e : ENNReal := ENNReal.ofReal (Real.exp w)
-  have hcount' :
-      ∀ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        (((originConnectedContainingSubregions n).filter
-            (fun inside => originContainingSubregionOuterCutCard n inside = m)).card : ENNReal) ≤
-          (if 2 ≤ m then C * q ^ m else 0) := by
-    intro m hm
-    by_cases hge2 : 2 ≤ m
-    · simpa [hge2] using hcount m hm hge2
-    · have hmLt : m < 2 := Nat.lt_of_not_ge hge2
-      simp [hge2,
-        originConnectedContainingSubregions_outerCutCard_count_eq_zero_of_lt_two n m hmLt]
-  calc
-    symmetricGridZeroFieldPlusStageWorldMeasure w n
-        (originSpinDownWorldEvent n) ≤
-      ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        (if 2 ≤ m then C * q ^ m else 0) * (e ^ m)⁻¹ := by
-          simpa [e] using
-            symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedOuterCutCardRange_of_countBound_of_nonneg
-              (w := w) (hw := hw) (n := n)
-              (countBound := fun m => if 2 ≤ m then C * q ^ m else 0) hcount'
-    _ ≤ _ := Mettapedia.Analysis.sum_discounted_geometric_tail_le _ C q e 2
+        (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ :=
+  le_discounted_geometric_tail_of_count _ C q (ENNReal.ofReal (Real.exp w)) 2
+    (symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedOuterCutCardRange_counts_of_nonneg w hw n)
+    (fun m _ => originConnectedContainingSubregions_outerCutCard_count_eq_zero_of_lt_two n m)
+    hcount
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedOuterCutCardRange_counts
     (w : ℝ) (n : ℕ) :
@@ -22436,28 +21105,11 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connec
     symmetricGridZeroFieldPlusStageWorldMeasure w n
         (originSpinDownWorldEvent n) ≤
       C * (q * (ENNReal.ofReal (Real.exp w))⁻¹) ^ 2 *
-        (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ := by
-  let e : ENNReal := ENNReal.ofReal (Real.exp w)
-  have hcount' :
-      ∀ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        (((originConnectedContainingSubregions n).filter
-            (fun inside => originContainingSubregionOuterCutCard n inside = m)).card : ENNReal) ≤
-          (if 2 ≤ m then C * q ^ m else 0) := by
-    intro m hm
-    by_cases hge2 : 2 ≤ m
-    · simpa [hge2] using hcount m hm hge2
-    · have hmLt : m < 2 := Nat.lt_of_not_ge hge2
-      simp [hge2,
-        originConnectedContainingSubregions_outerCutCard_count_eq_zero_of_lt_two n m hmLt]
-  calc
-    symmetricGridZeroFieldPlusStageWorldMeasure w n
-        (originSpinDownWorldEvent n) ≤
-      ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        (if 2 ≤ m then C * q ^ m else 0) * (e ^ m)⁻¹ := by
-          simpa [e] using
-            symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedOuterCutCardRange_of_countBound
-              (w := w) (n := n) (countBound := fun m => if 2 ≤ m then C * q ^ m else 0) hcount'
-    _ ≤ _ := Mettapedia.Analysis.sum_discounted_geometric_tail_le _ C q e 2
+        (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ :=
+  le_discounted_geometric_tail_of_count _ C q (ENNReal.ofReal (Real.exp w)) 2
+    (symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedOuterCutCardRange_counts w n)
+    (fun m _ => originConnectedContainingSubregions_outerCutCard_count_eq_zero_of_lt_two n m)
+    hcount
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connectedHullGeometricCutCardBound_from_two
     (w : ℝ) (n : ℕ) (C q : ENNReal)
@@ -22469,67 +21121,21 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_connec
     symmetricGridZeroFieldPlusStageWorldMeasure w n
         (originSpinDownWorldEvent n) ≤
       C * (q * (ENNReal.ofReal (Real.exp w))⁻¹) ^ 2 *
-        (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ := by
-  let e : ENNReal := ENNReal.ofReal (Real.exp w)
-  have hcount' :
-      ∀ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        (((originConnectedHullContainingSubregions n).filter
-            (fun hull => originContainingSubregionCutCard n hull = m)).card : ENNReal) ≤
-          (if 2 ≤ m then C * q ^ m else 0) := by
-    intro m hm
-    by_cases hge2 : 2 ≤ m
-    · simpa [hge2] using hcount m hm hge2
-    · have hmLt : m < 2 := Nat.lt_of_not_ge hge2
-      simp [hge2,
-        originConnectedHullContainingSubregions_cutCard_count_eq_zero_of_lt_two n m hmLt]
-  calc
-    symmetricGridZeroFieldPlusStageWorldMeasure w n
-        (originSpinDownWorldEvent n) ≤
-      ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        (if 2 ≤ m then C * q ^ m else 0) * (e ^ m)⁻¹ := by
-          simpa [e] using
-            symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedHullCutCardRange_of_countBound
-              (w := w) (n := n) (countBound := fun m => if 2 ≤ m then C * q ^ m else 0) hcount'
-    _ ≤ _ := Mettapedia.Analysis.sum_discounted_geometric_tail_le _ C q e 2
+        (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ :=
+  le_discounted_geometric_tail_of_count _ C q (ENNReal.ofReal (Real.exp w)) 2
+    (symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_connectedHullCutCardRange_counts w n)
+    (fun m _ => originConnectedHullContainingSubregions_cutCard_count_eq_zero_of_lt_two n m)
+    hcount
 
 theorem originSpinDownExtractedHulls_cutCard_count_eq_zero_of_lt_two
     (n m : ℕ)
     (hm : m < 2) :
     (((originSpinDownExtractedHulls n).filter
         (fun hull => originContainingSubregionCutCard n hull = m)).card : ENNReal) = 0 := by
-  cases m with
-  | zero =>
-      have hempty :
-          (originSpinDownExtractedHulls n).filter
-              (fun hull => originContainingSubregionCutCard n hull = 0) = ∅ := by
-        apply Finset.filter_eq_empty_iff.2
-        intro hull hhull hEq
-        have hHullFam : hull ∈ originConnectedHullContainingSubregions n :=
-          mem_originSpinDownExtractedHulls_imp_mem_originConnectedHullContainingSubregions hhull
-        have hge : 2 ≤ originContainingSubregionCutCard n hull :=
-          two_le_originConnectedHullContainingSubregionCutCard hHullFam
-        omega
-      simp [hempty]
-  | succ m =>
-      cases m with
-      | zero =>
-          have hempty :
-              (originSpinDownExtractedHulls n).filter
-                  (fun hull => originContainingSubregionCutCard n hull = 1) = ∅ := by
-            apply Finset.filter_eq_empty_iff.2
-            intro hull hhull hEq
-            have hHullFam : hull ∈ originConnectedHullContainingSubregions n :=
-              mem_originSpinDownExtractedHulls_imp_mem_originConnectedHullContainingSubregions hhull
-            have hge : 2 ≤ originContainingSubregionCutCard n hull :=
-              two_le_originConnectedHullContainingSubregionCutCard hHullFam
-            omega
-          simp [hempty]
-      | succ m' =>
-          exfalso
-          have h2 : 2 ≤ Nat.succ (Nat.succ m') :=
-            Nat.succ_le_succ (Nat.succ_le_succ (Nat.zero_le m'))
-          have hmle : Nat.succ (Nat.succ m') ≤ 1 := Nat.lt_succ_iff.mp hm
-          exact (Nat.not_succ_le_self 1) (le_trans h2 hmle)
+  rw [filter_eq_empty_below_rank _ (originContainingSubregionCutCard n)
+    (fun _ h => two_le_originConnectedHullContainingSubregionCutCard
+      (mem_originSpinDownExtractedHulls_imp_mem_originConnectedHullContainingSubregions h)) hm]
+  simp
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_extractedHullGeometricCutCardBound_from_two
     (w : ℝ) (n : ℕ) (C q : ENNReal)
@@ -22541,27 +21147,14 @@ theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_extrac
     symmetricGridZeroFieldPlusStageWorldMeasure w n
         (originSpinDownWorldEvent n) ≤
       C * (q * (ENNReal.ofReal (Real.exp w))⁻¹) ^ 2 *
-        (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ := by
-  let e : ENNReal := ENNReal.ofReal (Real.exp w)
-  have hcount' :
-      ∀ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        (((originSpinDownExtractedHulls n).filter
-            (fun hull => originContainingSubregionCutCard n hull = m)).card : ENNReal) ≤
-          (if 2 ≤ m then C * q ^ m else 0) := by
-    intro m hm
-    by_cases hge2 : 2 ≤ m
-    · simpa [hge2] using hcount m hm hge2
-    · have hmLt : m < 2 := Nat.lt_of_not_ge hge2
-      simp [hge2, originSpinDownExtractedHulls_cutCard_count_eq_zero_of_lt_two n m hmLt]
-  calc
-    symmetricGridZeroFieldPlusStageWorldMeasure w n
-        (originSpinDownWorldEvent n) ≤
-      ∑ m ∈ Finset.range ((gridRegionSupport (gridExhaustion.region n)).card + 1),
-        (if 2 ≤ m then C * q ^ m else 0) * (e ^ m)⁻¹ := by
-          simpa [e] using
-            symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_extractedHullCutCardRange_of_countBound
-              (w := w) (n := n) (countBound := fun m => if 2 ≤ m then C * q ^ m else 0) hcount'
-    _ ≤ _ := Mettapedia.Analysis.sum_discounted_geometric_tail_le _ C q e 2
+        (1 - q * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ :=
+  le_discounted_geometric_tail_of_count _ C q (ENNReal.ofReal (Real.exp w)) 2
+    (by
+    have h := symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_sum_originSpinDownExtractedHulls_cutFactorInv w n
+    rw [sum_originSpinDownExtractedHulls_cutFactorInv_eq_sum_cutCardRange_counts w n] at h
+    exact h)
+    (fun m _ => originSpinDownExtractedHulls_cutCard_count_eq_zero_of_lt_two n m)
+    hcount
 
 theorem symmetricGridZeroField_originSpinDown_finiteVolumeWorldMeasure_le_cutCardBoxCandidateGeometricBound_from_two
     (w : ℝ) (n : ℕ) (C q : ENNReal)
@@ -22694,74 +21287,10 @@ theorem cornerAxisSeparator_zeroField_falseInside_trueCutBoundary_finiteVolumeWo
         (MeasureTheory.cylinder (gridExhaustion.region n)
           (((cornerAxisSeparatorFalseInsideTrueCutBoundaryFinset sep ξ :
               Finset (LocalAssignment GridNode (gridExhaustion.region n))) :
-            Set (LocalAssignment GridNode (gridExhaustion.region n))))) ≤ 1 := by
-  classical
-  let M := symmetricGridZeroFieldStrictSpec w
-  let Minf := M.toInfiniteGroundMLNSpec
-  let hZ :
-      Minf.finiteVolumePartition (gridExhaustion.region n) ξ ≠ 0 :=
-    Mettapedia.Logic.MarkovLogicInfinitePositive.StrictlyPositiveInfiniteGroundMLNSpec.finiteVolumePartition_ne_zero
-      M (gridExhaustion.region n) ξ
-  let A := symmetricGridFlipGainAssignmentFinset sep.inside sep.inside_subset ξ
-  let B := cornerAxisSeparatorFalseInsideTrueCutBoundaryFinset sep ξ
-  have hsubset :
-      (((B : Finset (LocalAssignment GridNode (gridExhaustion.region n))) :
-          Set (LocalAssignment GridNode (gridExhaustion.region n)))) ⊆
-        (((A : Finset (LocalAssignment GridNode (gridExhaustion.region n))) :
-          Set (LocalAssignment GridNode (gridExhaustion.region n)))) := by
-    intro x hx
-    exact cornerAxisSeparatorFalseInsideTrueCutBoundaryFinset_subset_flipGainAssignmentFinset
-      (sep := sep) (ξ := ξ) hx
-  have hAmeas :
-      MeasurableSet (((A : Finset (LocalAssignment GridNode (gridExhaustion.region n))) :
-        Set (LocalAssignment GridNode (gridExhaustion.region n)))) :=
-    A.finite_toSet.measurableSet
-  have hBmeas :
-      MeasurableSet (((B : Finset (LocalAssignment GridNode (gridExhaustion.region n))) :
-        Set (LocalAssignment GridNode (gridExhaustion.region n)))) :=
-    B.finite_toSet.measurableSet
-  have hmono :
-      finiteVolumeWorldMeasure
-          Minf
-          (gridExhaustion.region n) ξ hZ
-          (MeasureTheory.cylinder (gridExhaustion.region n)
-            (((B : Finset (LocalAssignment GridNode (gridExhaustion.region n))) :
-              Set (LocalAssignment GridNode (gridExhaustion.region n))))) ≤
-        finiteVolumeWorldMeasure
-          Minf
-          (gridExhaustion.region n) ξ hZ
-          (MeasureTheory.cylinder (gridExhaustion.region n)
-            (((A : Finset (LocalAssignment GridNode (gridExhaustion.region n))) :
-              Set (LocalAssignment GridNode (gridExhaustion.region n))))) := by
-    rw [finiteVolumeWorldMeasure_cylinder_region_eq_assignmentPMF_toMeasure
-      (M := Minf) (Δ := gridExhaustion.region n) (ξ := ξ) (hZ := hZ)
-      (S := (((B : Finset (LocalAssignment GridNode (gridExhaustion.region n))) :
-        Set (LocalAssignment GridNode (gridExhaustion.region n))))) hBmeas]
-    rw [finiteVolumeWorldMeasure_cylinder_region_eq_assignmentPMF_toMeasure
-      (M := Minf) (Δ := gridExhaustion.region n) (ξ := ξ) (hZ := hZ)
-      (S := (((A : Finset (LocalAssignment GridNode (gridExhaustion.region n))) :
-        Set (LocalAssignment GridNode (gridExhaustion.region n))))) hAmeas]
-    exact MeasureTheory.measure_mono hsubset
-  calc
-    (ENNReal.ofReal (Real.exp w)) ^ sep.cutBaseClauses.card *
-        finiteVolumeWorldMeasure
-          Minf
-          (gridExhaustion.region n) ξ hZ
-          (MeasureTheory.cylinder (gridExhaustion.region n)
-            (((B : Finset (LocalAssignment GridNode (gridExhaustion.region n))) :
-              Set (LocalAssignment GridNode (gridExhaustion.region n))))) ≤
-      (ENNReal.ofReal (Real.exp w)) ^ sep.cutBaseClauses.card *
-        finiteVolumeWorldMeasure
-          Minf
-          (gridExhaustion.region n) ξ hZ
-          (MeasureTheory.cylinder (gridExhaustion.region n)
-            (((A : Finset (LocalAssignment GridNode (gridExhaustion.region n))) :
-              Set (LocalAssignment GridNode (gridExhaustion.region n))))) := by
-          exact mul_le_mul_of_nonneg_left hmono (by exact zero_le)
-    _ ≤ 1 := by
-          simpa [A] using
-            (cornerAxisSeparator_zeroField_finiteVolumeWorldMeasure_mul_cutFactor_le_one
-              (w := w) (sep := sep) (ξ := ξ))
+            Set (LocalAssignment GridNode (gridExhaustion.region n))))) ≤ 1 :=
+  mul_cutFactor_le_one_of_subset_gain w sep.inside sep.inside_subset ξ _
+    (fun _ h => cornerAxisSeparatorFalseInsideTrueCutBoundaryFinset_subset_flipGainAssignmentFinset
+      (sep := sep) (ξ := ξ) h)
 
 /-- Singleton-corner specialization: the minimal origin-only separator witness
 already pays exactly an `exp(2w)` factor against the finite-volume partition. -/
@@ -23037,6 +21566,36 @@ theorem symmetricGridZeroField_clauseData_eval_spinFlip_eq_flip
       gridVerticalClause_holds_spinFlip_iff_reverse,
       gridVerticalReverseClause_holds_spinFlip_iff_forward] <;> rfl
 
+private noncomputable abbrev zeroField (w : ℝ) :
+    InfiniteGroundMLNSpec GridNode SymmetricGridClauseId :=
+  (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
+
+private noncomputable def zeroFieldSpinFlip (w : ℝ) (Λ : Region GridNode)
+    (ξ : BoundaryCondition GridNode) :
+    AssignmentTransport (zeroField w) Λ ξ (zeroField w) Λ (spinFlipWorld ξ) := by
+  refine AssignmentTransport.ofClauseReindex
+    (Equiv.ofBijective spinFlipLocalAssignment spinFlipLocalAssignment_bijective)
+    (Equiv.ofBijective symmetricGridClauseFlip symmetricGridClauseFlip_bijective) ?_ ?_
+  · intro k
+    exact (symmetricGridClauseFlip_mem_regionSupport_iff Λ k).symm
+  · intro x k _
+    change ((zeroField w).clauseData k).eval
+      (patch Λ (spinFlipLocalAssignment x) (spinFlipWorld ξ)) = _
+    rw [← spinFlipWorld_patch]
+    exact symmetricGridZeroField_clauseData_eval_spinFlip_eq_flip w k (patch Λ x ξ)
+
+/-- An active unary field prevents spin flip from preserving its potential. -/
+private theorem nonzeroField_changes_priorPotential (w : ℝ) :
+    let M := (symmetricGridClassicalSpecWithField 1 w).toStrictlyPositiveInfiniteGroundMLNSpec
+    let k := SymmetricGridClauseId.prior 0 0
+    (M.clauseData (symmetricGridClauseFlip k)).eval (spinFlipWorld gridPlusBoundary) ≠
+      (M.clauseData k).eval gridPlusBoundary := by
+  simp [ClassicalInfiniteGroundMLNSpec.toStrictlyPositiveInfiniteGroundMLNSpec,
+    symmetricGridClassicalSpecWithField, symmetricGridClauseFlip, symmetricGridClause,
+    gridPriorClause, classicalWeightedClause, WeightedGroundClause.eval, GroundClause.holds,
+    Literal.holds, gridPlusBoundary, spinFlipWorld]
+  exact ne_of_lt (ENNReal.one_lt_ofReal.mpr (Real.one_lt_exp_iff.mpr zero_lt_one))
+
 theorem symmetricGridZeroField_finiteVolumeWeight_spinFlip
     (w : ℝ) (Λ : Region GridNode) (x : LocalAssignment GridNode Λ)
     (ξ : BoundaryCondition GridNode) :
@@ -23044,16 +21603,7 @@ theorem symmetricGridZeroField_finiteVolumeWeight_spinFlip
         Λ (spinFlipLocalAssignment x) (spinFlipWorld ξ) =
       (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec.finiteVolumeWeight
         Λ x ξ := by
-  classical
-  unfold Mettapedia.Logic.MarkovLogicInfiniteSpecification.InfiniteGroundMLNSpec.finiteVolumeWeight
-  rw [← spinFlipWorld_patch]
-  refine Finset.prod_bijective symmetricGridClauseFlip symmetricGridClauseFlip_bijective ?_ ?_
-  · intro k
-    simpa [symmetricGridZeroFieldClassicalSpec, symmetricGridClassicalSpecWithField,
-      ClassicalInfiniteGroundMLNSpec.toStrictlyPositiveInfiniteGroundMLNSpec] using
-      (symmetricGridClauseFlip_mem_regionSupport_iff Λ k).symm
-  · intro k _hk
-    simpa using symmetricGridZeroField_clauseData_eval_spinFlip_eq_flip w k (patch Λ x ξ)
+  exact (zeroFieldSpinFlip w Λ ξ).weight_eq x
 
 theorem symmetricGridZeroField_finiteVolumePartition_spinFlip
     (w : ℝ) (Λ : Region GridNode) (ξ : BoundaryCondition GridNode) :
@@ -23061,14 +21611,7 @@ theorem symmetricGridZeroField_finiteVolumePartition_spinFlip
         Λ (spinFlipWorld ξ) =
       (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec.finiteVolumePartition
         Λ ξ := by
-  classical
-  unfold Mettapedia.Logic.MarkovLogicInfiniteSpecification.InfiniteGroundMLNSpec.finiteVolumePartition
-  refine Finset.sum_bijective spinFlipLocalAssignment spinFlipLocalAssignment_bijective ?_ ?_
-  · intro x
-    simp
-  · intro x _hx
-    simpa [spinFlipLocalAssignment_involutive] using
-      (symmetricGridZeroField_finiteVolumeWeight_spinFlip w Λ (spinFlipLocalAssignment x) ξ)
+  exact (zeroFieldSpinFlip w Λ ξ).partition_eq
 
 theorem symmetricGridZeroField_finiteVolumeAssignmentPMF_spinFlip
     (w : ℝ) (Λ : Region GridNode) (x : LocalAssignment GridNode Λ)
@@ -23087,9 +21630,7 @@ theorem symmetricGridZeroField_finiteVolumeAssignmentPMF_spinFlip
           (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
           Λ ξ)
         x := by
-  simp [finiteVolumeAssignmentPMF_apply,
-    symmetricGridZeroField_finiteVolumeWeight_spinFlip,
-    symmetricGridZeroField_finiteVolumePartition_spinFlip]
+  exact (zeroFieldSpinFlip w Λ ξ).assignmentPMF_apply _ _ x
 
 theorem symmetricGridZeroField_originSpin_queryMass_spinFlip
     (w : ℝ) (Λ : Region GridNode) (hOrigin : gridOrigin ∈ Λ)
@@ -23102,31 +21643,8 @@ theorem symmetricGridZeroField_originSpin_queryMass_spinFlip
         (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
         Λ ξ
         (gridOriginSpinLocalQueryInRegion Λ hOrigin (!b)) := by
-  classical
-  unfold finiteVolumeQueryMass
-  refine Finset.sum_bijective spinFlipLocalAssignment spinFlipLocalAssignment_bijective ?_ ?_
-  · intro x
-    simp
-  · intro x _hx
-    have hsat : satisfiesConstraints x
-          (gridOriginSpinLocalQueryInRegion Λ hOrigin b) ↔
-        satisfiesConstraints (spinFlipLocalAssignment x)
-          (gridOriginSpinLocalQueryInRegion Λ hOrigin (!b)) := by
-      simpa using
-        (spinFlipLocalAssignment_satisfies_originSpinInRegion_iff
-          Λ hOrigin (!b) x).symm
-    by_cases hxSat : satisfiesConstraints x
-        (gridOriginSpinLocalQueryInRegion Λ hOrigin b)
-    · have hxFlipSat : satisfiesConstraints (spinFlipLocalAssignment x)
-          (gridOriginSpinLocalQueryInRegion Λ hOrigin (!b)) := hsat.1 hxSat
-      refine (if_pos hxSat).trans (Eq.trans ?_ (if_pos hxFlipSat).symm)
-      simpa [spinFlipLocalAssignment_involutive] using
-        (symmetricGridZeroField_finiteVolumeWeight_spinFlip w Λ (spinFlipLocalAssignment x) ξ)
-    · have hxFlipNotSat : ¬ satisfiesConstraints (spinFlipLocalAssignment x)
-          (gridOriginSpinLocalQueryInRegion Λ hOrigin (!b)) := by
-        intro hxFlipSat
-        exact hxSat (hsat.2 hxFlipSat)
-      simp [hxSat, hxFlipNotSat]
+  exact (zeroFieldSpinFlip w Λ ξ).queryMass_eq fun x =>
+    spinFlipLocalAssignment_satisfies_originSpinInRegion_iff Λ hOrigin b x
 
 theorem symmetricGridZeroField_originSpin_queryProb_spinFlip
     (w : ℝ) (Λ : Region GridNode) (hOrigin : gridOrigin ∈ Λ)
@@ -23139,9 +21657,8 @@ theorem symmetricGridZeroField_originSpin_queryProb_spinFlip
         (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
         Λ ξ).queryProb
         (gridOriginSpinLocalQueryInRegion Λ hOrigin (!b)) := by
-  unfold finiteVolumeMassSemantics Mettapedia.ProbabilityTheory.MassSemantics.queryProb
-  simp [symmetricGridZeroField_originSpin_queryMass_spinFlip,
-    symmetricGridZeroField_finiteVolumePartition_spinFlip]
+  exact (zeroFieldSpinFlip w Λ ξ).queryProb_eq fun x =>
+    spinFlipLocalAssignment_satisfies_originSpinInRegion_iff Λ hOrigin b x
 
 theorem symmetricGridZeroField_originSpin_queryMass_add_complement
     (w : ℝ) (Λ : Region GridNode) (hOrigin : gridOrigin ∈ Λ)
@@ -23200,31 +21717,9 @@ theorem symmetricGridZeroField_originSpin_queryProb_toReal_spinFlip
           (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
           Λ ξ).queryProb
           (gridOriginSpinLocalQueryInRegion Λ hOrigin b)) := by
-  let S := finiteVolumeMassSemantics
-    (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
-    Λ ξ
-  let q := gridOriginSpinLocalQueryInRegion Λ hOrigin b
-  let qC := gridOriginSpinLocalQueryInRegion Λ hOrigin (!b)
-  have htransport :
-      (finiteVolumeMassSemantics
-          (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
-          Λ (spinFlipWorld ξ)).queryProb q = S.queryProb qC := by
-    simpa [S, q, qC] using
-      symmetricGridZeroField_originSpin_queryProb_spinFlip w Λ hOrigin ξ b
-  have hsum : S.queryProb q + S.queryProb qC = 1 := by
-    simpa [S, q, qC] using
-      symmetricGridZeroField_originSpin_queryProb_add_complement w Λ hOrigin ξ b
-  have hsum_ne_top : S.queryProb q + S.queryProb qC ≠ ⊤ := by
-    rw [hsum]
-    simp
-  have hq_ne_top : S.queryProb q ≠ ⊤ := (ENNReal.add_ne_top.mp hsum_ne_top).1
-  have hqC_ne_top : S.queryProb qC ≠ ⊤ := (ENNReal.add_ne_top.mp hsum_ne_top).2
-  have hreal_sum : ENNReal.toReal (S.queryProb q) + ENNReal.toReal (S.queryProb qC) = 1 := by
-    have hto := congrArg ENNReal.toReal hsum
-    rw [ENNReal.toReal_add hq_ne_top hqC_ne_top, ENNReal.toReal_one] at hto
-    exact hto
-  rw [htransport]
-  linarith
+  rw [symmetricGridZeroField_originSpin_queryProb_spinFlip]
+  exact toReal_eq_one_sub_of_add_eq_one
+    (symmetricGridZeroField_originSpin_queryProb_add_complement w Λ hOrigin ξ b)
 
 theorem symmetricGridZeroField_originSpin_queryProb_toReal_complement
     (w : ℝ) (Λ : Region GridNode) (hOrigin : gridOrigin ∈ Λ)
@@ -23239,24 +21734,8 @@ theorem symmetricGridZeroField_originSpin_queryProb_toReal_complement
           (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
           Λ ξ).queryProb
           (gridOriginSpinLocalQueryInRegion Λ hOrigin b)) := by
-  let S := finiteVolumeMassSemantics
-    (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
-    Λ ξ
-  let q := gridOriginSpinLocalQueryInRegion Λ hOrigin b
-  let qC := gridOriginSpinLocalQueryInRegion Λ hOrigin (!b)
-  have hsum : S.queryProb q + S.queryProb qC = 1 := by
-    simpa [S, q, qC] using
-      symmetricGridZeroField_originSpin_queryProb_add_complement w Λ hOrigin ξ b
-  have hsum_ne_top : S.queryProb q + S.queryProb qC ≠ ⊤ := by
-    rw [hsum]
-    simp
-  have hq_ne_top : S.queryProb q ≠ ⊤ := (ENNReal.add_ne_top.mp hsum_ne_top).1
-  have hqC_ne_top : S.queryProb qC ≠ ⊤ := (ENNReal.add_ne_top.mp hsum_ne_top).2
-  have hreal_sum : ENNReal.toReal (S.queryProb q) + ENNReal.toReal (S.queryProb qC) = 1 := by
-    have hto := congrArg ENNReal.toReal hsum
-    rw [ENNReal.toReal_add hq_ne_top hqC_ne_top, ENNReal.toReal_one] at hto
-    exact hto
-  linarith
+  exact toReal_eq_one_sub_of_add_eq_one
+    (symmetricGridZeroField_originSpin_queryProb_add_complement w Λ hOrigin ξ b)
 
 theorem symmetricGridZeroField_finiteVolumeKernel_originSpin_eq_queryProb
     (w : ℝ) (n : ℕ) (ξ : BoundaryCondition GridNode) (b : Bool) :
@@ -23295,16 +21774,7 @@ theorem symmetricGridZeroField_finiteVolumeKernel_originSpinUp_eq_queryProb
           (gridOrigin_mem_gridExhaustion_region n) true) := by
   rw [← localQueryEvent_gridOriginSpinLocalQueryInRegion_eq_originSpinUp
     (gridExhaustion.region n) (gridOrigin_mem_gridExhaustion_region n)]
-  rw [Mettapedia.Logic.MarkovLogicInfiniteExhaustion.RegionExhaustion.finiteVolumeKernelSequence]
-  simpa [Mettapedia.Logic.MarkovLogicInfinitePositive.StrictlyPositiveInfiniteGroundMLNSpec.finiteVolumeWorldMeasure] using
-    (finiteVolumeWorldMeasure_localQueryEvent
-      (M := (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec)
-      (Λ := gridExhaustion.region n) (ξ := ξ)
-      (hZ := Mettapedia.Logic.MarkovLogicInfinitePositive.StrictlyPositiveInfiniteGroundMLNSpec.finiteVolumePartition_ne_zero
-        (symmetricGridZeroFieldClassicalSpec w).toStrictlyPositiveInfiniteGroundMLNSpec
-        (gridExhaustion.region n) ξ)
-      (q := gridOriginSpinLocalQueryInRegion (gridExhaustion.region n)
-        (gridOrigin_mem_gridExhaustion_region n) true))
+  exact symmetricGridZeroField_finiteVolumeKernel_originSpin_eq_queryProb w n ξ true
 
 theorem symmetricGridZeroField_originSpinUp_finiteVolumeKernel_spinFlip
     (w : ℝ) (n : ℕ) (ξ : BoundaryCondition GridNode) :

@@ -1,5 +1,6 @@
 import Mettapedia.GSLT.Distinction.BehaviouralMetric
 import Mettapedia.GSLT.Distinction.BehaviouralMetricControls
+import Mettapedia.GSLT.Distinction.ReflectiveSafety
 import Mettapedia.GSLT.Distinction.GradedCongruence
 import Mettapedia.GSLT.Distinction.PathInference
 import Mettapedia.GSLT.Distinction.HistoryGrammar
@@ -75,6 +76,8 @@ directions.
 * `BehaviouralMetricControls`: without finite branching, logical distance `0`
   against behavioural distance `1`; a graded value `1/2` reached through the
   dynamics; a threshold of the distance that is not transitive.
+* `ReflectiveSafety`: safety under replacement of a checker, with exact
+  observational preservation and lifetime guards for a reference execution.
 * `GradedCongruence`: formulas translate along context-stable maps; the
   saturated graded system of an admissible class is a graded congruence (every
   admissible context nonexpansive), its crisp zero kernel is the relative

@@ -51,6 +51,16 @@ import Mettapedia.Machines.NativeProviderPolicy
 import Mettapedia.Machines.NativeProviderClaims
 import Mettapedia.Machines.Kernel
 import Mettapedia.Machines.VersionedValidation
+import Mettapedia.Machines.NameSupplies.Shares
+import Mettapedia.Machines.NameSupplies.Pools
+import Mettapedia.Machines.NameSupplies.SharedSupplies
+import Mettapedia.Machines.NameSupplies.PositionBounds
+import Mettapedia.Machines.NameSupplies.PortableNames
+import Mettapedia.Machines.NameSupplies.HashCollision
+import Mettapedia.Machines.NameSupplies.CeTTaNames
+import Mettapedia.Machines.NameSupplies.Pedigree
+import Mettapedia.Machines.NameSupplies.BalancedPieces
+import Mettapedia.Machines.NameSupplies.SiblingPushes
 
 /-!
 # Abstract-machine foundations

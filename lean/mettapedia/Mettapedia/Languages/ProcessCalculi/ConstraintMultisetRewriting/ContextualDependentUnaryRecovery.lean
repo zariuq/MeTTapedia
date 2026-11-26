@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentUnaryScope
 
 /-!
@@ -23,8 +24,7 @@ variable {Head L : Type} [UniverseLevel.LevelOrder L] {S : Setting Head L}
 variable (rigid : ∀ name, S.roles name = .rigid) (complete : AlgorithmicComplete S.R S.roles)
   (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R)
   (heads : HeadPreserving S.R) (algebra : CumulativeAlgebra S.R)
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
   (declared : DeclaredTypesFormed S.R)
 
 def recover (fuel : Nat) (Γ : Context S.R) (domain codomain : TypeOver Γ)

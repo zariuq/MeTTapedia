@@ -1,3 +1,4 @@
+import Mettapedia.OSLF.NativeTypes.GeneratedLogic.TypedReadingDomain
 import Mettapedia.OSLF.NativeTypes.GeneratedLogic.AlgebraCanonicalForms
 
 /-!
@@ -108,13 +109,10 @@ theorem domain_iff_of_step (cover : SortsCover language sorts) (metadata : Metad
 theorem domain_iff_of_equivalent (cover : SortsCover language sorts) (metadata : MetadataOfTyped language)
     {first second : Pattern} (equivalent : ObjectEquivalent relEnv language reading first second) :
     domain language sorts first = true ↔ domain language sorts second = true := by
-  induction equivalent with
-  | rel _ _ step =>
-    obtain ⟨firstAdmitted, secondAdmitted⟩ := domain_iff_of_step cover metadata step
-    exact iff_of_true firstAdmitted secondAdmitted
-  | refl => exact Iff.rfl
-  | symm _ _ _ same => exact same.symm
-  | trans _ _ _ _ _ first second => exact first.trans second
+  refine eqvGen_predicate_iff (P := fun term => domain language sorts term = true) ?_ equivalent
+  intro _ _ step
+  obtain ⟨firstAdmitted, secondAdmitted⟩ := domain_iff_of_step cover metadata step
+  exact iff_of_true firstAdmitted secondAdmitted
 
 /-- **Equivalent terms have one normal form**, in every reading. -/
 theorem normalForm_eq_of_objectEquivalent (laws : BareBagTheory language bag unit) {anyReading : LanguageReading}

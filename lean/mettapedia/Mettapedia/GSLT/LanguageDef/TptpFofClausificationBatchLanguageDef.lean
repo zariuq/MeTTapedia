@@ -1,3 +1,5 @@
+import Mettapedia.GSLT.LanguageDef.StructuralInclusion
+import Mettapedia.GSLT.LanguageDef.RewriteFreeLanguage
 import Mettapedia.GSLT.LanguageDef.TptpFofDefinitionalCnfLanguageDef
 import Mettapedia.GSLT.LanguageDef.ConstructorSignatureExtension
 import Mettapedia.GSLT.LanguageDef.CarrierWellSorted
@@ -216,22 +218,16 @@ theorem language_validate : language.validate = [] := by
 def validated : ValidatedLanguageDef := ⟨language, language_validate⟩
 
 def cnfInclusion :
-    StructuralMorphism TptpFofDefinitionalCnfLanguageDef.validated validated where
-  symbols := LanguageDefSymbolMap.id
-  mapsTypes declaration membership := by
-    rw [mapTypeDecl_id]
-    exact List.mem_append_left _ membership
-  mapsTerms declaration membership := by
-    rw [mapGrammarRule_id]
-    exact List.mem_append_left _ membership
-  mapsEquations declaration membership := by
-    change declaration ∈
-      TptpFofDefinitionalCnfLanguageDef.language.equations at membership
-    simp [TptpFofDefinitionalCnfLanguageDef.no_equations] at membership
-  mapsRewrites declaration membership := by
-    change declaration ∈
-      TptpFofDefinitionalCnfLanguageDef.language.rewrites at membership
-    simp [TptpFofDefinitionalCnfLanguageDef.no_rewrites] at membership
+    StructuralMorphism TptpFofDefinitionalCnfLanguageDef.validated validated :=
+  StructuralMorphism.ofDeclarationInclusion {
+    types := fun _ member => List.mem_append_left _ member
+    terms := fun _ member => List.mem_append_left _ member
+    equations := by
+      change TptpFofDefinitionalCnfLanguageDef.language.equations ⊆ _
+      exact TptpFofDefinitionalCnfLanguageDef.no_equations ▸ List.nil_subset _
+    rewrites := by
+      change TptpFofDefinitionalCnfLanguageDef.language.rewrites ⊆ _
+      exact TptpFofDefinitionalCnfLanguageDef.no_rewrites ▸ List.nil_subset _ }
 
 theorem every_constructor_is_inert :
     language.terms.all (fun term => term.evalPolicy? = none) = true := by
@@ -244,16 +240,9 @@ def theory : Mettapedia.GSLT.GSLT :=
   languageGSLT language (ReductionRespectsEquations.of_equation_free rfl)
 
 theorem theory_no_step (source target : Pattern) :
-    Not (theory.Step source target) := by
-  intro reduction
-  unfold theory at reduction
-  rw [languageGSLT_step] at reduction
-  unfold langReducesUsing at reduction
-  rcases reduction with ⟨_, step⟩
-  cases step with
-  | rule ruleMember => simp [language, calculusLanguage, extension, base,
-      ConstructorSignatureExtension.ofLists,
-      TptpFofDefinitionalCnfLanguageDef.no_rewrites] at ruleMember
+    Not (theory.Step source target) :=
+  languageGSLT_no_step_of_no_rewrites (language := language)
+    (laws := ReductionRespectsEquations.of_equation_free rfl) no_rewrites
 
 /-! ## Source keys and exact clause identities -/
 

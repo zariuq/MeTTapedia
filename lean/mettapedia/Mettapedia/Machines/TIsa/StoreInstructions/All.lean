@@ -1,0 +1,504 @@
+import Mettapedia.Machines.TIsa.StoreInstructions.Execution
+import Mettapedia.Machines.TIsa.StoreInstructions.FiringLoop
+import Mettapedia.Machines.TIsa.StoreInstructions.PackedOccurrences
+import Mettapedia.Machines.TIsa.StoreInstructions.PackedIndex
+import Mettapedia.Machines.TIsa.StoreInstructions.PackedUpdates
+import Mettapedia.Machines.TIsa.StoreInstructions.MatchSlots
+import Mettapedia.Machines.TIsa.StoreInstructions.WordTests
+import Mettapedia.Machines.TIsa.StoreInstructions.WordTestImage
+import Mettapedia.Machines.TIsa.StoreInstructions.ClosedMatch
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeClosedMatch
+import Mettapedia.Machines.TIsa.StoreInstructions.StorePublication
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeWords
+import Mettapedia.Machines.TIsa.StoreInstructions.PrivateArrayPlan
+import Mettapedia.Machines.TIsa.StoreInstructions.NativePreparation
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeArrayUpdate
+import Mettapedia.Machines.TIsa.StoreInstructions.SnapshotPlacement
+import Mettapedia.Machines.TIsa.StoreInstructions.BindingSlots
+import Mettapedia.Machines.TIsa.StoreInstructions.MatchPlan
+import Mettapedia.Machines.TIsa.StoreInstructions.PlannedPremise
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeBinding
+import Mettapedia.Machines.TIsa.StoreInstructions.MemoryBinding
+import Mettapedia.Machines.TIsa.StoreInstructions.MemoryCompare
+import Mettapedia.Machines.TIsa.StoreInstructions.OptionalBinding
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeMatchPlan
+import Mettapedia.Machines.TIsa.StoreInstructions.NativePremise
+import Mettapedia.Machines.TIsa.StoreInstructions.WordRegion
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeLevels
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeMatchPublish
+import Mettapedia.Machines.TIsa.StoreInstructions.CandidateProjection
+import Mettapedia.Machines.TIsa.StoreInstructions.ProjectedCandidate
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeCandidateLookup
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeSelectedMatch
+import Mettapedia.Machines.TIsa.StoreInstructions.IndexedGuard
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeIndexedGuard
+import Mettapedia.Machines.TIsa.StoreInstructions.SymbolicGuardScan
+import Mettapedia.Machines.TIsa.StoreInstructions.SymbolicExecution
+import Mettapedia.Machines.TIsa.StoreInstructions.SymbolicPortCode
+import Mettapedia.Machines.TIsa.StoreInstructions.SymbolicTestCode
+import Mettapedia.Machines.TIsa.StoreInstructions.SymbolicPrepared
+import Mettapedia.Machines.TIsa.StoreInstructions.SymbolicPublication
+import Mettapedia.Machines.TIsa.StoreInstructions.SymbolicFiringCode
+import Mettapedia.Machines.TIsa.StoreInstructions.SymbolicFiringCodeExamples
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeRoleGate
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeRoleEmission
+import Mettapedia.Machines.TIsa.StoreInstructions.PackedEquations
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeStores
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeEquationAppend
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeEquationInputs
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeEquationEffect
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeEquationEmission
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeSymbolicPremise
+import Mettapedia.Machines.TIsa.StoreInstructions.NativePackedOccurrence
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeSymbolicLookup
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeSymbolicEmission
+import Mettapedia.Machines.TIsa.StoreInstructions.UnifierHeaders
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeDecisions
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeUnifierHeaders
+import Mettapedia.Machines.TIsa.StoreInstructions.PackedTerms
+import Mettapedia.Machines.TIsa.StoreInstructions.PackedResolution
+import Mettapedia.Machines.TIsa.StoreInstructions.PackedOccurs
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeOccurs
+import Mettapedia.Machines.TIsa.StoreInstructions.PackedTermEdges
+import Mettapedia.Machines.TIsa.StoreInstructions.PackedUnifierAction
+import Mettapedia.Machines.TIsa.StoreInstructions.PackedSubstitution
+import Mettapedia.Machines.TIsa.StoreInstructions.PackedWorklist
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeArenaGeometry
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeTermArena
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeTermSelection
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeDecisionTargets
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeTermDispatch
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeAgendaRecords
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeAgendaRead
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeAgendaDispatch
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeDiscardRun
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeChildPair
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeSpanPrepare
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeAgendaReserve
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeAgendaInsert
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeAgendaLoop
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeAgendaPublish
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeDecompose
+import Mettapedia.Machines.TIsa.StoreInstructions.PackedOccursPrefix
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeIndexedWord
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeMarkTable
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeChildMarkLoop
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeOccursApplication
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeOccursNode
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeOccursLoop
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeBindEntry
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeBindingGate
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeBindingSelection
+import Mettapedia.Machines.TIsa.StoreInstructions.PackedRemapCoordinates
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeSubstLeaf
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeRemapChildren
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeSubstCompound
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeRemapCopy
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeTermAppend
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeRemapReserve
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeRemapSnapshot
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeLoads
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeSubstitutionFrame
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeSubstitutionReserve
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeSubstitutionSelect
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeSubstitutionCopyEntry
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeSubstitutionAppendPrep
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeSubstitutionCommit
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeSubstitutionMemory
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeSubstitutionChanged
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeSubstitutionBody
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeSubstitutionLoop
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeBoundSubstitution
+import Mettapedia.Machines.TIsa.StoreInstructions.PackedAgendaCoordinates
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeAgendaRemapPair
+import Mettapedia.Machines.TIsa.StoreInstructions.NativePendingCount
+import Mettapedia.Machines.TIsa.StoreInstructions.NativePendingReserve
+import Mettapedia.Machines.TIsa.StoreInstructions.NativePendingWrite
+import Mettapedia.Machines.TIsa.StoreInstructions.NativePendingFill
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeRegisterCopies
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeTrailReserve
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeBindingTrail
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeTrailPublish
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeBindingPublish
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeBindingMemory
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeBindingStep
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeSolverImage
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeSolverStep
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeSolverRun
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeSolverResources
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeResolveTest
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeEquationReverse
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeResolveReserve
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeResolvePrepare
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeResolveSource
+import Mettapedia.Machines.TIsa.StoreInstructions.SolverGuardTrichotomy
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeGuardDecision
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeGuardWorkspace
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeGuardTrial
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeGuardOperands
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeGuardPolicy
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeGuardCursor
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeGuardState
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeGuardLoop
+import Mettapedia.Machines.TIsa.StoreInstructions.PackedGuardRoots
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeGuardEntry
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeGuardRegion
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeLiveRoots
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeLiveRootLoop
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeLiveRootEntry
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeBindingRootMemory
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeBindingRoots
+import Mettapedia.Machines.TIsa.StoreInstructions.PackedRootedWorklist
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeRootedSolverStep
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeRootedSolverRun
+import Mettapedia.Machines.TIsa.StoreInstructions.PackedRootedMeaning
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeRootedResolution
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeRootSlices
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeGuardInstall
+import Mettapedia.Machines.TIsa.StoreInstructions.OccurrenceMask
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeCollectMemory
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeCollectMark
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeCollectLoop
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeCollectRegion
+import Mettapedia.Machines.TIsa.StoreInstructions.PrivateArrayBatch
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeBatchPublication
+import Mettapedia.Machines.TIsa.StoreInstructions.RootedObserverLayout
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeGuardReuse
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeObserverSelect
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeObserverBlock
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeObservationEntry
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeFiringGate
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeFundedPublication
+import Mettapedia.Machines.TIsa.StoreInstructions.PackedSymbolicKnowledge
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeWorldPublication
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeFirstCollect
+import Mettapedia.Machines.TIsa.StoreInstructions.ObserverCandidateCover
+import Mettapedia.Machines.TIsa.StoreInstructions.NativeFundedWorld
+
+/-!
+# t-ISA with store instructions
+
+The extension of p1's semantics with the store instructions of the transform calculus' derived
+machine (`Execution`), and the compiled firing loop with its simulation of the derived machine
+(`FiringLoop`).
+-/
+
+namespace Mettapedia.Machines.TIsa.StoreInstructions
+
+#print axioms execute_ofP1
+#print axioms loop_searched
+#print axioms body_searched
+#print axioms program_fires
+#print axioms program_simulates_machine
+#print axioms invoke_run
+#print axioms invoke_simulates_quiescent
+#print axioms invoke_simulates_exhausted
+#print axioms PackedOccurrences.pack_roundtrip
+#print axioms PackedOccurrences.at_exact
+#print axioms PackedOccurrences.lower_size_word
+#print axioms PackedOccurrences.lower_size_x86
+#print axioms PackedOccurrences.Examples.equal_values_keep_two_occurrences
+#print axioms PackedOccurrences.Examples.cursor_keeps_the_second_identity
+#print axioms PackedOccurrences.Examples.rejects_wraparound
+#print axioms PackedIndex.get_exact
+#print axioms PackedIndex.length_word
+#print axioms PackedIndex.candidates_fromKeys
+#print axioms PackedIndex.Examples.same_key_keeps_both_occurrences
+#print axioms PackedIndex.Examples.bad_endpoint_does_not_truncate
+#print axioms PackedOccurrences.pack_take
+#print axioms PackedOccurrences.pack_make
+#print axioms PackedOccurrences.Examples.take_then_make_preserves_the_other_equal_value
+#print axioms PackedOccurrences.Examples.make_refuses_counter_wrap
+
+#print axioms MatchSlots.lower_open_x86
+#print axioms MatchSlots.Examples.empty_descriptor_keeps_matcher_initial_value
+#print axioms WordTests.lower_equal_test_x86
+#print axioms WordTestImage.emitted_block
+#print axioms WordTests.Examples.unequal_values_refuse
+#print axioms ClosedMatch.extend_closed
+#print axioms ClosedMatch.packed_attempt
+#print axioms ClosedMatch.Examples.a_take_after_a_read_is_refused
+#print axioms NativeClosedMatch.lower_closed_match_x86
+#print axioms StorePublication.prepare_exact
+#print axioms StorePublication.old_snapshot_after_staging
+#print axioms StorePublication.lower_publish_x86
+#print axioms StorePublication.lower_update_publication_x86
+#print axioms StorePublication.Examples.stale_positions_select_the_wrong_value
+
+#print axioms NativeWords.fetch_all
+#print axioms NativeWords.checked_of_emitted
+#print axioms NativeWords.Examples.emits_a_load_then_a_store
+#print axioms NativeWords.Examples.private_destination_cannot_alias_a_copy_source
+#print axioms PrivateArrayPlan.evaluate_assembled
+#print axioms PrivateArrayPlan.Examples.take_keeps_the_second_copy_source
+#print axioms NativePreparation.fetch_assembled
+#print axioms NativeArrayUpdate.lower_update_x86
+#print axioms SnapshotPlacement.geometry_of_banks
+#print axioms SnapshotPlacement.planned_words
+#print axioms SnapshotPlacement.Examples.a_missing_word_cannot_be_placed_as_an_occurrence
+#print axioms BindingSlots.matchPattern_accepts
+#print axioms BindingSlots.matchPattern_represents
+#print axioms BindingSlots.bind_equal_does_not_write
+#print axioms BindingSlots.Examples.repeated_variable_keeps_one_binding
+#print axioms BindingSlots.Examples.inconsistent_repetition_refuses
+#print axioms MatchPlan.collect_compile
+#print axioms MatchPlan.run_cons
+#print axioms MatchPlan.run_represents
+#print axioms MatchPlan.Examples.nested_repeated_variable_accepts
+#print axioms MatchPlan.Examples.same_paths_cannot_hide_a_constructor_mismatch
+#print axioms MatchPlan.Examples.nonadjacent_binding_conflict_refuses
+#print axioms PlannedPremise.executed
+#print axioms PlannedPremise.out_of_range_refuses
+#print axioms NativeBinding.fetched_binding
+#print axioms NativeBinding.Examples.zero_can_be_a_filled_term
+#print axioms NativeBinding.Examples.zero_conflicts_with_a_different_term
+#print axioms MemoryBinding.bind_from_memory
+#print axioms MemoryCompare.constructor_test
+#print axioms OptionalBinding.reads_optional
+#print axioms NativeMatchPlan.fetch_plan
+#print axioms NativeMatchPlan.fetch_pattern
+#print axioms NativePremise.fetched_match
+#print axioms WordRegion.Region.indexed_cell
+#print axioms NativeLevels.Directory.retarget
+#print axioms NativeMatchPublish.fetched
+#print axioms CandidateProjection.selected_projection
+#print axioms CandidateProjection.Examples.repeat_test_reuses_column
+#print axioms CandidateProjection.Examples.present_zero_is_not_absent
+#print axioms CandidateProjection.Examples.equal_projections_keep_occurrence_ordinals
+#print axioms ProjectedCandidate.selected
+#print axioms ProjectedCandidate.relocate
+#print axioms NativeCandidateLookup.fetched
+#print axioms NativeCandidateLookup.Examples.scaled_alias
+#print axioms NativeCandidateLookup.Examples.rejects_scaled_alias
+#print axioms NativeSelectedMatch.fetched
+#print axioms NativeSelectedMatch.invalid_ordinal
+#print axioms IndexedGuard.lengthWord_exact
+#print axioms IndexedGuard.execute_count_read
+#print axioms IndexedGuard.unrepresentable_target_refuses
+#print axioms IndexedGuard.Examples.colliding_bucket_is_not_an_exact_count_key
+#print axioms NativeIndexedGuard.fetched
+#print axioms SymbolicGuardScan.countRemaining_correct
+#print axioms SymbolicGuardScan.entails_check
+#print axioms SymbolicGuardScan.Examples.two_assured_occurrences_have_constant_count
+#print axioms SymbolicGuardScan.Examples.uncertainty_is_neither_presence_nor_absence
+#print axioms SymbolicGuardScan.Examples.assured_presence_survives_uncertainty
+#print axioms executeWith_ofP1
+#print axioms takesFrom_execute
+#print axioms makesFrom_execute
+#print axioms SymbolicExecution.propose_records
+#print axioms SymbolicExecution.guard_exact
+#print axioms SymbolicExecution.collect_exact
+#print axioms SymbolicPortCode.execute_matches
+#print axioms SymbolicPrepared.information
+#print axioms SymbolicPrepared.execute_prefix
+#print axioms SymbolicTestCode.execute_emit
+#print axioms SymbolicPublication.storeOf_commit
+#print axioms SymbolicPublication.execute_emit
+#print axioms SymbolicFiringCode.source_decision
+#print axioms SymbolicFiringCode.run
+#print axioms SymbolicFiringCode.covers_source_models
+#print axioms SymbolicFiringCode.Examples.tell_licenses_count_and_keeps_an_open_output
+#print axioms SymbolicFiringCode.Examples.possible_match_is_not_exactly_one
+#print axioms SymbolicFiringCode.Examples.insufficient_fuel_preserves_the_symbolic_store
+#print axioms PlannedPremise.unavailable_occurrence_refuses
+#print axioms NativeRoleGate.allowed_iff
+#print axioms NativeRoleGate.Ports.record
+#print axioms NativeRoleGate.fetched
+#print axioms NativeRoleGate.Examples.a_prior_read_blocks_take_but_not_read
+#print axioms NativeRoleGate.Examples.a_prior_take_blocks_both
+#print axioms NativeRoleEmission.checked_of_emitted
+#print axioms NativeRoleEmission.Examples.one_probe_emits_a_checked_gate
+#print axioms NativeRoleEmission.Examples.a_different_refusal_target_is_not_the_installed_code
+#print axioms PackedEquations.older_handles_unchanged
+#print axioms PackedEquations.read_words_exact
+#print axioms PackedEquations.push_exact
+#print axioms PackedEquations.Symbolic.problem_exact
+#print axioms PackedEquations.Examples.branches_retain_different_suffixes
+#print axioms PackedEquations.Examples.cyclic_handle_refuses
+#print axioms PackedEquations.Examples.term_zero_is_not_the_end_of_the_equation_chain
+#print axioms NativeStores.fetched
+#print axioms NativeStores.checked_of_emitted
+#print axioms NativeEquationAppend.fetched
+#print axioms NativeEquationInputs.fetched
+#print axioms NativeEquationEffect.fetched
+#print axioms NativeEquationEffect.tell
+#print axioms NativeEquationEmission.checked_of_emitted
+#print axioms NativeEquationEmission.same_bytes_for_other_node
+#print axioms NativeSymbolicPremise.fetched
+#print axioms NativePackedOccurrence.fetched
+#print axioms NativeSymbolicLookup.fetched
+#print axioms NativeSymbolicLookup.invalid_ordinal
+#print axioms NativeSymbolicEmission.same_body_for_other_equation
+#print axioms NativeSymbolicEmission.checked_of_emitted
+#print axioms UnifierHeaders.decoded_action
+#print axioms NativeDecisions.placed_of_emitted
+#print axioms NativeUnifierHeaders.fetched
+#print axioms PackedTerms.append_result
+#print axioms PackedResolution.complete
+#print axioms PackedResolution.test_returns
+#print axioms PackedResolution.packed_test_completes
+#print axioms PackedResolution.Examples.reads_the_stored_equation_and_solves_it
+#print axioms PackedResolution.Examples.a_damaged_chain_does_not_produce_a_logical_answer
+#print axioms PackedOccurs.find_exact
+#print axioms NativeOccurs.fetched_packed_application
+#print axioms PackedTermEdges.children_exact
+#print axioms PackedTermEdges.children_before
+#print axioms PackedUnifierAction.inspect_exact
+#print axioms PackedUnifierAction.Examples.application_equality_visits_the_children
+#print axioms PackedUnifierAction.Examples.a_cycle_is_refused_instead_of_bound
+#print axioms PackedSubstitution.rewrite_exact
+#print axioms PackedSubstitution.substitute_exact
+#print axioms PackedSubstitution.Examples.one_scan_shares_unchanged_subterms
+#print axioms PackedSubstitution.remap_pending_exact
+#print axioms PackedSubstitution.Examples.map_does_not_merge_duplicate_equations
+#print axioms PackedWorklist.run_exact
+#print axioms PackedWorklist.complete
+#print axioms PackedWorklist.resume
+#print axioms PackedWorklist.Examples.a_cyclic_equation_has_an_occurs_conflict
+#print axioms PackedWorklist.Examples.suspending_the_cyclic_equation_is_not_a_conflict
+#print axioms NativeArenaGeometry.Region.slices_disjoint
+#print axioms NativeTermArena.Layout.header_word
+#print axioms NativeTermSelection.fetched
+#print axioms NativeDecisionTargets.fetched
+#print axioms NativeTermDispatch.fetched
+#print axioms NativeTermDispatch.chosen_source_action
+#print axioms NativeAgendaRecords.top_of_read
+#print axioms PackedEquations.prepend_words_exact
+#print axioms NativeAgendaRead.fetched
+#print axioms NativeAgendaDispatch.fetched
+#print axioms NativeDiscardRun.packed_exact
+#print axioms NativeDiscardRun.fetched_prefix
+#print axioms NativeChildPair.fetched
+#print axioms NativeSpanPrepare.fetched
+#print axioms NativeAgendaReserve.fetched
+#print axioms NativeAgendaInsert.fetched
+#print axioms NativeAgendaLoop.fetched_all
+#print axioms NativeAgendaLoop.Within.preserves_count
+#print axioms NativeAgendaPublish.fetched
+#print axioms NativeDecompose.fetched_expansion
+#print axioms NativeDecompose.Examples.ordered_decomposition_keeps_both_copies
+#print axioms NativeDecompose.Examples.unequal_child_counts_do_not_truncate_the_work
+#print axioms PackedOccursPrefix.find_prefix_exact
+#print axioms PackedOccursPrefix.Examples.the_target_needs_no_later_marks
+#print axioms PackedOccursPrefix.Examples.the_same_forward_link_is_invalid_if_it_is_the_target
+#print axioms NativeIndexedWord.fetched_load_to
+#print axioms NativeIndexedWord.fetched_store
+#print axioms NativeMarkTable.PrefixReady.extend
+#print axioms NativeChildMarkLoop.fetched
+#print axioms NativeOccursApplication.fetched_span
+#print axioms NativeOccursNode.fetched
+#print axioms NativeOccursLoop.fetched_scan
+#print axioms NativeOccursLoop.fetched_target
+#print axioms NativeBindEntry.fetched_setup
+#print axioms NativeBindingGate.fetched
+#print axioms NativeBindingSelection.fetched_binding
+#print axioms NativeBindingSelection.Examples.both_sides_reject_the_same_cycle
+#print axioms PackedRemapCoordinates.same_if_each_edge_keeps_its_handle
+#print axioms PackedRemapCoordinates.Examples.a_previous_phase_cannot_supply_an_uninitialized_map_word
+#print axioms NativeSubstLeaf.fetched
+#print axioms NativeRemapChildren.fetched_visit
+#print axioms NativeRemapChildren.fetched
+#print axioms NativeSubstCompound.fetched
+#print axioms NativeRemapCopy.fetched
+#print axioms NativeTermAppend.fetched_rewrite
+#print axioms NativeRemapReserve.fetched_enter_remap
+#print axioms NativeRemapReserve.one_mark_slot_need_not_hold_the_remap
+#print axioms NativeRemapSnapshot.scan_extends
+#print axioms NativeLoads.fetched
+#print axioms NativeSubstitutionReserve.fetched
+#print axioms NativeSubstitutionCopyEntry.target_kept
+#print axioms NativeSubstitutionMemory.Geometry.agenda_kept
+#print axioms NativeSubstitutionChanged.fetched
+#print axioms NativeSubstitutionBody.fetched
+#print axioms NativeSubstitutionLoop.fetched_substitute
+#print axioms NativeSubstitutionLoop.Examples.sharing_does_not_erase_an_edge_occurrence
+#print axioms NativeSubstitutionLoop.Examples.future_map_entry_is_not_an_input
+#print axioms NativeBoundSubstitution.fetched
+#print axioms PackedAgendaCoordinates.remapped_destination
+#print axioms PackedAgendaCoordinates.distinct_destinations
+#print axioms PackedAgendaCoordinates.Examples.fills_three_distinct_records_and_retains_order
+#print axioms PackedAgendaCoordinates.Examples.forward_push_reverses_the_observable_agenda
+#print axioms NativeAgendaRemapPair.fetched
+#print axioms NativeAgendaRemapPair.Examples.a_mapped_left_does_not_license_a_missing_right
+#print axioms NativePendingCount.fetched
+#print axioms NativePendingCount.Examples.allocated_records_are_not_pending_length
+#print axioms NativePendingCount.Examples.cyclic_links_do_not_describe_a_finite_count
+#print axioms NativePendingReserve.fetched
+#print axioms NativePendingReserve.fetched_prepare
+#print axioms NativePendingWrite.fetched
+#print axioms NativePendingFill.fetched_all
+#print axioms NativeBindingTrail.fetched
+#print axioms NativeBindingPublish.fetched
+#print axioms NativeBindingStep.fetched
+#print axioms NativeSolverImage.placed_of_emitted
+#print axioms NativeSolverStep.fetched_nonempty
+#print axioms NativeSolverRun.fetched
+#print axioms NativeSolverResources.exists_plan
+#print axioms NativeSolverResources.fitted
+#print axioms NativeResolveTest.fetched
+#print axioms NativeEquationReverse.fetched_all
+#print axioms NativeResolveReserve.fetched
+#print axioms NativeResolvePrepare.fetched
+#print axioms NativeResolveSource.fetched
+#print axioms SolverGuardTrichotomy.solved_empty_iff_equal
+#print axioms SolverGuardTrichotomy.observe_finished
+#print axioms SolverGuardTrichotomy.scan
+#print axioms SolverGuardTrichotomy.necessary_information
+#print axioms SolverGuardTrichotomy.Examples.unification_success_alone_does_not_make_a_guard_certain
+#print axioms NativeGuardDecision.fetched
+#print axioms NativeGuardWorkspace.Avoids.kept
+#print axioms NativeGuardTrial.fetched
+#print axioms NativeGuardOperands.fetched
+#print axioms NativeGuardPolicy.fetched
+#print axioms NativeGuardCursor.fetched_advance
+#print axioms NativeGuardLoop.fetched
+#print axioms PackedGuardRoots.replay_exact
+#print axioms PackedGuardRoots.applyBinding_uses_one_map
+#print axioms PackedGuardRoots.Examples.two_occurrences_can_share_one_normalized_handle
+#print axioms PackedGuardRoots.Examples.out_of_range_root_is_not_dropped_from_the_scan
+#print axioms NativeGuardEntry.fetched
+#print axioms NativeGuardRegion.fetched
+#print axioms NativeGuardRegion.prepare_packed
+#print axioms NativeGuardRegion.count_possible_at_length
+#print axioms NativeGuardRegion.Examples.two_certain_occurrences_count_twice
+#print axioms NativeGuardRegion.Examples.one_uncertain_occurrence_prevents_an_exact_count
+#print axioms NativeGuardRegion.Examples.a_wide_target_returns_false_without_emitting_a_scan
+#print axioms NativeLiveRoots.fetched_one
+#print axioms NativeLiveRootLoop.fetched
+#print axioms NativeLiveRootLoop.fetched_binding_roots
+#print axioms NativeLiveRootEntry.fetched
+#print axioms NativeBindingRootMemory.Geometry.keep_stage
+#print axioms NativeBindingRoots.fetched
+#print axioms PackedRootedWorklist.bind_valid
+#print axioms PackedRootedWorklist.Examples.a_binding_moves_both_slots
+#print axioms PackedRootedWorklist.Examples.a_binding_does_not_silently_drop_an_invalid_slot
+#print axioms NativeRootedSolverStep.fetched
+#print axioms NativeRootedSolverRun.fetched
+#print axioms PackedRootedMeaning.solved_exact
+#print axioms NativeRootedResolution.fetched
+#print axioms NativeRootSlices.View.resident
+#print axioms NativeRootSlices.View.read
+#print axioms NativeGuardInstall.fetched
+#print axioms NativeGuardLoop.fetched_probe
+#print axioms OccurrenceMask.collect_exact
+#print axioms NativeCollectLoop.fetched
+#print axioms NativeCollectRegion.fetched
+#print axioms PrivateArrayBatch.assembled
+#print axioms NativeBatchPublication.fetched
+#print axioms RootedObserverLayout.normalized
+#print axioms NativeGuardInstall.fetched_needle
+#print axioms NativeGuardReuse.fetched
+#print axioms NativeObserverSelect.fetched
+#print axioms NativeObserverBlock.fetched_guard
+#print axioms NativeObserverBlock.fetched_collect
+#print axioms NativeObservationEntry.fetched
+#print axioms NativeFiringGate.fetched
+#print axioms NativeFundedPublication.fetched
+#print axioms PackedSymbolicKnowledge.selected_knowledge
+#print axioms NativeWorldPublication.fetched
+#print axioms NativeFirstCollect.fetched
+#print axioms ObserverCandidateCover.pruned_scan
+#print axioms ObserverCandidateCover.source_collect
+#print axioms NativeFundedWorld.fetched
+
+end Mettapedia.Machines.TIsa.StoreInstructions

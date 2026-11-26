@@ -15,7 +15,7 @@ unrecorded completeness witnesses and presentation controls as missing.
 from __future__ import annotations
 
 import argparse
-from collections import Counter
+from collections import Counter, deque
 from dataclasses import dataclass
 import hashlib
 import json
@@ -38,6 +38,9 @@ SOUND_SOURCES = tuple(PRESENTATION / name for name in (
     "SoundArith.lean", "SoundTerms.lean", "SoundTheorems.lean", "SoundDefinitions.lean"))
 EXPECTED_NAMED = 112
 EXPECTED_BUILTINS = 11
+EXPECTED_SIMULTANEOUS = 16
+SIMULTANEOUS_RULES = PRESENTATION / "SimultaneousRules.lean"
+SIMULTANEOUS_SOUNDNESS = PRESENTATION / "SimultaneousKernelSoundness.lean"
 RENAMES = {"id": "idv", "h": "hh", "args": "argv", "x": "xx"}
 HELPER_LEMMAS = {"ms_rInstOther"}
 
@@ -272,9 +275,16 @@ class Inventory:
     builtins: list[Builtin]
     aliases: dict[str, Expr]
     arities: dict[str, int]
+    definition_references: dict[str, set[str]]
 
 
-def parse_inventory(rules_source: str, syntax_source: str, basic_source: str) -> Inventory:
+def references(source: str) -> set[str]:
+    without_literals = re.sub(r'"(?:[^"\\]|\\.)*"', '', source)
+    return set(re.findall(r"\b[A-Za-z_]\w*", without_literals))
+
+
+def parse_inventory(rules_source: str, syntax_source: str, basic_source: str,
+                    expected_named: int = EXPECTED_NAMED) -> Inventory:
     defs = declarations(rules_source)
     syntax_defs = declarations(syntax_source)
     arities = {name: len(parameters(d.header))
@@ -356,8 +366,8 @@ def parse_inventory(rules_source: str, syntax_source: str, basic_source: str) ->
             used.update(validate(expr, set(variables)))
         require(used == set(variables), f"{name}: unused variables: {sorted(set(variables) - used)}")
         rules[name] = Rule(name, rule_id, variables, premises, conclusion, d.line)
-    require(len(rules) == EXPECTED_NAMED,
-            f"named rule count changed: {len(rules)}; expected {EXPECTED_NAMED}")
+    require(len(rules) == expected_named,
+            f"named rule count changed: {len(rules)}; expected {expected_named}")
     duplicates = [rid for rid, count in Counter(r.id for r in rules.values()).items() if count != 1]
     require(not duplicates, f"duplicate rule IDs: {duplicates}")
 
@@ -426,7 +436,23 @@ def parse_inventory(rules_source: str, syntax_source: str, basic_source: str) ->
     require(all(n == 1 for n in Counter(order).values()), "kernelRules repeats a rule")
     for name in lists:
         flatten(name)
-    return Inventory(rules, order, groups, builtins, aliases, arities)
+    definition_references = {name: references(definition.body)
+                             for name, definition in (defs | syntax_defs).items()}
+    return Inventory(rules, order, groups, builtins, aliases, arities, definition_references)
+
+
+def simultaneous_inventory(original: str, addition: str, syntax: str, basic: str) -> Inventory:
+    old_name = "def kernelRules : List FORule :="
+    extended_name = "def rulesV2 : List FORule := kernelRules ++ simultaneousRules"
+    require(original.count(old_name) == 1 and addition.count(extended_name) == 1,
+            "unexpected kernel package declarations")
+    combined = original.replace(old_name, "def legacyKernelRules : List FORule :=") + "\n" + addition.replace(
+        extended_name, "def kernelRules : List FORule := legacyKernelRules ++ simultaneousRules")
+    extended = parse_inventory(combined, syntax, basic, EXPECTED_NAMED + EXPECTED_SIMULTANEOUS)
+    added = extended.groups["simultaneousRules"]
+    require(len(added) == EXPECTED_SIMULTANEOUS and len(set(added)) == EXPECTED_SIMULTANEOUS,
+            "unexpected simultaneous rule list")
+    return extended
 
 
 def instantiate(expr: Expr) -> Expr:
@@ -489,6 +515,29 @@ def sha256(source: str) -> str:
     return hashlib.sha256(source.encode("utf-8")).hexdigest()
 
 
+def forall_evidence(proofs: list[str]) -> str:
+    if len(proofs) < 2:
+        return proofs[0] if proofs else "trivial"
+    return "⟨" + ", ".join(proofs) + "⟩"
+
+
+def instantiation_ingredients(inventory: Inventory, rule: Rule, goal: str, available: list[str]) -> list[str]:
+    allowed = set(available)
+    references_by_name = inventory.definition_references
+    selected = (references(goal) | references_by_name[rule.name]) & allowed
+    pending = deque(selected)
+    while pending:
+        needed = (references_by_name.get(pending.popleft(), set()) & allowed) - selected
+        pending.extend(needed)
+        selected.update(needed)
+    selected.update(("FORule.instPremises", "FORule.instConclusion", "FORule.bindings", "mkRule", "ab_apply"))
+    if rule.variables:
+        selected.update(("mv", "ab_fvar_hit"))
+    if len(rule.variables) > 1:
+        selected.add("ab_fvar_miss")
+    return [name for name in available if name in selected]
+
+
 def generate_shapes(inventory: Inventory) -> str:
     output = ['''import Mettapedia.Languages.VibeITP.Presentation.Instances
 
@@ -518,15 +567,8 @@ open Mettapedia.GSLT.LanguageDef.FirstOrderRules
                'jHasFv jAnnArgs jShift jShiftArgs jSubst jSubstArgs jSubstTop jInst jInstArgs '
                'jNatLit jArities jHintsIn jOcc jOccArgs jEtas jDescBVars jDefStmt jThm '
                'closedApp1 closedApp2 patAnnClosed patImpl patEq').split()
-    simpset = ('FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, '
-               'ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, ' + ', '.join(helpers))
-
-    def pick(count: int, name: str) -> str:
-        if count == 0:
-            return ""
-        if count == 1:
-            return f"    rcases {name} with rfl\n    assumption"
-        return f"    rcases {name} with " + " | ".join(["rfl"] * count) + " <;> assumption"
+    available = ("FORule.instPremises FORule.instConclusion FORule.bindings mkRule mv "
+                 "ab_apply ab_fvar_hit ab_fvar_miss fvarSym byteList8").split() + helpers
 
     for name in inventory.order:
         if name.startswith("builtin:"):
@@ -540,41 +582,34 @@ open Mettapedia.GSLT.LanguageDef.FirstOrderRules
         premise_list = "[" + ", ".join(render(p) for p in premises) + "]"
         conclusion_text = parenthesized(conclusion)
         binder = "(" + binders + " : Pattern) " if variables else ""
+        goal = f"{name}.instPremises {arguments} = {premise_list} ∧\n      {name}.instConclusion {arguments} = {conclusion_text}"
+        simpset = ", ".join(instantiation_ingredients(inventory, rule, goal, available))
         output.append(f'''theorem inst_{name} {binder}:
-    {name}.instPremises {arguments} = {premise_list} ∧
-      {name}.instConclusion {arguments} = {conclusion_text} := by
+    {goal} := by
   constructor <;> simp [{name}, {simpset}]
 ''')
         hypotheses = " → ".join("P " + parenthesized(p) for p in (*premises, conclusion))
         quantifier = "∀ " + binders + " : Pattern, " if variables else ""
-        premise_arguments = " ".join(["(hprem _ (by simp))"] * len(premises))
+        shape = f"inst_{name}" + (f" {applied}" if variables else "")
+        applied_sound = f"(h {applied})" if variables else "h"
         output.append(f'''theorem sound_{name} {{P : Pattern → Prop}}
     (h : {quantifier}{hypotheses}) :
     ∀ args : List Pattern, args.length = {name}.vars.length →
       (∀ x ∈ {name}.instPremises args, P x) → P ({name}.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | {arguments}, _ =>
-    rw [(inst_{name} {applied}).1] at hprem
-    rw [(inst_{name} {applied}).2]
-    exact h {applied} {premise_arguments}
+  | {arguments}, _ => exact FORule.sound_of_shape ({shape}) {applied_sound} hprem
 ''')
         data_hypotheses = " ".join(f"(hd_{v} : IsData {v})" for v in variables)
         premise_hypotheses = " ".join(f"(h{k} : FODerivable R {parenthesized(p)})"
                                       for k, p in enumerate(premises))
         implicit = "{" + binders + " : Pattern}" if variables else ""
+        data = forall_evidence([f"hd_{v}" for v in variables])
+        proven = forall_evidence([f"h{k}" for k in range(len(premises))])
         output.append(f'''theorem intro_{name} {{R : List FORule}} (hr : {name} ∈ R) {implicit}
     {data_hypotheses} {premise_hypotheses} :
-    FODerivable R {conclusion_text} := by
-  apply FODerivable.intro hr {arguments} rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-{pick(len(variables), "ha")}
-  · exact (inst_{name} {applied}).2
-  · rw [(inst_{name} {applied}).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-{pick(len(premises), "hx")}
+    FODerivable R {conclusion_text} :=
+  FODerivable.intro_of_shape hr ({shape}) rfl {data} {proven}
 ''')
     output.append('''theorem inst_builtin (b : Builtin) :
     (mkRule ("vibe-builtin-" ++ toString b.slot) [] []
@@ -593,20 +628,15 @@ theorem sound_builtin {P : Pattern → Prop} (b : Builtin)
         (jSymDecl (patBuiltinSym b))).instPremises args, P x) →
       P ((mkRule ("vibe-builtin-" ++ toString b.slot) [] []
         (jSymDecl (patBuiltinSym b))).instConclusion args) := by
-  intro args hlen _
+  intro args hlen premises
   have ha : args = [] := List.length_eq_zero_iff.mp hlen
   subst args
-  rw [(inst_builtin b).2]
-  exact h
+  exact FORule.sound_of_shape (inst_builtin b) h premises
 
 theorem intro_builtin {R : List FORule} (b : Builtin)
     (hr : mkRule ("vibe-builtin-" ++ toString b.slot) [] []
-      (jSymDecl (patBuiltinSym b)) ∈ R) : FODerivable R (jSymDecl (patBuiltinSym b)) := by
-  apply FODerivable.intro hr [] rfl
-  · simp
-  · exact (inst_builtin b).2
-  · rw [(inst_builtin b).1]
-    simp
+        (jSymDecl (patBuiltinSym b)) ∈ R) : FODerivable R (jSymDecl (patBuiltinSym b)) :=
+  FODerivable.intro_of_shape hr (inst_builtin b) rfl trivial trivial
 ''')
     output.append("end Mettapedia.Languages.VibeITP.Presentation\n")
     return "\n".join(output)
@@ -866,16 +896,23 @@ RELATED_SPEC_CONTROLS = {
 
 def generate_manifest(inventory: Inventory, sources: dict[Path, str], shapes: str) -> str:
     lemmas, helpers = semantic_matches(inventory, sources)
+    legacy_soundness = {PRESENTATION / name for name in ("KernelSoundness.lean", "SoundAdmissions.lean", "Soundness.lean")}
     soundness_sources = {p: s for p, s in sources.items()
-                         if "Soundness" in p.name or p.name == "SoundAdmissions.lean"}
+                         if p in legacy_soundness}
     completeness_sources = {p: s for p, s in sources.items()
-                            if "Completeness" in p.name or p.name.startswith("Complete")}
-    for source in soundness_sources.values():
+                            if "Completeness" in p.name or p.name.startswith("Complete")
+                            if not p.name.startswith("Simultaneous")}
+    dispatch_packages = [(source, set(inventory.rules)) for source in soundness_sources.values()]
+    if SIMULTANEOUS_RULES in sources:
+        extended = simultaneous_inventory(sources[RULES], sources[SIMULTANEOUS_RULES], sources[SYNTAX], sources[BASIC])
+        require(SIMULTANEOUS_SOUNDNESS in sources, "missing simultaneous rule dispatcher")
+        dispatch_packages.append((sources[SIMULTANEOUS_SOUNDNESS], set(extended.groups["simultaneousRules"])))
+    for source, rule_names in dispatch_packages:
         for declaration in declarations(source, "theorem").values():
             body = re.sub(r'"(?:[^"\\]|\\.)*"', '""', declaration.body)
             for transfer in set(re.findall(r"\bsound_r\w+\b", body)):
                 rule_name = transfer.removeprefix("sound_")
-                require(rule_name in inventory.rules, f"unknown dispatch rule: {rule_name}")
+                require(rule_name in rule_names, f"unknown dispatch rule: {rule_name}")
                 require(re.search(r"\bms_" + re.escape(rule_name) + r"\b", body) is not None,
                         f"{declaration.name}: {transfer} is not paired with ms_{rule_name}")
     transfers = reference_sites(soundness_sources, {"sound_" + name for name in inventory.rules})
@@ -1102,9 +1139,19 @@ def self_test(sources: dict[Path, str]) -> None:
     refuses("missing composed checker endpoint", lambda: required_theorem_references(mutated, endpoint,
                                                                                    ("derives_iff_checkRaw",)))
     shapes = generate_shapes(baseline)
+    distinct_dispatch = 0
+    if SIMULTANEOUS_SOUNDNESS in sources:
+        extension = sources[SIMULTANEOUS_SOUNDNESS]
+        require("sound_rInstantiateManyNil" in extension, "missing simultaneous dispatch control")
+        mutated = dict(sources)
+        mutated[SIMULTANEOUS_SOUNDNESS] = extension.replace("sound_rInstantiateManyNil",
+                                                           "sound_rUndeclaredExtension", 1)
+        refuses("unknown simultaneous dispatch", lambda: generate_manifest(baseline, mutated, shapes))
+        distinct_dispatch = 1
     require(generate_manifest(baseline, sources, shapes) == generate_manifest(baseline, sources, shapes),
             "coverage generation is nondeterministic")
-    print("Generator controls: 4 positive and 15 negative passed; deterministic shapes and manifest checked.",
+    print(f"Generator controls: 4 positive and {15 + distinct_dispatch} negative passed. "
+          "Deterministic shapes and manifest checked.",
           file=sys.stderr)
 
 

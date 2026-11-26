@@ -1,3 +1,4 @@
+import Mettapedia.GSLT.LanguageDef.StructuralInclusion
 import Mettapedia.GSLT.LanguageDef.TptpFofClausificationBatchLanguageDef
 import Mettapedia.GSLT.LanguageDef.RewriteValidationCertificate
 import Mettapedia.GSLT.LanguageDef.RewriteValidationCertificateExtension
@@ -581,22 +582,16 @@ def validated : ValidatedLanguageDef := ⟨language, language_validate⟩
 
 def targetInclusion :
     StructuralMorphism TptpFofClausificationBatchLanguageDef.validated
-      validated where
-  symbols := LanguageDefSymbolMap.id
-  mapsTypes declaration membership := by
-    rw [mapTypeDecl_id]
-    exact List.mem_append_left _ membership
-  mapsTerms declaration membership := by
-    rw [mapGrammarRule_id]
-    exact List.mem_append_left _ membership
-  mapsEquations declaration membership := by
-    change declaration ∈
-      TptpFofClausificationBatchLanguageDef.language.equations at membership
-    simp [TptpFofClausificationBatchLanguageDef.no_equations] at membership
-  mapsRewrites declaration membership := by
-    change declaration ∈
-      TptpFofClausificationBatchLanguageDef.language.rewrites at membership
-    simp [TptpFofClausificationBatchLanguageDef.no_rewrites] at membership
+      validated :=
+  StructuralMorphism.ofDeclarationInclusion {
+    types := fun _ member => List.mem_append_left _ member
+    terms := fun _ member => List.mem_append_left _ member
+    equations := by
+      change TptpFofClausificationBatchLanguageDef.language.equations ⊆ _
+      exact TptpFofClausificationBatchLanguageDef.no_equations ▸ List.nil_subset _
+    rewrites := by
+      change TptpFofClausificationBatchLanguageDef.language.rewrites ⊆ _
+      exact TptpFofClausificationBatchLanguageDef.no_rewrites ▸ List.nil_subset _ }
 
 namespace Canary
 

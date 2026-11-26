@@ -1,3 +1,6 @@
+import Mettapedia.GSLT.LanguageDef.BaseSortOperatorRows
+import Mettapedia.GSLT.LanguageDef.StructuralInclusion
+import Mettapedia.GSLT.LanguageDef.RewriteFreeLanguage
 import Mettapedia.GSLT.LanguageDef.TptpFofSkolemLanguageDef
 import Mettapedia.GSLT.LanguageDef.TptpFofDefinitionalCnfSemantics
 import Mettapedia.GSLT.LanguageDef.RewriteValidationCertificate
@@ -38,63 +41,49 @@ private def ctor (label category : String)
   evalPolicy? := none
 }
 
-def targetTerms : List GrammarRule := [
-  ctor "tptp-fof-named:ref-verum" "TptpFofNamed:Reference" [],
-  ctor "tptp-fof-named:ref-falsum" "TptpFofNamed:Reference" [],
-  ctor "tptp-fof-named:ref-original-positive" "TptpFofNamed:Reference"
-    [("relation", "TptpFofSymbol:PredicateHead"),
-     ("arguments", "TptpFofSkolem:Terms")],
-  ctor "tptp-fof-named:ref-original-negative" "TptpFofNamed:Reference"
-    [("relation", "TptpFofSymbol:PredicateHead"),
-     ("arguments", "TptpFofSkolem:Terms")],
-  ctor "tptp-fof-named:ref-equal" "TptpFofNamed:Reference"
-    [("left", "TptpFofSkolem:Term"), ("right", "TptpFofSkolem:Term")],
-  ctor "tptp-fof-named:ref-not-equal" "TptpFofNamed:Reference"
-    [("left", "TptpFofSkolem:Term"), ("right", "TptpFofSkolem:Term")],
-  ctor "tptp-fof-named:ref-defined-positive" "TptpFofNamed:Reference"
-    [("id", "TptpResolvedFof:Index"),
-     ("arguments", "TptpFofSkolem:Terms")],
-  ctor "tptp-fof-named:ref-defined-negative" "TptpFofNamed:Reference"
-    [("id", "TptpResolvedFof:Index"),
-     ("arguments", "TptpFofSkolem:Terms")],
-  ctor "tptp-fof-named:definition-and" "TptpFofNamed:Definition"
-    [("id", "TptpResolvedFof:Index"),
-     ("source", "TptpFofSkolem:Formula"),
-     ("left", "TptpFofNamed:Reference"),
-     ("right", "TptpFofNamed:Reference")],
-  ctor "tptp-fof-named:definition-or" "TptpFofNamed:Definition"
-    [("id", "TptpResolvedFof:Index"),
-     ("source", "TptpFofSkolem:Formula"),
-     ("left", "TptpFofNamed:Reference"),
-     ("right", "TptpFofNamed:Reference")],
-  ctor "tptp-fof-named:definitions-nil" "TptpFofNamed:Definitions" [],
-  ctor "tptp-fof-named:definitions-cons" "TptpFofNamed:Definitions"
-    [("head", "TptpFofNamed:Definition"),
-     ("tail", "TptpFofNamed:Definitions")],
-  ctor "tptp-fof-named:introduced-predicate"
-    "TptpFofNamed:IntroducedPredicate"
-    [("id", "TptpResolvedFof:Index"),
-     ("arity", "TptpResolvedFof:Index")],
-  ctor "tptp-fof-named:introduced-nil" "TptpFofNamed:IntroducedList" [],
-  ctor "tptp-fof-named:introduced-cons" "TptpFofNamed:IntroducedList"
-    [("head", "TptpFofNamed:IntroducedPredicate"),
-     ("tail", "TptpFofNamed:IntroducedList")],
-  ctor "tptp-fof-named:output" "TptpFofNamed:Output"
-    [("root", "TptpFofNamed:Reference"),
-     ("next", "TptpResolvedFof:Index"),
-     ("definitions", "TptpFofNamed:Definitions"),
-     ("introduced", "TptpFofNamed:IntroducedList")],
-  ctor "tptp-fof-cnf:clause-nil" "TptpFofCnf:Clause" [],
-  ctor "tptp-fof-cnf:clause-cons" "TptpFofCnf:Clause"
-    [("head", "TptpFofNamed:Reference"),
-     ("tail", "TptpFofCnf:Clause")],
-  ctor "tptp-fof-cnf:clauses-nil" "TptpFofCnf:Clauses" [],
-  ctor "tptp-fof-cnf:clauses-cons" "TptpFofCnf:Clauses"
-    [("head", "TptpFofCnf:Clause"),
-     ("tail", "TptpFofCnf:Clauses")],
-  ctor "tptp-fof-cnf:output" "TptpFofCnf:Output"
-    [("named", "TptpFofNamed:Output"),
-     ("clauses", "TptpFofCnf:Clauses")]
+def a (label : String) (arguments : List Pattern := []) : Pattern :=
+  .apply label arguments
+
+declare_base_sort_operators targetTerms (a, ctor) [
+  refVerum "tptp-fof-named:ref-verum" "TptpFofNamed:Reference" [],
+  refFalsum "tptp-fof-named:ref-falsum" "TptpFofNamed:Reference" [],
+  refOriginalPositive "tptp-fof-named:ref-original-positive" "TptpFofNamed:Reference"
+    [(relation : "TptpFofSymbol:PredicateHead"), (arguments : "TptpFofSkolem:Terms")],
+  refOriginalNegative "tptp-fof-named:ref-original-negative" "TptpFofNamed:Reference"
+    [(relation : "TptpFofSymbol:PredicateHead"), (arguments : "TptpFofSkolem:Terms")],
+  refEqual "tptp-fof-named:ref-equal" "TptpFofNamed:Reference"
+    [(left : "TptpFofSkolem:Term"), (right : "TptpFofSkolem:Term")],
+  refNotEqual "tptp-fof-named:ref-not-equal" "TptpFofNamed:Reference"
+    [(left : "TptpFofSkolem:Term"), (right : "TptpFofSkolem:Term")],
+  refDefinedPositive "tptp-fof-named:ref-defined-positive" "TptpFofNamed:Reference"
+    [(id : "TptpResolvedFof:Index"), (arguments : "TptpFofSkolem:Terms")],
+  refDefinedNegative "tptp-fof-named:ref-defined-negative" "TptpFofNamed:Reference"
+    [(id : "TptpResolvedFof:Index"), (arguments : "TptpFofSkolem:Terms")],
+  definitionAnd "tptp-fof-named:definition-and" "TptpFofNamed:Definition"
+    [(id : "TptpResolvedFof:Index"), (source : "TptpFofSkolem:Formula"),
+     (left : "TptpFofNamed:Reference"), (right : "TptpFofNamed:Reference")],
+  definitionOr "tptp-fof-named:definition-or" "TptpFofNamed:Definition"
+    [(id : "TptpResolvedFof:Index"), (source : "TptpFofSkolem:Formula"),
+     (left : "TptpFofNamed:Reference"), (right : "TptpFofNamed:Reference")],
+  definitionsNil "tptp-fof-named:definitions-nil" "TptpFofNamed:Definitions" [],
+  definitionsCons "tptp-fof-named:definitions-cons" "TptpFofNamed:Definitions"
+    [(head : "TptpFofNamed:Definition"), (tail : "TptpFofNamed:Definitions")],
+  introducedPredicate "tptp-fof-named:introduced-predicate" "TptpFofNamed:IntroducedPredicate"
+    [(id : "TptpResolvedFof:Index"), (arity : "TptpResolvedFof:Index")],
+  introducedNil "tptp-fof-named:introduced-nil" "TptpFofNamed:IntroducedList" [],
+  introducedCons "tptp-fof-named:introduced-cons" "TptpFofNamed:IntroducedList"
+    [(head : "TptpFofNamed:IntroducedPredicate"), (tail : "TptpFofNamed:IntroducedList")],
+  namedOutput "tptp-fof-named:output" "TptpFofNamed:Output"
+    [(root : "TptpFofNamed:Reference"), (next : "TptpResolvedFof:Index"),
+     (definitions : "TptpFofNamed:Definitions"), (introduced : "TptpFofNamed:IntroducedList")],
+  clauseNil "tptp-fof-cnf:clause-nil" "TptpFofCnf:Clause" [],
+  clauseCons "tptp-fof-cnf:clause-cons" "TptpFofCnf:Clause"
+    [(head : "TptpFofNamed:Reference"), (tail : "TptpFofCnf:Clause")],
+  clausesNil "tptp-fof-cnf:clauses-nil" "TptpFofCnf:Clauses" [],
+  clausesCons "tptp-fof-cnf:clauses-cons" "TptpFofCnf:Clauses"
+    [(head : "TptpFofCnf:Clause"), (tail : "TptpFofCnf:Clauses")],
+  cnfOutput "tptp-fof-cnf:output" "TptpFofCnf:Output"
+    [(named : "TptpFofNamed:Output"), (clauses : "TptpFofCnf:Clauses")]
 ]
 
 def language : LanguageDef := {
@@ -181,20 +170,16 @@ theorem language_validate : language.validate = [] := by
 def validated : ValidatedLanguageDef := ⟨language, language_validate⟩
 
 def sourceInclusion :
-    StructuralMorphism TptpFofSkolemLanguageDef.validated validated where
-  symbols := LanguageDefSymbolMap.id
-  mapsTypes declaration membership := by
-    rw [mapTypeDecl_id]
-    exact List.mem_append_left _ membership
-  mapsTerms declaration membership := by
-    rw [mapGrammarRule_id]
-    exact List.mem_append_left _ membership
-  mapsEquations declaration membership := by
-    change declaration ∈ TptpFofSkolemLanguageDef.language.equations at membership
-    simp [TptpFofSkolemLanguageDef.no_equations] at membership
-  mapsRewrites declaration membership := by
-    change declaration ∈ TptpFofSkolemLanguageDef.language.rewrites at membership
-    simp [TptpFofSkolemLanguageDef.no_rewrites] at membership
+    StructuralMorphism TptpFofSkolemLanguageDef.validated validated :=
+  StructuralMorphism.ofDeclarationInclusion {
+    types := fun _ member => List.mem_append_left _ member
+    terms := fun _ member => List.mem_append_left _ member
+    equations := by
+      change TptpFofSkolemLanguageDef.language.equations ⊆ _
+      exact TptpFofSkolemLanguageDef.no_equations ▸ List.nil_subset _
+    rewrites := by
+      change TptpFofSkolemLanguageDef.language.rewrites ⊆ _
+      exact TptpFofSkolemLanguageDef.no_rewrites ▸ List.nil_subset _ }
 
 theorem every_constructor_is_inert :
     language.terms.all (fun term => term.evalPolicy? = none) = true := by
@@ -207,56 +192,9 @@ def theory : Mettapedia.GSLT.GSLT :=
   languageGSLT language (ReductionRespectsEquations.of_equation_free rfl)
 
 theorem theory_no_step (source target : Pattern) :
-    Not (theory.Step source target) := by
-  intro reduction
-  unfold theory at reduction
-  rw [languageGSLT_step] at reduction
-  unfold langReducesUsing at reduction
-  rcases reduction with ⟨_, step⟩
-  cases step with
-  | rule ruleMember => simp [language] at ruleMember
-
-/-! ## Canonical pattern constructors -/
-
-def a (label : String) (arguments : List Pattern := []) : Pattern :=
-  .apply label arguments
-
-def refVerum : Pattern := a "tptp-fof-named:ref-verum"
-def refFalsum : Pattern := a "tptp-fof-named:ref-falsum"
-def refOriginalPositive (relation arguments : Pattern) : Pattern :=
-  a "tptp-fof-named:ref-original-positive" [relation, arguments]
-def refOriginalNegative (relation arguments : Pattern) : Pattern :=
-  a "tptp-fof-named:ref-original-negative" [relation, arguments]
-def refEqual (left right : Pattern) : Pattern :=
-  a "tptp-fof-named:ref-equal" [left, right]
-def refNotEqual (left right : Pattern) : Pattern :=
-  a "tptp-fof-named:ref-not-equal" [left, right]
-def refDefinedPositive (id arguments : Pattern) : Pattern :=
-  a "tptp-fof-named:ref-defined-positive" [id, arguments]
-def refDefinedNegative (id arguments : Pattern) : Pattern :=
-  a "tptp-fof-named:ref-defined-negative" [id, arguments]
-def definitionAnd (id source left right : Pattern) : Pattern :=
-  a "tptp-fof-named:definition-and" [id, source, left, right]
-def definitionOr (id source left right : Pattern) : Pattern :=
-  a "tptp-fof-named:definition-or" [id, source, left, right]
-def definitionsNil : Pattern := a "tptp-fof-named:definitions-nil"
-def definitionsCons (head tail : Pattern) : Pattern :=
-  a "tptp-fof-named:definitions-cons" [head, tail]
-def introducedPredicate (id arity : Pattern) : Pattern :=
-  a "tptp-fof-named:introduced-predicate" [id, arity]
-def introducedNil : Pattern := a "tptp-fof-named:introduced-nil"
-def introducedCons (head tail : Pattern) : Pattern :=
-  a "tptp-fof-named:introduced-cons" [head, tail]
-def namedOutput (root next definitions introduced : Pattern) : Pattern :=
-  a "tptp-fof-named:output" [root, next, definitions, introduced]
-def clauseNil : Pattern := a "tptp-fof-cnf:clause-nil"
-def clauseCons (head tail : Pattern) : Pattern :=
-  a "tptp-fof-cnf:clause-cons" [head, tail]
-def clausesNil : Pattern := a "tptp-fof-cnf:clauses-nil"
-def clausesCons (head tail : Pattern) : Pattern :=
-  a "tptp-fof-cnf:clauses-cons" [head, tail]
-def cnfOutput (named clauses : Pattern) : Pattern :=
-  a "tptp-fof-cnf:output" [named, clauses]
+    Not (theory.Step source target) :=
+  languageGSLT_no_step_of_no_rewrites (language := language)
+    (laws := ReductionRespectsEquations.of_equation_free rfl) no_rewrites
 
 /-! ## Canonical semantic encoding -/
 

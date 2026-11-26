@@ -705,7 +705,7 @@ private theorem scanFinishedRule_no_apply_cons
         (scan target requested remaining seen (formulasCons formula formulas)) =
       [] := by
   simp [scanFinishedRule, scan, formulasNil, formulasCons, selectionOk,
-    mkRule, typed, a, v, applyRuleUsing, matchPatternForRule_eq_syntactic,
+    mkRule, a, v, applyRuleUsing, matchPatternForRule_eq_syntactic,
     matchPattern, matchArgs, mergeBindings]
 
 private theorem scanMissingRule_no_apply_cons
@@ -715,7 +715,7 @@ private theorem scanMissingRule_no_apply_cons
         (scan target requested remaining seen (formulasCons formula formulas)) =
       [] := by
   simp [scanMissingRule, scan, formulasNil, formulasCons, errorMissing,
-    selectionError, stringsCons, mkRule, typed, a, v, applyRuleUsing,
+    selectionError, stringsCons, mkRule, a, v, applyRuleUsing,
     matchPatternForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings]
 
 private theorem scanSkipRule_no_apply_true
@@ -725,7 +725,7 @@ private theorem scanSkipRule_no_apply_true
         (scanRequestDecision boolTrue target requested remaining seen
           formula formulas) = [] := by
   simp [scanSkipRule, scanRequestDecision, boolFalse, boolTrue, scan,
-    mkRule, congruence, typed, a, v, applyRuleUsing,
+    mkRule, congruence, a, v, applyRuleUsing,
     matchPatternForRule_eq_syntactic, matchPattern, matchArgs, mergeBindings]
 
 private theorem scanCheckSeenRule_no_apply_false
@@ -735,7 +735,7 @@ private theorem scanCheckSeenRule_no_apply_false
         (scanRequestDecision boolFalse target requested remaining seen
           formula formulas) = [] := by
   simp [scanCheckSeenRule, scanRequestDecision, boolFalse, boolTrue,
-    contains, scanSeenDecision, resolvedFormula, mkRule, congruence, typed,
+    contains, scanSeenDecision, resolvedFormula, mkRule, congruence,
     a, v, applyRuleUsing, matchPatternForRule_eq_syntactic, matchPattern,
     matchArgs, mergeBindings]
 
@@ -746,7 +746,7 @@ private theorem scanAmbiguousRule_no_apply_false
         (scanSeenDecision boolFalse target requested remaining seen
           formula formulas) = [] := by
   simp [scanAmbiguousRule, scanSeenDecision, boolFalse, boolTrue,
-    resolvedFormula, errorAmbiguous, selectionError, mkRule, typed, a, v,
+    resolvedFormula, errorAmbiguous, selectionError, mkRule, a, v,
     applyRuleUsing, matchPatternForRule_eq_syntactic, matchPattern, matchArgs,
     mergeBindings]
 
@@ -757,7 +757,7 @@ private theorem scanSelectRule_no_apply_true
         (scanSeenDecision boolTrue target requested remaining seen
           formula formulas) = [] := by
   simp [scanSelectRule, scanSeenDecision, boolFalse, boolTrue, eraseFirst,
-    scan, stringsCons, prepend, resolvedFormula, mkRule, congruence, typed,
+    scan, stringsCons, prepend, resolvedFormula, mkRule, congruence,
     a, v, applyRuleUsing, matchPatternForRule_eq_syntactic, matchPattern,
     matchArgs, mergeBindings]
 
@@ -1016,7 +1016,8 @@ theorem scanRequest_true_rewriteAt_exact (fuel : Nat)
   simp only [scanRequestDecision, resolvedFormula, a]
     at skipCannotApply
   rw [skipCannotApply]
-  simp only [scanCheckSeenRule, mkRule, typed, applyRuleUsing,
+  simp only [scanCheckSeenRule, mkRule, BaseSortDeclarations.rule,
+    BaseSortDeclarations.context, applyRuleUsing,
     matchPatternForRule_eq_syntactic]
   have initialMatch := scanRequestTrue_match_exact target requested remaining seen
     name input origin formulas
@@ -1046,7 +1047,8 @@ theorem scanSeen_true_rewriteAt_exact (fuel : Nat)
   simp only [scanSeenDecision, resolvedFormula, a]
     at selectCannotApply
   rw [selectCannotApply]
-  simp only [scanAmbiguousRule, mkRule, typed, applyRuleUsing,
+  simp only [scanAmbiguousRule, mkRule, BaseSortDeclarations.rule,
+    BaseSortDeclarations.context, applyRuleUsing,
     matchPatternForRule_eq_syntactic]
   have initialMatch := scanSeenTrue_match_exact target requested remaining seen
     name input origin formulas
@@ -1083,7 +1085,8 @@ theorem scanSeen_false_rewriteAt_exact (fuel : Nat)
   simp only [scanSeenDecision, resolvedFormula, a]
     at ambiguousCannotApply
   rw [ambiguousCannotApply]
-  simp only [scanSelectRule, mkRule, typed, applyRuleUsing,
+  simp only [scanSelectRule, mkRule, BaseSortDeclarations.rule,
+    BaseSortDeclarations.context, applyRuleUsing,
     matchPatternForRule_eq_syntactic]
   have initialMatch := scanSeenFalse_match_exact target requested remaining seen
     name input origin formulas

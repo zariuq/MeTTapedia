@@ -11,7 +11,7 @@
 ; compute.metta.
 (= (examples:expected) 24)
 
-(= (examples:named $source) (Tm.named (lean:id $source)))
+(= (examples:named $source) (Tm.named (egal:id $source)))
 (= (examples:le $a $b) (Tm.app (Tm.app (examples:named "Lean_Nat_le_Prop") $a) $b))
 (= (examples:succ $a) (Tm.app (examples:named "Lean_Nat_succ_node") $a))
 (= (examples:num $k) (Tm.app (examples:named "LeanNum") (wire:literal $k)))
@@ -26,20 +26,20 @@
 ; The context  x, x :e FIRST, h, h :e SECOND  (SECOND is written with x as
 ; the variable 0; in the goals x is the variable 1).
 (= (examples:context $first $second)
-   (let* (($th (lean:theory))
+   (let* (($th (egal:theory))
           ($c1 (mg:term-binder $th (mg:empty-context) (Tp.base 0)))
           ($c2 (mg:proof-binder $th $c1 (typ:member (Tm.db 0) $first)))
           ($c3 (mg:term-binder $th $c2 (Tp.base 0))))
      (mg:proof-binder $th $c3 (typ:member (Tm.db 0) (mgt:shift $second 1 0)))))
-(= (examples:proved $ctx $goal) (not (== (typ:prove (lean:equality) $ctx () $goal) None)))
+(= (examples:proved $ctx $goal) (not (== (typ:prove (egal:equality) $ctx () $goal) None)))
 (= (examples:line $label $wanted $got)
    (println! (format-args "example {} {}" ($label (if (== $wanted $got) as-expected UNEXPECTED)))))
 (= (examples:at-sort $level) (Tm.app (examples:named "LeanSort") $level))
 (= (examples:infers $t $T)
-   (case (typ:infer (lean:equality) (mg:empty-context) () $t) (((Typed $type $thm) (== $type $T)) ($other False))))
+   (case (typ:infer (egal:equality) (mg:empty-context) () $t) (((Typed $type $thm) (== $type $T)) ($other False))))
 ; The context  u, nat_p u, X, X :e LeanSort u  (u is the variable 1, X the variable 0).
 (= (examples:sort-context)
-   (let* (($th (lean:theory))
+   (let* (($th (egal:theory))
           ($c1 (mg:term-binder $th (mg:empty-context) (Tp.base 0)))
           ($c2 (mg:proof-binder $th $c1 (Tm.app (examples:named "nat_p") (Tm.db 0))))
           ($c3 (mg:term-binder $th $c2 (Tp.base 0))))
@@ -53,8 +53,8 @@
 ; The term is computed to VALUE by a theorem that states so, and that
 ; theorem is not taken as one for the other truth value.
 (= (examples:decides $n $value $other $label $crossed)
-   (let* (($E (lean:equality)) ($t (examples:prime $n)))
-     (case (lean:compute $t)
+   (let* (($E (egal:equality)) ($t (examples:prime $n)))
+     (case (egal:compute $t)
        (((Conv $reached $theorem)
          (let* (($own (examples:line $label True
                         (if (== $reached $value) (== (mg:proposition $theorem) (eq:of $E $t $value)) False)))
@@ -68,7 +68,7 @@
 ; pays for it).
 (= (examples:groups) (goals five four settled))
 (= (examples:report $group)
-   (let $opened (lean:open-computation)
+   (let $opened (egal:open-computation)
      (case $group
        ((goals (examples:goals))
         (five (examples:decides 5 (examples:named "Lean_Bool_true_node") (examples:named "Lean_Bool_false_node")

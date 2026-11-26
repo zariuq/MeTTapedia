@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentRigidDecomposition
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentContextNormalizationTower
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentNormalizingCertify
@@ -40,7 +41,7 @@ variable {Head L : Type} [UniverseLevel.LevelOrder L] {S : Setting Head L}
 section Preparation
 
 variable (root : ExecutableReduction.RootEvaluator S.R)
-  (rootComplete : ∀ {n : Nat} (term : Tm Head n), root term = none → ∀ target, ¬ S.R.computation.step term target)
+  (rootComplete : SolverPremises.CompleteRootEvaluation (rules := S.R) root)
   (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R) (heads : HeadPreserving S.R)
 
 /-- Normalize the declarations of the context, when the run finishes. -/
@@ -141,9 +142,9 @@ theorem contextNormalize_mono {fuel larger : Nat} {n : Nat} {raw : Ctx Head n} {
       some result) (enough : fuel ≤ larger) :
     ContextualDependentContextNormalization.normalize root rootComplete facts roots heads larger raw formed =
       some result := by
-  induction enough with
-  | refl => exact computed
-  | step _ ih => exact contextNormalize_succ root rootComplete facts roots heads _ raw formed result ih
+  exact SolverPremises.keeps_of_le
+    (fun budget => contextNormalize_succ root rootComplete facts roots heads budget raw formed)
+    enough result computed
 
 /-- With a finished context normalization, preparation is that transport followed by store
 normalization. -/
@@ -173,14 +174,10 @@ variable (rigid : ∀ name, S.roles name = .rigid) (complete : AlgorithmicComple
   (heads : HeadPreserving S.R) (algebra : CumulativeAlgebra S.R) (declared : DeclaredTypesFormed S.R)
   (choices : ExecutableChecking.HeadChoices S.R) (reducer : ExecutableReduction.Reducer S.R)
   (root : ExecutableReduction.RootEvaluator S.R)
-  (rootComplete : ∀ {n : Nat} (term : Tm Head n), root term = none → ∀ target, ¬ S.R.computation.step term target)
-  (normalizes : ∀ {Θ : Context S.R} {type : TypeOver Θ} (term : Term Θ type),
-    ∃ code : Tm Head Θ.arity, ContextualDependentNormalChecking.Normal (S := S) code ∧
-      Equal S.R Θ.raw term.code code type.code)
-  (certifyNormal : ∀ {n : Nat} (term : Tm Head n),
-    Option (PLift (ContextualDependentNormalChecking.Normal (S := S) term)))
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
+  (rootComplete : SolverPremises.CompleteRootEvaluation (rules := S.R) root)
+  (normalizes : SolverPremises.HasNormalForms S)
+  (certifyNormal : SolverPremises.NormalityCertifier S)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
 
 /-- **One normalizing round**: prepare the store, then run the rigid round on the prepared store. -/
 def normalizingRound (fuel : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ)) :

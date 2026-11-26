@@ -422,674 +422,152 @@ theorem rhoIntrinsicTraceAccountBridge_reducesN
         (rhoRewritePathOfReducesN h)
     · exact rhoIntrinsicLedgerTotalAction_shadow_eq_traceAccount_reducesN h
 
+/-- Observations of a typed rho path. The ordered direct trace still carries
+its ledger and public presentation, and both presentations read the same
+spatial and temporal account. -/
+abbrev RhoPathSemantics {p q : Pattern} (path : rhoGSLT.RewritePath p q) : Prop :=
+  let trace := rhoIntrinsicRewritePathTrace path
+  let ledger := totalAction rhoIntrinsicLedgerAction path
+  let publicSpent := rhoLedgerToSpentSyntax ledger
+  let direct := rhoIntrinsicDirectSpentTrace path
+  let cost := totalCost rhoIntrinsicCostMap path
+  traceAccount trace = cost ∧
+    rhoLedgerShadow ledger = cost ∧
+    rhoSpentSyntaxAccount publicSpent = cost ∧
+    rhoSpentSyntaxWidth publicSpent = ledger.spatial.card ∧
+    rhoSpentSyntaxTicks publicSpent = path.length ∧
+    rhoSpentSyntaxWidth publicSpent = cost 0 ∧
+    rhoSpentSyntaxTicks publicSpent = cost 1 ∧
+    rhoLedgerShadow ledger = traceAccount trace ∧
+    direct.CanonicalShape ∧
+    direct.toLedger = ledger ∧
+    direct.toPublicPattern = publicSpent ∧
+    RhoLedger.TraceCoherent direct.toLedger ∧
+    rhoSpentSyntaxAccount direct.toPattern = rhoSpentSyntaxAccount publicSpent ∧
+    rhoSpentSyntaxAccount direct.toPattern = cost ∧
+    rhoSpentSyntaxWidth direct.toPattern = rhoSpentSyntaxWidth publicSpent ∧
+    rhoSpentSyntaxWidth direct.toPattern = cost 0 ∧
+    rhoSpentSyntaxTicks direct.toPattern = rhoSpentSyntaxTicks publicSpent ∧
+    rhoSpentSyntaxTicks direct.toPattern = cost 1 ∧
+    rhoSpentSyntaxTicks direct.toPattern = path.length
+
+theorem rhoIntrinsicPathSemantics {p q : Pattern} (path : rhoGSLT.RewritePath p q) :
+    RhoPathSemantics path :=
+  ⟨rhoIntrinsicRewritePathTraceAccount_eq_totalCost path,
+    rhoIntrinsicLedgerTotalAction_shadow_eq_totalCost path,
+    rhoIntrinsicLedgerTotalAction_spentSyntax_eq_totalCost path,
+    rhoIntrinsicLedgerTotalAction_publicSpentSyntax_width_eq_spatialCard path,
+    rhoIntrinsicLedgerTotalAction_publicSpentSyntax_ticks_eq_length path,
+    rhoIntrinsicLedgerTotalAction_publicSpentSyntax_width_eq_totalCost_zero path,
+    rhoIntrinsicLedgerTotalAction_publicSpentSyntax_ticks_eq_totalCost_one path,
+    rhoIntrinsicLedgerTotalAction_shadow_eq_traceAccount path,
+    rhoIntrinsicDirectSpentTrace_semantics path⟩
+
 theorem rhoIntrinsicSemanticBridge_reducesN
     {n : Nat} {p q : Pattern} (h : ReducesN n p q) :
-    traceAccount (S := rhoGSLT) (A := Nat) (k := 2)
-      (rhoIntrinsicReducesNTrace h) =
-        totalCost rhoIntrinsicCostMap (rhoRewritePathOfReducesN h) ∧
-    rhoLedgerShadow
-      (totalAction rhoIntrinsicLedgerAction (rhoRewritePathOfReducesN h)) =
-        totalCost rhoIntrinsicCostMap (rhoRewritePathOfReducesN h) ∧
-    rhoSpentSyntaxAccount
-      (rhoLedgerToSpentSyntax
-        (totalAction rhoIntrinsicLedgerAction (rhoRewritePathOfReducesN h))) =
-          totalCost rhoIntrinsicCostMap (rhoRewritePathOfReducesN h) ∧
-    rhoSpentSyntaxWidth
-      (rhoLedgerToSpentSyntax
-        (totalAction rhoIntrinsicLedgerAction (rhoRewritePathOfReducesN h))) =
-          (totalAction rhoIntrinsicLedgerAction (rhoRewritePathOfReducesN h)).spatial.card ∧
-    rhoSpentSyntaxTicks
-      (rhoLedgerToSpentSyntax
-        (totalAction rhoIntrinsicLedgerAction (rhoRewritePathOfReducesN h))) =
-          (rhoRewritePathOfReducesN h).length ∧
-    rhoSpentSyntaxWidth
-      (rhoLedgerToSpentSyntax
-        (totalAction rhoIntrinsicLedgerAction (rhoRewritePathOfReducesN h))) =
-          totalCost rhoIntrinsicCostMap (rhoRewritePathOfReducesN h) 0 ∧
-    rhoSpentSyntaxTicks
-      (rhoLedgerToSpentSyntax
-        (totalAction rhoIntrinsicLedgerAction (rhoRewritePathOfReducesN h))) =
-          totalCost rhoIntrinsicCostMap (rhoRewritePathOfReducesN h) 1 ∧
-    rhoLedgerShadow
-      (totalAction rhoIntrinsicLedgerAction (rhoRewritePathOfReducesN h)) =
-        traceAccount (S := rhoGSLT) (A := Nat) (k := 2)
-          (rhoIntrinsicReducesNTrace h) ∧
-    (rhoIntrinsicDirectSpentTrace (rhoRewritePathOfReducesN h)).CanonicalShape ∧
-    (rhoIntrinsicDirectSpentTrace (rhoRewritePathOfReducesN h)).toLedger =
-      totalAction rhoIntrinsicLedgerAction (rhoRewritePathOfReducesN h) ∧
-    (rhoIntrinsicDirectSpentTrace (rhoRewritePathOfReducesN h)).toPublicPattern =
-      rhoLedgerToSpentSyntax
-        (totalAction rhoIntrinsicLedgerAction (rhoRewritePathOfReducesN h)) ∧
-    RhoLedger.TraceCoherent
-      ((rhoIntrinsicDirectSpentTrace (rhoRewritePathOfReducesN h)).toLedger) ∧
-    rhoSpentSyntaxAccount
-      (rhoIntrinsicDirectSpentTrace (rhoRewritePathOfReducesN h)).toPattern =
-        rhoSpentSyntaxAccount
-          (rhoLedgerToSpentSyntax
-            (totalAction rhoIntrinsicLedgerAction (rhoRewritePathOfReducesN h))) ∧
-    rhoSpentSyntaxAccount
-      (rhoIntrinsicDirectSpentTrace (rhoRewritePathOfReducesN h)).toPattern =
-        totalCost rhoIntrinsicCostMap (rhoRewritePathOfReducesN h) ∧
-    rhoSpentSyntaxWidth
-      (rhoIntrinsicDirectSpentTrace (rhoRewritePathOfReducesN h)).toPattern =
-        rhoSpentSyntaxWidth
-          (rhoLedgerToSpentSyntax
-            (totalAction rhoIntrinsicLedgerAction (rhoRewritePathOfReducesN h))) ∧
-    rhoSpentSyntaxWidth
-      (rhoIntrinsicDirectSpentTrace (rhoRewritePathOfReducesN h)).toPattern =
-        totalCost rhoIntrinsicCostMap (rhoRewritePathOfReducesN h) 0 ∧
-    rhoSpentSyntaxTicks
-      (rhoIntrinsicDirectSpentTrace (rhoRewritePathOfReducesN h)).toPattern =
-        rhoSpentSyntaxTicks
-          (rhoLedgerToSpentSyntax
-            (totalAction rhoIntrinsicLedgerAction (rhoRewritePathOfReducesN h))) ∧
-    rhoSpentSyntaxTicks
-      (rhoIntrinsicDirectSpentTrace (rhoRewritePathOfReducesN h)).toPattern =
-        totalCost rhoIntrinsicCostMap (rhoRewritePathOfReducesN h) 1 ∧
-    rhoSpentSyntaxTicks
-      (rhoIntrinsicDirectSpentTrace (rhoRewritePathOfReducesN h)).toPattern =
-        (rhoRewritePathOfReducesN h).length := by
-  rcases rhoIntrinsicTraceAccountBridge_reducesN h with
-    ⟨htrace, hshadowCost, hshadowTrace⟩
-  have hPublicAcc :
-      rhoSpentSyntaxAccount
-        (rhoLedgerToSpentSyntax
-          (totalAction rhoIntrinsicLedgerAction (rhoRewritePathOfReducesN h))) =
-            totalCost rhoIntrinsicCostMap (rhoRewritePathOfReducesN h) := by
-    exact (rhoIntrinsicLedgerPublicSpentSyntax_semantics_reducesN h).1
-  have hPublicWidthSpatial :
-      rhoSpentSyntaxWidth
-        (rhoLedgerToSpentSyntax
-          (totalAction rhoIntrinsicLedgerAction (rhoRewritePathOfReducesN h))) =
-            (totalAction rhoIntrinsicLedgerAction (rhoRewritePathOfReducesN h)).spatial.card := by
-    exact rhoIntrinsicLedgerTotalAction_publicSpentSyntax_width_eq_spatialCard
-      (rhoRewritePathOfReducesN h)
-  have hPublicTicksLen :
-      rhoSpentSyntaxTicks
-        (rhoLedgerToSpentSyntax
-          (totalAction rhoIntrinsicLedgerAction (rhoRewritePathOfReducesN h))) =
-            (rhoRewritePathOfReducesN h).length := by
-    exact rhoIntrinsicLedgerTotalAction_publicSpentSyntax_ticks_eq_length
-      (rhoRewritePathOfReducesN h)
-  rcases rhoIntrinsicLedgerPublicSpentSyntax_semantics_reducesN h with
-    ⟨_, hPublicWidthCost, hPublicTicksCost, _, _⟩
-  rcases rhoIntrinsicDirectSpentTrace_semantics_reducesN h with
-    ⟨hSurf, hLedger, hPublicPattern, hCoherent, hDirectAccPublic, hDirectAccCost,
-      hDirectWidthPublic, hDirectWidthCost, hDirectTicksPublic, hDirectTicksCost, _⟩
-  have hDirectTicksLen :
-      rhoSpentSyntaxTicks
-        (rhoIntrinsicDirectSpentTrace (rhoRewritePathOfReducesN h)).toPattern =
-          (rhoRewritePathOfReducesN h).length := by
-    exact rhoIntrinsicDirectSpentTrace_ticks_eq_length (rhoRewritePathOfReducesN h)
-  constructor
-  · exact htrace
-  · constructor
-    · exact hshadowCost
-    · constructor
-      · exact hPublicAcc
-      · constructor
-        · exact hPublicWidthSpatial
-        · constructor
-          · exact hPublicTicksLen
-          · constructor
-            · exact hPublicWidthCost
-            · constructor
-              · exact hPublicTicksCost
-              · constructor
-                · exact hshadowTrace
-                · constructor
-                  · exact hSurf
-                  · constructor
-                    · exact hLedger
-                    · constructor
-                      · exact hPublicPattern
-                      · constructor
-                        · exact hCoherent
-                        · constructor
-                          · exact hDirectAccPublic
-                          · constructor
-                            · exact hDirectAccCost
-                            · constructor
-                              · exact hDirectWidthPublic
-                              · constructor
-                                · exact hDirectWidthCost
-                                · constructor
-                                  · exact hDirectTicksPublic
-                                  · constructor
-                                    · exact hDirectTicksCost
-                                    · exact hDirectTicksLen
+    RhoPathSemantics (rhoRewritePathOfReducesN h) :=
+  rhoIntrinsicPathSemantics (rhoRewritePathOfReducesN h)
+
+/-- Observations of an ordered composition. The component and composed paths
+stay typed by their endpoints. The presentations preserve their readouts under
+addition, and the composed direct trace still identifies its ledger. -/
+abbrev RhoPathConcatSemantics {p q r : Pattern}
+    (left : rhoGSLT.RewritePath p q) (right : rhoGSLT.RewritePath q r)
+    (joined : rhoGSLT.RewritePath p r) (ticks : Nat) : Prop :=
+  let trace := rhoIntrinsicRewritePathTrace joined
+  let ledger := totalAction rhoIntrinsicLedgerAction joined
+  let cost := totalCost rhoIntrinsicCostMap joined
+  let publicSpent := rhoLedgerToSpentSyntax ledger
+  let publicLeft := rhoLedgerToSpentSyntax (totalAction rhoIntrinsicLedgerAction left)
+  let publicRight := rhoLedgerToSpentSyntax (totalAction rhoIntrinsicLedgerAction right)
+  let direct := rhoIntrinsicDirectSpentTrace joined
+  let directLeft := (rhoIntrinsicDirectSpentTrace left).toPattern
+  let directRight := (rhoIntrinsicDirectSpentTrace right).toPattern
+  traceAccount trace = cost ∧
+    rhoLedgerShadow ledger = cost ∧
+    rhoLedgerShadow ledger = traceAccount trace ∧
+    rhoSpentSyntaxAccount publicSpent = rhoSpentSyntaxAccount publicLeft +
+      rhoSpentSyntaxAccount publicRight ∧
+    rhoSpentSyntaxWidth publicSpent = rhoSpentSyntaxWidth publicLeft +
+      rhoSpentSyntaxWidth publicRight ∧
+    rhoSpentSyntaxTicks publicSpent = rhoSpentSyntaxTicks publicLeft +
+      rhoSpentSyntaxTicks publicRight ∧
+    rhoSpentSyntaxTicks publicSpent = ticks ∧
+    RhoLedger.TraceCoherent ledger ∧
+    direct.CanonicalShape ∧
+    direct.toLedger = ledger ∧
+    direct.toPublicPattern = publicSpent ∧
+    RhoLedger.TraceCoherent direct.toLedger ∧
+    rhoSpentSyntaxAccount direct.toPattern = rhoSpentSyntaxAccount directLeft +
+      rhoSpentSyntaxAccount directRight ∧
+    rhoSpentSyntaxWidth direct.toPattern = rhoSpentSyntaxWidth directLeft +
+      rhoSpentSyntaxWidth directRight ∧
+    rhoSpentSyntaxTicks direct.toPattern = rhoSpentSyntaxTicks directLeft +
+      rhoSpentSyntaxTicks directRight ∧
+    rhoSpentSyntaxTicks direct.toPattern = ticks
+
+theorem rhoIntrinsicPathConcatSemantics {p q r : Pattern}
+    (left : rhoGSLT.RewritePath p q) (right : rhoGSLT.RewritePath q r) :
+    RhoPathConcatSemantics left right (rewritePathAppend left right)
+      (rewritePathAppend left right).length := by
+  rcases rhoIntrinsicLedgerPublicSpentSyntax_semantics_rewritePathAppend left right with
+    ⟨account, width, ticks, length, coherent⟩
+  exact ⟨rhoIntrinsicRewritePathTraceAccount_eq_totalCost _,
+    rhoIntrinsicLedgerTotalAction_shadow_eq_totalCost _,
+    rhoIntrinsicLedgerTotalAction_shadow_eq_traceAccount _, account, width, ticks, length,
+    coherent, rhoIntrinsicDirectSpentTrace_semantics_rewritePathAppend left right⟩
 
 theorem rhoIntrinsicSemanticBridge_reducesN_concat
     {n m : Nat} {p q r : Pattern}
     (h1 : ReducesN n p q) (h2 : ReducesN m q r) :
-    traceAccount (S := rhoGSLT) (A := Nat) (k := 2)
-      (rhoIntrinsicReducesNTrace (reducesN_concat h1 h2)) =
-        totalCost rhoIntrinsicCostMap
-          (rhoRewritePathOfReducesN (reducesN_concat h1 h2)) ∧
-    rhoLedgerShadow
-      (totalAction rhoIntrinsicLedgerAction
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))) =
-          totalCost rhoIntrinsicCostMap
-            (rhoRewritePathOfReducesN (reducesN_concat h1 h2)) ∧
-    rhoLedgerShadow
-      (totalAction rhoIntrinsicLedgerAction
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))) =
-          traceAccount (S := rhoGSLT) (A := Nat) (k := 2)
-            (rhoIntrinsicReducesNTrace (reducesN_concat h1 h2)) ∧
-    rhoSpentSyntaxAccount
-      (rhoLedgerToSpentSyntax
-        (totalAction rhoIntrinsicLedgerAction
-          (rhoRewritePathOfReducesN (reducesN_concat h1 h2)))) =
-            rhoSpentSyntaxAccount
-              (rhoLedgerToSpentSyntax
-                (totalAction rhoIntrinsicLedgerAction
-                  (rhoRewritePathOfReducesN h1))) +
-            rhoSpentSyntaxAccount
-              (rhoLedgerToSpentSyntax
-                (totalAction rhoIntrinsicLedgerAction
-                  (rhoRewritePathOfReducesN h2))) ∧
-    rhoSpentSyntaxWidth
-      (rhoLedgerToSpentSyntax
-        (totalAction rhoIntrinsicLedgerAction
-          (rhoRewritePathOfReducesN (reducesN_concat h1 h2)))) =
-            rhoSpentSyntaxWidth
-              (rhoLedgerToSpentSyntax
-                (totalAction rhoIntrinsicLedgerAction
-                  (rhoRewritePathOfReducesN h1))) +
-            rhoSpentSyntaxWidth
-              (rhoLedgerToSpentSyntax
-                (totalAction rhoIntrinsicLedgerAction
-                  (rhoRewritePathOfReducesN h2))) ∧
-    rhoSpentSyntaxTicks
-      (rhoLedgerToSpentSyntax
-        (totalAction rhoIntrinsicLedgerAction
-          (rhoRewritePathOfReducesN (reducesN_concat h1 h2)))) =
-            rhoSpentSyntaxTicks
-              (rhoLedgerToSpentSyntax
-                (totalAction rhoIntrinsicLedgerAction
-                  (rhoRewritePathOfReducesN h1))) +
-            rhoSpentSyntaxTicks
-              (rhoLedgerToSpentSyntax
-                (totalAction rhoIntrinsicLedgerAction
-                  (rhoRewritePathOfReducesN h2))) ∧
-    rhoSpentSyntaxTicks
-      (rhoLedgerToSpentSyntax
-        (totalAction rhoIntrinsicLedgerAction
-          (rhoRewritePathOfReducesN (reducesN_concat h1 h2)))) =
-            n + m ∧
-    RhoLedger.TraceCoherent
-      (totalAction rhoIntrinsicLedgerAction
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))) ∧
-    (rhoIntrinsicDirectSpentTrace
-      (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).CanonicalShape ∧
-    (rhoIntrinsicDirectSpentTrace
-      (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toLedger =
-        totalAction rhoIntrinsicLedgerAction
-          (rhoRewritePathOfReducesN (reducesN_concat h1 h2)) ∧
-    (rhoIntrinsicDirectSpentTrace
-      (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toPublicPattern =
-        rhoLedgerToSpentSyntax
-          (totalAction rhoIntrinsicLedgerAction
-            (rhoRewritePathOfReducesN (reducesN_concat h1 h2))) ∧
-    RhoLedger.TraceCoherent
-      ((rhoIntrinsicDirectSpentTrace
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toLedger) ∧
-    rhoSpentSyntaxAccount
-      (rhoIntrinsicDirectSpentTrace
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toPattern =
-          rhoSpentSyntaxAccount
-            (rhoIntrinsicDirectSpentTrace
-              (rhoRewritePathOfReducesN h1)).toPattern +
-          rhoSpentSyntaxAccount
-            (rhoIntrinsicDirectSpentTrace
-              (rhoRewritePathOfReducesN h2)).toPattern ∧
-    rhoSpentSyntaxWidth
-      (rhoIntrinsicDirectSpentTrace
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toPattern =
-          rhoSpentSyntaxWidth
-            (rhoIntrinsicDirectSpentTrace
-              (rhoRewritePathOfReducesN h1)).toPattern +
-          rhoSpentSyntaxWidth
-            (rhoIntrinsicDirectSpentTrace
-              (rhoRewritePathOfReducesN h2)).toPattern ∧
-    rhoSpentSyntaxTicks
-      (rhoIntrinsicDirectSpentTrace
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toPattern =
-          rhoSpentSyntaxTicks
-            (rhoIntrinsicDirectSpentTrace
-              (rhoRewritePathOfReducesN h1)).toPattern +
-          rhoSpentSyntaxTicks
-            (rhoIntrinsicDirectSpentTrace
-              (rhoRewritePathOfReducesN h2)).toPattern ∧
-    rhoSpentSyntaxTicks
-      (rhoIntrinsicDirectSpentTrace
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toPattern =
-          n + m := by
-  rcases rhoIntrinsicSemanticBridge_reducesN (reducesN_concat h1 h2) with
-    ⟨htrace, hshadowCost, _, _, _, _, _, hshadowTrace, _, _, _, _, _, _, _, _, _, _, _⟩
-  rcases rhoIntrinsicLedgerPublicSpentSyntax_semantics_reducesN_concat h1 h2 with
-    ⟨hPublicAcc, hPublicWidth, hPublicTicks, hPublicLen, hPublicCoh⟩
-  rcases rhoIntrinsicDirectSpentTrace_semantics_reducesN_concat h1 h2 with
-    ⟨hSurf, hLedger, hPublicPattern, hCoherent, hDirectAcc, hDirectWidth, hDirectTicks,
-      hDirectLen⟩
-  constructor
-  · exact htrace
-  · constructor
-    · exact hshadowCost
-    · constructor
-      · exact hshadowTrace
-      · constructor
-        · exact hPublicAcc
-        · constructor
-          · exact hPublicWidth
-          · constructor
-            · exact hPublicTicks
-            · constructor
-              · exact hPublicLen
-              · constructor
-                · exact hPublicCoh
-                · constructor
-                  · exact hSurf
-                  · constructor
-                    · exact hLedger
-                    · constructor
-                      · exact hPublicPattern
-                      · constructor
-                        · exact hCoherent
-                        · constructor
-                          · exact hDirectAcc
-                          · constructor
-                            · exact hDirectWidth
-                            · constructor
-                              · exact hDirectTicks
-                              · exact hDirectLen
+    RhoPathConcatSemantics (rhoRewritePathOfReducesN h1) (rhoRewritePathOfReducesN h2)
+      (rhoRewritePathOfReducesN (reducesN_concat h1 h2)) (n + m) := by
+  have joined := rhoIntrinsicPathConcatSemantics (rhoRewritePathOfReducesN h1)
+    (rhoRewritePathOfReducesN h2)
+  rw [← rhoRewritePathOfReducesN_concat h1 h2] at joined
+  simpa only [rhoRewritePathOfReducesN_length] using joined
 
 theorem rhoIntrinsicSemanticBridge_reducesN_full_concat
     {n m : Nat} {p q r : Pattern}
     (h1 : ReducesN n p q) (h2 : ReducesN m q r) :
-    (traceAccount (S := rhoGSLT) (A := Nat) (k := 2)
-      (rhoIntrinsicReducesNTrace (reducesN_concat h1 h2)) =
-        totalCost rhoIntrinsicCostMap
-          (rhoRewritePathOfReducesN (reducesN_concat h1 h2)) ∧
-    rhoLedgerShadow
-      (totalAction rhoIntrinsicLedgerAction
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))) =
-          totalCost rhoIntrinsicCostMap
-            (rhoRewritePathOfReducesN (reducesN_concat h1 h2)) ∧
-    rhoSpentSyntaxAccount
-      (rhoLedgerToSpentSyntax
-        (totalAction rhoIntrinsicLedgerAction
-          (rhoRewritePathOfReducesN (reducesN_concat h1 h2)))) =
-            totalCost rhoIntrinsicCostMap
-              (rhoRewritePathOfReducesN (reducesN_concat h1 h2)) ∧
-    rhoSpentSyntaxWidth
-      (rhoLedgerToSpentSyntax
-        (totalAction rhoIntrinsicLedgerAction
-          (rhoRewritePathOfReducesN (reducesN_concat h1 h2)))) =
-            (totalAction rhoIntrinsicLedgerAction
-              (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).spatial.card ∧
-    rhoSpentSyntaxTicks
-      (rhoLedgerToSpentSyntax
-        (totalAction rhoIntrinsicLedgerAction
-          (rhoRewritePathOfReducesN (reducesN_concat h1 h2)))) =
-            (rhoRewritePathOfReducesN (reducesN_concat h1 h2)).length ∧
-    rhoSpentSyntaxWidth
-      (rhoLedgerToSpentSyntax
-        (totalAction rhoIntrinsicLedgerAction
-          (rhoRewritePathOfReducesN (reducesN_concat h1 h2)))) =
-            totalCost rhoIntrinsicCostMap
-              (rhoRewritePathOfReducesN (reducesN_concat h1 h2)) 0 ∧
-    rhoSpentSyntaxTicks
-      (rhoLedgerToSpentSyntax
-        (totalAction rhoIntrinsicLedgerAction
-          (rhoRewritePathOfReducesN (reducesN_concat h1 h2)))) =
-            totalCost rhoIntrinsicCostMap
-              (rhoRewritePathOfReducesN (reducesN_concat h1 h2)) 1 ∧
-    rhoLedgerShadow
-      (totalAction rhoIntrinsicLedgerAction
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))) =
-          traceAccount (S := rhoGSLT) (A := Nat) (k := 2)
-            (rhoIntrinsicReducesNTrace (reducesN_concat h1 h2)) ∧
-    (rhoIntrinsicDirectSpentTrace
-      (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).CanonicalShape ∧
-    (rhoIntrinsicDirectSpentTrace
-      (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toLedger =
-        totalAction rhoIntrinsicLedgerAction
-          (rhoRewritePathOfReducesN (reducesN_concat h1 h2)) ∧
-    (rhoIntrinsicDirectSpentTrace
-      (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toPublicPattern =
-        rhoLedgerToSpentSyntax
-          (totalAction rhoIntrinsicLedgerAction
-            (rhoRewritePathOfReducesN (reducesN_concat h1 h2))) ∧
-    RhoLedger.TraceCoherent
-      ((rhoIntrinsicDirectSpentTrace
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toLedger) ∧
-    rhoSpentSyntaxAccount
-      (rhoIntrinsicDirectSpentTrace
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toPattern =
-          rhoSpentSyntaxAccount
-            (rhoLedgerToSpentSyntax
-              (totalAction rhoIntrinsicLedgerAction
-                (rhoRewritePathOfReducesN (reducesN_concat h1 h2)))) ∧
-    rhoSpentSyntaxAccount
-      (rhoIntrinsicDirectSpentTrace
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toPattern =
-          totalCost rhoIntrinsicCostMap
-            (rhoRewritePathOfReducesN (reducesN_concat h1 h2)) ∧
-    rhoSpentSyntaxWidth
-      (rhoIntrinsicDirectSpentTrace
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toPattern =
-          rhoSpentSyntaxWidth
-            (rhoLedgerToSpentSyntax
-              (totalAction rhoIntrinsicLedgerAction
-                (rhoRewritePathOfReducesN (reducesN_concat h1 h2)))) ∧
-    rhoSpentSyntaxWidth
-      (rhoIntrinsicDirectSpentTrace
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toPattern =
-          totalCost rhoIntrinsicCostMap
-            (rhoRewritePathOfReducesN (reducesN_concat h1 h2)) 0 ∧
-    rhoSpentSyntaxTicks
-      (rhoIntrinsicDirectSpentTrace
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toPattern =
-          rhoSpentSyntaxTicks
-            (rhoLedgerToSpentSyntax
-              (totalAction rhoIntrinsicLedgerAction
-                (rhoRewritePathOfReducesN (reducesN_concat h1 h2)))) ∧
-    rhoSpentSyntaxTicks
-      (rhoIntrinsicDirectSpentTrace
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toPattern =
-          totalCost rhoIntrinsicCostMap
-            (rhoRewritePathOfReducesN (reducesN_concat h1 h2)) 1 ∧
-    rhoSpentSyntaxTicks
-      (rhoIntrinsicDirectSpentTrace
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toPattern =
-          (rhoRewritePathOfReducesN (reducesN_concat h1 h2)).length) ∧
-    (traceAccount (S := rhoGSLT) (A := Nat) (k := 2)
-      (rhoIntrinsicReducesNTrace (reducesN_concat h1 h2)) =
-        totalCost rhoIntrinsicCostMap
-          (rhoRewritePathOfReducesN (reducesN_concat h1 h2)) ∧
-    rhoLedgerShadow
-      (totalAction rhoIntrinsicLedgerAction
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))) =
-          totalCost rhoIntrinsicCostMap
-            (rhoRewritePathOfReducesN (reducesN_concat h1 h2)) ∧
-    rhoLedgerShadow
-      (totalAction rhoIntrinsicLedgerAction
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))) =
-          traceAccount (S := rhoGSLT) (A := Nat) (k := 2)
-            (rhoIntrinsicReducesNTrace (reducesN_concat h1 h2)) ∧
-    rhoSpentSyntaxAccount
-      (rhoLedgerToSpentSyntax
-        (totalAction rhoIntrinsicLedgerAction
-          (rhoRewritePathOfReducesN (reducesN_concat h1 h2)))) =
-            rhoSpentSyntaxAccount
-              (rhoLedgerToSpentSyntax
-                (totalAction rhoIntrinsicLedgerAction
-                  (rhoRewritePathOfReducesN h1))) +
-            rhoSpentSyntaxAccount
-              (rhoLedgerToSpentSyntax
-                (totalAction rhoIntrinsicLedgerAction
-                  (rhoRewritePathOfReducesN h2))) ∧
-    rhoSpentSyntaxWidth
-      (rhoLedgerToSpentSyntax
-        (totalAction rhoIntrinsicLedgerAction
-          (rhoRewritePathOfReducesN (reducesN_concat h1 h2)))) =
-            rhoSpentSyntaxWidth
-              (rhoLedgerToSpentSyntax
-                (totalAction rhoIntrinsicLedgerAction
-                  (rhoRewritePathOfReducesN h1))) +
-            rhoSpentSyntaxWidth
-              (rhoLedgerToSpentSyntax
-                (totalAction rhoIntrinsicLedgerAction
-                  (rhoRewritePathOfReducesN h2))) ∧
-    rhoSpentSyntaxTicks
-      (rhoLedgerToSpentSyntax
-        (totalAction rhoIntrinsicLedgerAction
-          (rhoRewritePathOfReducesN (reducesN_concat h1 h2)))) =
-            rhoSpentSyntaxTicks
-              (rhoLedgerToSpentSyntax
-                (totalAction rhoIntrinsicLedgerAction
-                  (rhoRewritePathOfReducesN h1))) +
-            rhoSpentSyntaxTicks
-              (rhoLedgerToSpentSyntax
-                (totalAction rhoIntrinsicLedgerAction
-                  (rhoRewritePathOfReducesN h2))) ∧
-    rhoSpentSyntaxTicks
-      (rhoLedgerToSpentSyntax
-        (totalAction rhoIntrinsicLedgerAction
-          (rhoRewritePathOfReducesN (reducesN_concat h1 h2)))) =
-            n + m ∧
-    RhoLedger.TraceCoherent
-      (totalAction rhoIntrinsicLedgerAction
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))) ∧
-    (rhoIntrinsicDirectSpentTrace
-      (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).CanonicalShape ∧
-    (rhoIntrinsicDirectSpentTrace
-      (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toLedger =
-        totalAction rhoIntrinsicLedgerAction
-          (rhoRewritePathOfReducesN (reducesN_concat h1 h2)) ∧
-    (rhoIntrinsicDirectSpentTrace
-      (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toPublicPattern =
-        rhoLedgerToSpentSyntax
-          (totalAction rhoIntrinsicLedgerAction
-            (rhoRewritePathOfReducesN (reducesN_concat h1 h2))) ∧
-    RhoLedger.TraceCoherent
-      ((rhoIntrinsicDirectSpentTrace
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toLedger) ∧
-    rhoSpentSyntaxAccount
-      (rhoIntrinsicDirectSpentTrace
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toPattern =
-          rhoSpentSyntaxAccount
-            (rhoIntrinsicDirectSpentTrace
-              (rhoRewritePathOfReducesN h1)).toPattern +
-          rhoSpentSyntaxAccount
-            (rhoIntrinsicDirectSpentTrace
-              (rhoRewritePathOfReducesN h2)).toPattern ∧
-    rhoSpentSyntaxWidth
-      (rhoIntrinsicDirectSpentTrace
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toPattern =
-          rhoSpentSyntaxWidth
-            (rhoIntrinsicDirectSpentTrace
-              (rhoRewritePathOfReducesN h1)).toPattern +
-          rhoSpentSyntaxWidth
-            (rhoIntrinsicDirectSpentTrace
-              (rhoRewritePathOfReducesN h2)).toPattern ∧
-    rhoSpentSyntaxTicks
-      (rhoIntrinsicDirectSpentTrace
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toPattern =
-          rhoSpentSyntaxTicks
-            (rhoIntrinsicDirectSpentTrace
-              (rhoRewritePathOfReducesN h1)).toPattern +
-          rhoSpentSyntaxTicks
-            (rhoIntrinsicDirectSpentTrace
-              (rhoRewritePathOfReducesN h2)).toPattern ∧
-    rhoSpentSyntaxTicks
-      (rhoIntrinsicDirectSpentTrace
-        (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toPattern =
-          n + m) := by
-  exact ⟨rhoIntrinsicSemanticBridge_reducesN (reducesN_concat h1 h2),
+    RhoPathSemantics (rhoRewritePathOfReducesN (reducesN_concat h1 h2)) ∧
+    RhoPathConcatSemantics (rhoRewritePathOfReducesN h1) (rhoRewritePathOfReducesN h2)
+      (rhoRewritePathOfReducesN (reducesN_concat h1 h2)) (n + m) :=
+  ⟨rhoIntrinsicSemanticBridge_reducesN (reducesN_concat h1 h2),
     rhoIntrinsicSemanticBridge_reducesN_concat h1 h2⟩
 
+/-- The ordered ledger, public syntax, direct syntax, and trace all record
+exactly one temporal entry for each of the two reductions. -/
+abbrev RhoTwoStepTemporalSemantics {p q r : Pattern}
+    (left : rhoGSLT.Step p q) (right : rhoGSLT.Step q r) : Prop :=
+  let path := rewritePathAppend (oneStepPath (S := rhoGSLT) left)
+    (oneStepPath (S := rhoGSLT) right)
+  let ledger := totalAction rhoIntrinsicLedgerAction path
+  let publicSpent := rhoLedgerToSpentSyntax ledger
+  let directSpent := (rhoIntrinsicDirectSpentTrace path).toPattern
+  let trace := rhoIntrinsicRewritePathTrace path
+  ledger.temporalList.length = path.length ∧
+    rhoSpentSyntaxTicks publicSpent = path.length ∧
+    rhoSpentSyntaxTicks directSpent = path.length ∧
+    rhoSpentSyntaxTicks publicSpent = 2 ∧
+    rhoSpentSyntaxTicks directSpent = 2 ∧
+    traceAccount trace 1 = 2 ∧
+    traceAccount trace 1 = path.length
+
 theorem rhoIntrinsicTemporalSemanticBridge_rewritePathAppend_steps
-    {t u v : Pattern}
-    (left : rhoGSLT.Step t u)
-    (right : rhoGSLT.Step u v) :
-    let path :=
-      rewritePathAppend
-        (oneStepPath (S := rhoGSLT) left)
-        (oneStepPath (S := rhoGSLT) right)
-    (totalAction rhoIntrinsicLedgerAction path).temporalList.length =
-        path.length ∧
-      rhoSpentSyntaxTicks
-        (rhoLedgerToSpentSyntax (totalAction rhoIntrinsicLedgerAction path)) =
-          path.length ∧
-      rhoSpentSyntaxTicks (rhoIntrinsicDirectSpentTrace path).toPattern =
-        path.length ∧
-      rhoSpentSyntaxTicks
-        (rhoLedgerToSpentSyntax (totalAction rhoIntrinsicLedgerAction path)) = 2 ∧
-      rhoSpentSyntaxTicks (rhoIntrinsicDirectSpentTrace path).toPattern = 2 ∧
-      traceAccount (S := rhoGSLT) (A := Nat) (k := 2)
-        (rhoIntrinsicRewritePathTrace path) 1 = 2 ∧
-      traceAccount (S := rhoGSLT) (A := Nat) (k := 2)
-        (rhoIntrinsicRewritePathTrace path) 1 = path.length := by
-  dsimp
-  rcases rhoIntrinsicTemporalSemanticBridge
-      (rewritePathAppend
-        (oneStepPath (S := rhoGSLT) left)
-        (oneStepPath (S := rhoGSLT) right)) with
-    ⟨htemporal, hpublicTicksLen, hdirectTicksLen, htraceTicksLen⟩
-  have hLenTwo :
-      (rewritePathAppend
-        (oneStepPath (S := rhoGSLT) left)
-        (oneStepPath (S := rhoGSLT) right)).length = 2 := by
-    simp [rewritePathAppend, oneStepPath, GSLT.RewritePath.length]
-  constructor
-  · exact htemporal
-  · constructor
-    · exact hpublicTicksLen
-    · constructor
-      · exact hdirectTicksLen
-      · constructor
-        · calc
-            rhoSpentSyntaxTicks
-                (rhoLedgerToSpentSyntax
-                  (totalAction rhoIntrinsicLedgerAction
-                    (rewritePathAppend
-                      (oneStepPath (S := rhoGSLT) left)
-                      (oneStepPath (S := rhoGSLT) right)))) =
-                (rewritePathAppend
-                  (oneStepPath (S := rhoGSLT) left)
-                  (oneStepPath (S := rhoGSLT) right)).length := by
-                    exact hpublicTicksLen
-            _ = 2 := hLenTwo
-        · constructor
-          · calc
-              rhoSpentSyntaxTicks
-                  (rhoIntrinsicDirectSpentTrace
-                    (rewritePathAppend
-                      (oneStepPath (S := rhoGSLT) left)
-                      (oneStepPath (S := rhoGSLT) right))).toPattern =
-                  (rewritePathAppend
-                    (oneStepPath (S := rhoGSLT) left)
-                    (oneStepPath (S := rhoGSLT) right)).length := by
-                      exact hdirectTicksLen
-              _ = 2 := hLenTwo
-          · constructor
-            · calc
-                traceAccount (S := rhoGSLT) (A := Nat) (k := 2)
-                    (rhoIntrinsicRewritePathTrace
-                      (rewritePathAppend
-                          (oneStepPath (S := rhoGSLT) left)
-                          (oneStepPath (S := rhoGSLT) right))) 1 =
-                      (rewritePathAppend
-                    (oneStepPath (S := rhoGSLT) left)
-                    (oneStepPath (S := rhoGSLT) right)).length := by
-                      exact htraceTicksLen
-                _ = 2 := hLenTwo
-            · exact htraceTicksLen
+    {t u v : Pattern} (left : rhoGSLT.Step t u) (right : rhoGSLT.Step u v) :
+    RhoTwoStepTemporalSemantics left right := by
+  let path := rewritePathAppend (oneStepPath (S := rhoGSLT) left)
+    (oneStepPath (S := rhoGSLT) right)
+  obtain ⟨ledger, publicTicks, directTicks, traceTicks⟩ := rhoIntrinsicTemporalSemanticBridge path
+  have length : path.length = 2 := rfl
+  exact ⟨ledger, publicTicks, directTicks, publicTicks.trans length, directTicks.trans length,
+    traceTicks.trans length, traceTicks⟩
 
 theorem rhoIntrinsicSemanticBridge_rewritePathAppend_steps_full
-    {t u v : Pattern}
-    (left : rhoGSLT.Step t u)
-    (right : rhoGSLT.Step u v) :
-    (let path :=
-      rewritePathAppend
-        (oneStepPath (S := rhoGSLT) left)
-        (oneStepPath (S := rhoGSLT) right)
-    let stack := rhoIntrinsicDirectSpentStack path
-    stack.toLedger = totalAction rhoIntrinsicLedgerAction path ∧
-      rhoLedgerShadow stack.toLedger = totalCost rhoIntrinsicCostMap path ∧
-      stack.depth = path.length ∧
-      rhoSpentSyntaxAccount stack.toPattern = totalCost rhoIntrinsicCostMap path ∧
-      rhoSpentSyntaxTicks stack.toPattern = path.length ∧
-      stack =
-        RhoDirectStack.append
-          (rhoIntrinsicDirectSpentStack (oneStepPath (S := rhoGSLT) left))
-          (rhoIntrinsicDirectSpentStack (oneStepPath (S := rhoGSLT) right)) ∧
-      stack =
-        RhoDirectStack.append
-          (rhoIntrinsicDirectStepSpent left)
-          (rhoIntrinsicDirectStepSpent right) ∧
-      rhoIntrinsicDirectSpentTrace path =
-        RhoDirectStack.append
-          (rhoIntrinsicDirectStepSpent left)
-          (rhoIntrinsicDirectStepSpent right) ∧
-      rhoSpentSyntaxAccount
-        (rhoLedgerToSpentSyntax (totalAction rhoIntrinsicLedgerAction path)) =
-          rhoSpentSyntaxAccount
-            (rhoLedgerToSpentSyntax
-              (totalAction rhoIntrinsicLedgerAction
-                (oneStepPath (S := rhoGSLT) left))) +
-          rhoSpentSyntaxAccount
-            (rhoLedgerToSpentSyntax
-              (totalAction rhoIntrinsicLedgerAction
-                (oneStepPath (S := rhoGSLT) right))) ∧
-      rhoSpentSyntaxWidth
-        (rhoLedgerToSpentSyntax (totalAction rhoIntrinsicLedgerAction path)) =
-          rhoSpentSyntaxWidth
-            (rhoLedgerToSpentSyntax
-              (totalAction rhoIntrinsicLedgerAction
-                (oneStepPath (S := rhoGSLT) left))) +
-          rhoSpentSyntaxWidth
-            (rhoLedgerToSpentSyntax
-              (totalAction rhoIntrinsicLedgerAction
-                (oneStepPath (S := rhoGSLT) right))) ∧
-      rhoSpentSyntaxTicks
-        (rhoLedgerToSpentSyntax (totalAction rhoIntrinsicLedgerAction path)) =
-          rhoSpentSyntaxTicks
-            (rhoLedgerToSpentSyntax
-              (totalAction rhoIntrinsicLedgerAction
-                (oneStepPath (S := rhoGSLT) left))) +
-          rhoSpentSyntaxTicks
-            (rhoLedgerToSpentSyntax
-              (totalAction rhoIntrinsicLedgerAction
-                (oneStepPath (S := rhoGSLT) right))) ∧
-      rhoSpentSyntaxAccount
-        (rhoIntrinsicDirectSpentTrace path).toPattern =
-          rhoSpentSyntaxAccount
-            (rhoIntrinsicDirectSpentTrace
-              (oneStepPath (S := rhoGSLT) left)).toPattern +
-          rhoSpentSyntaxAccount
-            (rhoIntrinsicDirectSpentTrace
-              (oneStepPath (S := rhoGSLT) right)).toPattern ∧
-      rhoSpentSyntaxWidth
-        (rhoIntrinsicDirectSpentTrace path).toPattern =
-          rhoSpentSyntaxWidth
-            (rhoIntrinsicDirectSpentTrace
-              (oneStepPath (S := rhoGSLT) left)).toPattern +
-          rhoSpentSyntaxWidth
-            (rhoIntrinsicDirectSpentTrace
-              (oneStepPath (S := rhoGSLT) right)).toPattern ∧
-      rhoSpentSyntaxTicks
-        (rhoIntrinsicDirectSpentTrace path).toPattern =
-          rhoSpentSyntaxTicks
-            (rhoIntrinsicDirectSpentTrace
-              (oneStepPath (S := rhoGSLT) left)).toPattern +
-          rhoSpentSyntaxTicks
-            (rhoIntrinsicDirectSpentTrace
-              (oneStepPath (S := rhoGSLT) right)).toPattern ∧
-      RhoLedger.TraceCoherent
-        ((rhoIntrinsicDirectSpentTrace path).toLedger)) ∧
-    (let path :=
-      rewritePathAppend
-        (oneStepPath (S := rhoGSLT) left)
-        (oneStepPath (S := rhoGSLT) right)
-    (totalAction rhoIntrinsicLedgerAction path).temporalList.length =
-        path.length ∧
-      rhoSpentSyntaxTicks
-        (rhoLedgerToSpentSyntax (totalAction rhoIntrinsicLedgerAction path)) =
-          path.length ∧
-      rhoSpentSyntaxTicks (rhoIntrinsicDirectSpentTrace path).toPattern =
-        path.length ∧
-      rhoSpentSyntaxTicks
-        (rhoLedgerToSpentSyntax (totalAction rhoIntrinsicLedgerAction path)) = 2 ∧
-      rhoSpentSyntaxTicks (rhoIntrinsicDirectSpentTrace path).toPattern = 2 ∧
-      traceAccount (S := rhoGSLT) (A := Nat) (k := 2)
-        (rhoIntrinsicRewritePathTrace path) 1 = 2 ∧
-      traceAccount (S := rhoGSLT) (A := Nat) (k := 2)
-        (rhoIntrinsicRewritePathTrace path) 1 = path.length) := by
-  constructor
-  · exact rhoIntrinsicSemanticBridge_rewritePathAppend_steps left right
-  · exact rhoIntrinsicTemporalSemanticBridge_rewritePathAppend_steps left right
+    {t u v : Pattern} (left : rhoGSLT.Step t u) (right : rhoGSLT.Step u v) :
+    RhoStepAppendSemantics left right ∧ RhoTwoStepTemporalSemantics left right :=
+  ⟨rhoIntrinsicSemanticBridge_rewritePathAppend_steps left right,
+    rhoIntrinsicTemporalSemanticBridge_rewritePathAppend_steps left right⟩
 
 end Mettapedia.GSLT.Meredith.RhoExample

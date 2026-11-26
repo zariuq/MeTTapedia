@@ -1,4 +1,5 @@
 import Mathlib.Logic.Equiv.Nat
+import Mettapedia.Logic.MarkovLogicInfiniteFiniteVolumeTransport
 import Mettapedia.Logic.MarkovLogicInfiniteBoundaryStability
 import Mettapedia.Logic.MarkovLogicInfiniteCredalBridge
 import Mettapedia.Logic.MarkovLogicInfiniteWorldModel
@@ -1092,6 +1093,25 @@ theorem reinforcedLine_clauseData_eval_spinFlip_eq_flip
       classicalWeightedClause, lineForwardClause_holds_spinFlip_iff_backward,
       lineBackwardClause_holds_spinFlip_iff_forward] <;> rfl
 
+private noncomputable abbrev reinforcedLineSpec (edgeLogWeight : Nat → ℝ) :
+    InfiniteGroundMLNSpec LineNode ReinforcedLineClauseId :=
+  (reinforcedLineClassicalSpec edgeLogWeight).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
+
+private noncomputable def reinforcedLineSpinFlip (edgeLogWeight : Nat → ℝ) (Λ : Region LineNode)
+    (ξ : BoundaryCondition LineNode) :
+    AssignmentTransport (reinforcedLineSpec edgeLogWeight) Λ ξ
+      (reinforcedLineSpec edgeLogWeight) Λ (lineSpinFlipWorld ξ) := by
+  refine AssignmentTransport.ofClauseReindex
+    (Equiv.ofBijective lineSpinFlipLocalAssignment lineSpinFlipLocalAssignment_bijective)
+    (Equiv.ofBijective reinforcedLineClauseFlip reinforcedLineClauseFlip_bijective) ?_ ?_
+  · intro k
+    exact (reinforcedLineClauseFlip_mem_regionSupport_iff Λ k).symm
+  · intro x k _
+    change ((reinforcedLineSpec edgeLogWeight).clauseData k).eval
+      (patch Λ (lineSpinFlipLocalAssignment x) (lineSpinFlipWorld ξ)) = _
+    rw [← lineSpinFlipWorld_patch]
+    exact reinforcedLine_clauseData_eval_spinFlip_eq_flip edgeLogWeight k (patch Λ x ξ)
+
 theorem reinforcedLine_finiteVolumeWeight_spinFlip
     (edgeLogWeight : Nat → ℝ) (Λ : Region LineNode)
     (x : LocalAssignment LineNode Λ) (ξ : BoundaryCondition LineNode) :
@@ -1099,16 +1119,7 @@ theorem reinforcedLine_finiteVolumeWeight_spinFlip
         Λ (lineSpinFlipLocalAssignment x) (lineSpinFlipWorld ξ) =
       (reinforcedLineClassicalSpec edgeLogWeight).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec.finiteVolumeWeight
         Λ x ξ := by
-  classical
-  unfold Mettapedia.Logic.MarkovLogicInfiniteSpecification.InfiniteGroundMLNSpec.finiteVolumeWeight
-  rw [← lineSpinFlipWorld_patch]
-  refine Finset.prod_bijective reinforcedLineClauseFlip reinforcedLineClauseFlip_bijective ?_ ?_
-  · intro k
-    simpa [reinforcedLineClassicalSpec,
-      ClassicalInfiniteGroundMLNSpec.toStrictlyPositiveInfiniteGroundMLNSpec] using
-      (reinforcedLineClauseFlip_mem_regionSupport_iff Λ k).symm
-  · intro k _hk
-    simpa using reinforcedLine_clauseData_eval_spinFlip_eq_flip edgeLogWeight k (patch Λ x ξ)
+  exact (reinforcedLineSpinFlip edgeLogWeight Λ ξ).weight_eq x
 
 theorem reinforcedLine_finiteVolumePartition_spinFlip
     (edgeLogWeight : Nat → ℝ) (Λ : Region LineNode)
@@ -1117,15 +1128,7 @@ theorem reinforcedLine_finiteVolumePartition_spinFlip
         Λ (lineSpinFlipWorld ξ) =
       (reinforcedLineClassicalSpec edgeLogWeight).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec.finiteVolumePartition
         Λ ξ := by
-  classical
-  unfold Mettapedia.Logic.MarkovLogicInfiniteSpecification.InfiniteGroundMLNSpec.finiteVolumePartition
-  refine Finset.sum_bijective lineSpinFlipLocalAssignment lineSpinFlipLocalAssignment_bijective ?_ ?_
-  · intro x
-    simp
-  · intro x _hx
-    simpa [lineSpinFlipLocalAssignment_involutive] using
-      (reinforcedLine_finiteVolumeWeight_spinFlip
-        edgeLogWeight Λ (lineSpinFlipLocalAssignment x) ξ)
+  exact (reinforcedLineSpinFlip edgeLogWeight Λ ξ).partition_eq
 
 theorem reinforcedLine_originSpin_queryMass_spinFlip
     (edgeLogWeight : Nat → ℝ) (Λ : Region LineNode)
@@ -1138,32 +1141,8 @@ theorem reinforcedLine_originSpin_queryMass_spinFlip
         (reinforcedLineClassicalSpec edgeLogWeight).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
         Λ ξ
         (lineOriginSpinLocalQueryInRegion Λ hOrigin (!b)) := by
-  classical
-  unfold finiteVolumeQueryMass
-  refine Finset.sum_bijective lineSpinFlipLocalAssignment lineSpinFlipLocalAssignment_bijective ?_ ?_
-  · intro x
-    simp
-  · intro x _hx
-    have hsat : satisfiesConstraints x
-          (lineOriginSpinLocalQueryInRegion Λ hOrigin b) ↔
-        satisfiesConstraints (lineSpinFlipLocalAssignment x)
-          (lineOriginSpinLocalQueryInRegion Λ hOrigin (!b)) := by
-      simpa using
-        (lineSpinFlipLocalAssignment_satisfies_originSpinInRegion_iff
-          Λ hOrigin (!b) x).symm
-    by_cases hxSat : satisfiesConstraints x
-        (lineOriginSpinLocalQueryInRegion Λ hOrigin b)
-    · have hxFlipSat : satisfiesConstraints (lineSpinFlipLocalAssignment x)
-          (lineOriginSpinLocalQueryInRegion Λ hOrigin (!b)) := hsat.1 hxSat
-      refine (if_pos hxSat).trans (Eq.trans ?_ (if_pos hxFlipSat).symm)
-      simpa [lineSpinFlipLocalAssignment_involutive] using
-        (reinforcedLine_finiteVolumeWeight_spinFlip
-          edgeLogWeight Λ (lineSpinFlipLocalAssignment x) ξ)
-    · have hxFlipNotSat : ¬ satisfiesConstraints (lineSpinFlipLocalAssignment x)
-          (lineOriginSpinLocalQueryInRegion Λ hOrigin (!b)) := by
-        intro hxFlipSat
-        exact hxSat (hsat.2 hxFlipSat)
-      simp [hxSat, hxFlipNotSat]
+  exact (reinforcedLineSpinFlip edgeLogWeight Λ ξ).queryMass_eq fun x =>
+    lineSpinFlipLocalAssignment_satisfies_originSpinInRegion_iff Λ hOrigin b x
 
 theorem reinforcedLine_originSpin_queryProb_spinFlip
     (edgeLogWeight : Nat → ℝ) (Λ : Region LineNode)
@@ -1176,9 +1155,8 @@ theorem reinforcedLine_originSpin_queryProb_spinFlip
         (reinforcedLineClassicalSpec edgeLogWeight).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
         Λ ξ).queryProb
         (lineOriginSpinLocalQueryInRegion Λ hOrigin (!b)) := by
-  unfold finiteVolumeMassSemantics Mettapedia.ProbabilityTheory.MassSemantics.queryProb
-  simp [reinforcedLine_originSpin_queryMass_spinFlip,
-    reinforcedLine_finiteVolumePartition_spinFlip]
+  exact (reinforcedLineSpinFlip edgeLogWeight Λ ξ).queryProb_eq fun x =>
+    lineSpinFlipLocalAssignment_satisfies_originSpinInRegion_iff Λ hOrigin b x
 
 theorem reinforcedLine_originSpin_queryMass_add_complement
     (edgeLogWeight : Nat → ℝ) (Λ : Region LineNode)
@@ -1313,31 +1291,9 @@ theorem reinforcedLine_originSpin_queryProb_toReal_spinFlip
           (reinforcedLineClassicalSpec edgeLogWeight).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
           Λ ξ).queryProb
           (lineOriginSpinLocalQueryInRegion Λ hOrigin b)) := by
-  let S := finiteVolumeMassSemantics
-    (reinforcedLineClassicalSpec edgeLogWeight).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
-    Λ ξ
-  let q := lineOriginSpinLocalQueryInRegion Λ hOrigin b
-  let qC := lineOriginSpinLocalQueryInRegion Λ hOrigin (!b)
-  have htransport :
-      (finiteVolumeMassSemantics
-          (reinforcedLineClassicalSpec edgeLogWeight).toStrictlyPositiveInfiniteGroundMLNSpec.toInfiniteGroundMLNSpec
-          Λ (lineSpinFlipWorld ξ)).queryProb q = S.queryProb qC := by
-    simpa [S, q, qC] using
-      reinforcedLine_originSpin_queryProb_spinFlip edgeLogWeight Λ hOrigin ξ b
-  have hsum : S.queryProb q + S.queryProb qC = 1 := by
-    simpa [S, q, qC] using
-      reinforcedLine_originSpin_queryProb_add_complement edgeLogWeight Λ hOrigin ξ b
-  have hsum_ne_top : S.queryProb q + S.queryProb qC ≠ ⊤ := by
-    rw [hsum]
-    simp
-  have hq_ne_top : S.queryProb q ≠ ⊤ := (ENNReal.add_ne_top.mp hsum_ne_top).1
-  have hqC_ne_top : S.queryProb qC ≠ ⊤ := (ENNReal.add_ne_top.mp hsum_ne_top).2
-  have hreal_sum : ENNReal.toReal (S.queryProb q) + ENNReal.toReal (S.queryProb qC) = 1 := by
-    have hto := congrArg ENNReal.toReal hsum
-    rw [ENNReal.toReal_add hq_ne_top hqC_ne_top, ENNReal.toReal_one] at hto
-    exact hto
-  rw [htransport]
-  linarith
+  rw [reinforcedLine_originSpin_queryProb_spinFlip]
+  exact toReal_eq_one_sub_of_add_eq_one
+    (reinforcedLine_originSpin_queryProb_add_complement edgeLogWeight Λ hOrigin ξ b)
 
 theorem reinforcedLine_finiteVolumeKernel_originSpinUp_eq_queryProb
     (edgeLogWeight : Nat → ℝ) (n : ℕ) (ξ : BoundaryCondition LineNode) :

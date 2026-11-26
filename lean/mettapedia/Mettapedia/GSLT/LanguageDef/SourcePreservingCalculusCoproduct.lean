@@ -1,3 +1,4 @@
+import Mettapedia.GSLT.LanguageDef.StructuralInclusion
 import Mettapedia.GSLT.LanguageDef.CalculusLanguageDef.StructuralCategory
 import Mettapedia.GSLT.LanguageDef.CalculusLanguageExtension
 
@@ -203,20 +204,12 @@ theorem erase_calculus
 rows are literal prefixes, so source-facing codecs need no renaming. -/
 def sourceInclusion
     (compatible : Compatibility source symbols generated) :
-    StructuralMorphism source compatible.target.toValidatedLanguageDef where
-  symbols := LanguageDefSymbolMap.id
-  mapsTypes declaration membership := by
-    rw [mapTypeDecl_id]
-    exact List.mem_append_left _ membership
-  mapsTerms declaration membership := by
-    rw [mapGrammarRule_id]
-    exact List.mem_append_left _ membership
-  mapsEquations declaration membership := by
-    rw [mapEquation_id]
-    exact List.mem_append_left _ membership
-  mapsRewrites declaration membership := by
-    rw [mapRewriteRule_id]
-    exact List.mem_append_left _ membership
+    StructuralMorphism source compatible.target.toValidatedLanguageDef :=
+  StructuralMorphism.ofDeclarationInclusion {
+    types := fun _ member => List.mem_append_left _ member
+    terms := fun _ member => List.mem_append_left _ member
+    equations := fun _ member => List.mem_append_left _ member
+    rewrites := fun _ member => List.mem_append_left _ member }
 
 /-- The complete generated calculus embeds through the declared reindexing,
 including its judgment and inference-rule rows. -/

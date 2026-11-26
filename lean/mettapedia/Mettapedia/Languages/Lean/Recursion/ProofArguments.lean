@@ -36,7 +36,11 @@ def uses (parameter : FVarId) (expression : Expr) (path : List String := []) : L
 
 def render (source : Name) : MetaM String := do
   let .defnInfo info ← getConstInfo source | throwError "proof-argument source is not a definition: {source}"
-  let value ← etaExpand info.value
+  -- as the Egal interpretation reads it (a definition over quotients at its Type instance)
+  let (sourceType, sourceValue) ← match ← Export.interpreted (.defnInfo info) [info.type, info.value] with
+    | [type, value] => pure (type, value)
+    | _ => throwError "a definition's type and value: {source}"
+  let value ← etaExpand sourceValue
   let arguments ← lambdaTelescope value fun parameters body => do
     let mut arguments := []
     for index in [:parameters.size] do
@@ -52,8 +56,8 @@ def render (source : Name) : MetaM String := do
     return arguments
   if arguments.isEmpty then throwError "source has no explicit proof arguments: {source}"
   return (form [word "LeanProofArgumentFunction", named source,
-    form [word "SourceType", term (← read source info.type)],
-    form [word "Body", term (← read source info.value)],
+    form [word "SourceType", term (← read source sourceType)],
+    form [word "Body", term (← read source sourceValue)],
     form [word "Arguments", form arguments]]).pretty 120 ++ "\n\n"
 
 end Mettapedia.Languages.Lean.Recursion.ProofArguments

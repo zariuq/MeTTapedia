@@ -5,6 +5,7 @@
 !(add-atom &facts (edge father bob carol r1 father-proof certain))
 !(add-atom &facts (edge father dana carol bad wrong-proof certain))
 !(add-atom &facts (edge rail east hub l3 rail-proof timetable))
+!(add-atom &facts (edge rail east hub l4 rail-proof timetable))
 !(add-atom &facts (edge ferry hub west r2 ferry-proof schedule))
 
 (= (compose $r $s $x $z)

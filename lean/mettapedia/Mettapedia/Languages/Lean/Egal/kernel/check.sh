@@ -26,11 +26,11 @@ set -euo pipefail
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 project=$(cd "$here/../../../.." && pwd)
 root=$(cd "$here/../../../../../.." && pwd)
-cetta=${CETTA:-cetta}
+cetta=$(command -v "${CETTA:-cetta}") || { echo "FAIL no CeTTa binary: ${CETTA:-cetta}"; exit 1; }
 jobs=${JOBS:-$(nproc)}
 [[ $jobs =~ ^[1-9][0-9]*$ ]] || { echo "check: JOBS must be a positive number"; exit 2; }
 megalodon=${MEGALODON:-$root/megalodon/bin/megalodon}
-mgcheck=${MG_CHECK:-mg-check}
+mgcheck=$(command -v "${MG_CHECK:-mg-check}") || { echo "FAIL no mg-check binary: ${MG_CHECK:-mg-check}"; exit 1; }
 preamble=$root/megalodon/examples/egal/PfgEAug2022Preamble.mgs
 decls=$project/artifacts/lean-declarations
 work=$(mktemp -d "${TMPDIR:-/tmp}/lean-egal-kernel.XXXXXX")
@@ -60,7 +60,7 @@ python3 "$project/scripts/lean_code_equations_diff.py" --cetta "$cetta" \
       "$here/support.metta" "$here/generate.metta" "$here/interpret.metta"
   printf '(EgalProofLibraryRoot "%s")\n' "$here"
   cat "$here/kernel/session.metta" "$here/kernel/terms.metta"
-  printf '!(case (lean:open "%s" "%s" "%s") (((LeanSession $verdict $summary) (println! (format-args "session: {}" ($verdict)))) ($other (println! $other))))\n' \
+  printf '!(case (egal:open "%s" "%s" "%s") (((LeanSession $verdict $summary) (println! (format-args "session: {}" ($verdict)))) ($other (println! $other))))\n' \
       "$preamble" "$here" "$work"
 } > "$work/prefix.metta"
 cat "$work/prefix.metta" "$here/kernel/check-statements.metta" > "$work/driver.metta"

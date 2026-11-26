@@ -6,6 +6,7 @@
 (holds father bob carol (leaf r1 father-proof certain))
 (holds father dana carol (leaf bad wrong-proof certain))
 (holds rail east hub (leaf l3 rail-proof timetable))
+(holds rail east hub (leaf l4 rail-proof timetable))
 (holds ferry hub west (leaf r2 ferry-proof schedule))
 (holds bus west pier (leaf r3 bus-proof schedule))
 (define (then mother father))

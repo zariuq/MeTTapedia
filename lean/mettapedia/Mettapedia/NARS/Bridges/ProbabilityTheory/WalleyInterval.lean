@@ -1,4 +1,5 @@
 import Mettapedia.PLN.TruthValues.EvidenceHorizonInterval
+import Mettapedia.PLN.TruthValues.PLNTruthTower
 import Mettapedia.ProbabilityTheory.ImpreciseProbability.WalleyBinaryIDM
 
 /-!

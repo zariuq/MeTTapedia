@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentCheckingBudget
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentEtaBudget
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentPruning
@@ -29,8 +30,7 @@ variable [DecidableEq Head] [DecidableRel S.R.headEq]
 variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R)
   (heads : HeadPreserving S.R) (algebra : CumulativeAlgebra S.R) (declared : DeclaredTypesFormed S.R)
 variable (choices : ExecutableChecking.HeadChoices S.R) (reducer : ExecutableReduction.Reducer S.R)
-variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
-  Keeps (reducer fuel term) (reducer (fuel + 1) term))
+variable (stable : SolverPremises.StableReducer (rules := S.R) reducer)
 
 include stable in
 theorem formType_mono {fuel larger : Nat} {Γ : Context S.R} {code : Tm Head Γ.arity}
@@ -76,9 +76,8 @@ theorem projection_recover_mono {fuel larger : Nat} {source expanded target : Co
   obtain ⟨proposed, recovered, afterRecovery⟩ := Option.bind_eq_some_iff.mp afterReduction
   obtain ⟨checked, compared, returned⟩ := Option.bind_eq_some_iff.mp afterRecovery
   have reducedLater : reducer larger (original.reindex expand).2.code = some normal := by
-    induction enough with
-    | refl => exact reduced
-    | @step larger _ ih => exact stable larger _ normal ih
+    exact SolverPremises.keeps_of_le
+      (fun budget => stable budget (original.reindex expand).2.code) enough normal reduced
   exact Option.bind_eq_some_iff.mpr ⟨normal, reducedLater,
     Option.bind_eq_some_iff.mpr ⟨proposed,
       recover_mono facts roots heads algebra declared choices reducer stable recovered enough,

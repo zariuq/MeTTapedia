@@ -482,52 +482,26 @@ theorem ambient_stepAt_tokens (quote : counted "prime-quote" = false)
 
 /-! ## Typing along an inclusion of constructors -/
 
-mutual
-  /-- **A term of a language is a term of every language that declares its
-  constructors.** -/
-  theorem hasType_of_terms_subset {small large : LanguageDef}
-      (subset : ∀ rule ∈ small.terms, rule ∈ large.terms) {free : FreeTypeContext}
-      {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
-      (typed : HasType small free bound pattern type) : HasType large free bound pattern type := by
-    cases typed with
-    | bvar found => exact .bvar found
-    | fvar found => exact .fvar found
-    | constructor member notBare argumentsTyped =>
-        exact .constructor (subset _ member) notBare
-          (argumentsHaveTypes_of_terms_subset subset argumentsTyped)
-    | lambda bodyTyped => exact .lambda (hasType_of_terms_subset subset bodyTyped)
-    | multiLambda bodyTyped => exact .multiLambda (hasType_of_terms_subset subset bodyTyped)
-    | subst bodyTyped replacementTyped =>
-        exact .subst (hasType_of_terms_subset subset bodyTyped)
-          (hasType_of_terms_subset subset replacementTyped)
-    | collection elementsTyped =>
-        exact .collection (elementsHaveType_of_terms_subset subset elementsTyped)
-    | collectionConstructor member shape elementsTyped =>
-        exact .collectionConstructor (subset _ member) shape
-          (elementsHaveType_of_terms_subset subset elementsTyped)
+/-- **A term of a language is a term of every language that declares its constructors.** -/
+theorem hasType_of_terms_subset {small large : LanguageDef}
+    (subset : ∀ rule ∈ small.terms, rule ∈ large.terms) {free : FreeTypeContext}
+    {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    (typed : HasType small free bound pattern type) : HasType large free bound pattern type :=
+  HasType.of_terms_subset (fun rule member => subset rule member) typed
 
-  theorem argumentsHaveTypes_of_terms_subset {small large : LanguageDef}
-      (subset : ∀ rule ∈ small.terms, rule ∈ large.terms) {free : FreeTypeContext}
-      {bound : List TypeExpr} {arguments : List Pattern} {parameters : List TermParam}
-      (typed : ArgumentsHaveTypes small free bound arguments parameters) :
-      ArgumentsHaveTypes large free bound arguments parameters := by
-    cases typed with
-    | nil => exact .nil
-    | cons representation expectedType argumentTyped argumentsTyped =>
-        exact .cons representation expectedType (hasType_of_terms_subset subset argumentTyped)
-          (argumentsHaveTypes_of_terms_subset subset argumentsTyped)
+theorem argumentsHaveTypes_of_terms_subset {small large : LanguageDef}
+    (subset : ∀ rule ∈ small.terms, rule ∈ large.terms) {free : FreeTypeContext}
+    {bound : List TypeExpr} {arguments : List Pattern} {parameters : List TermParam}
+    (typed : ArgumentsHaveTypes small free bound arguments parameters) :
+    ArgumentsHaveTypes large free bound arguments parameters :=
+  ArgumentsHaveTypes.of_terms_subset (fun rule member => subset rule member) typed
 
-  theorem elementsHaveType_of_terms_subset {small large : LanguageDef}
-      (subset : ∀ rule ∈ small.terms, rule ∈ large.terms) {free : FreeTypeContext}
-      {bound : List TypeExpr} {elements : List Pattern} {elementType : TypeExpr}
-      (typed : ElementsHaveType small free bound elements elementType) :
-      ElementsHaveType large free bound elements elementType := by
-    cases typed with
-    | nil => exact .nil _ _
-    | cons elementTyped elementsTyped =>
-        exact .cons (hasType_of_terms_subset subset elementTyped)
-          (elementsHaveType_of_terms_subset subset elementsTyped)
-end
+theorem elementsHaveType_of_terms_subset {small large : LanguageDef}
+    (subset : ∀ rule ∈ small.terms, rule ∈ large.terms) {free : FreeTypeContext}
+    {bound : List TypeExpr} {elements : List Pattern} {elementType : TypeExpr}
+    (typed : ElementsHaveType small free bound elements elementType) :
+    ElementsHaveType large free bound elements elementType :=
+  ElementsHaveType.of_terms_subset (fun rule member => subset rule member) typed
 
 /-- A term of a language is a term of every language that declares its
 constructors. -/

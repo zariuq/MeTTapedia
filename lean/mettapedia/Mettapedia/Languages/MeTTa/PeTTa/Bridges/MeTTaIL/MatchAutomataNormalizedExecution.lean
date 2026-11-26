@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.PeTTa.AppendAgreement
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.MatchAutomataCompilationExecution
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.MatchAutomataInventoryExecution
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.MatchAutomataExecution
@@ -97,18 +98,8 @@ theorem matcher_program_agreement :
     simp only [program, RuleExecutionProgram.program, SpaceSemantics.Program.append,
       List.append_assoc]
   rw [assembled]
-  apply appended_program_agreement
-  · intro equation member
-    have checked := List.all_eq_true.mp extension_equations_fresh equation member
-    cases result : matcherHead equation.head with
-    | false => rfl
-    | true => simp [result] at checked
-  · intro name types member
-    have checked := List.all_eq_true.mp extension_declarations_fresh
-      (.expression [.symbol ":", .symbol name, .expression (.symbol "->" :: types)]) member
-    cases result : matcherHead name with
-    | false => rfl
-    | true => simp [result] at checked
+  exact appended_program_agreement_of_checks _ _ _ extension_equations_fresh
+    extension_declarations_fresh (fun _ _ => rfl)
 
 theorem automata_captured_returns {bindings : Subst} {before after : State} {code answer : Atom}
     (supported : codeWithin matcherHead code = true)
@@ -146,18 +137,8 @@ private theorem rule_extension_declarations_fresh :
 
 theorem rule_program_agreement :
     ProgramAgreementOn ruleHead RuleExecutionProgram.program program := by
-  apply appended_program_agreement
-  · intro equation member
-    have checked := List.all_eq_true.mp rule_extension_equations_fresh equation member
-    cases result : ruleHead equation.head with
-    | false => rfl
-    | true => simp [result] at checked
-  · intro name types member
-    have checked := List.all_eq_true.mp rule_extension_declarations_fresh
-      (.expression [.symbol ":", .symbol name, .expression (.symbol "->" :: types)]) member
-    cases result : ruleHead name with
-    | false => rfl
-    | true => simp [result] at checked
+  exact appended_program_agreement_of_checks _ _ _ rule_extension_equations_fresh
+    rule_extension_declarations_fresh (fun _ _ => rfl)
 
 theorem rule_captured_returns {bindings : Subst} {before after : State} {code answer : Atom}
     (supported : codeWithin ruleHead code = true)

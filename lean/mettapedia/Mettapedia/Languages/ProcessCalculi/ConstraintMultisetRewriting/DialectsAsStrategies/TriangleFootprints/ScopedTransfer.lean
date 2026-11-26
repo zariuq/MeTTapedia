@@ -399,6 +399,14 @@ def Finishes (dispatch : GroundedDispatch) (lookup : CastLookup) (policy : Polic
       ∃ emitted : List Result, y = final space emitted ∧
         ((emitted.map (fun r => r.1.erase) : List Atom) : Multiset Atom) = (L : Multiset Atom)
 
+/-- A terminal-path observation supplies the ordered completion contract for a fine entry. -/
+theorem FinishesInOrder.of_fine {lookup : CastLookup} {space : Space} {c : Atom} {L : List Atom}
+    (fine : Fine dispatch lookup policy (load space c Atom.undefinedType))
+    (observe : ∀ emitted, Relation.ReflTransGen (HEStep dispatch lookup policy)
+      (load space c Atom.undefinedType) (final space emitted) → emitted.map (fun r => r.1.erase) = L) :
+    FinishesInOrder dispatch lookup policy space c L :=
+  ⟨fine.acc, fun _ path => fine.progress_observing path observe⟩
+
 /-- The model's order gives the bag. -/
 theorem PublishesInOrder.bag {lookup : CastLookup} {space : Space} {c : Atom} {L : List Atom}
     (publishes : PublishesInOrder dispatch lookup policy space c L) :

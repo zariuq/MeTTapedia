@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.UnificationWithLevels.TreeFibre.Widening
 
 /-!
@@ -34,8 +35,7 @@ def LeastUniverse {n : Nat} (Γ : Ctx Head n) (V : Tm Head n) (ℓ : Head) : Pro
   S.R.isUniverse ℓ ∧ Typed S.R Γ V (.head ℓ) ∧ ∀ u, S.R.isUniverse u → Typed S.R Γ V (.head u) → S.R.cumulative ℓ u
 
 variable (facts : FormFacts S.R S.roles) (algebra : CumulativeAlgebra S.R)
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
 
 include facts algebra in
 /-- A neutral type has a least universe: the one its spine's principal type is equal to. -/

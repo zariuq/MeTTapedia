@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentDecisiveFragmentRound
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentEtaBudget
 
@@ -33,31 +34,6 @@ open ContextualDependentDecisiveFragment ContextualDependentConversionBudget
 
 /-! ## Eventually constant sequences -/
 
-/-- A function of an eventually constant sequence is eventually constant. -/
-theorem EventuallyConst.comp {α : Sort u} {β : Sort v} {f : Nat → α} (g : α → β) (constant : EventuallyConst f) :
-    EventuallyConst fun fuel => g (f fuel) := by
-  obtain ⟨threshold, same⟩ := constant
-  exact ⟨threshold, fun fuel enough => congrArg g (same fuel enough)⟩
-
-/-- **Dependent composition**: a sequence that reads an eventually constant sequence, and that is
-eventually constant at each fixed reading, is eventually constant. -/
-theorem EventuallyConst.dep {α : Sort u} {β : Sort v} {h : Nat → α} {k : Nat → α → β}
-    (inner : EventuallyConst h) (outer : ∀ a, EventuallyConst fun fuel => k fuel a) :
-    EventuallyConst fun fuel => k fuel (h fuel) := by
-  obtain ⟨t₁, same₁⟩ := inner
-  obtain ⟨t₂, same₂⟩ := outer (h t₁)
-  have same₂ : ∀ fuel, t₂ ≤ fuel → k fuel (h t₁) = k t₂ (h t₁) := same₂
-  refine ⟨max t₁ t₂, fun fuel enough => ?_⟩
-  dsimp only
-  rw [same₁ fuel (le_of_max_le_left enough), same₁ _ (le_max_left _ _), same₂ fuel (le_of_max_le_right enough),
-    same₂ _ (le_max_right _ _)]
-
-/-- An eventually constant sequence, restated pointwise. -/
-theorem EventuallyConst.of_eq {α : Sort u} {f g : Nat → α} (same : ∀ fuel, f fuel = g fuel) (constant : EventuallyConst g) :
-    EventuallyConst f := by
-  obtain ⟨threshold, kept⟩ := constant
-  exact ⟨threshold, fun fuel enough => by rw [same, same, kept fuel enough]⟩
-
 /-- An injective image determines eventual constancy. -/
 theorem EventuallyConst.of_injective {α : Sort u} {β : Sort v} {f : Nat → α} {g : α → β}
     (injective : Function.Injective g) (constant : EventuallyConst fun fuel => g (f fuel)) : EventuallyConst f := by
@@ -92,8 +68,7 @@ variable [DecidableEq Head] [DecidableRel S.R.headEq] [∀ head, Decidable (S.R.
 variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R)
   (heads : HeadPreserving S.R) (algebra : CumulativeAlgebra S.R)
 variable (reducer : ExecutableReduction.Reducer S.R)
-variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
-  Keeps (reducer fuel term) (reducer (fuel + 1) term))
+variable (stable : SolverPremises.StableReducer (rules := S.R) reducer)
 
 include stable in
 /-- The typed comparison of two endpoints is eventually constant. -/
@@ -142,8 +117,7 @@ variable [DecidableEq Head] [DecidableRel S.R.headEq]
 variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R)
   (heads : HeadPreserving S.R) (algebra : CumulativeAlgebra S.R) (declared : DeclaredTypesFormed S.R)
 variable (choices : ExecutableChecking.HeadChoices S.R) (reducer : ExecutableReduction.Reducer S.R)
-variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
-  Keeps (reducer fuel term) (reducer (fuel + 1) term))
+variable (stable : SolverPremises.StableReducer (rules := S.R) reducer)
 include stable
 
 omit [DecidableRel S.R.cumulative] in
@@ -357,15 +331,10 @@ variable (rigid : ∀ name, S.roles name = .rigid) (facts : FormFacts S.R S.role
   (heads : HeadPreserving S.R) (algebra : CumulativeAlgebra S.R) (declared : DeclaredTypesFormed S.R)
   (choices : ExecutableChecking.HeadChoices S.R) (reducer : ExecutableReduction.Reducer S.R)
   (root : ExecutableReduction.RootEvaluator S.R)
-  (normalizes : ∀ {Θ : Context S.R} {type : TypeOver Θ} (term : Term Θ type),
-    ∃ code : Tm Head Θ.arity, ContextualDependentNormalChecking.Normal (S := S) code ∧
-      Equal S.R Θ.raw term.code code type.code)
-  (certifyNormal : ∀ {n : Nat} (term : Tm Head n),
-    Option (PLift (ContextualDependentNormalChecking.Normal (S := S) term)))
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
-variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
-  Keeps (reducer fuel term) (reducer (fuel + 1) term))
+  (normalizes : SolverPremises.HasNormalForms S)
+  (certifyNormal : SolverPremises.NormalityCertifier S)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
+variable (stable : SolverPremises.StableReducer (rules := S.R) reducer)
 include stable
 
 /-- **The worklist round is eventually constant on every store**: clash, conversion and dispatch. -/

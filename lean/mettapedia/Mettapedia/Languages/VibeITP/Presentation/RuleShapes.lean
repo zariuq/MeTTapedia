@@ -23,7 +23,7 @@ open Mettapedia.GSLT.LanguageDef.FirstOrderRules
 theorem inst_rPsucc1 :
     rPsucc1.instPremises [] = [] ∧
       rPsucc1.instConclusion [] = (jPSucc cP1 (cPO cP1)) := by
-  constructor <;> simp [rPsucc1, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rPsucc1, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, ab_apply, cP1, cPO, jPSucc]
 
 theorem sound_rPsucc1 {P : Pattern → Prop}
     (h : P (jPSucc cP1 (cPO cP1))) :
@@ -31,28 +31,17 @@ theorem sound_rPsucc1 {P : Pattern → Prop}
       (∀ x ∈ rPsucc1.instPremises args, P x) → P (rPsucc1.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [], _ =>
-    rw [(inst_rPsucc1 ).1] at hprem
-    rw [(inst_rPsucc1 ).2]
-    exact h  
+  | [], _ => exact FORule.sound_of_shape (inst_rPsucc1) h hprem
 
 theorem intro_rPsucc1 {R : List FORule} (hr : rPsucc1 ∈ R) 
       :
-    FODerivable R (jPSucc cP1 (cPO cP1)) := by
-  apply FODerivable.intro hr [] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-
-  · exact (inst_rPsucc1 ).2
-  · rw [(inst_rPsucc1 ).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jPSucc cP1 (cPO cP1)) :=
+  FODerivable.intro_of_shape hr (inst_rPsucc1) rfl trivial trivial
 
 theorem inst_rPsuccO (p : Pattern) :
     rPsuccO.instPremises [p] = [] ∧
       rPsuccO.instConclusion [p] = (jPSucc (cPO p) (cPI p)) := by
-  constructor <;> simp [rPsuccO, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rPsuccO, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, cPO, cPI, jPSucc]
 
 theorem sound_rPsuccO {P : Pattern → Prop}
     (h : ∀ p : Pattern, P (jPSucc (cPO p) (cPI p))) :
@@ -60,29 +49,17 @@ theorem sound_rPsuccO {P : Pattern → Prop}
       (∀ x ∈ rPsuccO.instPremises args, P x) → P (rPsuccO.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p], _ =>
-    rw [(inst_rPsuccO p).1] at hprem
-    rw [(inst_rPsuccO p).2]
-    exact h p 
+  | [p], _ => exact FORule.sound_of_shape (inst_rPsuccO p) (h p) hprem
 
 theorem intro_rPsuccO {R : List FORule} (hr : rPsuccO ∈ R) {p : Pattern}
     (hd_p : IsData p)  :
-    FODerivable R (jPSucc (cPO p) (cPI p)) := by
-  apply FODerivable.intro hr [p] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl
-    assumption
-  · exact (inst_rPsuccO p).2
-  · rw [(inst_rPsuccO p).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jPSucc (cPO p) (cPI p)) :=
+  FODerivable.intro_of_shape hr (inst_rPsuccO p) rfl hd_p trivial
 
 theorem inst_rPsuccI (p q : Pattern) :
     rPsuccI.instPremises [p, q] = [jPSucc p q] ∧
       rPsuccI.instConclusion [p, q] = (jPSucc (cPI p) (cPO q)) := by
-  constructor <;> simp [rPsuccI, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rPsuccI, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cPO, cPI, jPSucc]
 
 theorem sound_rPsuccI {P : Pattern → Prop}
     (h : ∀ p q : Pattern, P (jPSucc p q) → P (jPSucc (cPI p) (cPO q))) :
@@ -90,29 +67,17 @@ theorem sound_rPsuccI {P : Pattern → Prop}
       (∀ x ∈ rPsuccI.instPremises args, P x) → P (rPsuccI.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p, q], _ =>
-    rw [(inst_rPsuccI p q).1] at hprem
-    rw [(inst_rPsuccI p q).2]
-    exact h p q (hprem _ (by simp))
+  | [p, q], _ => exact FORule.sound_of_shape (inst_rPsuccI p q) (h p q) hprem
 
 theorem intro_rPsuccI {R : List FORule} (hr : rPsuccI ∈ R) {p q : Pattern}
     (hd_p : IsData p) (hd_q : IsData q) (h0 : FODerivable R (jPSucc p q)) :
-    FODerivable R (jPSucc (cPI p) (cPO q)) := by
-  apply FODerivable.intro hr [p, q] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl <;> assumption
-  · exact (inst_rPsuccI p q).2
-  · rw [(inst_rPsuccI p q).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jPSucc (cPI p) (cPO q)) :=
+  FODerivable.intro_of_shape hr (inst_rPsuccI p q) rfl ⟨hd_p, hd_q⟩ h0
 
 theorem inst_rPadd1l (q r : Pattern) :
     rPadd1l.instPremises [q, r] = [jPSucc q r] ∧
       rPadd1l.instConclusion [q, r] = (jPAdd cP1 q r) := by
-  constructor <;> simp [rPadd1l, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rPadd1l, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cP1, jPSucc, jPAdd]
 
 theorem sound_rPadd1l {P : Pattern → Prop}
     (h : ∀ q r : Pattern, P (jPSucc q r) → P (jPAdd cP1 q r)) :
@@ -120,29 +85,17 @@ theorem sound_rPadd1l {P : Pattern → Prop}
       (∀ x ∈ rPadd1l.instPremises args, P x) → P (rPadd1l.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [q, r], _ =>
-    rw [(inst_rPadd1l q r).1] at hprem
-    rw [(inst_rPadd1l q r).2]
-    exact h q r (hprem _ (by simp))
+  | [q, r], _ => exact FORule.sound_of_shape (inst_rPadd1l q r) (h q r) hprem
 
 theorem intro_rPadd1l {R : List FORule} (hr : rPadd1l ∈ R) {q r : Pattern}
     (hd_q : IsData q) (hd_r : IsData r) (h0 : FODerivable R (jPSucc q r)) :
-    FODerivable R (jPAdd cP1 q r) := by
-  apply FODerivable.intro hr [q, r] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl <;> assumption
-  · exact (inst_rPadd1l q r).2
-  · rw [(inst_rPadd1l q r).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jPAdd cP1 q r) :=
+  FODerivable.intro_of_shape hr (inst_rPadd1l q r) rfl ⟨hd_q, hd_r⟩ h0
 
 theorem inst_rPadd1r (p r : Pattern) :
     rPadd1r.instPremises [p, r] = [jPSucc p r] ∧
       rPadd1r.instConclusion [p, r] = (jPAdd p cP1 r) := by
-  constructor <;> simp [rPadd1r, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rPadd1r, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cP1, jPSucc, jPAdd]
 
 theorem sound_rPadd1r {P : Pattern → Prop}
     (h : ∀ p r : Pattern, P (jPSucc p r) → P (jPAdd p cP1 r)) :
@@ -150,29 +103,17 @@ theorem sound_rPadd1r {P : Pattern → Prop}
       (∀ x ∈ rPadd1r.instPremises args, P x) → P (rPadd1r.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p, r], _ =>
-    rw [(inst_rPadd1r p r).1] at hprem
-    rw [(inst_rPadd1r p r).2]
-    exact h p r (hprem _ (by simp))
+  | [p, r], _ => exact FORule.sound_of_shape (inst_rPadd1r p r) (h p r) hprem
 
 theorem intro_rPadd1r {R : List FORule} (hr : rPadd1r ∈ R) {p r : Pattern}
     (hd_p : IsData p) (hd_r : IsData r) (h0 : FODerivable R (jPSucc p r)) :
-    FODerivable R (jPAdd p cP1 r) := by
-  apply FODerivable.intro hr [p, r] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl <;> assumption
-  · exact (inst_rPadd1r p r).2
-  · rw [(inst_rPadd1r p r).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jPAdd p cP1 r) :=
+  FODerivable.intro_of_shape hr (inst_rPadd1r p r) rfl ⟨hd_p, hd_r⟩ h0
 
 theorem inst_rPaddOo (p q r : Pattern) :
     rPaddOo.instPremises [p, q, r] = [jPAdd p q r] ∧
       rPaddOo.instConclusion [p, q, r] = (jPAdd (cPO p) (cPO q) (cPO r)) := by
-  constructor <;> simp [rPaddOo, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rPaddOo, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cPO, jPAdd]
 
 theorem sound_rPaddOo {P : Pattern → Prop}
     (h : ∀ p q r : Pattern, P (jPAdd p q r) → P (jPAdd (cPO p) (cPO q) (cPO r))) :
@@ -180,29 +121,17 @@ theorem sound_rPaddOo {P : Pattern → Prop}
       (∀ x ∈ rPaddOo.instPremises args, P x) → P (rPaddOo.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p, q, r], _ =>
-    rw [(inst_rPaddOo p q r).1] at hprem
-    rw [(inst_rPaddOo p q r).2]
-    exact h p q r (hprem _ (by simp))
+  | [p, q, r], _ => exact FORule.sound_of_shape (inst_rPaddOo p q r) (h p q r) hprem
 
 theorem intro_rPaddOo {R : List FORule} (hr : rPaddOo ∈ R) {p q r : Pattern}
     (hd_p : IsData p) (hd_q : IsData q) (hd_r : IsData r) (h0 : FODerivable R (jPAdd p q r)) :
-    FODerivable R (jPAdd (cPO p) (cPO q) (cPO r)) := by
-  apply FODerivable.intro hr [p, q, r] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl <;> assumption
-  · exact (inst_rPaddOo p q r).2
-  · rw [(inst_rPaddOo p q r).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jPAdd (cPO p) (cPO q) (cPO r)) :=
+  FODerivable.intro_of_shape hr (inst_rPaddOo p q r) rfl ⟨hd_p, hd_q, hd_r⟩ h0
 
 theorem inst_rPaddOi (p q r : Pattern) :
     rPaddOi.instPremises [p, q, r] = [jPAdd p q r] ∧
       rPaddOi.instConclusion [p, q, r] = (jPAdd (cPO p) (cPI q) (cPI r)) := by
-  constructor <;> simp [rPaddOi, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rPaddOi, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cPO, cPI, jPAdd]
 
 theorem sound_rPaddOi {P : Pattern → Prop}
     (h : ∀ p q r : Pattern, P (jPAdd p q r) → P (jPAdd (cPO p) (cPI q) (cPI r))) :
@@ -210,29 +139,17 @@ theorem sound_rPaddOi {P : Pattern → Prop}
       (∀ x ∈ rPaddOi.instPremises args, P x) → P (rPaddOi.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p, q, r], _ =>
-    rw [(inst_rPaddOi p q r).1] at hprem
-    rw [(inst_rPaddOi p q r).2]
-    exact h p q r (hprem _ (by simp))
+  | [p, q, r], _ => exact FORule.sound_of_shape (inst_rPaddOi p q r) (h p q r) hprem
 
 theorem intro_rPaddOi {R : List FORule} (hr : rPaddOi ∈ R) {p q r : Pattern}
     (hd_p : IsData p) (hd_q : IsData q) (hd_r : IsData r) (h0 : FODerivable R (jPAdd p q r)) :
-    FODerivable R (jPAdd (cPO p) (cPI q) (cPI r)) := by
-  apply FODerivable.intro hr [p, q, r] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl <;> assumption
-  · exact (inst_rPaddOi p q r).2
-  · rw [(inst_rPaddOi p q r).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jPAdd (cPO p) (cPI q) (cPI r)) :=
+  FODerivable.intro_of_shape hr (inst_rPaddOi p q r) rfl ⟨hd_p, hd_q, hd_r⟩ h0
 
 theorem inst_rPaddIo (p q r : Pattern) :
     rPaddIo.instPremises [p, q, r] = [jPAdd p q r] ∧
       rPaddIo.instConclusion [p, q, r] = (jPAdd (cPI p) (cPO q) (cPI r)) := by
-  constructor <;> simp [rPaddIo, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rPaddIo, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cPO, cPI, jPAdd]
 
 theorem sound_rPaddIo {P : Pattern → Prop}
     (h : ∀ p q r : Pattern, P (jPAdd p q r) → P (jPAdd (cPI p) (cPO q) (cPI r))) :
@@ -240,29 +157,17 @@ theorem sound_rPaddIo {P : Pattern → Prop}
       (∀ x ∈ rPaddIo.instPremises args, P x) → P (rPaddIo.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p, q, r], _ =>
-    rw [(inst_rPaddIo p q r).1] at hprem
-    rw [(inst_rPaddIo p q r).2]
-    exact h p q r (hprem _ (by simp))
+  | [p, q, r], _ => exact FORule.sound_of_shape (inst_rPaddIo p q r) (h p q r) hprem
 
 theorem intro_rPaddIo {R : List FORule} (hr : rPaddIo ∈ R) {p q r : Pattern}
     (hd_p : IsData p) (hd_q : IsData q) (hd_r : IsData r) (h0 : FODerivable R (jPAdd p q r)) :
-    FODerivable R (jPAdd (cPI p) (cPO q) (cPI r)) := by
-  apply FODerivable.intro hr [p, q, r] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl <;> assumption
-  · exact (inst_rPaddIo p q r).2
-  · rw [(inst_rPaddIo p q r).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jPAdd (cPI p) (cPO q) (cPI r)) :=
+  FODerivable.intro_of_shape hr (inst_rPaddIo p q r) rfl ⟨hd_p, hd_q, hd_r⟩ h0
 
 theorem inst_rPaddIi (p q r : Pattern) :
     rPaddIi.instPremises [p, q, r] = [jPAddC p q r] ∧
       rPaddIi.instConclusion [p, q, r] = (jPAdd (cPI p) (cPI q) (cPO r)) := by
-  constructor <;> simp [rPaddIi, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rPaddIi, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cPO, cPI, jPAdd, jPAddC]
 
 theorem sound_rPaddIi {P : Pattern → Prop}
     (h : ∀ p q r : Pattern, P (jPAddC p q r) → P (jPAdd (cPI p) (cPI q) (cPO r))) :
@@ -270,29 +175,17 @@ theorem sound_rPaddIi {P : Pattern → Prop}
       (∀ x ∈ rPaddIi.instPremises args, P x) → P (rPaddIi.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p, q, r], _ =>
-    rw [(inst_rPaddIi p q r).1] at hprem
-    rw [(inst_rPaddIi p q r).2]
-    exact h p q r (hprem _ (by simp))
+  | [p, q, r], _ => exact FORule.sound_of_shape (inst_rPaddIi p q r) (h p q r) hprem
 
 theorem intro_rPaddIi {R : List FORule} (hr : rPaddIi ∈ R) {p q r : Pattern}
     (hd_p : IsData p) (hd_q : IsData q) (hd_r : IsData r) (h0 : FODerivable R (jPAddC p q r)) :
-    FODerivable R (jPAdd (cPI p) (cPI q) (cPO r)) := by
-  apply FODerivable.intro hr [p, q, r] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl <;> assumption
-  · exact (inst_rPaddIi p q r).2
-  · rw [(inst_rPaddIi p q r).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jPAdd (cPI p) (cPI q) (cPO r)) :=
+  FODerivable.intro_of_shape hr (inst_rPaddIi p q r) rfl ⟨hd_p, hd_q, hd_r⟩ h0
 
 theorem inst_rPaddc11 :
     rPaddc11.instPremises [] = [] ∧
       rPaddc11.instConclusion [] = (jPAddC cP1 cP1 (cPI cP1)) := by
-  constructor <;> simp [rPaddc11, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rPaddc11, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, ab_apply, cP1, cPI, jPAddC]
 
 theorem sound_rPaddc11 {P : Pattern → Prop}
     (h : P (jPAddC cP1 cP1 (cPI cP1))) :
@@ -300,28 +193,17 @@ theorem sound_rPaddc11 {P : Pattern → Prop}
       (∀ x ∈ rPaddc11.instPremises args, P x) → P (rPaddc11.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [], _ =>
-    rw [(inst_rPaddc11 ).1] at hprem
-    rw [(inst_rPaddc11 ).2]
-    exact h  
+  | [], _ => exact FORule.sound_of_shape (inst_rPaddc11) h hprem
 
 theorem intro_rPaddc11 {R : List FORule} (hr : rPaddc11 ∈ R) 
       :
-    FODerivable R (jPAddC cP1 cP1 (cPI cP1)) := by
-  apply FODerivable.intro hr [] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-
-  · exact (inst_rPaddc11 ).2
-  · rw [(inst_rPaddc11 ).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jPAddC cP1 cP1 (cPI cP1)) :=
+  FODerivable.intro_of_shape hr (inst_rPaddc11) rfl trivial trivial
 
 theorem inst_rPaddc1o (q r : Pattern) :
     rPaddc1o.instPremises [q, r] = [jPSucc q r] ∧
       rPaddc1o.instConclusion [q, r] = (jPAddC cP1 (cPO q) (cPO r)) := by
-  constructor <;> simp [rPaddc1o, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rPaddc1o, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cP1, cPO, jPSucc, jPAddC]
 
 theorem sound_rPaddc1o {P : Pattern → Prop}
     (h : ∀ q r : Pattern, P (jPSucc q r) → P (jPAddC cP1 (cPO q) (cPO r))) :
@@ -329,29 +211,17 @@ theorem sound_rPaddc1o {P : Pattern → Prop}
       (∀ x ∈ rPaddc1o.instPremises args, P x) → P (rPaddc1o.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [q, r], _ =>
-    rw [(inst_rPaddc1o q r).1] at hprem
-    rw [(inst_rPaddc1o q r).2]
-    exact h q r (hprem _ (by simp))
+  | [q, r], _ => exact FORule.sound_of_shape (inst_rPaddc1o q r) (h q r) hprem
 
 theorem intro_rPaddc1o {R : List FORule} (hr : rPaddc1o ∈ R) {q r : Pattern}
     (hd_q : IsData q) (hd_r : IsData r) (h0 : FODerivable R (jPSucc q r)) :
-    FODerivable R (jPAddC cP1 (cPO q) (cPO r)) := by
-  apply FODerivable.intro hr [q, r] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl <;> assumption
-  · exact (inst_rPaddc1o q r).2
-  · rw [(inst_rPaddc1o q r).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jPAddC cP1 (cPO q) (cPO r)) :=
+  FODerivable.intro_of_shape hr (inst_rPaddc1o q r) rfl ⟨hd_q, hd_r⟩ h0
 
 theorem inst_rPaddc1i (q r : Pattern) :
     rPaddc1i.instPremises [q, r] = [jPSucc q r] ∧
       rPaddc1i.instConclusion [q, r] = (jPAddC cP1 (cPI q) (cPI r)) := by
-  constructor <;> simp [rPaddc1i, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rPaddc1i, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cP1, cPI, jPSucc, jPAddC]
 
 theorem sound_rPaddc1i {P : Pattern → Prop}
     (h : ∀ q r : Pattern, P (jPSucc q r) → P (jPAddC cP1 (cPI q) (cPI r))) :
@@ -359,29 +229,17 @@ theorem sound_rPaddc1i {P : Pattern → Prop}
       (∀ x ∈ rPaddc1i.instPremises args, P x) → P (rPaddc1i.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [q, r], _ =>
-    rw [(inst_rPaddc1i q r).1] at hprem
-    rw [(inst_rPaddc1i q r).2]
-    exact h q r (hprem _ (by simp))
+  | [q, r], _ => exact FORule.sound_of_shape (inst_rPaddc1i q r) (h q r) hprem
 
 theorem intro_rPaddc1i {R : List FORule} (hr : rPaddc1i ∈ R) {q r : Pattern}
     (hd_q : IsData q) (hd_r : IsData r) (h0 : FODerivable R (jPSucc q r)) :
-    FODerivable R (jPAddC cP1 (cPI q) (cPI r)) := by
-  apply FODerivable.intro hr [q, r] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl <;> assumption
-  · exact (inst_rPaddc1i q r).2
-  · rw [(inst_rPaddc1i q r).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jPAddC cP1 (cPI q) (cPI r)) :=
+  FODerivable.intro_of_shape hr (inst_rPaddc1i q r) rfl ⟨hd_q, hd_r⟩ h0
 
 theorem inst_rPaddcO1 (p r : Pattern) :
     rPaddcO1.instPremises [p, r] = [jPSucc p r] ∧
       rPaddcO1.instConclusion [p, r] = (jPAddC (cPO p) cP1 (cPO r)) := by
-  constructor <;> simp [rPaddcO1, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rPaddcO1, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cP1, cPO, jPSucc, jPAddC]
 
 theorem sound_rPaddcO1 {P : Pattern → Prop}
     (h : ∀ p r : Pattern, P (jPSucc p r) → P (jPAddC (cPO p) cP1 (cPO r))) :
@@ -389,29 +247,17 @@ theorem sound_rPaddcO1 {P : Pattern → Prop}
       (∀ x ∈ rPaddcO1.instPremises args, P x) → P (rPaddcO1.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p, r], _ =>
-    rw [(inst_rPaddcO1 p r).1] at hprem
-    rw [(inst_rPaddcO1 p r).2]
-    exact h p r (hprem _ (by simp))
+  | [p, r], _ => exact FORule.sound_of_shape (inst_rPaddcO1 p r) (h p r) hprem
 
 theorem intro_rPaddcO1 {R : List FORule} (hr : rPaddcO1 ∈ R) {p r : Pattern}
     (hd_p : IsData p) (hd_r : IsData r) (h0 : FODerivable R (jPSucc p r)) :
-    FODerivable R (jPAddC (cPO p) cP1 (cPO r)) := by
-  apply FODerivable.intro hr [p, r] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl <;> assumption
-  · exact (inst_rPaddcO1 p r).2
-  · rw [(inst_rPaddcO1 p r).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jPAddC (cPO p) cP1 (cPO r)) :=
+  FODerivable.intro_of_shape hr (inst_rPaddcO1 p r) rfl ⟨hd_p, hd_r⟩ h0
 
 theorem inst_rPaddcI1 (p r : Pattern) :
     rPaddcI1.instPremises [p, r] = [jPSucc p r] ∧
       rPaddcI1.instConclusion [p, r] = (jPAddC (cPI p) cP1 (cPI r)) := by
-  constructor <;> simp [rPaddcI1, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rPaddcI1, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cP1, cPI, jPSucc, jPAddC]
 
 theorem sound_rPaddcI1 {P : Pattern → Prop}
     (h : ∀ p r : Pattern, P (jPSucc p r) → P (jPAddC (cPI p) cP1 (cPI r))) :
@@ -419,29 +265,17 @@ theorem sound_rPaddcI1 {P : Pattern → Prop}
       (∀ x ∈ rPaddcI1.instPremises args, P x) → P (rPaddcI1.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p, r], _ =>
-    rw [(inst_rPaddcI1 p r).1] at hprem
-    rw [(inst_rPaddcI1 p r).2]
-    exact h p r (hprem _ (by simp))
+  | [p, r], _ => exact FORule.sound_of_shape (inst_rPaddcI1 p r) (h p r) hprem
 
 theorem intro_rPaddcI1 {R : List FORule} (hr : rPaddcI1 ∈ R) {p r : Pattern}
     (hd_p : IsData p) (hd_r : IsData r) (h0 : FODerivable R (jPSucc p r)) :
-    FODerivable R (jPAddC (cPI p) cP1 (cPI r)) := by
-  apply FODerivable.intro hr [p, r] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl <;> assumption
-  · exact (inst_rPaddcI1 p r).2
-  · rw [(inst_rPaddcI1 p r).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jPAddC (cPI p) cP1 (cPI r)) :=
+  FODerivable.intro_of_shape hr (inst_rPaddcI1 p r) rfl ⟨hd_p, hd_r⟩ h0
 
 theorem inst_rPaddcOo (p q r : Pattern) :
     rPaddcOo.instPremises [p, q, r] = [jPAdd p q r] ∧
       rPaddcOo.instConclusion [p, q, r] = (jPAddC (cPO p) (cPO q) (cPI r)) := by
-  constructor <;> simp [rPaddcOo, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rPaddcOo, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cPO, cPI, jPAdd, jPAddC]
 
 theorem sound_rPaddcOo {P : Pattern → Prop}
     (h : ∀ p q r : Pattern, P (jPAdd p q r) → P (jPAddC (cPO p) (cPO q) (cPI r))) :
@@ -449,29 +283,17 @@ theorem sound_rPaddcOo {P : Pattern → Prop}
       (∀ x ∈ rPaddcOo.instPremises args, P x) → P (rPaddcOo.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p, q, r], _ =>
-    rw [(inst_rPaddcOo p q r).1] at hprem
-    rw [(inst_rPaddcOo p q r).2]
-    exact h p q r (hprem _ (by simp))
+  | [p, q, r], _ => exact FORule.sound_of_shape (inst_rPaddcOo p q r) (h p q r) hprem
 
 theorem intro_rPaddcOo {R : List FORule} (hr : rPaddcOo ∈ R) {p q r : Pattern}
     (hd_p : IsData p) (hd_q : IsData q) (hd_r : IsData r) (h0 : FODerivable R (jPAdd p q r)) :
-    FODerivable R (jPAddC (cPO p) (cPO q) (cPI r)) := by
-  apply FODerivable.intro hr [p, q, r] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl <;> assumption
-  · exact (inst_rPaddcOo p q r).2
-  · rw [(inst_rPaddcOo p q r).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jPAddC (cPO p) (cPO q) (cPI r)) :=
+  FODerivable.intro_of_shape hr (inst_rPaddcOo p q r) rfl ⟨hd_p, hd_q, hd_r⟩ h0
 
 theorem inst_rPaddcOi (p q r : Pattern) :
     rPaddcOi.instPremises [p, q, r] = [jPAddC p q r] ∧
       rPaddcOi.instConclusion [p, q, r] = (jPAddC (cPO p) (cPI q) (cPO r)) := by
-  constructor <;> simp [rPaddcOi, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rPaddcOi, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cPO, cPI, jPAddC]
 
 theorem sound_rPaddcOi {P : Pattern → Prop}
     (h : ∀ p q r : Pattern, P (jPAddC p q r) → P (jPAddC (cPO p) (cPI q) (cPO r))) :
@@ -479,29 +301,17 @@ theorem sound_rPaddcOi {P : Pattern → Prop}
       (∀ x ∈ rPaddcOi.instPremises args, P x) → P (rPaddcOi.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p, q, r], _ =>
-    rw [(inst_rPaddcOi p q r).1] at hprem
-    rw [(inst_rPaddcOi p q r).2]
-    exact h p q r (hprem _ (by simp))
+  | [p, q, r], _ => exact FORule.sound_of_shape (inst_rPaddcOi p q r) (h p q r) hprem
 
 theorem intro_rPaddcOi {R : List FORule} (hr : rPaddcOi ∈ R) {p q r : Pattern}
     (hd_p : IsData p) (hd_q : IsData q) (hd_r : IsData r) (h0 : FODerivable R (jPAddC p q r)) :
-    FODerivable R (jPAddC (cPO p) (cPI q) (cPO r)) := by
-  apply FODerivable.intro hr [p, q, r] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl <;> assumption
-  · exact (inst_rPaddcOi p q r).2
-  · rw [(inst_rPaddcOi p q r).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jPAddC (cPO p) (cPI q) (cPO r)) :=
+  FODerivable.intro_of_shape hr (inst_rPaddcOi p q r) rfl ⟨hd_p, hd_q, hd_r⟩ h0
 
 theorem inst_rPaddcIo (p q r : Pattern) :
     rPaddcIo.instPremises [p, q, r] = [jPAddC p q r] ∧
       rPaddcIo.instConclusion [p, q, r] = (jPAddC (cPI p) (cPO q) (cPO r)) := by
-  constructor <;> simp [rPaddcIo, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rPaddcIo, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cPO, cPI, jPAddC]
 
 theorem sound_rPaddcIo {P : Pattern → Prop}
     (h : ∀ p q r : Pattern, P (jPAddC p q r) → P (jPAddC (cPI p) (cPO q) (cPO r))) :
@@ -509,29 +319,17 @@ theorem sound_rPaddcIo {P : Pattern → Prop}
       (∀ x ∈ rPaddcIo.instPremises args, P x) → P (rPaddcIo.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p, q, r], _ =>
-    rw [(inst_rPaddcIo p q r).1] at hprem
-    rw [(inst_rPaddcIo p q r).2]
-    exact h p q r (hprem _ (by simp))
+  | [p, q, r], _ => exact FORule.sound_of_shape (inst_rPaddcIo p q r) (h p q r) hprem
 
 theorem intro_rPaddcIo {R : List FORule} (hr : rPaddcIo ∈ R) {p q r : Pattern}
     (hd_p : IsData p) (hd_q : IsData q) (hd_r : IsData r) (h0 : FODerivable R (jPAddC p q r)) :
-    FODerivable R (jPAddC (cPI p) (cPO q) (cPO r)) := by
-  apply FODerivable.intro hr [p, q, r] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl <;> assumption
-  · exact (inst_rPaddcIo p q r).2
-  · rw [(inst_rPaddcIo p q r).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jPAddC (cPI p) (cPO q) (cPO r)) :=
+  FODerivable.intro_of_shape hr (inst_rPaddcIo p q r) rfl ⟨hd_p, hd_q, hd_r⟩ h0
 
 theorem inst_rPaddcIi (p q r : Pattern) :
     rPaddcIi.instPremises [p, q, r] = [jPAddC p q r] ∧
       rPaddcIi.instConclusion [p, q, r] = (jPAddC (cPI p) (cPI q) (cPI r)) := by
-  constructor <;> simp [rPaddcIi, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rPaddcIi, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cPI, jPAddC]
 
 theorem sound_rPaddcIi {P : Pattern → Prop}
     (h : ∀ p q r : Pattern, P (jPAddC p q r) → P (jPAddC (cPI p) (cPI q) (cPI r))) :
@@ -539,29 +337,17 @@ theorem sound_rPaddcIi {P : Pattern → Prop}
       (∀ x ∈ rPaddcIi.instPremises args, P x) → P (rPaddcIi.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p, q, r], _ =>
-    rw [(inst_rPaddcIi p q r).1] at hprem
-    rw [(inst_rPaddcIi p q r).2]
-    exact h p q r (hprem _ (by simp))
+  | [p, q, r], _ => exact FORule.sound_of_shape (inst_rPaddcIi p q r) (h p q r) hprem
 
 theorem intro_rPaddcIi {R : List FORule} (hr : rPaddcIi ∈ R) {p q r : Pattern}
     (hd_p : IsData p) (hd_q : IsData q) (hd_r : IsData r) (h0 : FODerivable R (jPAddC p q r)) :
-    FODerivable R (jPAddC (cPI p) (cPI q) (cPI r)) := by
-  apply FODerivable.intro hr [p, q, r] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl <;> assumption
-  · exact (inst_rPaddcIi p q r).2
-  · rw [(inst_rPaddcIi p q r).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jPAddC (cPI p) (cPI q) (cPI r)) :=
+  FODerivable.intro_of_shape hr (inst_rPaddcIi p q r) rfl ⟨hd_p, hd_q, hd_r⟩ h0
 
 theorem inst_rNadd0l (b : Pattern) :
     rNadd0l.instPremises [b] = [] ∧
       rNadd0l.instConclusion [b] = (jNAdd cN0 b b) := by
-  constructor <;> simp [rNadd0l, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rNadd0l, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, cN0, jNAdd]
 
 theorem sound_rNadd0l {P : Pattern → Prop}
     (h : ∀ b : Pattern, P (jNAdd cN0 b b)) :
@@ -569,29 +355,17 @@ theorem sound_rNadd0l {P : Pattern → Prop}
       (∀ x ∈ rNadd0l.instPremises args, P x) → P (rNadd0l.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [b], _ =>
-    rw [(inst_rNadd0l b).1] at hprem
-    rw [(inst_rNadd0l b).2]
-    exact h b 
+  | [b], _ => exact FORule.sound_of_shape (inst_rNadd0l b) (h b) hprem
 
 theorem intro_rNadd0l {R : List FORule} (hr : rNadd0l ∈ R) {b : Pattern}
     (hd_b : IsData b)  :
-    FODerivable R (jNAdd cN0 b b) := by
-  apply FODerivable.intro hr [b] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl
-    assumption
-  · exact (inst_rNadd0l b).2
-  · rw [(inst_rNadd0l b).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jNAdd cN0 b b) :=
+  FODerivable.intro_of_shape hr (inst_rNadd0l b) rfl hd_b trivial
 
 theorem inst_rNadd0r (p : Pattern) :
     rNadd0r.instPremises [p] = [] ∧
       rNadd0r.instConclusion [p] = (jNAdd (cNPos p) cN0 (cNPos p)) := by
-  constructor <;> simp [rNadd0r, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rNadd0r, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, cN0, cNPos, jNAdd]
 
 theorem sound_rNadd0r {P : Pattern → Prop}
     (h : ∀ p : Pattern, P (jNAdd (cNPos p) cN0 (cNPos p))) :
@@ -599,29 +373,17 @@ theorem sound_rNadd0r {P : Pattern → Prop}
       (∀ x ∈ rNadd0r.instPremises args, P x) → P (rNadd0r.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p], _ =>
-    rw [(inst_rNadd0r p).1] at hprem
-    rw [(inst_rNadd0r p).2]
-    exact h p 
+  | [p], _ => exact FORule.sound_of_shape (inst_rNadd0r p) (h p) hprem
 
 theorem intro_rNadd0r {R : List FORule} (hr : rNadd0r ∈ R) {p : Pattern}
     (hd_p : IsData p)  :
-    FODerivable R (jNAdd (cNPos p) cN0 (cNPos p)) := by
-  apply FODerivable.intro hr [p] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl
-    assumption
-  · exact (inst_rNadd0r p).2
-  · rw [(inst_rNadd0r p).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jNAdd (cNPos p) cN0 (cNPos p)) :=
+  FODerivable.intro_of_shape hr (inst_rNadd0r p) rfl hd_p trivial
 
 theorem inst_rNaddPp (p q r : Pattern) :
     rNaddPp.instPremises [p, q, r] = [jPAdd p q r] ∧
       rNaddPp.instConclusion [p, q, r] = (jNAdd (cNPos p) (cNPos q) (cNPos r)) := by
-  constructor <;> simp [rNaddPp, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rNaddPp, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cNPos, jPAdd, jNAdd]
 
 theorem sound_rNaddPp {P : Pattern → Prop}
     (h : ∀ p q r : Pattern, P (jPAdd p q r) → P (jNAdd (cNPos p) (cNPos q) (cNPos r))) :
@@ -629,29 +391,17 @@ theorem sound_rNaddPp {P : Pattern → Prop}
       (∀ x ∈ rNaddPp.instPremises args, P x) → P (rNaddPp.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p, q, r], _ =>
-    rw [(inst_rNaddPp p q r).1] at hprem
-    rw [(inst_rNaddPp p q r).2]
-    exact h p q r (hprem _ (by simp))
+  | [p, q, r], _ => exact FORule.sound_of_shape (inst_rNaddPp p q r) (h p q r) hprem
 
 theorem intro_rNaddPp {R : List FORule} (hr : rNaddPp ∈ R) {p q r : Pattern}
     (hd_p : IsData p) (hd_q : IsData q) (hd_r : IsData r) (h0 : FODerivable R (jPAdd p q r)) :
-    FODerivable R (jNAdd (cNPos p) (cNPos q) (cNPos r)) := by
-  apply FODerivable.intro hr [p, q, r] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl <;> assumption
-  · exact (inst_rNaddPp p q r).2
-  · rw [(inst_rNaddPp p q r).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jNAdd (cNPos p) (cNPos q) (cNPos r)) :=
+  FODerivable.intro_of_shape hr (inst_rNaddPp p q r) rfl ⟨hd_p, hd_q, hd_r⟩ h0
 
 theorem inst_rNlt (a p b : Pattern) :
     rNlt.instPremises [a, p, b] = [jNAdd a (cNPos p) b] ∧
       rNlt.instConclusion [a, p, b] = (jNLt a b) := by
-  constructor <;> simp [rNlt, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rNlt, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cNPos, jNAdd, jNLt]
 
 theorem sound_rNlt {P : Pattern → Prop}
     (h : ∀ a p b : Pattern, P (jNAdd a (cNPos p) b) → P (jNLt a b)) :
@@ -659,29 +409,17 @@ theorem sound_rNlt {P : Pattern → Prop}
       (∀ x ∈ rNlt.instPremises args, P x) → P (rNlt.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [a, p, b], _ =>
-    rw [(inst_rNlt a p b).1] at hprem
-    rw [(inst_rNlt a p b).2]
-    exact h a p b (hprem _ (by simp))
+  | [a, p, b], _ => exact FORule.sound_of_shape (inst_rNlt a p b) (h a p b) hprem
 
 theorem intro_rNlt {R : List FORule} (hr : rNlt ∈ R) {a p b : Pattern}
     (hd_a : IsData a) (hd_p : IsData p) (hd_b : IsData b) (h0 : FODerivable R (jNAdd a (cNPos p) b)) :
-    FODerivable R (jNLt a b) := by
-  apply FODerivable.intro hr [a, p, b] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl <;> assumption
-  · exact (inst_rNlt a p b).2
-  · rw [(inst_rNlt a p b).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jNLt a b) :=
+  FODerivable.intro_of_shape hr (inst_rNlt a p b) rfl ⟨hd_a, hd_p, hd_b⟩ h0
 
 theorem inst_rNle (a c b : Pattern) :
     rNle.instPremises [a, c, b] = [jNAdd a c b] ∧
       rNle.instConclusion [a, c, b] = (jNLe a b) := by
-  constructor <;> simp [rNle, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rNle, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, jNAdd, jNLe]
 
 theorem sound_rNle {P : Pattern → Prop}
     (h : ∀ a c b : Pattern, P (jNAdd a c b) → P (jNLe a b)) :
@@ -689,29 +427,17 @@ theorem sound_rNle {P : Pattern → Prop}
       (∀ x ∈ rNle.instPremises args, P x) → P (rNle.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [a, c, b], _ =>
-    rw [(inst_rNle a c b).1] at hprem
-    rw [(inst_rNle a c b).2]
-    exact h a c b (hprem _ (by simp))
+  | [a, c, b], _ => exact FORule.sound_of_shape (inst_rNle a c b) (h a c b) hprem
 
 theorem intro_rNle {R : List FORule} (hr : rNle ∈ R) {a c b : Pattern}
     (hd_a : IsData a) (hd_c : IsData c) (hd_b : IsData b) (h0 : FODerivable R (jNAdd a c b)) :
-    FODerivable R (jNLe a b) := by
-  apply FODerivable.intro hr [a, c, b] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl <;> assumption
-  · exact (inst_rNle a c b).2
-  · rw [(inst_rNle a c b).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jNLe a b) :=
+  FODerivable.intro_of_shape hr (inst_rNle a c b) rfl ⟨hd_a, hd_c, hd_b⟩ h0
 
 theorem inst_rNmonusLe (a b : Pattern) :
     rNmonusLe.instPremises [a, b] = [jNLe a b] ∧
       rNmonusLe.instConclusion [a, b] = (jNMonus a b cN0) := by
-  constructor <;> simp [rNmonusLe, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rNmonusLe, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cN0, jNLe, jNMonus]
 
 theorem sound_rNmonusLe {P : Pattern → Prop}
     (h : ∀ a b : Pattern, P (jNLe a b) → P (jNMonus a b cN0)) :
@@ -719,29 +445,17 @@ theorem sound_rNmonusLe {P : Pattern → Prop}
       (∀ x ∈ rNmonusLe.instPremises args, P x) → P (rNmonusLe.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [a, b], _ =>
-    rw [(inst_rNmonusLe a b).1] at hprem
-    rw [(inst_rNmonusLe a b).2]
-    exact h a b (hprem _ (by simp))
+  | [a, b], _ => exact FORule.sound_of_shape (inst_rNmonusLe a b) (h a b) hprem
 
 theorem intro_rNmonusLe {R : List FORule} (hr : rNmonusLe ∈ R) {a b : Pattern}
     (hd_a : IsData a) (hd_b : IsData b) (h0 : FODerivable R (jNLe a b)) :
-    FODerivable R (jNMonus a b cN0) := by
-  apply FODerivable.intro hr [a, b] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl <;> assumption
-  · exact (inst_rNmonusLe a b).2
-  · rw [(inst_rNmonusLe a b).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jNMonus a b cN0) :=
+  FODerivable.intro_of_shape hr (inst_rNmonusLe a b) rfl ⟨hd_a, hd_b⟩ h0
 
 theorem inst_rNmonusGt (a b p : Pattern) :
     rNmonusGt.instPremises [a, b, p] = [jNAdd b (cNPos p) a] ∧
       rNmonusGt.instConclusion [a, b, p] = (jNMonus a b (cNPos p)) := by
-  constructor <;> simp [rNmonusGt, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rNmonusGt, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cNPos, jNAdd, jNMonus]
 
 theorem sound_rNmonusGt {P : Pattern → Prop}
     (h : ∀ a b p : Pattern, P (jNAdd b (cNPos p) a) → P (jNMonus a b (cNPos p))) :
@@ -749,29 +463,17 @@ theorem sound_rNmonusGt {P : Pattern → Prop}
       (∀ x ∈ rNmonusGt.instPremises args, P x) → P (rNmonusGt.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [a, b, p], _ =>
-    rw [(inst_rNmonusGt a b p).1] at hprem
-    rw [(inst_rNmonusGt a b p).2]
-    exact h a b p (hprem _ (by simp))
+  | [a, b, p], _ => exact FORule.sound_of_shape (inst_rNmonusGt a b p) (h a b p) hprem
 
 theorem intro_rNmonusGt {R : List FORule} (hr : rNmonusGt ∈ R) {a b p : Pattern}
     (hd_a : IsData a) (hd_b : IsData b) (hd_p : IsData p) (h0 : FODerivable R (jNAdd b (cNPos p) a)) :
-    FODerivable R (jNMonus a b (cNPos p)) := by
-  apply FODerivable.intro hr [a, b, p] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl <;> assumption
-  · exact (inst_rNmonusGt a b p).2
-  · rw [(inst_rNmonusGt a b p).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jNMonus a b (cNPos p)) :=
+  FODerivable.intro_of_shape hr (inst_rNmonusGt a b p) rfl ⟨hd_a, hd_b, hd_p⟩ h0
 
 theorem inst_rNmaxLe (a b : Pattern) :
     rNmaxLe.instPremises [a, b] = [jNLe a b] ∧
       rNmaxLe.instConclusion [a, b] = (jNMax a b b) := by
-  constructor <;> simp [rNmaxLe, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rNmaxLe, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, jNLe, jNMax]
 
 theorem sound_rNmaxLe {P : Pattern → Prop}
     (h : ∀ a b : Pattern, P (jNLe a b) → P (jNMax a b b)) :
@@ -779,29 +481,17 @@ theorem sound_rNmaxLe {P : Pattern → Prop}
       (∀ x ∈ rNmaxLe.instPremises args, P x) → P (rNmaxLe.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [a, b], _ =>
-    rw [(inst_rNmaxLe a b).1] at hprem
-    rw [(inst_rNmaxLe a b).2]
-    exact h a b (hprem _ (by simp))
+  | [a, b], _ => exact FORule.sound_of_shape (inst_rNmaxLe a b) (h a b) hprem
 
 theorem intro_rNmaxLe {R : List FORule} (hr : rNmaxLe ∈ R) {a b : Pattern}
     (hd_a : IsData a) (hd_b : IsData b) (h0 : FODerivable R (jNLe a b)) :
-    FODerivable R (jNMax a b b) := by
-  apply FODerivable.intro hr [a, b] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl <;> assumption
-  · exact (inst_rNmaxLe a b).2
-  · rw [(inst_rNmaxLe a b).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jNMax a b b) :=
+  FODerivable.intro_of_shape hr (inst_rNmaxLe a b) rfl ⟨hd_a, hd_b⟩ h0
 
 theorem inst_rNmaxGt (a b : Pattern) :
     rNmaxGt.instPremises [a, b] = [jNLt b a] ∧
       rNmaxGt.instConclusion [a, b] = (jNMax a b a) := by
-  constructor <;> simp [rNmaxGt, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rNmaxGt, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, jNLt, jNMax]
 
 theorem sound_rNmaxGt {P : Pattern → Prop}
     (h : ∀ a b : Pattern, P (jNLt b a) → P (jNMax a b a)) :
@@ -809,29 +499,17 @@ theorem sound_rNmaxGt {P : Pattern → Prop}
       (∀ x ∈ rNmaxGt.instPremises args, P x) → P (rNmaxGt.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [a, b], _ =>
-    rw [(inst_rNmaxGt a b).1] at hprem
-    rw [(inst_rNmaxGt a b).2]
-    exact h a b (hprem _ (by simp))
+  | [a, b], _ => exact FORule.sound_of_shape (inst_rNmaxGt a b) (h a b) hprem
 
 theorem intro_rNmaxGt {R : List FORule} (hr : rNmaxGt ∈ R) {a b : Pattern}
     (hd_a : IsData a) (hd_b : IsData b) (h0 : FODerivable R (jNLt b a)) :
-    FODerivable R (jNMax a b a) := by
-  apply FODerivable.intro hr [a, b] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl <;> assumption
-  · exact (inst_rNmaxGt a b).2
-  · rw [(inst_rNmaxGt a b).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jNMax a b a) :=
+  FODerivable.intro_of_shape hr (inst_rNmaxGt a b) rfl ⟨hd_a, hd_b⟩ h0
 
 theorem inst_rBorFf :
     rBorFf.instPremises [] = [] ∧
       rBorFf.instConclusion [] = (jBOr cFalse cFalse cFalse) := by
-  constructor <;> simp [rBorFf, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rBorFf, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, ab_apply, cFalse, jBOr]
 
 theorem sound_rBorFf {P : Pattern → Prop}
     (h : P (jBOr cFalse cFalse cFalse)) :
@@ -839,28 +517,17 @@ theorem sound_rBorFf {P : Pattern → Prop}
       (∀ x ∈ rBorFf.instPremises args, P x) → P (rBorFf.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [], _ =>
-    rw [(inst_rBorFf ).1] at hprem
-    rw [(inst_rBorFf ).2]
-    exact h  
+  | [], _ => exact FORule.sound_of_shape (inst_rBorFf) h hprem
 
 theorem intro_rBorFf {R : List FORule} (hr : rBorFf ∈ R) 
       :
-    FODerivable R (jBOr cFalse cFalse cFalse) := by
-  apply FODerivable.intro hr [] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-
-  · exact (inst_rBorFf ).2
-  · rw [(inst_rBorFf ).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jBOr cFalse cFalse cFalse) :=
+  FODerivable.intro_of_shape hr (inst_rBorFf) rfl trivial trivial
 
 theorem inst_rBorFt :
     rBorFt.instPremises [] = [] ∧
       rBorFt.instConclusion [] = (jBOr cFalse cTrue cTrue) := by
-  constructor <;> simp [rBorFt, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rBorFt, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, ab_apply, cFalse, cTrue, jBOr]
 
 theorem sound_rBorFt {P : Pattern → Prop}
     (h : P (jBOr cFalse cTrue cTrue)) :
@@ -868,28 +535,17 @@ theorem sound_rBorFt {P : Pattern → Prop}
       (∀ x ∈ rBorFt.instPremises args, P x) → P (rBorFt.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [], _ =>
-    rw [(inst_rBorFt ).1] at hprem
-    rw [(inst_rBorFt ).2]
-    exact h  
+  | [], _ => exact FORule.sound_of_shape (inst_rBorFt) h hprem
 
 theorem intro_rBorFt {R : List FORule} (hr : rBorFt ∈ R) 
       :
-    FODerivable R (jBOr cFalse cTrue cTrue) := by
-  apply FODerivable.intro hr [] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-
-  · exact (inst_rBorFt ).2
-  · rw [(inst_rBorFt ).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jBOr cFalse cTrue cTrue) :=
+  FODerivable.intro_of_shape hr (inst_rBorFt) rfl trivial trivial
 
 theorem inst_rBorTf :
     rBorTf.instPremises [] = [] ∧
       rBorTf.instConclusion [] = (jBOr cTrue cFalse cTrue) := by
-  constructor <;> simp [rBorTf, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rBorTf, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, ab_apply, cFalse, cTrue, jBOr]
 
 theorem sound_rBorTf {P : Pattern → Prop}
     (h : P (jBOr cTrue cFalse cTrue)) :
@@ -897,28 +553,17 @@ theorem sound_rBorTf {P : Pattern → Prop}
       (∀ x ∈ rBorTf.instPremises args, P x) → P (rBorTf.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [], _ =>
-    rw [(inst_rBorTf ).1] at hprem
-    rw [(inst_rBorTf ).2]
-    exact h  
+  | [], _ => exact FORule.sound_of_shape (inst_rBorTf) h hprem
 
 theorem intro_rBorTf {R : List FORule} (hr : rBorTf ∈ R) 
       :
-    FODerivable R (jBOr cTrue cFalse cTrue) := by
-  apply FODerivable.intro hr [] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-
-  · exact (inst_rBorTf ).2
-  · rw [(inst_rBorTf ).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jBOr cTrue cFalse cTrue) :=
+  FODerivable.intro_of_shape hr (inst_rBorTf) rfl trivial trivial
 
 theorem inst_rBorTt :
     rBorTt.instPremises [] = [] ∧
       rBorTt.instConclusion [] = (jBOr cTrue cTrue cTrue) := by
-  constructor <;> simp [rBorTt, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rBorTt, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, ab_apply, cTrue, jBOr]
 
 theorem sound_rBorTt {P : Pattern → Prop}
     (h : P (jBOr cTrue cTrue cTrue)) :
@@ -926,28 +571,17 @@ theorem sound_rBorTt {P : Pattern → Prop}
       (∀ x ∈ rBorTt.instPremises args, P x) → P (rBorTt.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [], _ =>
-    rw [(inst_rBorTt ).1] at hprem
-    rw [(inst_rBorTt ).2]
-    exact h  
+  | [], _ => exact FORule.sound_of_shape (inst_rBorTt) h hprem
 
 theorem intro_rBorTt {R : List FORule} (hr : rBorTt ∈ R) 
       :
-    FODerivable R (jBOr cTrue cTrue cTrue) := by
-  apply FODerivable.intro hr [] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-
-  · exact (inst_rBorTt ).2
-  · rw [(inst_rBorTt ).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jBOr cTrue cTrue cTrue) :=
+  FODerivable.intro_of_shape hr (inst_rBorTt) rfl trivial trivial
 
 theorem inst_rPbits1 (u : Pattern) :
     rPbits1.instPremises [u] = [] ∧
       rPbits1.instConclusion [u] = (jPBits cP1 (cUS u)) := by
-  constructor <;> simp [rPbits1, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rPbits1, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, cP1, cUS, jPBits]
 
 theorem sound_rPbits1 {P : Pattern → Prop}
     (h : ∀ u : Pattern, P (jPBits cP1 (cUS u))) :
@@ -955,29 +589,17 @@ theorem sound_rPbits1 {P : Pattern → Prop}
       (∀ x ∈ rPbits1.instPremises args, P x) → P (rPbits1.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [u], _ =>
-    rw [(inst_rPbits1 u).1] at hprem
-    rw [(inst_rPbits1 u).2]
-    exact h u 
+  | [u], _ => exact FORule.sound_of_shape (inst_rPbits1 u) (h u) hprem
 
 theorem intro_rPbits1 {R : List FORule} (hr : rPbits1 ∈ R) {u : Pattern}
     (hd_u : IsData u)  :
-    FODerivable R (jPBits cP1 (cUS u)) := by
-  apply FODerivable.intro hr [u] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl
-    assumption
-  · exact (inst_rPbits1 u).2
-  · rw [(inst_rPbits1 u).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jPBits cP1 (cUS u)) :=
+  FODerivable.intro_of_shape hr (inst_rPbits1 u) rfl hd_u trivial
 
 theorem inst_rPbitsO (p u : Pattern) :
     rPbitsO.instPremises [p, u] = [jPBits p u] ∧
       rPbitsO.instConclusion [p, u] = (jPBits (cPO p) (cUS u)) := by
-  constructor <;> simp [rPbitsO, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rPbitsO, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cPO, cUS, jPBits]
 
 theorem sound_rPbitsO {P : Pattern → Prop}
     (h : ∀ p u : Pattern, P (jPBits p u) → P (jPBits (cPO p) (cUS u))) :
@@ -985,29 +607,17 @@ theorem sound_rPbitsO {P : Pattern → Prop}
       (∀ x ∈ rPbitsO.instPremises args, P x) → P (rPbitsO.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p, u], _ =>
-    rw [(inst_rPbitsO p u).1] at hprem
-    rw [(inst_rPbitsO p u).2]
-    exact h p u (hprem _ (by simp))
+  | [p, u], _ => exact FORule.sound_of_shape (inst_rPbitsO p u) (h p u) hprem
 
 theorem intro_rPbitsO {R : List FORule} (hr : rPbitsO ∈ R) {p u : Pattern}
     (hd_p : IsData p) (hd_u : IsData u) (h0 : FODerivable R (jPBits p u)) :
-    FODerivable R (jPBits (cPO p) (cUS u)) := by
-  apply FODerivable.intro hr [p, u] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl <;> assumption
-  · exact (inst_rPbitsO p u).2
-  · rw [(inst_rPbitsO p u).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jPBits (cPO p) (cUS u)) :=
+  FODerivable.intro_of_shape hr (inst_rPbitsO p u) rfl ⟨hd_p, hd_u⟩ h0
 
 theorem inst_rPbitsI (p u : Pattern) :
     rPbitsI.instPremises [p, u] = [jPBits p u] ∧
       rPbitsI.instConclusion [p, u] = (jPBits (cPI p) (cUS u)) := by
-  constructor <;> simp [rPbitsI, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rPbitsI, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cPI, cUS, jPBits]
 
 theorem sound_rPbitsI {P : Pattern → Prop}
     (h : ∀ p u : Pattern, P (jPBits p u) → P (jPBits (cPI p) (cUS u))) :
@@ -1015,29 +625,17 @@ theorem sound_rPbitsI {P : Pattern → Prop}
       (∀ x ∈ rPbitsI.instPremises args, P x) → P (rPbitsI.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p, u], _ =>
-    rw [(inst_rPbitsI p u).1] at hprem
-    rw [(inst_rPbitsI p u).2]
-    exact h p u (hprem _ (by simp))
+  | [p, u], _ => exact FORule.sound_of_shape (inst_rPbitsI p u) (h p u) hprem
 
 theorem intro_rPbitsI {R : List FORule} (hr : rPbitsI ∈ R) {p u : Pattern}
     (hd_p : IsData p) (hd_u : IsData u) (h0 : FODerivable R (jPBits p u)) :
-    FODerivable R (jPBits (cPI p) (cUS u)) := by
-  apply FODerivable.intro hr [p, u] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl <;> assumption
-  · exact (inst_rPbitsI p u).2
-  · rw [(inst_rPbitsI p u).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jPBits (cPI p) (cUS u)) :=
+  FODerivable.intro_of_shape hr (inst_rPbitsI p u) rfl ⟨hd_p, hd_u⟩ h0
 
 theorem inst_rNword0 :
     rNword0.instPremises [] = [] ∧
       rNword0.instConclusion [] = (jNWord cN0) := by
-  constructor <;> simp [rNword0, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rNword0, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, ab_apply, cN0, jNWord]
 
 theorem sound_rNword0 {P : Pattern → Prop}
     (h : P (jNWord cN0)) :
@@ -1045,28 +643,17 @@ theorem sound_rNword0 {P : Pattern → Prop}
       (∀ x ∈ rNword0.instPremises args, P x) → P (rNword0.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [], _ =>
-    rw [(inst_rNword0 ).1] at hprem
-    rw [(inst_rNword0 ).2]
-    exact h  
+  | [], _ => exact FORule.sound_of_shape (inst_rNword0) h hprem
 
 theorem intro_rNword0 {R : List FORule} (hr : rNword0 ∈ R) 
       :
-    FODerivable R (jNWord cN0) := by
-  apply FODerivable.intro hr [] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-
-  · exact (inst_rNword0 ).2
-  · rw [(inst_rNword0 ).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jNWord cN0) :=
+  FODerivable.intro_of_shape hr (inst_rNword0) rfl trivial trivial
 
 theorem inst_rNwordP (p : Pattern) :
     rNwordP.instPremises [p] = [jPBits p patWordBits] ∧
       rNwordP.instConclusion [p] = (jNWord (cNPos p)) := by
-  constructor <;> simp [rNwordP, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rNwordP, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, cNPos, jPBits, jNWord]
 
 theorem sound_rNwordP {P : Pattern → Prop}
     (h : ∀ p : Pattern, P (jPBits p patWordBits) → P (jNWord (cNPos p))) :
@@ -1074,30 +661,17 @@ theorem sound_rNwordP {P : Pattern → Prop}
       (∀ x ∈ rNwordP.instPremises args, P x) → P (rNwordP.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p], _ =>
-    rw [(inst_rNwordP p).1] at hprem
-    rw [(inst_rNwordP p).2]
-    exact h p (hprem _ (by simp))
+  | [p], _ => exact FORule.sound_of_shape (inst_rNwordP p) (h p) hprem
 
 theorem intro_rNwordP {R : List FORule} (hr : rNwordP ∈ R) {p : Pattern}
     (hd_p : IsData p) (h0 : FODerivable R (jPBits p patWordBits)) :
-    FODerivable R (jNWord (cNPos p)) := by
-  apply FODerivable.intro hr [p] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl
-    assumption
-  · exact (inst_rNwordP p).2
-  · rw [(inst_rNwordP p).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jNWord (cNPos p)) :=
+  FODerivable.intro_of_shape hr (inst_rNwordP p) rfl hd_p h0
 
 theorem inst_rPmul1 (q : Pattern) :
     rPmul1.instPremises [q] = [] ∧
       rPmul1.instConclusion [q] = (jPMul cP1 q q) := by
-  constructor <;> simp [rPmul1, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rPmul1, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, cP1, jPMul]
 
 theorem sound_rPmul1 {P : Pattern → Prop}
     (h : ∀ q : Pattern, P (jPMul cP1 q q)) :
@@ -1105,29 +679,17 @@ theorem sound_rPmul1 {P : Pattern → Prop}
       (∀ x ∈ rPmul1.instPremises args, P x) → P (rPmul1.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [q], _ =>
-    rw [(inst_rPmul1 q).1] at hprem
-    rw [(inst_rPmul1 q).2]
-    exact h q 
+  | [q], _ => exact FORule.sound_of_shape (inst_rPmul1 q) (h q) hprem
 
 theorem intro_rPmul1 {R : List FORule} (hr : rPmul1 ∈ R) {q : Pattern}
     (hd_q : IsData q)  :
-    FODerivable R (jPMul cP1 q q) := by
-  apply FODerivable.intro hr [q] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl
-    assumption
-  · exact (inst_rPmul1 q).2
-  · rw [(inst_rPmul1 q).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jPMul cP1 q q) :=
+  FODerivable.intro_of_shape hr (inst_rPmul1 q) rfl hd_q trivial
 
 theorem inst_rPmulO (p q r : Pattern) :
     rPmulO.instPremises [p, q, r] = [jPMul p q r] ∧
       rPmulO.instConclusion [p, q, r] = (jPMul (cPO p) q (cPO r)) := by
-  constructor <;> simp [rPmulO, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rPmulO, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cPO, jPMul]
 
 theorem sound_rPmulO {P : Pattern → Prop}
     (h : ∀ p q r : Pattern, P (jPMul p q r) → P (jPMul (cPO p) q (cPO r))) :
@@ -1135,29 +697,17 @@ theorem sound_rPmulO {P : Pattern → Prop}
       (∀ x ∈ rPmulO.instPremises args, P x) → P (rPmulO.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p, q, r], _ =>
-    rw [(inst_rPmulO p q r).1] at hprem
-    rw [(inst_rPmulO p q r).2]
-    exact h p q r (hprem _ (by simp))
+  | [p, q, r], _ => exact FORule.sound_of_shape (inst_rPmulO p q r) (h p q r) hprem
 
 theorem intro_rPmulO {R : List FORule} (hr : rPmulO ∈ R) {p q r : Pattern}
     (hd_p : IsData p) (hd_q : IsData q) (hd_r : IsData r) (h0 : FODerivable R (jPMul p q r)) :
-    FODerivable R (jPMul (cPO p) q (cPO r)) := by
-  apply FODerivable.intro hr [p, q, r] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl <;> assumption
-  · exact (inst_rPmulO p q r).2
-  · rw [(inst_rPmulO p q r).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jPMul (cPO p) q (cPO r)) :=
+  FODerivable.intro_of_shape hr (inst_rPmulO p q r) rfl ⟨hd_p, hd_q, hd_r⟩ h0
 
 theorem inst_rPmulI (p q r s : Pattern) :
     rPmulI.instPremises [p, q, r, s] = [jPMul p q r, jPAdd (cPO r) q s] ∧
       rPmulI.instConclusion [p, q, r, s] = (jPMul (cPI p) q s) := by
-  constructor <;> simp [rPmulI, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rPmulI, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cPO, cPI, jPAdd, jPMul]
 
 theorem sound_rPmulI {P : Pattern → Prop}
     (h : ∀ p q r s : Pattern, P (jPMul p q r) → P (jPAdd (cPO r) q s) → P (jPMul (cPI p) q s)) :
@@ -1165,28 +715,17 @@ theorem sound_rPmulI {P : Pattern → Prop}
       (∀ x ∈ rPmulI.instPremises args, P x) → P (rPmulI.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p, q, r, s], _ =>
-    rw [(inst_rPmulI p q r s).1] at hprem
-    rw [(inst_rPmulI p q r s).2]
-    exact h p q r s (hprem _ (by simp)) (hprem _ (by simp))
+  | [p, q, r, s], _ => exact FORule.sound_of_shape (inst_rPmulI p q r s) (h p q r s) hprem
 
 theorem intro_rPmulI {R : List FORule} (hr : rPmulI ∈ R) {p q r s : Pattern}
     (hd_p : IsData p) (hd_q : IsData q) (hd_r : IsData r) (hd_s : IsData s) (h0 : FODerivable R (jPMul p q r)) (h1 : FODerivable R (jPAdd (cPO r) q s)) :
-    FODerivable R (jPMul (cPI p) q s) := by
-  apply FODerivable.intro hr [p, q, r, s] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rPmulI p q r s).2
-  · rw [(inst_rPmulI p q r s).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl <;> assumption
+    FODerivable R (jPMul (cPI p) q s) :=
+  FODerivable.intro_of_shape hr (inst_rPmulI p q r s) rfl ⟨hd_p, hd_q, hd_r, hd_s⟩ ⟨h0, h1⟩
 
 theorem inst_rNmul0l (b : Pattern) :
     rNmul0l.instPremises [b] = [] ∧
       rNmul0l.instConclusion [b] = (jNMul cN0 b cN0) := by
-  constructor <;> simp [rNmul0l, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rNmul0l, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, cN0, jNMul]
 
 theorem sound_rNmul0l {P : Pattern → Prop}
     (h : ∀ b : Pattern, P (jNMul cN0 b cN0)) :
@@ -1194,29 +733,17 @@ theorem sound_rNmul0l {P : Pattern → Prop}
       (∀ x ∈ rNmul0l.instPremises args, P x) → P (rNmul0l.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [b], _ =>
-    rw [(inst_rNmul0l b).1] at hprem
-    rw [(inst_rNmul0l b).2]
-    exact h b 
+  | [b], _ => exact FORule.sound_of_shape (inst_rNmul0l b) (h b) hprem
 
 theorem intro_rNmul0l {R : List FORule} (hr : rNmul0l ∈ R) {b : Pattern}
     (hd_b : IsData b)  :
-    FODerivable R (jNMul cN0 b cN0) := by
-  apply FODerivable.intro hr [b] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl
-    assumption
-  · exact (inst_rNmul0l b).2
-  · rw [(inst_rNmul0l b).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jNMul cN0 b cN0) :=
+  FODerivable.intro_of_shape hr (inst_rNmul0l b) rfl hd_b trivial
 
 theorem inst_rNmul0r (p : Pattern) :
     rNmul0r.instPremises [p] = [] ∧
       rNmul0r.instConclusion [p] = (jNMul (cNPos p) cN0 cN0) := by
-  constructor <;> simp [rNmul0r, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rNmul0r, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, cN0, cNPos, jNMul]
 
 theorem sound_rNmul0r {P : Pattern → Prop}
     (h : ∀ p : Pattern, P (jNMul (cNPos p) cN0 cN0)) :
@@ -1224,29 +751,17 @@ theorem sound_rNmul0r {P : Pattern → Prop}
       (∀ x ∈ rNmul0r.instPremises args, P x) → P (rNmul0r.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p], _ =>
-    rw [(inst_rNmul0r p).1] at hprem
-    rw [(inst_rNmul0r p).2]
-    exact h p 
+  | [p], _ => exact FORule.sound_of_shape (inst_rNmul0r p) (h p) hprem
 
 theorem intro_rNmul0r {R : List FORule} (hr : rNmul0r ∈ R) {p : Pattern}
     (hd_p : IsData p)  :
-    FODerivable R (jNMul (cNPos p) cN0 cN0) := by
-  apply FODerivable.intro hr [p] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl
-    assumption
-  · exact (inst_rNmul0r p).2
-  · rw [(inst_rNmul0r p).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jNMul (cNPos p) cN0 cN0) :=
+  FODerivable.intro_of_shape hr (inst_rNmul0r p) rfl hd_p trivial
 
 theorem inst_rNmulPp (p q r : Pattern) :
     rNmulPp.instPremises [p, q, r] = [jPMul p q r] ∧
       rNmulPp.instConclusion [p, q, r] = (jNMul (cNPos p) (cNPos q) (cNPos r)) := by
-  constructor <;> simp [rNmulPp, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rNmulPp, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cNPos, jPMul, jNMul]
 
 theorem sound_rNmulPp {P : Pattern → Prop}
     (h : ∀ p q r : Pattern, P (jPMul p q r) → P (jNMul (cNPos p) (cNPos q) (cNPos r))) :
@@ -1254,29 +769,17 @@ theorem sound_rNmulPp {P : Pattern → Prop}
       (∀ x ∈ rNmulPp.instPremises args, P x) → P (rNmulPp.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p, q, r], _ =>
-    rw [(inst_rNmulPp p q r).1] at hprem
-    rw [(inst_rNmulPp p q r).2]
-    exact h p q r (hprem _ (by simp))
+  | [p, q, r], _ => exact FORule.sound_of_shape (inst_rNmulPp p q r) (h p q r) hprem
 
 theorem intro_rNmulPp {R : List FORule} (hr : rNmulPp ∈ R) {p q r : Pattern}
     (hd_p : IsData p) (hd_q : IsData q) (hd_r : IsData r) (h0 : FODerivable R (jPMul p q r)) :
-    FODerivable R (jNMul (cNPos p) (cNPos q) (cNPos r)) := by
-  apply FODerivable.intro hr [p, q, r] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl <;> assumption
-  · exact (inst_rNmulPp p q r).2
-  · rw [(inst_rNmulPp p q r).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jNMul (cNPos p) (cNPos q) (cNPos r)) :=
+  FODerivable.intro_of_shape hr (inst_rNmulPp p q r) rfl ⟨hd_p, hd_q, hd_r⟩ h0
 
 theorem inst_rNdivmod (a b q r m : Pattern) :
     rNdivmod.instPremises [a, b, q, r, m] = [jNMul b q m, jNAdd m r a, jNLt r b] ∧
       rNdivmod.instConclusion [a, b, q, r, m] = (jNDivMod a b q r) := by
-  constructor <;> simp [rNdivmod, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rNdivmod, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, jNAdd, jNLt, jNMul, jNDivMod]
 
 theorem sound_rNdivmod {P : Pattern → Prop}
     (h : ∀ a b q r m : Pattern, P (jNMul b q m) → P (jNAdd m r a) → P (jNLt r b) → P (jNDivMod a b q r)) :
@@ -1284,28 +787,17 @@ theorem sound_rNdivmod {P : Pattern → Prop}
       (∀ x ∈ rNdivmod.instPremises args, P x) → P (rNdivmod.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [a, b, q, r, m], _ =>
-    rw [(inst_rNdivmod a b q r m).1] at hprem
-    rw [(inst_rNdivmod a b q r m).2]
-    exact h a b q r m (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [a, b, q, r, m], _ => exact FORule.sound_of_shape (inst_rNdivmod a b q r m) (h a b q r m) hprem
 
 theorem intro_rNdivmod {R : List FORule} (hr : rNdivmod ∈ R) {a b q r m : Pattern}
     (hd_a : IsData a) (hd_b : IsData b) (hd_q : IsData q) (hd_r : IsData r) (hd_m : IsData m) (h0 : FODerivable R (jNMul b q m)) (h1 : FODerivable R (jNAdd m r a)) (h2 : FODerivable R (jNLt r b)) :
-    FODerivable R (jNDivMod a b q r) := by
-  apply FODerivable.intro hr [a, b, q, r, m] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rNdivmod a b q r m).2
-  · rw [(inst_rNdivmod a b q r m).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl <;> assumption
+    FODerivable R (jNDivMod a b q r) :=
+  FODerivable.intro_of_shape hr (inst_rNdivmod a b q r m) rfl ⟨hd_a, hd_b, hd_q, hd_r, hd_m⟩ ⟨h0, h1, h2⟩
 
 theorem inst_rNmod64 (a q c : Pattern) :
     rNmod64.instPremises [a, q, c] = [jNDivMod a patTwo64 q c] ∧
       rNmod64.instConclusion [a, q, c] = (jNMod64 a c) := by
-  constructor <;> simp [rNmod64, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rNmod64, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, jNDivMod, jNMod64]
 
 theorem sound_rNmod64 {P : Pattern → Prop}
     (h : ∀ a q c : Pattern, P (jNDivMod a patTwo64 q c) → P (jNMod64 a c)) :
@@ -1313,29 +805,17 @@ theorem sound_rNmod64 {P : Pattern → Prop}
       (∀ x ∈ rNmod64.instPremises args, P x) → P (rNmod64.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [a, q, c], _ =>
-    rw [(inst_rNmod64 a q c).1] at hprem
-    rw [(inst_rNmod64 a q c).2]
-    exact h a q c (hprem _ (by simp))
+  | [a, q, c], _ => exact FORule.sound_of_shape (inst_rNmod64 a q c) (h a q c) hprem
 
 theorem intro_rNmod64 {R : List FORule} (hr : rNmod64 ∈ R) {a q c : Pattern}
     (hd_a : IsData a) (hd_q : IsData q) (hd_c : IsData c) (h0 : FODerivable R (jNDivMod a patTwo64 q c)) :
-    FODerivable R (jNMod64 a c) := by
-  apply FODerivable.intro hr [a, q, c] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl <;> assumption
-  · exact (inst_rNmod64 a q c).2
-  · rw [(inst_rNmod64 a q c).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jNMod64 a c) :=
+  FODerivable.intro_of_shape hr (inst_rNmod64 a q c) rfl ⟨hd_a, hd_q, hd_c⟩ h0
 
 theorem inst_rLenNil :
     rLenNil.instPremises [] = [] ∧
       rLenNil.instConclusion [] = (jLen cNil cN0) := by
-  constructor <;> simp [rLenNil, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rLenNil, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, ab_apply, cN0, cNil, jLen]
 
 theorem sound_rLenNil {P : Pattern → Prop}
     (h : P (jLen cNil cN0)) :
@@ -1343,28 +823,17 @@ theorem sound_rLenNil {P : Pattern → Prop}
       (∀ x ∈ rLenNil.instPremises args, P x) → P (rLenNil.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [], _ =>
-    rw [(inst_rLenNil ).1] at hprem
-    rw [(inst_rLenNil ).2]
-    exact h  
+  | [], _ => exact FORule.sound_of_shape (inst_rLenNil) h hprem
 
 theorem intro_rLenNil {R : List FORule} (hr : rLenNil ∈ R) 
       :
-    FODerivable R (jLen cNil cN0) := by
-  apply FODerivable.intro hr [] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-
-  · exact (inst_rLenNil ).2
-  · rw [(inst_rLenNil ).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jLen cNil cN0) :=
+  FODerivable.intro_of_shape hr (inst_rLenNil) rfl trivial trivial
 
 theorem inst_rLenCons (xx xs n k : Pattern) :
     rLenCons.instPremises [xx, xs, n, k] = [jLen xs n, jNAdd n patOne k] ∧
       rLenCons.instConclusion [xx, xs, n, k] = (jLen (cCons xx xs) k) := by
-  constructor <;> simp [rLenCons, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rLenCons, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cCons, jNAdd, jLen]
 
 theorem sound_rLenCons {P : Pattern → Prop}
     (h : ∀ xx xs n k : Pattern, P (jLen xs n) → P (jNAdd n patOne k) → P (jLen (cCons xx xs) k)) :
@@ -1372,28 +841,17 @@ theorem sound_rLenCons {P : Pattern → Prop}
       (∀ x ∈ rLenCons.instPremises args, P x) → P (rLenCons.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [xx, xs, n, k], _ =>
-    rw [(inst_rLenCons xx xs n k).1] at hprem
-    rw [(inst_rLenCons xx xs n k).2]
-    exact h xx xs n k (hprem _ (by simp)) (hprem _ (by simp))
+  | [xx, xs, n, k], _ => exact FORule.sound_of_shape (inst_rLenCons xx xs n k) (h xx xs n k) hprem
 
 theorem intro_rLenCons {R : List FORule} (hr : rLenCons ∈ R) {xx xs n k : Pattern}
     (hd_xx : IsData xx) (hd_xs : IsData xs) (hd_n : IsData n) (hd_k : IsData k) (h0 : FODerivable R (jLen xs n)) (h1 : FODerivable R (jNAdd n patOne k)) :
-    FODerivable R (jLen (cCons xx xs) k) := by
-  apply FODerivable.intro hr [xx, xs, n, k] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rLenCons xx xs n k).2
-  · rw [(inst_rLenCons xx xs n k).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl <;> assumption
+    FODerivable R (jLen (cCons xx xs) k) :=
+  FODerivable.intro_of_shape hr (inst_rLenCons xx xs n k) rfl ⟨hd_xx, hd_xs, hd_n, hd_k⟩ ⟨h0, h1⟩
 
 theorem inst_rNth0 (xx xs : Pattern) :
     rNth0.instPremises [xx, xs] = [] ∧
       rNth0.instConclusion [xx, xs] = (jNth (cCons xx xs) cN0 xx) := by
-  constructor <;> simp [rNth0, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rNth0, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cN0, cCons, jNth]
 
 theorem sound_rNth0 {P : Pattern → Prop}
     (h : ∀ xx xs : Pattern, P (jNth (cCons xx xs) cN0 xx)) :
@@ -1401,28 +859,17 @@ theorem sound_rNth0 {P : Pattern → Prop}
       (∀ x ∈ rNth0.instPremises args, P x) → P (rNth0.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [xx, xs], _ =>
-    rw [(inst_rNth0 xx xs).1] at hprem
-    rw [(inst_rNth0 xx xs).2]
-    exact h xx xs 
+  | [xx, xs], _ => exact FORule.sound_of_shape (inst_rNth0 xx xs) (h xx xs) hprem
 
 theorem intro_rNth0 {R : List FORule} (hr : rNth0 ∈ R) {xx xs : Pattern}
     (hd_xx : IsData xx) (hd_xs : IsData xs)  :
-    FODerivable R (jNth (cCons xx xs) cN0 xx) := by
-  apply FODerivable.intro hr [xx, xs] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl <;> assumption
-  · exact (inst_rNth0 xx xs).2
-  · rw [(inst_rNth0 xx xs).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jNth (cCons xx xs) cN0 xx) :=
+  FODerivable.intro_of_shape hr (inst_rNth0 xx xs) rfl ⟨hd_xx, hd_xs⟩ trivial
 
 theorem inst_rNthS (xx xs i j y : Pattern) :
     rNthS.instPremises [xx, xs, i, j, y] = [jNAdd j patOne i, jNth xs j y] ∧
       rNthS.instConclusion [xx, xs, i, j, y] = (jNth (cCons xx xs) i y) := by
-  constructor <;> simp [rNthS, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rNthS, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cCons, jNAdd, jNth]
 
 theorem sound_rNthS {P : Pattern → Prop}
     (h : ∀ xx xs i j y : Pattern, P (jNAdd j patOne i) → P (jNth xs j y) → P (jNth (cCons xx xs) i y)) :
@@ -1430,28 +877,17 @@ theorem sound_rNthS {P : Pattern → Prop}
       (∀ x ∈ rNthS.instPremises args, P x) → P (rNthS.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [xx, xs, i, j, y], _ =>
-    rw [(inst_rNthS xx xs i j y).1] at hprem
-    rw [(inst_rNthS xx xs i j y).2]
-    exact h xx xs i j y (hprem _ (by simp)) (hprem _ (by simp))
+  | [xx, xs, i, j, y], _ => exact FORule.sound_of_shape (inst_rNthS xx xs i j y) (h xx xs i j y) hprem
 
 theorem intro_rNthS {R : List FORule} (hr : rNthS ∈ R) {xx xs i j y : Pattern}
     (hd_xx : IsData xx) (hd_xs : IsData xs) (hd_i : IsData i) (hd_j : IsData j) (hd_y : IsData y) (h0 : FODerivable R (jNAdd j patOne i)) (h1 : FODerivable R (jNth xs j y)) :
-    FODerivable R (jNth (cCons xx xs) i y) := by
-  apply FODerivable.intro hr [xx, xs, i, j, y] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rNthS xx xs i j y).2
-  · rw [(inst_rNthS xx xs i j y).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl <;> assumption
+    FODerivable R (jNth (cCons xx xs) i y) :=
+  FODerivable.intro_of_shape hr (inst_rNthS xx xs i j y) rfl ⟨hd_xx, hd_xs, hd_i, hd_j, hd_y⟩ ⟨h0, h1⟩
 
 theorem inst_rBytesNil :
     rBytesNil.instPremises [] = [] ∧
       rBytesNil.instConclusion [] = (jBytes cNil) := by
-  constructor <;> simp [rBytesNil, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rBytesNil, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, ab_apply, cNil, jBytes]
 
 theorem sound_rBytesNil {P : Pattern → Prop}
     (h : P (jBytes cNil)) :
@@ -1459,28 +895,17 @@ theorem sound_rBytesNil {P : Pattern → Prop}
       (∀ x ∈ rBytesNil.instPremises args, P x) → P (rBytesNil.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [], _ =>
-    rw [(inst_rBytesNil ).1] at hprem
-    rw [(inst_rBytesNil ).2]
-    exact h  
+  | [], _ => exact FORule.sound_of_shape (inst_rBytesNil) h hprem
 
 theorem intro_rBytesNil {R : List FORule} (hr : rBytesNil ∈ R) 
       :
-    FODerivable R (jBytes cNil) := by
-  apply FODerivable.intro hr [] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-
-  · exact (inst_rBytesNil ).2
-  · rw [(inst_rBytesNil ).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jBytes cNil) :=
+  FODerivable.intro_of_shape hr (inst_rBytesNil) rfl trivial trivial
 
 theorem inst_rBytesCons (xx xs : Pattern) :
     rBytesCons.instPremises [xx, xs] = [jNLt xx patByteBound, jBytes xs] ∧
       rBytesCons.instConclusion [xx, xs] = (jBytes (cCons xx xs)) := by
-  constructor <;> simp [rBytesCons, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rBytesCons, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cCons, jNLt, jBytes]
 
 theorem sound_rBytesCons {P : Pattern → Prop}
     (h : ∀ xx xs : Pattern, P (jNLt xx patByteBound) → P (jBytes xs) → P (jBytes (cCons xx xs))) :
@@ -1488,28 +913,17 @@ theorem sound_rBytesCons {P : Pattern → Prop}
       (∀ x ∈ rBytesCons.instPremises args, P x) → P (rBytesCons.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [xx, xs], _ =>
-    rw [(inst_rBytesCons xx xs).1] at hprem
-    rw [(inst_rBytesCons xx xs).2]
-    exact h xx xs (hprem _ (by simp)) (hprem _ (by simp))
+  | [xx, xs], _ => exact FORule.sound_of_shape (inst_rBytesCons xx xs) (h xx xs) hprem
 
 theorem intro_rBytesCons {R : List FORule} (hr : rBytesCons ∈ R) {xx xs : Pattern}
     (hd_xx : IsData xx) (hd_xs : IsData xs) (h0 : FODerivable R (jNLt xx patByteBound)) (h1 : FODerivable R (jBytes xs)) :
-    FODerivable R (jBytes (cCons xx xs)) := by
-  apply FODerivable.intro hr [xx, xs] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl <;> assumption
-  · exact (inst_rBytesCons xx xs).2
-  · rw [(inst_rBytesCons xx xs).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl <;> assumption
+    FODerivable R (jBytes (cCons xx xs)) :=
+  FODerivable.intro_of_shape hr (inst_rBytesCons xx xs) rfl ⟨hd_xx, hd_xs⟩ ⟨h0, h1⟩
 
 theorem inst_rWfBvar (n k : Pattern) :
     rWfBvar.instPremises [n, k] = [jNAdd n patOne k, jNWord k] ∧
       rWfBvar.instConclusion [n, k] = (jWf (cBVar n)) := by
-  constructor <;> simp [rWfBvar, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rWfBvar, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cBVar, jNAdd, jNWord, jWf]
 
 theorem sound_rWfBvar {P : Pattern → Prop}
     (h : ∀ n k : Pattern, P (jNAdd n patOne k) → P (jNWord k) → P (jWf (cBVar n))) :
@@ -1517,28 +931,17 @@ theorem sound_rWfBvar {P : Pattern → Prop}
       (∀ x ∈ rWfBvar.instPremises args, P x) → P (rWfBvar.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [n, k], _ =>
-    rw [(inst_rWfBvar n k).1] at hprem
-    rw [(inst_rWfBvar n k).2]
-    exact h n k (hprem _ (by simp)) (hprem _ (by simp))
+  | [n, k], _ => exact FORule.sound_of_shape (inst_rWfBvar n k) (h n k) hprem
 
 theorem intro_rWfBvar {R : List FORule} (hr : rWfBvar ∈ R) {n k : Pattern}
     (hd_n : IsData n) (hd_k : IsData k) (h0 : FODerivable R (jNAdd n patOne k)) (h1 : FODerivable R (jNWord k)) :
-    FODerivable R (jWf (cBVar n)) := by
-  apply FODerivable.intro hr [n, k] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl <;> assumption
-  · exact (inst_rWfBvar n k).2
-  · rw [(inst_rWfBvar n k).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl <;> assumption
+    FODerivable R (jWf (cBVar n)) :=
+  FODerivable.intro_of_shape hr (inst_rWfBvar n k) rfl ⟨hd_n, hd_k⟩ ⟨h0, h1⟩
 
 theorem inst_rWfLit (bs len k : Pattern) :
     rWfLit.instPremises [bs, len, k] = [jBytes bs, jLen bs len, jNAdd len patEight k, jNWord k] ∧
       rWfLit.instConclusion [bs, len, k] = (jWf (cLit bs)) := by
-  constructor <;> simp [rWfLit, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rWfLit, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cLit, jNAdd, jNWord, jLen, jBytes, jWf]
 
 theorem sound_rWfLit {P : Pattern → Prop}
     (h : ∀ bs len k : Pattern, P (jBytes bs) → P (jLen bs len) → P (jNAdd len patEight k) → P (jNWord k) → P (jWf (cLit bs))) :
@@ -1546,28 +949,17 @@ theorem sound_rWfLit {P : Pattern → Prop}
       (∀ x ∈ rWfLit.instPremises args, P x) → P (rWfLit.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [bs, len, k], _ =>
-    rw [(inst_rWfLit bs len k).1] at hprem
-    rw [(inst_rWfLit bs len k).2]
-    exact h bs len k (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [bs, len, k], _ => exact FORule.sound_of_shape (inst_rWfLit bs len k) (h bs len k) hprem
 
 theorem intro_rWfLit {R : List FORule} (hr : rWfLit ∈ R) {bs len k : Pattern}
     (hd_bs : IsData bs) (hd_len : IsData len) (hd_k : IsData k) (h0 : FODerivable R (jBytes bs)) (h1 : FODerivable R (jLen bs len)) (h2 : FODerivable R (jNAdd len patEight k)) (h3 : FODerivable R (jNWord k)) :
-    FODerivable R (jWf (cLit bs)) := by
-  apply FODerivable.intro hr [bs, len, k] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl <;> assumption
-  · exact (inst_rWfLit bs len k).2
-  · rw [(inst_rWfLit bs len k).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl | rfl <;> assumption
+    FODerivable R (jWf (cLit bs)) :=
+  FODerivable.intro_of_shape hr (inst_rWfLit bs len k) rfl ⟨hd_bs, hd_len, hd_k⟩ ⟨h0, h1, h2, h3⟩
 
 theorem inst_rWfApp (idv kind bs ts d f g : Pattern) :
     rWfApp.instPremises [idv, kind, bs, ts, d, f, g] = [jSymDecl (cSym idv kind bs), jWfArgs bs ts d f, jKindFv kind f g] ∧
       rWfApp.instConclusion [idv, kind, bs, ts, d, f, g] = (jWf (cApp (cSym idv kind bs) ts (cAnn d g))) := by
-  constructor <;> simp [rWfApp, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rWfApp, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cSym, cAnn, cApp, jSymDecl, jWf, jWfArgs, jKindFv]
 
 theorem sound_rWfApp {P : Pattern → Prop}
     (h : ∀ idv kind bs ts d f g : Pattern, P (jSymDecl (cSym idv kind bs)) → P (jWfArgs bs ts d f) → P (jKindFv kind f g) → P (jWf (cApp (cSym idv kind bs) ts (cAnn d g)))) :
@@ -1575,28 +967,17 @@ theorem sound_rWfApp {P : Pattern → Prop}
       (∀ x ∈ rWfApp.instPremises args, P x) → P (rWfApp.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [idv, kind, bs, ts, d, f, g], _ =>
-    rw [(inst_rWfApp idv kind bs ts d f g).1] at hprem
-    rw [(inst_rWfApp idv kind bs ts d f g).2]
-    exact h idv kind bs ts d f g (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [idv, kind, bs, ts, d, f, g], _ => exact FORule.sound_of_shape (inst_rWfApp idv kind bs ts d f g) (h idv kind bs ts d f g) hprem
 
 theorem intro_rWfApp {R : List FORule} (hr : rWfApp ∈ R) {idv kind bs ts d f g : Pattern}
     (hd_idv : IsData idv) (hd_kind : IsData kind) (hd_bs : IsData bs) (hd_ts : IsData ts) (hd_d : IsData d) (hd_f : IsData f) (hd_g : IsData g) (h0 : FODerivable R (jSymDecl (cSym idv kind bs))) (h1 : FODerivable R (jWfArgs bs ts d f)) (h2 : FODerivable R (jKindFv kind f g)) :
-    FODerivable R (jWf (cApp (cSym idv kind bs) ts (cAnn d g))) := by
-  apply FODerivable.intro hr [idv, kind, bs, ts, d, f, g] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rWfApp idv kind bs ts d f g).2
-  · rw [(inst_rWfApp idv kind bs ts d f g).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl <;> assumption
+    FODerivable R (jWf (cApp (cSym idv kind bs) ts (cAnn d g))) :=
+  FODerivable.intro_of_shape hr (inst_rWfApp idv kind bs ts d f g) rfl ⟨hd_idv, hd_kind, hd_bs, hd_ts, hd_d, hd_f, hd_g⟩ ⟨h0, h1, h2⟩
 
 theorem inst_rWfargsNil :
     rWfargsNil.instPremises [] = [] ∧
       rWfargsNil.instConclusion [] = (jWfArgs cNil cNil cN0 cFalse) := by
-  constructor <;> simp [rWfargsNil, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rWfargsNil, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, ab_apply, cN0, cFalse, cNil, jWfArgs]
 
 theorem sound_rWfargsNil {P : Pattern → Prop}
     (h : P (jWfArgs cNil cNil cN0 cFalse)) :
@@ -1604,28 +985,17 @@ theorem sound_rWfargsNil {P : Pattern → Prop}
       (∀ x ∈ rWfargsNil.instPremises args, P x) → P (rWfargsNil.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [], _ =>
-    rw [(inst_rWfargsNil ).1] at hprem
-    rw [(inst_rWfargsNil ).2]
-    exact h  
+  | [], _ => exact FORule.sound_of_shape (inst_rWfargsNil) h hprem
 
 theorem intro_rWfargsNil {R : List FORule} (hr : rWfargsNil ∈ R) 
       :
-    FODerivable R (jWfArgs cNil cNil cN0 cFalse) := by
-  apply FODerivable.intro hr [] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-
-  · exact (inst_rWfargsNil ).2
-  · rw [(inst_rWfargsNil ).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jWfArgs cNil cNil cN0 cFalse) :=
+  FODerivable.intro_of_shape hr (inst_rWfargsNil) rfl trivial trivial
 
 theorem inst_rWfargsCons (b bs t ts dt e dr fr ft d f : Pattern) :
     rWfargsCons.instPremises [b, bs, t, ts, dt, e, dr, fr, ft, d, f] = [jWf t, jDepth t dt, jNMonus dt b e, jHasFv t ft, jWfArgs bs ts dr fr, jNMax e dr d, jBOr ft fr f] ∧
       rWfargsCons.instConclusion [b, bs, t, ts, dt, e, dr, fr, ft, d, f] = (jWfArgs (cCons b bs) (cCons t ts) d f) := by
-  constructor <;> simp [rWfargsCons, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rWfargsCons, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cCons, jNMonus, jNMax, jBOr, jWf, jWfArgs, jDepth, jHasFv]
 
 theorem sound_rWfargsCons {P : Pattern → Prop}
     (h : ∀ b bs t ts dt e dr fr ft d f : Pattern, P (jWf t) → P (jDepth t dt) → P (jNMonus dt b e) → P (jHasFv t ft) → P (jWfArgs bs ts dr fr) → P (jNMax e dr d) → P (jBOr ft fr f) → P (jWfArgs (cCons b bs) (cCons t ts) d f)) :
@@ -1633,28 +1003,17 @@ theorem sound_rWfargsCons {P : Pattern → Prop}
       (∀ x ∈ rWfargsCons.instPremises args, P x) → P (rWfargsCons.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [b, bs, t, ts, dt, e, dr, fr, ft, d, f], _ =>
-    rw [(inst_rWfargsCons b bs t ts dt e dr fr ft d f).1] at hprem
-    rw [(inst_rWfargsCons b bs t ts dt e dr fr ft d f).2]
-    exact h b bs t ts dt e dr fr ft d f (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [b, bs, t, ts, dt, e, dr, fr, ft, d, f], _ => exact FORule.sound_of_shape (inst_rWfargsCons b bs t ts dt e dr fr ft d f) (h b bs t ts dt e dr fr ft d f) hprem
 
 theorem intro_rWfargsCons {R : List FORule} (hr : rWfargsCons ∈ R) {b bs t ts dt e dr fr ft d f : Pattern}
     (hd_b : IsData b) (hd_bs : IsData bs) (hd_t : IsData t) (hd_ts : IsData ts) (hd_dt : IsData dt) (hd_e : IsData e) (hd_dr : IsData dr) (hd_fr : IsData fr) (hd_ft : IsData ft) (hd_d : IsData d) (hd_f : IsData f) (h0 : FODerivable R (jWf t)) (h1 : FODerivable R (jDepth t dt)) (h2 : FODerivable R (jNMonus dt b e)) (h3 : FODerivable R (jHasFv t ft)) (h4 : FODerivable R (jWfArgs bs ts dr fr)) (h5 : FODerivable R (jNMax e dr d)) (h6 : FODerivable R (jBOr ft fr f)) :
-    FODerivable R (jWfArgs (cCons b bs) (cCons t ts) d f) := by
-  apply FODerivable.intro hr [b, bs, t, ts, dt, e, dr, fr, ft, d, f] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rWfargsCons b bs t ts dt e dr fr ft d f).2
-  · rw [(inst_rWfargsCons b bs t ts dt e dr fr ft d f).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
+    FODerivable R (jWfArgs (cCons b bs) (cCons t ts) d f) :=
+  FODerivable.intro_of_shape hr (inst_rWfargsCons b bs t ts dt e dr fr ft d f) rfl ⟨hd_b, hd_bs, hd_t, hd_ts, hd_dt, hd_e, hd_dr, hd_fr, hd_ft, hd_d, hd_f⟩ ⟨h0, h1, h2, h3, h4, h5, h6⟩
 
 theorem inst_rKindfvConst (f : Pattern) :
     rKindfvConst.instPremises [f] = [] ∧
       rKindfvConst.instConclusion [f] = (jKindFv cKConst f f) := by
-  constructor <;> simp [rKindfvConst, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rKindfvConst, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, cKConst, jKindFv]
 
 theorem sound_rKindfvConst {P : Pattern → Prop}
     (h : ∀ f : Pattern, P (jKindFv cKConst f f)) :
@@ -1662,29 +1021,17 @@ theorem sound_rKindfvConst {P : Pattern → Prop}
       (∀ x ∈ rKindfvConst.instPremises args, P x) → P (rKindfvConst.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [f], _ =>
-    rw [(inst_rKindfvConst f).1] at hprem
-    rw [(inst_rKindfvConst f).2]
-    exact h f 
+  | [f], _ => exact FORule.sound_of_shape (inst_rKindfvConst f) (h f) hprem
 
 theorem intro_rKindfvConst {R : List FORule} (hr : rKindfvConst ∈ R) {f : Pattern}
     (hd_f : IsData f)  :
-    FODerivable R (jKindFv cKConst f f) := by
-  apply FODerivable.intro hr [f] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl
-    assumption
-  · exact (inst_rKindfvConst f).2
-  · rw [(inst_rKindfvConst f).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jKindFv cKConst f f) :=
+  FODerivable.intro_of_shape hr (inst_rKindfvConst f) rfl hd_f trivial
 
 theorem inst_rKindfvFvar (f : Pattern) :
     rKindfvFvar.instPremises [f] = [] ∧
       rKindfvFvar.instConclusion [f] = (jKindFv cKFvar f cTrue) := by
-  constructor <;> simp [rKindfvFvar, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rKindfvFvar, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, cTrue, cKFvar, jKindFv]
 
 theorem sound_rKindfvFvar {P : Pattern → Prop}
     (h : ∀ f : Pattern, P (jKindFv cKFvar f cTrue)) :
@@ -1692,29 +1039,17 @@ theorem sound_rKindfvFvar {P : Pattern → Prop}
       (∀ x ∈ rKindfvFvar.instPremises args, P x) → P (rKindfvFvar.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [f], _ =>
-    rw [(inst_rKindfvFvar f).1] at hprem
-    rw [(inst_rKindfvFvar f).2]
-    exact h f 
+  | [f], _ => exact FORule.sound_of_shape (inst_rKindfvFvar f) (h f) hprem
 
 theorem intro_rKindfvFvar {R : List FORule} (hr : rKindfvFvar ∈ R) {f : Pattern}
     (hd_f : IsData f)  :
-    FODerivable R (jKindFv cKFvar f cTrue) := by
-  apply FODerivable.intro hr [f] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl
-    assumption
-  · exact (inst_rKindfvFvar f).2
-  · rw [(inst_rKindfvFvar f).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jKindFv cKFvar f cTrue) :=
+  FODerivable.intro_of_shape hr (inst_rKindfvFvar f) rfl hd_f trivial
 
 theorem inst_rDepthBvar (n d : Pattern) :
     rDepthBvar.instPremises [n, d] = [jNAdd n patOne d] ∧
       rDepthBvar.instConclusion [n, d] = (jDepth (cBVar n) d) := by
-  constructor <;> simp [rDepthBvar, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rDepthBvar, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cBVar, jNAdd, jDepth]
 
 theorem sound_rDepthBvar {P : Pattern → Prop}
     (h : ∀ n d : Pattern, P (jNAdd n patOne d) → P (jDepth (cBVar n) d)) :
@@ -1722,29 +1057,17 @@ theorem sound_rDepthBvar {P : Pattern → Prop}
       (∀ x ∈ rDepthBvar.instPremises args, P x) → P (rDepthBvar.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [n, d], _ =>
-    rw [(inst_rDepthBvar n d).1] at hprem
-    rw [(inst_rDepthBvar n d).2]
-    exact h n d (hprem _ (by simp))
+  | [n, d], _ => exact FORule.sound_of_shape (inst_rDepthBvar n d) (h n d) hprem
 
 theorem intro_rDepthBvar {R : List FORule} (hr : rDepthBvar ∈ R) {n d : Pattern}
     (hd_n : IsData n) (hd_d : IsData d) (h0 : FODerivable R (jNAdd n patOne d)) :
-    FODerivable R (jDepth (cBVar n) d) := by
-  apply FODerivable.intro hr [n, d] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl <;> assumption
-  · exact (inst_rDepthBvar n d).2
-  · rw [(inst_rDepthBvar n d).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jDepth (cBVar n) d) :=
+  FODerivable.intro_of_shape hr (inst_rDepthBvar n d) rfl ⟨hd_n, hd_d⟩ h0
 
 theorem inst_rDepthLit (bs : Pattern) :
     rDepthLit.instPremises [bs] = [] ∧
       rDepthLit.instConclusion [bs] = (jDepth (cLit bs) cN0) := by
-  constructor <;> simp [rDepthLit, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rDepthLit, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, cN0, cLit, jDepth]
 
 theorem sound_rDepthLit {P : Pattern → Prop}
     (h : ∀ bs : Pattern, P (jDepth (cLit bs) cN0)) :
@@ -1752,29 +1075,17 @@ theorem sound_rDepthLit {P : Pattern → Prop}
       (∀ x ∈ rDepthLit.instPremises args, P x) → P (rDepthLit.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [bs], _ =>
-    rw [(inst_rDepthLit bs).1] at hprem
-    rw [(inst_rDepthLit bs).2]
-    exact h bs 
+  | [bs], _ => exact FORule.sound_of_shape (inst_rDepthLit bs) (h bs) hprem
 
 theorem intro_rDepthLit {R : List FORule} (hr : rDepthLit ∈ R) {bs : Pattern}
     (hd_bs : IsData bs)  :
-    FODerivable R (jDepth (cLit bs) cN0) := by
-  apply FODerivable.intro hr [bs] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl
-    assumption
-  · exact (inst_rDepthLit bs).2
-  · rw [(inst_rDepthLit bs).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jDepth (cLit bs) cN0) :=
+  FODerivable.intro_of_shape hr (inst_rDepthLit bs) rfl hd_bs trivial
 
 theorem inst_rDepthApp (s ts d f : Pattern) :
     rDepthApp.instPremises [s, ts, d, f] = [] ∧
       rDepthApp.instConclusion [s, ts, d, f] = (jDepth (cApp s ts (cAnn d f)) d) := by
-  constructor <;> simp [rDepthApp, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rDepthApp, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cAnn, cApp, jDepth]
 
 theorem sound_rDepthApp {P : Pattern → Prop}
     (h : ∀ s ts d f : Pattern, P (jDepth (cApp s ts (cAnn d f)) d)) :
@@ -1782,28 +1093,17 @@ theorem sound_rDepthApp {P : Pattern → Prop}
       (∀ x ∈ rDepthApp.instPremises args, P x) → P (rDepthApp.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [s, ts, d, f], _ =>
-    rw [(inst_rDepthApp s ts d f).1] at hprem
-    rw [(inst_rDepthApp s ts d f).2]
-    exact h s ts d f 
+  | [s, ts, d, f], _ => exact FORule.sound_of_shape (inst_rDepthApp s ts d f) (h s ts d f) hprem
 
 theorem intro_rDepthApp {R : List FORule} (hr : rDepthApp ∈ R) {s ts d f : Pattern}
     (hd_s : IsData s) (hd_ts : IsData ts) (hd_d : IsData d) (hd_f : IsData f)  :
-    FODerivable R (jDepth (cApp s ts (cAnn d f)) d) := by
-  apply FODerivable.intro hr [s, ts, d, f] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rDepthApp s ts d f).2
-  · rw [(inst_rDepthApp s ts d f).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jDepth (cApp s ts (cAnn d f)) d) :=
+  FODerivable.intro_of_shape hr (inst_rDepthApp s ts d f) rfl ⟨hd_s, hd_ts, hd_d, hd_f⟩ trivial
 
 theorem inst_rHasfvBvar (n : Pattern) :
     rHasfvBvar.instPremises [n] = [] ∧
       rHasfvBvar.instConclusion [n] = (jHasFv (cBVar n) cFalse) := by
-  constructor <;> simp [rHasfvBvar, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rHasfvBvar, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, cFalse, cBVar, jHasFv]
 
 theorem sound_rHasfvBvar {P : Pattern → Prop}
     (h : ∀ n : Pattern, P (jHasFv (cBVar n) cFalse)) :
@@ -1811,29 +1111,17 @@ theorem sound_rHasfvBvar {P : Pattern → Prop}
       (∀ x ∈ rHasfvBvar.instPremises args, P x) → P (rHasfvBvar.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [n], _ =>
-    rw [(inst_rHasfvBvar n).1] at hprem
-    rw [(inst_rHasfvBvar n).2]
-    exact h n 
+  | [n], _ => exact FORule.sound_of_shape (inst_rHasfvBvar n) (h n) hprem
 
 theorem intro_rHasfvBvar {R : List FORule} (hr : rHasfvBvar ∈ R) {n : Pattern}
     (hd_n : IsData n)  :
-    FODerivable R (jHasFv (cBVar n) cFalse) := by
-  apply FODerivable.intro hr [n] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl
-    assumption
-  · exact (inst_rHasfvBvar n).2
-  · rw [(inst_rHasfvBvar n).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jHasFv (cBVar n) cFalse) :=
+  FODerivable.intro_of_shape hr (inst_rHasfvBvar n) rfl hd_n trivial
 
 theorem inst_rHasfvLit (bs : Pattern) :
     rHasfvLit.instPremises [bs] = [] ∧
       rHasfvLit.instConclusion [bs] = (jHasFv (cLit bs) cFalse) := by
-  constructor <;> simp [rHasfvLit, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rHasfvLit, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, cFalse, cLit, jHasFv]
 
 theorem sound_rHasfvLit {P : Pattern → Prop}
     (h : ∀ bs : Pattern, P (jHasFv (cLit bs) cFalse)) :
@@ -1841,29 +1129,17 @@ theorem sound_rHasfvLit {P : Pattern → Prop}
       (∀ x ∈ rHasfvLit.instPremises args, P x) → P (rHasfvLit.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [bs], _ =>
-    rw [(inst_rHasfvLit bs).1] at hprem
-    rw [(inst_rHasfvLit bs).2]
-    exact h bs 
+  | [bs], _ => exact FORule.sound_of_shape (inst_rHasfvLit bs) (h bs) hprem
 
 theorem intro_rHasfvLit {R : List FORule} (hr : rHasfvLit ∈ R) {bs : Pattern}
     (hd_bs : IsData bs)  :
-    FODerivable R (jHasFv (cLit bs) cFalse) := by
-  apply FODerivable.intro hr [bs] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl
-    assumption
-  · exact (inst_rHasfvLit bs).2
-  · rw [(inst_rHasfvLit bs).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jHasFv (cLit bs) cFalse) :=
+  FODerivable.intro_of_shape hr (inst_rHasfvLit bs) rfl hd_bs trivial
 
 theorem inst_rHasfvApp (s ts d f : Pattern) :
     rHasfvApp.instPremises [s, ts, d, f] = [] ∧
       rHasfvApp.instConclusion [s, ts, d, f] = (jHasFv (cApp s ts (cAnn d f)) f) := by
-  constructor <;> simp [rHasfvApp, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rHasfvApp, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cAnn, cApp, jHasFv]
 
 theorem sound_rHasfvApp {P : Pattern → Prop}
     (h : ∀ s ts d f : Pattern, P (jHasFv (cApp s ts (cAnn d f)) f)) :
@@ -1871,28 +1147,17 @@ theorem sound_rHasfvApp {P : Pattern → Prop}
       (∀ x ∈ rHasfvApp.instPremises args, P x) → P (rHasfvApp.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [s, ts, d, f], _ =>
-    rw [(inst_rHasfvApp s ts d f).1] at hprem
-    rw [(inst_rHasfvApp s ts d f).2]
-    exact h s ts d f 
+  | [s, ts, d, f], _ => exact FORule.sound_of_shape (inst_rHasfvApp s ts d f) (h s ts d f) hprem
 
 theorem intro_rHasfvApp {R : List FORule} (hr : rHasfvApp ∈ R) {s ts d f : Pattern}
     (hd_s : IsData s) (hd_ts : IsData ts) (hd_d : IsData d) (hd_f : IsData f)  :
-    FODerivable R (jHasFv (cApp s ts (cAnn d f)) f) := by
-  apply FODerivable.intro hr [s, ts, d, f] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rHasfvApp s ts d f).2
-  · rw [(inst_rHasfvApp s ts d f).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jHasFv (cApp s ts (cAnn d f)) f) :=
+  FODerivable.intro_of_shape hr (inst_rHasfvApp s ts d f) rfl ⟨hd_s, hd_ts, hd_d, hd_f⟩ trivial
 
 theorem inst_rAnnargsNil :
     rAnnargsNil.instPremises [] = [] ∧
       rAnnargsNil.instConclusion [] = (jAnnArgs cNil cNil cN0 cFalse) := by
-  constructor <;> simp [rAnnargsNil, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rAnnargsNil, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, ab_apply, cN0, cFalse, cNil, jAnnArgs]
 
 theorem sound_rAnnargsNil {P : Pattern → Prop}
     (h : P (jAnnArgs cNil cNil cN0 cFalse)) :
@@ -1900,28 +1165,17 @@ theorem sound_rAnnargsNil {P : Pattern → Prop}
       (∀ x ∈ rAnnargsNil.instPremises args, P x) → P (rAnnargsNil.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [], _ =>
-    rw [(inst_rAnnargsNil ).1] at hprem
-    rw [(inst_rAnnargsNil ).2]
-    exact h  
+  | [], _ => exact FORule.sound_of_shape (inst_rAnnargsNil) h hprem
 
 theorem intro_rAnnargsNil {R : List FORule} (hr : rAnnargsNil ∈ R) 
       :
-    FODerivable R (jAnnArgs cNil cNil cN0 cFalse) := by
-  apply FODerivable.intro hr [] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-
-  · exact (inst_rAnnargsNil ).2
-  · rw [(inst_rAnnargsNil ).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jAnnArgs cNil cNil cN0 cFalse) :=
+  FODerivable.intro_of_shape hr (inst_rAnnargsNil) rfl trivial trivial
 
 theorem inst_rAnnargsCons (b bs t ts dt e dr fr ft d f : Pattern) :
     rAnnargsCons.instPremises [b, bs, t, ts, dt, e, dr, fr, ft, d, f] = [jDepth t dt, jNMonus dt b e, jHasFv t ft, jAnnArgs bs ts dr fr, jNMax e dr d, jBOr ft fr f] ∧
       rAnnargsCons.instConclusion [b, bs, t, ts, dt, e, dr, fr, ft, d, f] = (jAnnArgs (cCons b bs) (cCons t ts) d f) := by
-  constructor <;> simp [rAnnargsCons, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rAnnargsCons, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cCons, jNMonus, jNMax, jBOr, jDepth, jHasFv, jAnnArgs]
 
 theorem sound_rAnnargsCons {P : Pattern → Prop}
     (h : ∀ b bs t ts dt e dr fr ft d f : Pattern, P (jDepth t dt) → P (jNMonus dt b e) → P (jHasFv t ft) → P (jAnnArgs bs ts dr fr) → P (jNMax e dr d) → P (jBOr ft fr f) → P (jAnnArgs (cCons b bs) (cCons t ts) d f)) :
@@ -1929,28 +1183,17 @@ theorem sound_rAnnargsCons {P : Pattern → Prop}
       (∀ x ∈ rAnnargsCons.instPremises args, P x) → P (rAnnargsCons.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [b, bs, t, ts, dt, e, dr, fr, ft, d, f], _ =>
-    rw [(inst_rAnnargsCons b bs t ts dt e dr fr ft d f).1] at hprem
-    rw [(inst_rAnnargsCons b bs t ts dt e dr fr ft d f).2]
-    exact h b bs t ts dt e dr fr ft d f (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [b, bs, t, ts, dt, e, dr, fr, ft, d, f], _ => exact FORule.sound_of_shape (inst_rAnnargsCons b bs t ts dt e dr fr ft d f) (h b bs t ts dt e dr fr ft d f) hprem
 
 theorem intro_rAnnargsCons {R : List FORule} (hr : rAnnargsCons ∈ R) {b bs t ts dt e dr fr ft d f : Pattern}
     (hd_b : IsData b) (hd_bs : IsData bs) (hd_t : IsData t) (hd_ts : IsData ts) (hd_dt : IsData dt) (hd_e : IsData e) (hd_dr : IsData dr) (hd_fr : IsData fr) (hd_ft : IsData ft) (hd_d : IsData d) (hd_f : IsData f) (h0 : FODerivable R (jDepth t dt)) (h1 : FODerivable R (jNMonus dt b e)) (h2 : FODerivable R (jHasFv t ft)) (h3 : FODerivable R (jAnnArgs bs ts dr fr)) (h4 : FODerivable R (jNMax e dr d)) (h5 : FODerivable R (jBOr ft fr f)) :
-    FODerivable R (jAnnArgs (cCons b bs) (cCons t ts) d f) := by
-  apply FODerivable.intro hr [b, bs, t, ts, dt, e, dr, fr, ft, d, f] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rAnnargsCons b bs t ts dt e dr fr ft d f).2
-  · rw [(inst_rAnnargsCons b bs t ts dt e dr fr ft d f).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
+    FODerivable R (jAnnArgs (cCons b bs) (cCons t ts) d f) :=
+  FODerivable.intro_of_shape hr (inst_rAnnargsCons b bs t ts dt e dr fr ft d f) rfl ⟨hd_b, hd_bs, hd_t, hd_ts, hd_dt, hd_e, hd_dr, hd_fr, hd_ft, hd_d, hd_f⟩ ⟨h0, h1, h2, h3, h4, h5⟩
 
 theorem inst_rShiftZero (c t : Pattern) :
     rShiftZero.instPremises [c, t] = [] ∧
       rShiftZero.instConclusion [c, t] = (jShift cN0 c t t) := by
-  constructor <;> simp [rShiftZero, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rShiftZero, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cN0, jShift]
 
 theorem sound_rShiftZero {P : Pattern → Prop}
     (h : ∀ c t : Pattern, P (jShift cN0 c t t)) :
@@ -1958,28 +1201,17 @@ theorem sound_rShiftZero {P : Pattern → Prop}
       (∀ x ∈ rShiftZero.instPremises args, P x) → P (rShiftZero.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [c, t], _ =>
-    rw [(inst_rShiftZero c t).1] at hprem
-    rw [(inst_rShiftZero c t).2]
-    exact h c t 
+  | [c, t], _ => exact FORule.sound_of_shape (inst_rShiftZero c t) (h c t) hprem
 
 theorem intro_rShiftZero {R : List FORule} (hr : rShiftZero ∈ R) {c t : Pattern}
     (hd_c : IsData c) (hd_t : IsData t)  :
-    FODerivable R (jShift cN0 c t t) := by
-  apply FODerivable.intro hr [c, t] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl <;> assumption
-  · exact (inst_rShiftZero c t).2
-  · rw [(inst_rShiftZero c t).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jShift cN0 c t t) :=
+  FODerivable.intro_of_shape hr (inst_rShiftZero c t) rfl ⟨hd_c, hd_t⟩ trivial
 
 theorem inst_rShiftLow (a c t d : Pattern) :
     rShiftLow.instPremises [a, c, t, d] = [jDepth t d, jNLe d c] ∧
       rShiftLow.instConclusion [a, c, t, d] = (jShift a c t t) := by
-  constructor <;> simp [rShiftLow, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rShiftLow, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, jNLe, jDepth, jShift]
 
 theorem sound_rShiftLow {P : Pattern → Prop}
     (h : ∀ a c t d : Pattern, P (jDepth t d) → P (jNLe d c) → P (jShift a c t t)) :
@@ -1987,28 +1219,17 @@ theorem sound_rShiftLow {P : Pattern → Prop}
       (∀ x ∈ rShiftLow.instPremises args, P x) → P (rShiftLow.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [a, c, t, d], _ =>
-    rw [(inst_rShiftLow a c t d).1] at hprem
-    rw [(inst_rShiftLow a c t d).2]
-    exact h a c t d (hprem _ (by simp)) (hprem _ (by simp))
+  | [a, c, t, d], _ => exact FORule.sound_of_shape (inst_rShiftLow a c t d) (h a c t d) hprem
 
 theorem intro_rShiftLow {R : List FORule} (hr : rShiftLow ∈ R) {a c t d : Pattern}
     (hd_a : IsData a) (hd_c : IsData c) (hd_t : IsData t) (hd_d : IsData d) (h0 : FODerivable R (jDepth t d)) (h1 : FODerivable R (jNLe d c)) :
-    FODerivable R (jShift a c t t) := by
-  apply FODerivable.intro hr [a, c, t, d] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rShiftLow a c t d).2
-  · rw [(inst_rShiftLow a c t d).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl <;> assumption
+    FODerivable R (jShift a c t t) :=
+  FODerivable.intro_of_shape hr (inst_rShiftLow a c t d) rfl ⟨hd_a, hd_c, hd_t, hd_d⟩ ⟨h0, h1⟩
 
 theorem inst_rShiftBvar (p c b r : Pattern) :
     rShiftBvar.instPremises [p, c, b, r] = [jNLe c b, jNAdd b (cNPos p) r, jNLt r patMaxWord] ∧
       rShiftBvar.instConclusion [p, c, b, r] = (jShift (cNPos p) c (cBVar b) (cBVar r)) := by
-  constructor <;> simp [rShiftBvar, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rShiftBvar, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cNPos, cBVar, jNAdd, jNLt, jNLe, jShift]
 
 theorem sound_rShiftBvar {P : Pattern → Prop}
     (h : ∀ p c b r : Pattern, P (jNLe c b) → P (jNAdd b (cNPos p) r) → P (jNLt r patMaxWord) → P (jShift (cNPos p) c (cBVar b) (cBVar r))) :
@@ -2016,28 +1237,17 @@ theorem sound_rShiftBvar {P : Pattern → Prop}
       (∀ x ∈ rShiftBvar.instPremises args, P x) → P (rShiftBvar.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p, c, b, r], _ =>
-    rw [(inst_rShiftBvar p c b r).1] at hprem
-    rw [(inst_rShiftBvar p c b r).2]
-    exact h p c b r (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [p, c, b, r], _ => exact FORule.sound_of_shape (inst_rShiftBvar p c b r) (h p c b r) hprem
 
 theorem intro_rShiftBvar {R : List FORule} (hr : rShiftBvar ∈ R) {p c b r : Pattern}
     (hd_p : IsData p) (hd_c : IsData c) (hd_b : IsData b) (hd_r : IsData r) (h0 : FODerivable R (jNLe c b)) (h1 : FODerivable R (jNAdd b (cNPos p) r)) (h2 : FODerivable R (jNLt r patMaxWord)) :
-    FODerivable R (jShift (cNPos p) c (cBVar b) (cBVar r)) := by
-  apply FODerivable.intro hr [p, c, b, r] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rShiftBvar p c b r).2
-  · rw [(inst_rShiftBvar p c b r).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl <;> assumption
+    FODerivable R (jShift (cNPos p) c (cBVar b) (cBVar r)) :=
+  FODerivable.intro_of_shape hr (inst_rShiftBvar p c b r) rfl ⟨hd_p, hd_c, hd_b, hd_r⟩ ⟨h0, h1, h2⟩
 
 theorem inst_rShiftApp (p c idv kind bs ts d f us e g hh : Pattern) :
     rShiftApp.instPremises [p, c, idv, kind, bs, ts, d, f, us, e, g, hh] = [jNLt c d, jShiftArgs (cNPos p) c bs ts us, jAnnArgs bs us e g, jKindFv kind g hh] ∧
       rShiftApp.instConclusion [p, c, idv, kind, bs, ts, d, f, us, e, g, hh] = (jShift (cNPos p) c (cApp (cSym idv kind bs) ts (cAnn d f)) (cApp (cSym idv kind bs) us (cAnn e hh))) := by
-  constructor <;> simp [rShiftApp, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rShiftApp, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cNPos, cSym, cAnn, cApp, jNLt, jKindFv, jAnnArgs, jShift, jShiftArgs]
 
 theorem sound_rShiftApp {P : Pattern → Prop}
     (h : ∀ p c idv kind bs ts d f us e g hh : Pattern, P (jNLt c d) → P (jShiftArgs (cNPos p) c bs ts us) → P (jAnnArgs bs us e g) → P (jKindFv kind g hh) → P (jShift (cNPos p) c (cApp (cSym idv kind bs) ts (cAnn d f)) (cApp (cSym idv kind bs) us (cAnn e hh)))) :
@@ -2045,28 +1255,17 @@ theorem sound_rShiftApp {P : Pattern → Prop}
       (∀ x ∈ rShiftApp.instPremises args, P x) → P (rShiftApp.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p, c, idv, kind, bs, ts, d, f, us, e, g, hh], _ =>
-    rw [(inst_rShiftApp p c idv kind bs ts d f us e g hh).1] at hprem
-    rw [(inst_rShiftApp p c idv kind bs ts d f us e g hh).2]
-    exact h p c idv kind bs ts d f us e g hh (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [p, c, idv, kind, bs, ts, d, f, us, e, g, hh], _ => exact FORule.sound_of_shape (inst_rShiftApp p c idv kind bs ts d f us e g hh) (h p c idv kind bs ts d f us e g hh) hprem
 
 theorem intro_rShiftApp {R : List FORule} (hr : rShiftApp ∈ R) {p c idv kind bs ts d f us e g hh : Pattern}
     (hd_p : IsData p) (hd_c : IsData c) (hd_idv : IsData idv) (hd_kind : IsData kind) (hd_bs : IsData bs) (hd_ts : IsData ts) (hd_d : IsData d) (hd_f : IsData f) (hd_us : IsData us) (hd_e : IsData e) (hd_g : IsData g) (hd_hh : IsData hh) (h0 : FODerivable R (jNLt c d)) (h1 : FODerivable R (jShiftArgs (cNPos p) c bs ts us)) (h2 : FODerivable R (jAnnArgs bs us e g)) (h3 : FODerivable R (jKindFv kind g hh)) :
-    FODerivable R (jShift (cNPos p) c (cApp (cSym idv kind bs) ts (cAnn d f)) (cApp (cSym idv kind bs) us (cAnn e hh))) := by
-  apply FODerivable.intro hr [p, c, idv, kind, bs, ts, d, f, us, e, g, hh] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rShiftApp p c idv kind bs ts d f us e g hh).2
-  · rw [(inst_rShiftApp p c idv kind bs ts d f us e g hh).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl | rfl <;> assumption
+    FODerivable R (jShift (cNPos p) c (cApp (cSym idv kind bs) ts (cAnn d f)) (cApp (cSym idv kind bs) us (cAnn e hh))) :=
+  FODerivable.intro_of_shape hr (inst_rShiftApp p c idv kind bs ts d f us e g hh) rfl ⟨hd_p, hd_c, hd_idv, hd_kind, hd_bs, hd_ts, hd_d, hd_f, hd_us, hd_e, hd_g, hd_hh⟩ ⟨h0, h1, h2, h3⟩
 
 theorem inst_rShiftargsNil (a c : Pattern) :
     rShiftargsNil.instPremises [a, c] = [] ∧
       rShiftargsNil.instConclusion [a, c] = (jShiftArgs a c cNil cNil cNil) := by
-  constructor <;> simp [rShiftargsNil, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rShiftargsNil, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cNil, jShiftArgs]
 
 theorem sound_rShiftargsNil {P : Pattern → Prop}
     (h : ∀ a c : Pattern, P (jShiftArgs a c cNil cNil cNil)) :
@@ -2074,28 +1273,17 @@ theorem sound_rShiftargsNil {P : Pattern → Prop}
       (∀ x ∈ rShiftargsNil.instPremises args, P x) → P (rShiftargsNil.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [a, c], _ =>
-    rw [(inst_rShiftargsNil a c).1] at hprem
-    rw [(inst_rShiftargsNil a c).2]
-    exact h a c 
+  | [a, c], _ => exact FORule.sound_of_shape (inst_rShiftargsNil a c) (h a c) hprem
 
 theorem intro_rShiftargsNil {R : List FORule} (hr : rShiftargsNil ∈ R) {a c : Pattern}
     (hd_a : IsData a) (hd_c : IsData c)  :
-    FODerivable R (jShiftArgs a c cNil cNil cNil) := by
-  apply FODerivable.intro hr [a, c] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl <;> assumption
-  · exact (inst_rShiftargsNil a c).2
-  · rw [(inst_rShiftargsNil a c).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jShiftArgs a c cNil cNil cNil) :=
+  FODerivable.intro_of_shape hr (inst_rShiftargsNil a c) rfl ⟨hd_a, hd_c⟩ trivial
 
 theorem inst_rShiftargsCons (a c b bs t ts u us k : Pattern) :
     rShiftargsCons.instPremises [a, c, b, bs, t, ts, u, us, k] = [jNAdd c b k, jNWord k, jShift a k t u, jShiftArgs a c bs ts us] ∧
       rShiftargsCons.instConclusion [a, c, b, bs, t, ts, u, us, k] = (jShiftArgs a c (cCons b bs) (cCons t ts) (cCons u us)) := by
-  constructor <;> simp [rShiftargsCons, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rShiftargsCons, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cCons, jNAdd, jNWord, jShift, jShiftArgs]
 
 theorem sound_rShiftargsCons {P : Pattern → Prop}
     (h : ∀ a c b bs t ts u us k : Pattern, P (jNAdd c b k) → P (jNWord k) → P (jShift a k t u) → P (jShiftArgs a c bs ts us) → P (jShiftArgs a c (cCons b bs) (cCons t ts) (cCons u us))) :
@@ -2103,28 +1291,17 @@ theorem sound_rShiftargsCons {P : Pattern → Prop}
       (∀ x ∈ rShiftargsCons.instPremises args, P x) → P (rShiftargsCons.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [a, c, b, bs, t, ts, u, us, k], _ =>
-    rw [(inst_rShiftargsCons a c b bs t ts u us k).1] at hprem
-    rw [(inst_rShiftargsCons a c b bs t ts u us k).2]
-    exact h a c b bs t ts u us k (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [a, c, b, bs, t, ts, u, us, k], _ => exact FORule.sound_of_shape (inst_rShiftargsCons a c b bs t ts u us k) (h a c b bs t ts u us k) hprem
 
 theorem intro_rShiftargsCons {R : List FORule} (hr : rShiftargsCons ∈ R) {a c b bs t ts u us k : Pattern}
     (hd_a : IsData a) (hd_c : IsData c) (hd_b : IsData b) (hd_bs : IsData bs) (hd_t : IsData t) (hd_ts : IsData ts) (hd_u : IsData u) (hd_us : IsData us) (hd_k : IsData k) (h0 : FODerivable R (jNAdd c b k)) (h1 : FODerivable R (jNWord k)) (h2 : FODerivable R (jShift a k t u)) (h3 : FODerivable R (jShiftArgs a c bs ts us)) :
-    FODerivable R (jShiftArgs a c (cCons b bs) (cCons t ts) (cCons u us)) := by
-  apply FODerivable.intro hr [a, c, b, bs, t, ts, u, us, k] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rShiftargsCons a c b bs t ts u us k).2
-  · rw [(inst_rShiftargsCons a c b bs t ts u us k).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl | rfl <;> assumption
+    FODerivable R (jShiftArgs a c (cCons b bs) (cCons t ts) (cCons u us)) :=
+  FODerivable.intro_of_shape hr (inst_rShiftargsCons a c b bs t ts u us k) rfl ⟨hd_a, hd_c, hd_b, hd_bs, hd_t, hd_ts, hd_u, hd_us, hd_k⟩ ⟨h0, h1, h2, h3⟩
 
 theorem inst_rSubstLow (n argv o t d : Pattern) :
     rSubstLow.instPremises [n, argv, o, t, d] = [jDepth t d, jNLe d o] ∧
       rSubstLow.instConclusion [n, argv, o, t, d] = (jSubst n argv o t t) := by
-  constructor <;> simp [rSubstLow, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rSubstLow, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, jNLe, jDepth, jSubst]
 
 theorem sound_rSubstLow {P : Pattern → Prop}
     (h : ∀ n argv o t d : Pattern, P (jDepth t d) → P (jNLe d o) → P (jSubst n argv o t t)) :
@@ -2132,28 +1309,17 @@ theorem sound_rSubstLow {P : Pattern → Prop}
       (∀ x ∈ rSubstLow.instPremises args, P x) → P (rSubstLow.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [n, argv, o, t, d], _ =>
-    rw [(inst_rSubstLow n argv o t d).1] at hprem
-    rw [(inst_rSubstLow n argv o t d).2]
-    exact h n argv o t d (hprem _ (by simp)) (hprem _ (by simp))
+  | [n, argv, o, t, d], _ => exact FORule.sound_of_shape (inst_rSubstLow n argv o t d) (h n argv o t d) hprem
 
 theorem intro_rSubstLow {R : List FORule} (hr : rSubstLow ∈ R) {n argv o t d : Pattern}
     (hd_n : IsData n) (hd_argv : IsData argv) (hd_o : IsData o) (hd_t : IsData t) (hd_d : IsData d) (h0 : FODerivable R (jDepth t d)) (h1 : FODerivable R (jNLe d o)) :
-    FODerivable R (jSubst n argv o t t) := by
-  apply FODerivable.intro hr [n, argv, o, t, d] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rSubstLow n argv o t d).2
-  · rw [(inst_rSubstLow n argv o t d).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl <;> assumption
+    FODerivable R (jSubst n argv o t t) :=
+  FODerivable.intro_of_shape hr (inst_rSubstLow n argv o t d) rfl ⟨hd_n, hd_argv, hd_o, hd_t, hd_d⟩ ⟨h0, h1⟩
 
 theorem inst_rSubstParam (n argv o b k k1 i a r : Pattern) :
     rSubstParam.instPremises [n, argv, o, b, k, k1, i, a, r] = [jNAdd o k b, jNLt k n, jNAdd k patOne k1, jNAdd i k1 n, jNth argv i a, jShift o cN0 a r] ∧
       rSubstParam.instConclusion [n, argv, o, b, k, k1, i, a, r] = (jSubst n argv o (cBVar b) r) := by
-  constructor <;> simp [rSubstParam, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rSubstParam, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cN0, cBVar, jNAdd, jNLt, jNth, jShift, jSubst]
 
 theorem sound_rSubstParam {P : Pattern → Prop}
     (h : ∀ n argv o b k k1 i a r : Pattern, P (jNAdd o k b) → P (jNLt k n) → P (jNAdd k patOne k1) → P (jNAdd i k1 n) → P (jNth argv i a) → P (jShift o cN0 a r) → P (jSubst n argv o (cBVar b) r)) :
@@ -2161,28 +1327,17 @@ theorem sound_rSubstParam {P : Pattern → Prop}
       (∀ x ∈ rSubstParam.instPremises args, P x) → P (rSubstParam.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [n, argv, o, b, k, k1, i, a, r], _ =>
-    rw [(inst_rSubstParam n argv o b k k1 i a r).1] at hprem
-    rw [(inst_rSubstParam n argv o b k k1 i a r).2]
-    exact h n argv o b k k1 i a r (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [n, argv, o, b, k, k1, i, a, r], _ => exact FORule.sound_of_shape (inst_rSubstParam n argv o b k k1 i a r) (h n argv o b k k1 i a r) hprem
 
 theorem intro_rSubstParam {R : List FORule} (hr : rSubstParam ∈ R) {n argv o b k k1 i a r : Pattern}
     (hd_n : IsData n) (hd_argv : IsData argv) (hd_o : IsData o) (hd_b : IsData b) (hd_k : IsData k) (hd_k1 : IsData k1) (hd_i : IsData i) (hd_a : IsData a) (hd_r : IsData r) (h0 : FODerivable R (jNAdd o k b)) (h1 : FODerivable R (jNLt k n)) (h2 : FODerivable R (jNAdd k patOne k1)) (h3 : FODerivable R (jNAdd i k1 n)) (h4 : FODerivable R (jNth argv i a)) (h5 : FODerivable R (jShift o cN0 a r)) :
-    FODerivable R (jSubst n argv o (cBVar b) r) := by
-  apply FODerivable.intro hr [n, argv, o, b, k, k1, i, a, r] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rSubstParam n argv o b k k1 i a r).2
-  · rw [(inst_rSubstParam n argv o b k k1 i a r).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
+    FODerivable R (jSubst n argv o (cBVar b) r) :=
+  FODerivable.intro_of_shape hr (inst_rSubstParam n argv o b k k1 i a r) rfl ⟨hd_n, hd_argv, hd_o, hd_b, hd_k, hd_k1, hd_i, hd_a, hd_r⟩ ⟨h0, h1, h2, h3, h4, h5⟩
 
 theorem inst_rSubstAbove (n argv o b k k1 : Pattern) :
     rSubstAbove.instPremises [n, argv, o, b, k, k1] = [jNAdd o k b, jNLe n k, jNAdd k patOne k1, jNWord k1] ∧
       rSubstAbove.instConclusion [n, argv, o, b, k, k1] = (jSubst n argv o (cBVar b) (cBVar k)) := by
-  constructor <;> simp [rSubstAbove, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rSubstAbove, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cBVar, jNAdd, jNLe, jNWord, jSubst]
 
 theorem sound_rSubstAbove {P : Pattern → Prop}
     (h : ∀ n argv o b k k1 : Pattern, P (jNAdd o k b) → P (jNLe n k) → P (jNAdd k patOne k1) → P (jNWord k1) → P (jSubst n argv o (cBVar b) (cBVar k))) :
@@ -2190,28 +1345,17 @@ theorem sound_rSubstAbove {P : Pattern → Prop}
       (∀ x ∈ rSubstAbove.instPremises args, P x) → P (rSubstAbove.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [n, argv, o, b, k, k1], _ =>
-    rw [(inst_rSubstAbove n argv o b k k1).1] at hprem
-    rw [(inst_rSubstAbove n argv o b k k1).2]
-    exact h n argv o b k k1 (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [n, argv, o, b, k, k1], _ => exact FORule.sound_of_shape (inst_rSubstAbove n argv o b k k1) (h n argv o b k k1) hprem
 
 theorem intro_rSubstAbove {R : List FORule} (hr : rSubstAbove ∈ R) {n argv o b k k1 : Pattern}
     (hd_n : IsData n) (hd_argv : IsData argv) (hd_o : IsData o) (hd_b : IsData b) (hd_k : IsData k) (hd_k1 : IsData k1) (h0 : FODerivable R (jNAdd o k b)) (h1 : FODerivable R (jNLe n k)) (h2 : FODerivable R (jNAdd k patOne k1)) (h3 : FODerivable R (jNWord k1)) :
-    FODerivable R (jSubst n argv o (cBVar b) (cBVar k)) := by
-  apply FODerivable.intro hr [n, argv, o, b, k, k1] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rSubstAbove n argv o b k k1).2
-  · rw [(inst_rSubstAbove n argv o b k k1).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl | rfl <;> assumption
+    FODerivable R (jSubst n argv o (cBVar b) (cBVar k)) :=
+  FODerivable.intro_of_shape hr (inst_rSubstAbove n argv o b k k1) rfl ⟨hd_n, hd_argv, hd_o, hd_b, hd_k, hd_k1⟩ ⟨h0, h1, h2, h3⟩
 
 theorem inst_rSubstApp (n argv o idv kind bs ts d f us e g hh : Pattern) :
     rSubstApp.instPremises [n, argv, o, idv, kind, bs, ts, d, f, us, e, g, hh] = [jNLt o d, jSubstArgs n argv o bs ts us, jAnnArgs bs us e g, jKindFv kind g hh] ∧
       rSubstApp.instConclusion [n, argv, o, idv, kind, bs, ts, d, f, us, e, g, hh] = (jSubst n argv o (cApp (cSym idv kind bs) ts (cAnn d f)) (cApp (cSym idv kind bs) us (cAnn e hh))) := by
-  constructor <;> simp [rSubstApp, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rSubstApp, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cSym, cAnn, cApp, jNLt, jKindFv, jAnnArgs, jSubst, jSubstArgs]
 
 theorem sound_rSubstApp {P : Pattern → Prop}
     (h : ∀ n argv o idv kind bs ts d f us e g hh : Pattern, P (jNLt o d) → P (jSubstArgs n argv o bs ts us) → P (jAnnArgs bs us e g) → P (jKindFv kind g hh) → P (jSubst n argv o (cApp (cSym idv kind bs) ts (cAnn d f)) (cApp (cSym idv kind bs) us (cAnn e hh)))) :
@@ -2219,28 +1363,17 @@ theorem sound_rSubstApp {P : Pattern → Prop}
       (∀ x ∈ rSubstApp.instPremises args, P x) → P (rSubstApp.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [n, argv, o, idv, kind, bs, ts, d, f, us, e, g, hh], _ =>
-    rw [(inst_rSubstApp n argv o idv kind bs ts d f us e g hh).1] at hprem
-    rw [(inst_rSubstApp n argv o idv kind bs ts d f us e g hh).2]
-    exact h n argv o idv kind bs ts d f us e g hh (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [n, argv, o, idv, kind, bs, ts, d, f, us, e, g, hh], _ => exact FORule.sound_of_shape (inst_rSubstApp n argv o idv kind bs ts d f us e g hh) (h n argv o idv kind bs ts d f us e g hh) hprem
 
 theorem intro_rSubstApp {R : List FORule} (hr : rSubstApp ∈ R) {n argv o idv kind bs ts d f us e g hh : Pattern}
     (hd_n : IsData n) (hd_argv : IsData argv) (hd_o : IsData o) (hd_idv : IsData idv) (hd_kind : IsData kind) (hd_bs : IsData bs) (hd_ts : IsData ts) (hd_d : IsData d) (hd_f : IsData f) (hd_us : IsData us) (hd_e : IsData e) (hd_g : IsData g) (hd_hh : IsData hh) (h0 : FODerivable R (jNLt o d)) (h1 : FODerivable R (jSubstArgs n argv o bs ts us)) (h2 : FODerivable R (jAnnArgs bs us e g)) (h3 : FODerivable R (jKindFv kind g hh)) :
-    FODerivable R (jSubst n argv o (cApp (cSym idv kind bs) ts (cAnn d f)) (cApp (cSym idv kind bs) us (cAnn e hh))) := by
-  apply FODerivable.intro hr [n, argv, o, idv, kind, bs, ts, d, f, us, e, g, hh] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rSubstApp n argv o idv kind bs ts d f us e g hh).2
-  · rw [(inst_rSubstApp n argv o idv kind bs ts d f us e g hh).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl | rfl <;> assumption
+    FODerivable R (jSubst n argv o (cApp (cSym idv kind bs) ts (cAnn d f)) (cApp (cSym idv kind bs) us (cAnn e hh))) :=
+  FODerivable.intro_of_shape hr (inst_rSubstApp n argv o idv kind bs ts d f us e g hh) rfl ⟨hd_n, hd_argv, hd_o, hd_idv, hd_kind, hd_bs, hd_ts, hd_d, hd_f, hd_us, hd_e, hd_g, hd_hh⟩ ⟨h0, h1, h2, h3⟩
 
 theorem inst_rSubstargsNil (n argv o : Pattern) :
     rSubstargsNil.instPremises [n, argv, o] = [] ∧
       rSubstargsNil.instConclusion [n, argv, o] = (jSubstArgs n argv o cNil cNil cNil) := by
-  constructor <;> simp [rSubstargsNil, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rSubstargsNil, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cNil, jSubstArgs]
 
 theorem sound_rSubstargsNil {P : Pattern → Prop}
     (h : ∀ n argv o : Pattern, P (jSubstArgs n argv o cNil cNil cNil)) :
@@ -2248,28 +1381,17 @@ theorem sound_rSubstargsNil {P : Pattern → Prop}
       (∀ x ∈ rSubstargsNil.instPremises args, P x) → P (rSubstargsNil.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [n, argv, o], _ =>
-    rw [(inst_rSubstargsNil n argv o).1] at hprem
-    rw [(inst_rSubstargsNil n argv o).2]
-    exact h n argv o 
+  | [n, argv, o], _ => exact FORule.sound_of_shape (inst_rSubstargsNil n argv o) (h n argv o) hprem
 
 theorem intro_rSubstargsNil {R : List FORule} (hr : rSubstargsNil ∈ R) {n argv o : Pattern}
     (hd_n : IsData n) (hd_argv : IsData argv) (hd_o : IsData o)  :
-    FODerivable R (jSubstArgs n argv o cNil cNil cNil) := by
-  apply FODerivable.intro hr [n, argv, o] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl <;> assumption
-  · exact (inst_rSubstargsNil n argv o).2
-  · rw [(inst_rSubstargsNil n argv o).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jSubstArgs n argv o cNil cNil cNil) :=
+  FODerivable.intro_of_shape hr (inst_rSubstargsNil n argv o) rfl ⟨hd_n, hd_argv, hd_o⟩ trivial
 
 theorem inst_rSubstargsCons (n argv o b bs t ts u us k : Pattern) :
     rSubstargsCons.instPremises [n, argv, o, b, bs, t, ts, u, us, k] = [jNAdd o b k, jNWord k, jSubst n argv k t u, jSubstArgs n argv o bs ts us] ∧
       rSubstargsCons.instConclusion [n, argv, o, b, bs, t, ts, u, us, k] = (jSubstArgs n argv o (cCons b bs) (cCons t ts) (cCons u us)) := by
-  constructor <;> simp [rSubstargsCons, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rSubstargsCons, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cCons, jNAdd, jNWord, jSubst, jSubstArgs]
 
 theorem sound_rSubstargsCons {P : Pattern → Prop}
     (h : ∀ n argv o b bs t ts u us k : Pattern, P (jNAdd o b k) → P (jNWord k) → P (jSubst n argv k t u) → P (jSubstArgs n argv o bs ts us) → P (jSubstArgs n argv o (cCons b bs) (cCons t ts) (cCons u us))) :
@@ -2277,28 +1399,17 @@ theorem sound_rSubstargsCons {P : Pattern → Prop}
       (∀ x ∈ rSubstargsCons.instPremises args, P x) → P (rSubstargsCons.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [n, argv, o, b, bs, t, ts, u, us, k], _ =>
-    rw [(inst_rSubstargsCons n argv o b bs t ts u us k).1] at hprem
-    rw [(inst_rSubstargsCons n argv o b bs t ts u us k).2]
-    exact h n argv o b bs t ts u us k (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [n, argv, o, b, bs, t, ts, u, us, k], _ => exact FORule.sound_of_shape (inst_rSubstargsCons n argv o b bs t ts u us k) (h n argv o b bs t ts u us k) hprem
 
 theorem intro_rSubstargsCons {R : List FORule} (hr : rSubstargsCons ∈ R) {n argv o b bs t ts u us k : Pattern}
     (hd_n : IsData n) (hd_argv : IsData argv) (hd_o : IsData o) (hd_b : IsData b) (hd_bs : IsData bs) (hd_t : IsData t) (hd_ts : IsData ts) (hd_u : IsData u) (hd_us : IsData us) (hd_k : IsData k) (h0 : FODerivable R (jNAdd o b k)) (h1 : FODerivable R (jNWord k)) (h2 : FODerivable R (jSubst n argv k t u)) (h3 : FODerivable R (jSubstArgs n argv o bs ts us)) :
-    FODerivable R (jSubstArgs n argv o (cCons b bs) (cCons t ts) (cCons u us)) := by
-  apply FODerivable.intro hr [n, argv, o, b, bs, t, ts, u, us, k] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rSubstargsCons n argv o b bs t ts u us k).2
-  · rw [(inst_rSubstargsCons n argv o b bs t ts u us k).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl | rfl <;> assumption
+    FODerivable R (jSubstArgs n argv o (cCons b bs) (cCons t ts) (cCons u us)) :=
+  FODerivable.intro_of_shape hr (inst_rSubstargsCons n argv o b bs t ts u us k) rfl ⟨hd_n, hd_argv, hd_o, hd_b, hd_bs, hd_t, hd_ts, hd_u, hd_us, hd_k⟩ ⟨h0, h1, h2, h3⟩
 
 theorem inst_rSubsttop0 (argv t : Pattern) :
     rSubsttop0.instPremises [argv, t] = [] ∧
       rSubsttop0.instConclusion [argv, t] = (jSubstTop cN0 argv t t) := by
-  constructor <;> simp [rSubsttop0, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rSubsttop0, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cN0, jSubstTop]
 
 theorem sound_rSubsttop0 {P : Pattern → Prop}
     (h : ∀ argv t : Pattern, P (jSubstTop cN0 argv t t)) :
@@ -2306,28 +1417,17 @@ theorem sound_rSubsttop0 {P : Pattern → Prop}
       (∀ x ∈ rSubsttop0.instPremises args, P x) → P (rSubsttop0.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [argv, t], _ =>
-    rw [(inst_rSubsttop0 argv t).1] at hprem
-    rw [(inst_rSubsttop0 argv t).2]
-    exact h argv t 
+  | [argv, t], _ => exact FORule.sound_of_shape (inst_rSubsttop0 argv t) (h argv t) hprem
 
 theorem intro_rSubsttop0 {R : List FORule} (hr : rSubsttop0 ∈ R) {argv t : Pattern}
     (hd_argv : IsData argv) (hd_t : IsData t)  :
-    FODerivable R (jSubstTop cN0 argv t t) := by
-  apply FODerivable.intro hr [argv, t] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl <;> assumption
-  · exact (inst_rSubsttop0 argv t).2
-  · rw [(inst_rSubsttop0 argv t).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jSubstTop cN0 argv t t) :=
+  FODerivable.intro_of_shape hr (inst_rSubsttop0 argv t) rfl ⟨hd_argv, hd_t⟩ trivial
 
 theorem inst_rSubsttopP (p argv t r : Pattern) :
     rSubsttopP.instPremises [p, argv, t, r] = [jSubst (cNPos p) argv cN0 t r] ∧
       rSubsttopP.instConclusion [p, argv, t, r] = (jSubstTop (cNPos p) argv t r) := by
-  constructor <;> simp [rSubsttopP, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rSubsttopP, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cN0, cNPos, jSubst, jSubstTop]
 
 theorem sound_rSubsttopP {P : Pattern → Prop}
     (h : ∀ p argv t r : Pattern, P (jSubst (cNPos p) argv cN0 t r) → P (jSubstTop (cNPos p) argv t r)) :
@@ -2335,29 +1435,17 @@ theorem sound_rSubsttopP {P : Pattern → Prop}
       (∀ x ∈ rSubsttopP.instPremises args, P x) → P (rSubsttopP.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [p, argv, t, r], _ =>
-    rw [(inst_rSubsttopP p argv t r).1] at hprem
-    rw [(inst_rSubsttopP p argv t r).2]
-    exact h p argv t r (hprem _ (by simp))
+  | [p, argv, t, r], _ => exact FORule.sound_of_shape (inst_rSubsttopP p argv t r) (h p argv t r) hprem
 
 theorem intro_rSubsttopP {R : List FORule} (hr : rSubsttopP ∈ R) {p argv t r : Pattern}
     (hd_p : IsData p) (hd_argv : IsData argv) (hd_t : IsData t) (hd_r : IsData r) (h0 : FODerivable R (jSubst (cNPos p) argv cN0 t r)) :
-    FODerivable R (jSubstTop (cNPos p) argv t r) := by
-  apply FODerivable.intro hr [p, argv, t, r] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rSubsttopP p argv t r).2
-  · rw [(inst_rSubsttopP p argv t r).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jSubstTop (cNPos p) argv t r) :=
+  FODerivable.intro_of_shape hr (inst_rSubsttopP p argv t r) rfl ⟨hd_p, hd_argv, hd_t, hd_r⟩ h0
 
 theorem inst_rInstNofv (F v n o t : Pattern) :
     rInstNofv.instPremises [F, v, n, o, t] = [jHasFv t cFalse] ∧
       rInstNofv.instConclusion [F, v, n, o, t] = (jInst F v n o t t) := by
-  constructor <;> simp [rInstNofv, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rInstNofv, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cFalse, jHasFv, jInst]
 
 theorem sound_rInstNofv {P : Pattern → Prop}
     (h : ∀ F v n o t : Pattern, P (jHasFv t cFalse) → P (jInst F v n o t t)) :
@@ -2365,29 +1453,17 @@ theorem sound_rInstNofv {P : Pattern → Prop}
       (∀ x ∈ rInstNofv.instPremises args, P x) → P (rInstNofv.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [F, v, n, o, t], _ =>
-    rw [(inst_rInstNofv F v n o t).1] at hprem
-    rw [(inst_rInstNofv F v n o t).2]
-    exact h F v n o t (hprem _ (by simp))
+  | [F, v, n, o, t], _ => exact FORule.sound_of_shape (inst_rInstNofv F v n o t) (h F v n o t) hprem
 
 theorem intro_rInstNofv {R : List FORule} (hr : rInstNofv ∈ R) {F v n o t : Pattern}
     (hd_F : IsData F) (hd_v : IsData v) (hd_n : IsData n) (hd_o : IsData o) (hd_t : IsData t) (h0 : FODerivable R (jHasFv t cFalse)) :
-    FODerivable R (jInst F v n o t t) := by
-  apply FODerivable.intro hr [F, v, n, o, t] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rInstNofv F v n o t).2
-  · rw [(inst_rInstNofv F v n o t).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jInst F v n o t t) :=
+  FODerivable.intro_of_shape hr (inst_rInstNofv F v n o t) rfl ⟨hd_F, hd_v, hd_n, hd_o, hd_t⟩ h0
 
 theorem inst_rInstConst (F v n o idv bs ts d us e g : Pattern) :
     rInstConst.instPremises [F, v, n, o, idv, bs, ts, d, us, e, g] = [jInstArgs F v n o bs ts us, jAnnArgs bs us e g] ∧
       rInstConst.instConclusion [F, v, n, o, idv, bs, ts, d, us, e, g] = (jInst F v n o (cApp (cSym idv cKConst bs) ts (cAnn d cTrue)) (cApp (cSym idv cKConst bs) us (cAnn e g))) := by
-  constructor <;> simp [rInstConst, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rInstConst, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cTrue, cKConst, cSym, cAnn, cApp, jAnnArgs, jInst, jInstArgs]
 
 theorem sound_rInstConst {P : Pattern → Prop}
     (h : ∀ F v n o idv bs ts d us e g : Pattern, P (jInstArgs F v n o bs ts us) → P (jAnnArgs bs us e g) → P (jInst F v n o (cApp (cSym idv cKConst bs) ts (cAnn d cTrue)) (cApp (cSym idv cKConst bs) us (cAnn e g)))) :
@@ -2395,28 +1471,17 @@ theorem sound_rInstConst {P : Pattern → Prop}
       (∀ x ∈ rInstConst.instPremises args, P x) → P (rInstConst.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [F, v, n, o, idv, bs, ts, d, us, e, g], _ =>
-    rw [(inst_rInstConst F v n o idv bs ts d us e g).1] at hprem
-    rw [(inst_rInstConst F v n o idv bs ts d us e g).2]
-    exact h F v n o idv bs ts d us e g (hprem _ (by simp)) (hprem _ (by simp))
+  | [F, v, n, o, idv, bs, ts, d, us, e, g], _ => exact FORule.sound_of_shape (inst_rInstConst F v n o idv bs ts d us e g) (h F v n o idv bs ts d us e g) hprem
 
 theorem intro_rInstConst {R : List FORule} (hr : rInstConst ∈ R) {F v n o idv bs ts d us e g : Pattern}
     (hd_F : IsData F) (hd_v : IsData v) (hd_n : IsData n) (hd_o : IsData o) (hd_idv : IsData idv) (hd_bs : IsData bs) (hd_ts : IsData ts) (hd_d : IsData d) (hd_us : IsData us) (hd_e : IsData e) (hd_g : IsData g) (h0 : FODerivable R (jInstArgs F v n o bs ts us)) (h1 : FODerivable R (jAnnArgs bs us e g)) :
-    FODerivable R (jInst F v n o (cApp (cSym idv cKConst bs) ts (cAnn d cTrue)) (cApp (cSym idv cKConst bs) us (cAnn e g))) := by
-  apply FODerivable.intro hr [F, v, n, o, idv, bs, ts, d, us, e, g] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rInstConst F v n o idv bs ts d us e g).2
-  · rw [(inst_rInstConst F v n o idv bs ts d us e g).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl <;> assumption
+    FODerivable R (jInst F v n o (cApp (cSym idv cKConst bs) ts (cAnn d cTrue)) (cApp (cSym idv cKConst bs) us (cAnn e g))) :=
+  FODerivable.intro_of_shape hr (inst_rInstConst F v n o idv bs ts d us e g) rfl ⟨hd_F, hd_v, hd_n, hd_o, hd_idv, hd_bs, hd_ts, hd_d, hd_us, hd_e, hd_g⟩ ⟨h0, h1⟩
 
 theorem inst_rInstOtherLt (fid fbs v n o idv bs ts d us e g : Pattern) :
     rInstOtherLt.instPremises [fid, fbs, v, n, o, idv, bs, ts, d, us, e, g] = [jNLt idv fid, jInstArgs (cSym fid cKFvar fbs) v n o bs ts us, jAnnArgs bs us e g] ∧
       rInstOtherLt.instConclusion [fid, fbs, v, n, o, idv, bs, ts, d, us, e, g] = (jInst (cSym fid cKFvar fbs) v n o (cApp (cSym idv cKFvar bs) ts (cAnn d cTrue)) (cApp (cSym idv cKFvar bs) us (cAnn e cTrue))) := by
-  constructor <;> simp [rInstOtherLt, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rInstOtherLt, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, cTrue, cKFvar, cSym, cAnn, cApp, jNLt, jAnnArgs, jInst, jInstArgs]
 
 theorem sound_rInstOtherLt {P : Pattern → Prop}
     (h : ∀ fid fbs v n o idv bs ts d us e g : Pattern, P (jNLt idv fid) → P (jInstArgs (cSym fid cKFvar fbs) v n o bs ts us) → P (jAnnArgs bs us e g) → P (jInst (cSym fid cKFvar fbs) v n o (cApp (cSym idv cKFvar bs) ts (cAnn d cTrue)) (cApp (cSym idv cKFvar bs) us (cAnn e cTrue)))) :
@@ -2424,28 +1489,17 @@ theorem sound_rInstOtherLt {P : Pattern → Prop}
       (∀ x ∈ rInstOtherLt.instPremises args, P x) → P (rInstOtherLt.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [fid, fbs, v, n, o, idv, bs, ts, d, us, e, g], _ =>
-    rw [(inst_rInstOtherLt fid fbs v n o idv bs ts d us e g).1] at hprem
-    rw [(inst_rInstOtherLt fid fbs v n o idv bs ts d us e g).2]
-    exact h fid fbs v n o idv bs ts d us e g (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [fid, fbs, v, n, o, idv, bs, ts, d, us, e, g], _ => exact FORule.sound_of_shape (inst_rInstOtherLt fid fbs v n o idv bs ts d us e g) (h fid fbs v n o idv bs ts d us e g) hprem
 
 theorem intro_rInstOtherLt {R : List FORule} (hr : rInstOtherLt ∈ R) {fid fbs v n o idv bs ts d us e g : Pattern}
     (hd_fid : IsData fid) (hd_fbs : IsData fbs) (hd_v : IsData v) (hd_n : IsData n) (hd_o : IsData o) (hd_idv : IsData idv) (hd_bs : IsData bs) (hd_ts : IsData ts) (hd_d : IsData d) (hd_us : IsData us) (hd_e : IsData e) (hd_g : IsData g) (h0 : FODerivable R (jNLt idv fid)) (h1 : FODerivable R (jInstArgs (cSym fid cKFvar fbs) v n o bs ts us)) (h2 : FODerivable R (jAnnArgs bs us e g)) :
-    FODerivable R (jInst (cSym fid cKFvar fbs) v n o (cApp (cSym idv cKFvar bs) ts (cAnn d cTrue)) (cApp (cSym idv cKFvar bs) us (cAnn e cTrue))) := by
-  apply FODerivable.intro hr [fid, fbs, v, n, o, idv, bs, ts, d, us, e, g] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rInstOtherLt fid fbs v n o idv bs ts d us e g).2
-  · rw [(inst_rInstOtherLt fid fbs v n o idv bs ts d us e g).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl <;> assumption
+    FODerivable R (jInst (cSym fid cKFvar fbs) v n o (cApp (cSym idv cKFvar bs) ts (cAnn d cTrue)) (cApp (cSym idv cKFvar bs) us (cAnn e cTrue))) :=
+  FODerivable.intro_of_shape hr (inst_rInstOtherLt fid fbs v n o idv bs ts d us e g) rfl ⟨hd_fid, hd_fbs, hd_v, hd_n, hd_o, hd_idv, hd_bs, hd_ts, hd_d, hd_us, hd_e, hd_g⟩ ⟨h0, h1, h2⟩
 
 theorem inst_rInstOtherGt (fid fbs v n o idv bs ts d us e g : Pattern) :
     rInstOtherGt.instPremises [fid, fbs, v, n, o, idv, bs, ts, d, us, e, g] = [jNLt fid idv, jInstArgs (cSym fid cKFvar fbs) v n o bs ts us, jAnnArgs bs us e g] ∧
       rInstOtherGt.instConclusion [fid, fbs, v, n, o, idv, bs, ts, d, us, e, g] = (jInst (cSym fid cKFvar fbs) v n o (cApp (cSym idv cKFvar bs) ts (cAnn d cTrue)) (cApp (cSym idv cKFvar bs) us (cAnn e cTrue))) := by
-  constructor <;> simp [rInstOtherGt, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rInstOtherGt, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, cTrue, cKFvar, cSym, cAnn, cApp, jNLt, jAnnArgs, jInst, jInstArgs]
 
 theorem sound_rInstOtherGt {P : Pattern → Prop}
     (h : ∀ fid fbs v n o idv bs ts d us e g : Pattern, P (jNLt fid idv) → P (jInstArgs (cSym fid cKFvar fbs) v n o bs ts us) → P (jAnnArgs bs us e g) → P (jInst (cSym fid cKFvar fbs) v n o (cApp (cSym idv cKFvar bs) ts (cAnn d cTrue)) (cApp (cSym idv cKFvar bs) us (cAnn e cTrue)))) :
@@ -2453,28 +1507,17 @@ theorem sound_rInstOtherGt {P : Pattern → Prop}
       (∀ x ∈ rInstOtherGt.instPremises args, P x) → P (rInstOtherGt.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [fid, fbs, v, n, o, idv, bs, ts, d, us, e, g], _ =>
-    rw [(inst_rInstOtherGt fid fbs v n o idv bs ts d us e g).1] at hprem
-    rw [(inst_rInstOtherGt fid fbs v n o idv bs ts d us e g).2]
-    exact h fid fbs v n o idv bs ts d us e g (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [fid, fbs, v, n, o, idv, bs, ts, d, us, e, g], _ => exact FORule.sound_of_shape (inst_rInstOtherGt fid fbs v n o idv bs ts d us e g) (h fid fbs v n o idv bs ts d us e g) hprem
 
 theorem intro_rInstOtherGt {R : List FORule} (hr : rInstOtherGt ∈ R) {fid fbs v n o idv bs ts d us e g : Pattern}
     (hd_fid : IsData fid) (hd_fbs : IsData fbs) (hd_v : IsData v) (hd_n : IsData n) (hd_o : IsData o) (hd_idv : IsData idv) (hd_bs : IsData bs) (hd_ts : IsData ts) (hd_d : IsData d) (hd_us : IsData us) (hd_e : IsData e) (hd_g : IsData g) (h0 : FODerivable R (jNLt fid idv)) (h1 : FODerivable R (jInstArgs (cSym fid cKFvar fbs) v n o bs ts us)) (h2 : FODerivable R (jAnnArgs bs us e g)) :
-    FODerivable R (jInst (cSym fid cKFvar fbs) v n o (cApp (cSym idv cKFvar bs) ts (cAnn d cTrue)) (cApp (cSym idv cKFvar bs) us (cAnn e cTrue))) := by
-  apply FODerivable.intro hr [fid, fbs, v, n, o, idv, bs, ts, d, us, e, g] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rInstOtherGt fid fbs v n o idv bs ts d us e g).2
-  · rw [(inst_rInstOtherGt fid fbs v n o idv bs ts d us e g).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl <;> assumption
+    FODerivable R (jInst (cSym fid cKFvar fbs) v n o (cApp (cSym idv cKFvar bs) ts (cAnn d cTrue)) (cApp (cSym idv cKFvar bs) us (cAnn e cTrue))) :=
+  FODerivable.intro_of_shape hr (inst_rInstOtherGt fid fbs v n o idv bs ts d us e g) rfl ⟨hd_fid, hd_fbs, hd_v, hd_n, hd_o, hd_idv, hd_bs, hd_ts, hd_d, hd_us, hd_e, hd_g⟩ ⟨h0, h1, h2⟩
 
 theorem inst_rInstHit (fid fbs v n o ts d us w r : Pattern) :
     rInstHit.instPremises [fid, fbs, v, n, o, ts, d, us, w, r] = [jInstArgs (cSym fid cKFvar fbs) v n o fbs ts us, jShift o n v w, jSubstTop n us w r] ∧
       rInstHit.instConclusion [fid, fbs, v, n, o, ts, d, us, w, r] = (jInst (cSym fid cKFvar fbs) v n o (cApp (cSym fid cKFvar fbs) ts (cAnn d cTrue)) r) := by
-  constructor <;> simp [rInstHit, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rInstHit, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, cTrue, cKFvar, cSym, cAnn, cApp, jShift, jSubstTop, jInst, jInstArgs]
 
 theorem sound_rInstHit {P : Pattern → Prop}
     (h : ∀ fid fbs v n o ts d us w r : Pattern, P (jInstArgs (cSym fid cKFvar fbs) v n o fbs ts us) → P (jShift o n v w) → P (jSubstTop n us w r) → P (jInst (cSym fid cKFvar fbs) v n o (cApp (cSym fid cKFvar fbs) ts (cAnn d cTrue)) r)) :
@@ -2482,28 +1525,17 @@ theorem sound_rInstHit {P : Pattern → Prop}
       (∀ x ∈ rInstHit.instPremises args, P x) → P (rInstHit.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [fid, fbs, v, n, o, ts, d, us, w, r], _ =>
-    rw [(inst_rInstHit fid fbs v n o ts d us w r).1] at hprem
-    rw [(inst_rInstHit fid fbs v n o ts d us w r).2]
-    exact h fid fbs v n o ts d us w r (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [fid, fbs, v, n, o, ts, d, us, w, r], _ => exact FORule.sound_of_shape (inst_rInstHit fid fbs v n o ts d us w r) (h fid fbs v n o ts d us w r) hprem
 
 theorem intro_rInstHit {R : List FORule} (hr : rInstHit ∈ R) {fid fbs v n o ts d us w r : Pattern}
     (hd_fid : IsData fid) (hd_fbs : IsData fbs) (hd_v : IsData v) (hd_n : IsData n) (hd_o : IsData o) (hd_ts : IsData ts) (hd_d : IsData d) (hd_us : IsData us) (hd_w : IsData w) (hd_r : IsData r) (h0 : FODerivable R (jInstArgs (cSym fid cKFvar fbs) v n o fbs ts us)) (h1 : FODerivable R (jShift o n v w)) (h2 : FODerivable R (jSubstTop n us w r)) :
-    FODerivable R (jInst (cSym fid cKFvar fbs) v n o (cApp (cSym fid cKFvar fbs) ts (cAnn d cTrue)) r) := by
-  apply FODerivable.intro hr [fid, fbs, v, n, o, ts, d, us, w, r] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rInstHit fid fbs v n o ts d us w r).2
-  · rw [(inst_rInstHit fid fbs v n o ts d us w r).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl <;> assumption
+    FODerivable R (jInst (cSym fid cKFvar fbs) v n o (cApp (cSym fid cKFvar fbs) ts (cAnn d cTrue)) r) :=
+  FODerivable.intro_of_shape hr (inst_rInstHit fid fbs v n o ts d us w r) rfl ⟨hd_fid, hd_fbs, hd_v, hd_n, hd_o, hd_ts, hd_d, hd_us, hd_w, hd_r⟩ ⟨h0, h1, h2⟩
 
 theorem inst_rInstargsNil (F v n o : Pattern) :
     rInstargsNil.instPremises [F, v, n, o] = [] ∧
       rInstargsNil.instConclusion [F, v, n, o] = (jInstArgs F v n o cNil cNil cNil) := by
-  constructor <;> simp [rInstargsNil, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rInstargsNil, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cNil, jInstArgs]
 
 theorem sound_rInstargsNil {P : Pattern → Prop}
     (h : ∀ F v n o : Pattern, P (jInstArgs F v n o cNil cNil cNil)) :
@@ -2511,28 +1543,17 @@ theorem sound_rInstargsNil {P : Pattern → Prop}
       (∀ x ∈ rInstargsNil.instPremises args, P x) → P (rInstargsNil.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [F, v, n, o], _ =>
-    rw [(inst_rInstargsNil F v n o).1] at hprem
-    rw [(inst_rInstargsNil F v n o).2]
-    exact h F v n o 
+  | [F, v, n, o], _ => exact FORule.sound_of_shape (inst_rInstargsNil F v n o) (h F v n o) hprem
 
 theorem intro_rInstargsNil {R : List FORule} (hr : rInstargsNil ∈ R) {F v n o : Pattern}
     (hd_F : IsData F) (hd_v : IsData v) (hd_n : IsData n) (hd_o : IsData o)  :
-    FODerivable R (jInstArgs F v n o cNil cNil cNil) := by
-  apply FODerivable.intro hr [F, v, n, o] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rInstargsNil F v n o).2
-  · rw [(inst_rInstargsNil F v n o).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jInstArgs F v n o cNil cNil cNil) :=
+  FODerivable.intro_of_shape hr (inst_rInstargsNil F v n o) rfl ⟨hd_F, hd_v, hd_n, hd_o⟩ trivial
 
 theorem inst_rInstargsCons (F v n o b bs t ts u us k : Pattern) :
     rInstargsCons.instPremises [F, v, n, o, b, bs, t, ts, u, us, k] = [jNAdd o b k, jNWord k, jInst F v n k t u, jInstArgs F v n o bs ts us] ∧
       rInstargsCons.instConclusion [F, v, n, o, b, bs, t, ts, u, us, k] = (jInstArgs F v n o (cCons b bs) (cCons t ts) (cCons u us)) := by
-  constructor <;> simp [rInstargsCons, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rInstargsCons, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cCons, jNAdd, jNWord, jInst, jInstArgs]
 
 theorem sound_rInstargsCons {P : Pattern → Prop}
     (h : ∀ F v n o b bs t ts u us k : Pattern, P (jNAdd o b k) → P (jNWord k) → P (jInst F v n k t u) → P (jInstArgs F v n o bs ts us) → P (jInstArgs F v n o (cCons b bs) (cCons t ts) (cCons u us))) :
@@ -2540,28 +1561,17 @@ theorem sound_rInstargsCons {P : Pattern → Prop}
       (∀ x ∈ rInstargsCons.instPremises args, P x) → P (rInstargsCons.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [F, v, n, o, b, bs, t, ts, u, us, k], _ =>
-    rw [(inst_rInstargsCons F v n o b bs t ts u us k).1] at hprem
-    rw [(inst_rInstargsCons F v n o b bs t ts u us k).2]
-    exact h F v n o b bs t ts u us k (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [F, v, n, o, b, bs, t, ts, u, us, k], _ => exact FORule.sound_of_shape (inst_rInstargsCons F v n o b bs t ts u us k) (h F v n o b bs t ts u us k) hprem
 
 theorem intro_rInstargsCons {R : List FORule} (hr : rInstargsCons ∈ R) {F v n o b bs t ts u us k : Pattern}
     (hd_F : IsData F) (hd_v : IsData v) (hd_n : IsData n) (hd_o : IsData o) (hd_b : IsData b) (hd_bs : IsData bs) (hd_t : IsData t) (hd_ts : IsData ts) (hd_u : IsData u) (hd_us : IsData us) (hd_k : IsData k) (h0 : FODerivable R (jNAdd o b k)) (h1 : FODerivable R (jNWord k)) (h2 : FODerivable R (jInst F v n k t u)) (h3 : FODerivable R (jInstArgs F v n o bs ts us)) :
-    FODerivable R (jInstArgs F v n o (cCons b bs) (cCons t ts) (cCons u us)) := by
-  apply FODerivable.intro hr [F, v, n, o, b, bs, t, ts, u, us, k] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rInstargsCons F v n o b bs t ts u us k).2
-  · rw [(inst_rInstargsCons F v n o b bs t ts u us k).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl | rfl <;> assumption
+    FODerivable R (jInstArgs F v n o (cCons b bs) (cCons t ts) (cCons u us)) :=
+  FODerivable.intro_of_shape hr (inst_rInstargsCons F v n o b bs t ts u us k) rfl ⟨hd_F, hd_v, hd_n, hd_o, hd_b, hd_bs, hd_t, hd_ts, hd_u, hd_us, hd_k⟩ ⟨h0, h1, h2, h3⟩
 
 theorem inst_rNatlitSmall (n p : Pattern) :
     rNatlitSmall.instPremises [n, p] = [jNAdd n (cNPos p) patByteBound] ∧
       rNatlitSmall.instConclusion [n, p] = (jNatLit n (cCons n cNil)) := by
-  constructor <;> simp [rNatlitSmall, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rNatlitSmall, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cNPos, cNil, cCons, jNAdd, jNatLit]
 
 theorem sound_rNatlitSmall {P : Pattern → Prop}
     (h : ∀ n p : Pattern, P (jNAdd n (cNPos p) patByteBound) → P (jNatLit n (cCons n cNil))) :
@@ -2569,29 +1579,17 @@ theorem sound_rNatlitSmall {P : Pattern → Prop}
       (∀ x ∈ rNatlitSmall.instPremises args, P x) → P (rNatlitSmall.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [n, p], _ =>
-    rw [(inst_rNatlitSmall n p).1] at hprem
-    rw [(inst_rNatlitSmall n p).2]
-    exact h n p (hprem _ (by simp))
+  | [n, p], _ => exact FORule.sound_of_shape (inst_rNatlitSmall n p) (h n p) hprem
 
 theorem intro_rNatlitSmall {R : List FORule} (hr : rNatlitSmall ∈ R) {n p : Pattern}
     (hd_n : IsData n) (hd_p : IsData p) (h0 : FODerivable R (jNAdd n (cNPos p) patByteBound)) :
-    FODerivable R (jNatLit n (cCons n cNil)) := by
-  apply FODerivable.intro hr [n, p] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl <;> assumption
-  · exact (inst_rNatlitSmall n p).2
-  · rw [(inst_rNatlitSmall n p).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jNatLit n (cCons n cNil)) :=
+  FODerivable.intro_of_shape hr (inst_rNatlitSmall n p) rfl ⟨hd_n, hd_p⟩ h0
 
 theorem inst_rNatlitLarge (n q1 q2 q3 q4 q5 q6 q7 q8 r1 r2 r3 r4 r5 r6 r7 r8 : Pattern) :
     rNatlitLarge.instPremises [n, q1, q2, q3, q4, q5, q6, q7, q8, r1, r2, r3, r4, r5, r6, r7, r8] = [jNLe patByteBound n, jNDivMod n patByteBound q1 r1, jNDivMod q1 patByteBound q2 r2, jNDivMod q2 patByteBound q3 r3, jNDivMod q3 patByteBound q4 r4, jNDivMod q4 patByteBound q5 r5, jNDivMod q5 patByteBound q6 r6, jNDivMod q6 patByteBound q7 r7, jNDivMod q7 patByteBound q8 r8] ∧
       rNatlitLarge.instConclusion [n, q1, q2, q3, q4, q5, q6, q7, q8, r1, r2, r3, r4, r5, r6, r7, r8] = (jNatLit n (cCons r1 (cCons r2 (cCons r3 (cCons r4 (cCons r5 (cCons r6 (cCons r7 (cCons r8 cNil))))))))) := by
-  constructor <;> simp [rNatlitLarge, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rNatlitLarge, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, byteList8, cNil, cCons, jNLe, jNDivMod, jNatLit]
 
 theorem sound_rNatlitLarge {P : Pattern → Prop}
     (h : ∀ n q1 q2 q3 q4 q5 q6 q7 q8 r1 r2 r3 r4 r5 r6 r7 r8 : Pattern, P (jNLe patByteBound n) → P (jNDivMod n patByteBound q1 r1) → P (jNDivMod q1 patByteBound q2 r2) → P (jNDivMod q2 patByteBound q3 r3) → P (jNDivMod q3 patByteBound q4 r4) → P (jNDivMod q4 patByteBound q5 r5) → P (jNDivMod q5 patByteBound q6 r6) → P (jNDivMod q6 patByteBound q7 r7) → P (jNDivMod q7 patByteBound q8 r8) → P (jNatLit n (cCons r1 (cCons r2 (cCons r3 (cCons r4 (cCons r5 (cCons r6 (cCons r7 (cCons r8 cNil)))))))))) :
@@ -2599,28 +1597,17 @@ theorem sound_rNatlitLarge {P : Pattern → Prop}
       (∀ x ∈ rNatlitLarge.instPremises args, P x) → P (rNatlitLarge.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [n, q1, q2, q3, q4, q5, q6, q7, q8, r1, r2, r3, r4, r5, r6, r7, r8], _ =>
-    rw [(inst_rNatlitLarge n q1 q2 q3 q4 q5 q6 q7 q8 r1 r2 r3 r4 r5 r6 r7 r8).1] at hprem
-    rw [(inst_rNatlitLarge n q1 q2 q3 q4 q5 q6 q7 q8 r1 r2 r3 r4 r5 r6 r7 r8).2]
-    exact h n q1 q2 q3 q4 q5 q6 q7 q8 r1 r2 r3 r4 r5 r6 r7 r8 (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [n, q1, q2, q3, q4, q5, q6, q7, q8, r1, r2, r3, r4, r5, r6, r7, r8], _ => exact FORule.sound_of_shape (inst_rNatlitLarge n q1 q2 q3 q4 q5 q6 q7 q8 r1 r2 r3 r4 r5 r6 r7 r8) (h n q1 q2 q3 q4 q5 q6 q7 q8 r1 r2 r3 r4 r5 r6 r7 r8) hprem
 
 theorem intro_rNatlitLarge {R : List FORule} (hr : rNatlitLarge ∈ R) {n q1 q2 q3 q4 q5 q6 q7 q8 r1 r2 r3 r4 r5 r6 r7 r8 : Pattern}
     (hd_n : IsData n) (hd_q1 : IsData q1) (hd_q2 : IsData q2) (hd_q3 : IsData q3) (hd_q4 : IsData q4) (hd_q5 : IsData q5) (hd_q6 : IsData q6) (hd_q7 : IsData q7) (hd_q8 : IsData q8) (hd_r1 : IsData r1) (hd_r2 : IsData r2) (hd_r3 : IsData r3) (hd_r4 : IsData r4) (hd_r5 : IsData r5) (hd_r6 : IsData r6) (hd_r7 : IsData r7) (hd_r8 : IsData r8) (h0 : FODerivable R (jNLe patByteBound n)) (h1 : FODerivable R (jNDivMod n patByteBound q1 r1)) (h2 : FODerivable R (jNDivMod q1 patByteBound q2 r2)) (h3 : FODerivable R (jNDivMod q2 patByteBound q3 r3)) (h4 : FODerivable R (jNDivMod q3 patByteBound q4 r4)) (h5 : FODerivable R (jNDivMod q4 patByteBound q5 r5)) (h6 : FODerivable R (jNDivMod q5 patByteBound q6 r6)) (h7 : FODerivable R (jNDivMod q6 patByteBound q7 r7)) (h8 : FODerivable R (jNDivMod q7 patByteBound q8 r8)) :
-    FODerivable R (jNatLit n (cCons r1 (cCons r2 (cCons r3 (cCons r4 (cCons r5 (cCons r6 (cCons r7 (cCons r8 cNil))))))))) := by
-  apply FODerivable.intro hr [n, q1, q2, q3, q4, q5, q6, q7, q8, r1, r2, r3, r4, r5, r6, r7, r8] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rNatlitLarge n q1 q2 q3 q4 q5 q6 q7 q8 r1 r2 r3 r4 r5 r6 r7 r8).2
-  · rw [(inst_rNatlitLarge n q1 q2 q3 q4 q5 q6 q7 q8 r1 r2 r3 r4 r5 r6 r7 r8).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
+    FODerivable R (jNatLit n (cCons r1 (cCons r2 (cCons r3 (cCons r4 (cCons r5 (cCons r6 (cCons r7 (cCons r8 cNil))))))))) :=
+  FODerivable.intro_of_shape hr (inst_rNatlitLarge n q1 q2 q3 q4 q5 q6 q7 q8 r1 r2 r3 r4 r5 r6 r7 r8) rfl ⟨hd_n, hd_q1, hd_q2, hd_q3, hd_q4, hd_q5, hd_q6, hd_q7, hd_q8, hd_r1, hd_r2, hd_r3, hd_r4, hd_r5, hd_r6, hd_r7, hd_r8⟩ ⟨h0, h1, h2, h3, h4, h5, h6, h7, h8⟩
 
 theorem inst_rMp (a b ann : Pattern) :
     rMp.instPremises [a, b, ann] = [jThm (cApp patImpl (cCons a (cCons b cNil)) ann), jThm a] ∧
       rMp.instConclusion [a, b, ann] = (jThm b) := by
-  constructor <;> simp [rMp, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rMp, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cNil, cCons, cApp, jThm, patImpl]
 
 theorem sound_rMp {P : Pattern → Prop}
     (h : ∀ a b ann : Pattern, P (jThm (cApp patImpl (cCons a (cCons b cNil)) ann)) → P (jThm a) → P (jThm b)) :
@@ -2628,28 +1615,17 @@ theorem sound_rMp {P : Pattern → Prop}
       (∀ x ∈ rMp.instPremises args, P x) → P (rMp.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [a, b, ann], _ =>
-    rw [(inst_rMp a b ann).1] at hprem
-    rw [(inst_rMp a b ann).2]
-    exact h a b ann (hprem _ (by simp)) (hprem _ (by simp))
+  | [a, b, ann], _ => exact FORule.sound_of_shape (inst_rMp a b ann) (h a b ann) hprem
 
 theorem intro_rMp {R : List FORule} (hr : rMp ∈ R) {a b ann : Pattern}
     (hd_a : IsData a) (hd_b : IsData b) (hd_ann : IsData ann) (h0 : FODerivable R (jThm (cApp patImpl (cCons a (cCons b cNil)) ann))) (h1 : FODerivable R (jThm a)) :
-    FODerivable R (jThm b) := by
-  apply FODerivable.intro hr [a, b, ann] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl <;> assumption
-  · exact (inst_rMp a b ann).2
-  · rw [(inst_rMp a b ann).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl <;> assumption
+    FODerivable R (jThm b) :=
+  FODerivable.intro_of_shape hr (inst_rMp a b ann) rfl ⟨hd_a, hd_b, hd_ann⟩ ⟨h0, h1⟩
 
 theorem inst_rInst (phi fid fbs n v dv psi : Pattern) :
     rInst.instPremises [phi, fid, fbs, n, v, dv, psi] = [jThm phi, jSymDecl (cSym fid cKFvar fbs), jLen fbs n, jWf v, jDepth v dv, jNLe dv n, jInst (cSym fid cKFvar fbs) v n cN0 phi psi, jDepth psi cN0] ∧
       rInst.instConclusion [phi, fid, fbs, n, v, dv, psi] = (jThm psi) := by
-  constructor <;> simp [rInst, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rInst, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, cN0, cKFvar, cSym, jNLe, jLen, jSymDecl, jWf, jDepth, jInst, jThm]
 
 theorem sound_rInst {P : Pattern → Prop}
     (h : ∀ phi fid fbs n v dv psi : Pattern, P (jThm phi) → P (jSymDecl (cSym fid cKFvar fbs)) → P (jLen fbs n) → P (jWf v) → P (jDepth v dv) → P (jNLe dv n) → P (jInst (cSym fid cKFvar fbs) v n cN0 phi psi) → P (jDepth psi cN0) → P (jThm psi)) :
@@ -2657,28 +1633,17 @@ theorem sound_rInst {P : Pattern → Prop}
       (∀ x ∈ rInst.instPremises args, P x) → P (rInst.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [phi, fid, fbs, n, v, dv, psi], _ =>
-    rw [(inst_rInst phi fid fbs n v dv psi).1] at hprem
-    rw [(inst_rInst phi fid fbs n v dv psi).2]
-    exact h phi fid fbs n v dv psi (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [phi, fid, fbs, n, v, dv, psi], _ => exact FORule.sound_of_shape (inst_rInst phi fid fbs n v dv psi) (h phi fid fbs n v dv psi) hprem
 
 theorem intro_rInst {R : List FORule} (hr : rInst ∈ R) {phi fid fbs n v dv psi : Pattern}
     (hd_phi : IsData phi) (hd_fid : IsData fid) (hd_fbs : IsData fbs) (hd_n : IsData n) (hd_v : IsData v) (hd_dv : IsData dv) (hd_psi : IsData psi) (h0 : FODerivable R (jThm phi)) (h1 : FODerivable R (jSymDecl (cSym fid cKFvar fbs))) (h2 : FODerivable R (jLen fbs n)) (h3 : FODerivable R (jWf v)) (h4 : FODerivable R (jDepth v dv)) (h5 : FODerivable R (jNLe dv n)) (h6 : FODerivable R (jInst (cSym fid cKFvar fbs) v n cN0 phi psi)) (h7 : FODerivable R (jDepth psi cN0)) :
-    FODerivable R (jThm psi) := by
-  apply FODerivable.intro hr [phi, fid, fbs, n, v, dv, psi] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rInst phi fid fbs n v dv psi).2
-  · rw [(inst_rInst phi fid fbs n v dv psi).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
+    FODerivable R (jThm psi) :=
+  FODerivable.intro_of_shape hr (inst_rInst phi fid fbs n v dv psi) rfl ⟨hd_phi, hd_fid, hd_fbs, hd_n, hd_v, hd_dv, hd_psi⟩ ⟨h0, h1, h2, h3, h4, h5, h6, h7⟩
 
 theorem inst_rLitIsnat (n bn : Pattern) :
     rLitIsnat.instPremises [n, bn] = [jNWord n, jNatLit n bn] ∧
       rLitIsnat.instConclusion [n, bn] = (jThm (closedApp1 (patBuiltinSym .litIsNat) (cLit bn))) := by
-  constructor <;> simp [rLitIsnat, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rLitIsnat, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cN0, cFalse, cNil, cCons, cAnn, cLit, cApp, jNWord, jNatLit, jThm, closedApp1, patAnnClosed]
 
 theorem sound_rLitIsnat {P : Pattern → Prop}
     (h : ∀ n bn : Pattern, P (jNWord n) → P (jNatLit n bn) → P (jThm (closedApp1 (patBuiltinSym .litIsNat) (cLit bn)))) :
@@ -2686,28 +1651,17 @@ theorem sound_rLitIsnat {P : Pattern → Prop}
       (∀ x ∈ rLitIsnat.instPremises args, P x) → P (rLitIsnat.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [n, bn], _ =>
-    rw [(inst_rLitIsnat n bn).1] at hprem
-    rw [(inst_rLitIsnat n bn).2]
-    exact h n bn (hprem _ (by simp)) (hprem _ (by simp))
+  | [n, bn], _ => exact FORule.sound_of_shape (inst_rLitIsnat n bn) (h n bn) hprem
 
 theorem intro_rLitIsnat {R : List FORule} (hr : rLitIsnat ∈ R) {n bn : Pattern}
     (hd_n : IsData n) (hd_bn : IsData bn) (h0 : FODerivable R (jNWord n)) (h1 : FODerivable R (jNatLit n bn)) :
-    FODerivable R (jThm (closedApp1 (patBuiltinSym .litIsNat) (cLit bn))) := by
-  apply FODerivable.intro hr [n, bn] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl <;> assumption
-  · exact (inst_rLitIsnat n bn).2
-  · rw [(inst_rLitIsnat n bn).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl <;> assumption
+    FODerivable R (jThm (closedApp1 (patBuiltinSym .litIsNat) (cLit bn))) :=
+  FODerivable.intro_of_shape hr (inst_rLitIsnat n bn) rfl ⟨hd_n, hd_bn⟩ ⟨h0, h1⟩
 
 theorem inst_rLitLt (a b ba bb : Pattern) :
     rLitLt.instPremises [a, b, ba, bb] = [jNLt a b, jNWord b, jNatLit a ba, jNatLit b bb] ∧
       rLitLt.instConclusion [a, b, ba, bb] = (jThm (closedApp2 (patBuiltinSym .litLt) (cLit ba) (cLit bb))) := by
-  constructor <;> simp [rLitLt, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rLitLt, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cN0, cFalse, cNil, cCons, cAnn, cLit, cApp, jNLt, jNWord, jNatLit, jThm, closedApp2, patAnnClosed]
 
 theorem sound_rLitLt {P : Pattern → Prop}
     (h : ∀ a b ba bb : Pattern, P (jNLt a b) → P (jNWord b) → P (jNatLit a ba) → P (jNatLit b bb) → P (jThm (closedApp2 (patBuiltinSym .litLt) (cLit ba) (cLit bb)))) :
@@ -2715,28 +1669,17 @@ theorem sound_rLitLt {P : Pattern → Prop}
       (∀ x ∈ rLitLt.instPremises args, P x) → P (rLitLt.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [a, b, ba, bb], _ =>
-    rw [(inst_rLitLt a b ba bb).1] at hprem
-    rw [(inst_rLitLt a b ba bb).2]
-    exact h a b ba bb (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [a, b, ba, bb], _ => exact FORule.sound_of_shape (inst_rLitLt a b ba bb) (h a b ba bb) hprem
 
 theorem intro_rLitLt {R : List FORule} (hr : rLitLt ∈ R) {a b ba bb : Pattern}
     (hd_a : IsData a) (hd_b : IsData b) (hd_ba : IsData ba) (hd_bb : IsData bb) (h0 : FODerivable R (jNLt a b)) (h1 : FODerivable R (jNWord b)) (h2 : FODerivable R (jNatLit a ba)) (h3 : FODerivable R (jNatLit b bb)) :
-    FODerivable R (jThm (closedApp2 (patBuiltinSym .litLt) (cLit ba) (cLit bb))) := by
-  apply FODerivable.intro hr [a, b, ba, bb] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rLitLt a b ba bb).2
-  · rw [(inst_rLitLt a b ba bb).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl | rfl <;> assumption
+    FODerivable R (jThm (closedApp2 (patBuiltinSym .litLt) (cLit ba) (cLit bb))) :=
+  FODerivable.intro_of_shape hr (inst_rLitLt a b ba bb) rfl ⟨hd_a, hd_b, hd_ba, hd_bb⟩ ⟨h0, h1, h2, h3⟩
 
 theorem inst_rLitAdd (a b s c ba bb bc : Pattern) :
     rLitAdd.instPremises [a, b, s, c, ba, bb, bc] = [jNWord a, jNWord b, jNAdd a b s, jNMod64 s c, jNatLit a ba, jNatLit b bb, jNatLit c bc] ∧
       rLitAdd.instConclusion [a, b, s, c, ba, bb, bc] = (jThm (closedApp2 patEq (closedApp2 (patBuiltinSym .litAdd) (cLit ba) (cLit bb)) (cLit bc))) := by
-  constructor <;> simp [rLitAdd, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rLitAdd, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cN0, cFalse, cNil, cCons, cAnn, cLit, cApp, jNAdd, jNMod64, jNWord, jNatLit, jThm, closedApp2, patAnnClosed, patEq]
 
 theorem sound_rLitAdd {P : Pattern → Prop}
     (h : ∀ a b s c ba bb bc : Pattern, P (jNWord a) → P (jNWord b) → P (jNAdd a b s) → P (jNMod64 s c) → P (jNatLit a ba) → P (jNatLit b bb) → P (jNatLit c bc) → P (jThm (closedApp2 patEq (closedApp2 (patBuiltinSym .litAdd) (cLit ba) (cLit bb)) (cLit bc)))) :
@@ -2744,28 +1687,17 @@ theorem sound_rLitAdd {P : Pattern → Prop}
       (∀ x ∈ rLitAdd.instPremises args, P x) → P (rLitAdd.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [a, b, s, c, ba, bb, bc], _ =>
-    rw [(inst_rLitAdd a b s c ba bb bc).1] at hprem
-    rw [(inst_rLitAdd a b s c ba bb bc).2]
-    exact h a b s c ba bb bc (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [a, b, s, c, ba, bb, bc], _ => exact FORule.sound_of_shape (inst_rLitAdd a b s c ba bb bc) (h a b s c ba bb bc) hprem
 
 theorem intro_rLitAdd {R : List FORule} (hr : rLitAdd ∈ R) {a b s c ba bb bc : Pattern}
     (hd_a : IsData a) (hd_b : IsData b) (hd_s : IsData s) (hd_c : IsData c) (hd_ba : IsData ba) (hd_bb : IsData bb) (hd_bc : IsData bc) (h0 : FODerivable R (jNWord a)) (h1 : FODerivable R (jNWord b)) (h2 : FODerivable R (jNAdd a b s)) (h3 : FODerivable R (jNMod64 s c)) (h4 : FODerivable R (jNatLit a ba)) (h5 : FODerivable R (jNatLit b bb)) (h6 : FODerivable R (jNatLit c bc)) :
-    FODerivable R (jThm (closedApp2 patEq (closedApp2 (patBuiltinSym .litAdd) (cLit ba) (cLit bb)) (cLit bc))) := by
-  apply FODerivable.intro hr [a, b, s, c, ba, bb, bc] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rLitAdd a b s c ba bb bc).2
-  · rw [(inst_rLitAdd a b s c ba bb bc).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
+    FODerivable R (jThm (closedApp2 patEq (closedApp2 (patBuiltinSym .litAdd) (cLit ba) (cLit bb)) (cLit bc))) :=
+  FODerivable.intro_of_shape hr (inst_rLitAdd a b s c ba bb bc) rfl ⟨hd_a, hd_b, hd_s, hd_c, hd_ba, hd_bb, hd_bc⟩ ⟨h0, h1, h2, h3, h4, h5, h6⟩
 
 theorem inst_rLitMul (a b s c ba bb bc : Pattern) :
     rLitMul.instPremises [a, b, s, c, ba, bb, bc] = [jNWord a, jNWord b, jNMul a b s, jNMod64 s c, jNatLit a ba, jNatLit b bb, jNatLit c bc] ∧
       rLitMul.instConclusion [a, b, s, c, ba, bb, bc] = (jThm (closedApp2 patEq (closedApp2 (patBuiltinSym .litMul) (cLit ba) (cLit bb)) (cLit bc))) := by
-  constructor <;> simp [rLitMul, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rLitMul, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cN0, cFalse, cNil, cCons, cAnn, cLit, cApp, jNMul, jNMod64, jNWord, jNatLit, jThm, closedApp2, patAnnClosed, patEq]
 
 theorem sound_rLitMul {P : Pattern → Prop}
     (h : ∀ a b s c ba bb bc : Pattern, P (jNWord a) → P (jNWord b) → P (jNMul a b s) → P (jNMod64 s c) → P (jNatLit a ba) → P (jNatLit b bb) → P (jNatLit c bc) → P (jThm (closedApp2 patEq (closedApp2 (patBuiltinSym .litMul) (cLit ba) (cLit bb)) (cLit bc)))) :
@@ -2773,28 +1705,17 @@ theorem sound_rLitMul {P : Pattern → Prop}
       (∀ x ∈ rLitMul.instPremises args, P x) → P (rLitMul.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [a, b, s, c, ba, bb, bc], _ =>
-    rw [(inst_rLitMul a b s c ba bb bc).1] at hprem
-    rw [(inst_rLitMul a b s c ba bb bc).2]
-    exact h a b s c ba bb bc (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [a, b, s, c, ba, bb, bc], _ => exact FORule.sound_of_shape (inst_rLitMul a b s c ba bb bc) (h a b s c ba bb bc) hprem
 
 theorem intro_rLitMul {R : List FORule} (hr : rLitMul ∈ R) {a b s c ba bb bc : Pattern}
     (hd_a : IsData a) (hd_b : IsData b) (hd_s : IsData s) (hd_c : IsData c) (hd_ba : IsData ba) (hd_bb : IsData bb) (hd_bc : IsData bc) (h0 : FODerivable R (jNWord a)) (h1 : FODerivable R (jNWord b)) (h2 : FODerivable R (jNMul a b s)) (h3 : FODerivable R (jNMod64 s c)) (h4 : FODerivable R (jNatLit a ba)) (h5 : FODerivable R (jNatLit b bb)) (h6 : FODerivable R (jNatLit c bc)) :
-    FODerivable R (jThm (closedApp2 patEq (closedApp2 (patBuiltinSym .litMul) (cLit ba) (cLit bb)) (cLit bc))) := by
-  apply FODerivable.intro hr [a, b, s, c, ba, bb, bc] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rLitMul a b s c ba bb bc).2
-  · rw [(inst_rLitMul a b s c ba bb bc).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
+    FODerivable R (jThm (closedApp2 patEq (closedApp2 (patBuiltinSym .litMul) (cLit ba) (cLit bb)) (cLit bc))) :=
+  FODerivable.intro_of_shape hr (inst_rLitMul a b s c ba bb bc) rfl ⟨hd_a, hd_b, hd_s, hd_c, hd_ba, hd_bb, hd_bc⟩ ⟨h0, h1, h2, h3, h4, h5, h6⟩
 
 theorem inst_rLitDiv (a b q r ba bb bq : Pattern) :
     rLitDiv.instPremises [a, b, q, r, ba, bb, bq] = [jNWord a, jNWord b, jNDivMod a b q r, jNatLit a ba, jNatLit b bb, jNatLit q bq] ∧
       rLitDiv.instConclusion [a, b, q, r, ba, bb, bq] = (jThm (closedApp2 patEq (closedApp2 (patBuiltinSym .litDiv) (cLit ba) (cLit bb)) (cLit bq))) := by
-  constructor <;> simp [rLitDiv, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rLitDiv, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cN0, cFalse, cNil, cCons, cAnn, cLit, cApp, jNDivMod, jNWord, jNatLit, jThm, closedApp2, patAnnClosed, patEq]
 
 theorem sound_rLitDiv {P : Pattern → Prop}
     (h : ∀ a b q r ba bb bq : Pattern, P (jNWord a) → P (jNWord b) → P (jNDivMod a b q r) → P (jNatLit a ba) → P (jNatLit b bb) → P (jNatLit q bq) → P (jThm (closedApp2 patEq (closedApp2 (patBuiltinSym .litDiv) (cLit ba) (cLit bb)) (cLit bq)))) :
@@ -2802,28 +1723,17 @@ theorem sound_rLitDiv {P : Pattern → Prop}
       (∀ x ∈ rLitDiv.instPremises args, P x) → P (rLitDiv.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [a, b, q, r, ba, bb, bq], _ =>
-    rw [(inst_rLitDiv a b q r ba bb bq).1] at hprem
-    rw [(inst_rLitDiv a b q r ba bb bq).2]
-    exact h a b q r ba bb bq (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [a, b, q, r, ba, bb, bq], _ => exact FORule.sound_of_shape (inst_rLitDiv a b q r ba bb bq) (h a b q r ba bb bq) hprem
 
 theorem intro_rLitDiv {R : List FORule} (hr : rLitDiv ∈ R) {a b q r ba bb bq : Pattern}
     (hd_a : IsData a) (hd_b : IsData b) (hd_q : IsData q) (hd_r : IsData r) (hd_ba : IsData ba) (hd_bb : IsData bb) (hd_bq : IsData bq) (h0 : FODerivable R (jNWord a)) (h1 : FODerivable R (jNWord b)) (h2 : FODerivable R (jNDivMod a b q r)) (h3 : FODerivable R (jNatLit a ba)) (h4 : FODerivable R (jNatLit b bb)) (h5 : FODerivable R (jNatLit q bq)) :
-    FODerivable R (jThm (closedApp2 patEq (closedApp2 (patBuiltinSym .litDiv) (cLit ba) (cLit bb)) (cLit bq))) := by
-  apply FODerivable.intro hr [a, b, q, r, ba, bb, bq] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rLitDiv a b q r ba bb bq).2
-  · rw [(inst_rLitDiv a b q r ba bb bq).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
+    FODerivable R (jThm (closedApp2 patEq (closedApp2 (patBuiltinSym .litDiv) (cLit ba) (cLit bb)) (cLit bq))) :=
+  FODerivable.intro_of_shape hr (inst_rLitDiv a b q r ba bb bq) rfl ⟨hd_a, hd_b, hd_q, hd_r, hd_ba, hd_bb, hd_bq⟩ ⟨h0, h1, h2, h3, h4, h5⟩
 
 theorem inst_rLitLength (bs n bn : Pattern) :
     rLitLength.instPremises [bs, n, bn] = [jWf (cLit bs), jLen bs n, jNatLit n bn] ∧
       rLitLength.instConclusion [bs, n, bn] = (jThm (closedApp2 patEq (closedApp1 (patBuiltinSym .litLength) (cLit bs)) (cLit bn))) := by
-  constructor <;> simp [rLitLength, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rLitLength, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cN0, cFalse, cNil, cCons, cAnn, cLit, cApp, jLen, jWf, jNatLit, jThm, closedApp1, closedApp2, patAnnClosed, patEq]
 
 theorem sound_rLitLength {P : Pattern → Prop}
     (h : ∀ bs n bn : Pattern, P (jWf (cLit bs)) → P (jLen bs n) → P (jNatLit n bn) → P (jThm (closedApp2 patEq (closedApp1 (patBuiltinSym .litLength) (cLit bs)) (cLit bn)))) :
@@ -2831,28 +1741,17 @@ theorem sound_rLitLength {P : Pattern → Prop}
       (∀ x ∈ rLitLength.instPremises args, P x) → P (rLitLength.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [bs, n, bn], _ =>
-    rw [(inst_rLitLength bs n bn).1] at hprem
-    rw [(inst_rLitLength bs n bn).2]
-    exact h bs n bn (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [bs, n, bn], _ => exact FORule.sound_of_shape (inst_rLitLength bs n bn) (h bs n bn) hprem
 
 theorem intro_rLitLength {R : List FORule} (hr : rLitLength ∈ R) {bs n bn : Pattern}
     (hd_bs : IsData bs) (hd_n : IsData n) (hd_bn : IsData bn) (h0 : FODerivable R (jWf (cLit bs))) (h1 : FODerivable R (jLen bs n)) (h2 : FODerivable R (jNatLit n bn)) :
-    FODerivable R (jThm (closedApp2 patEq (closedApp1 (patBuiltinSym .litLength) (cLit bs)) (cLit bn))) := by
-  apply FODerivable.intro hr [bs, n, bn] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl <;> assumption
-  · exact (inst_rLitLength bs n bn).2
-  · rw [(inst_rLitLength bs n bn).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl <;> assumption
+    FODerivable R (jThm (closedApp2 patEq (closedApp1 (patBuiltinSym .litLength) (cLit bs)) (cLit bn))) :=
+  FODerivable.intro_of_shape hr (inst_rLitLength bs n bn) rfl ⟨hd_bs, hd_n, hd_bn⟩ ⟨h0, h1, h2⟩
 
 theorem inst_rLitGet (bs i xx bi bx : Pattern) :
     rLitGet.instPremises [bs, i, xx, bi, bx] = [jWf (cLit bs), jNth bs i xx, jNatLit i bi, jNatLit xx bx] ∧
       rLitGet.instConclusion [bs, i, xx, bi, bx] = (jThm (closedApp2 patEq (closedApp2 (patBuiltinSym .litGet) (cLit bs) (cLit bi)) (cLit bx))) := by
-  constructor <;> simp [rLitGet, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rLitGet, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cN0, cFalse, cNil, cCons, cAnn, cLit, cApp, jNth, jWf, jNatLit, jThm, closedApp2, patAnnClosed, patEq]
 
 theorem sound_rLitGet {P : Pattern → Prop}
     (h : ∀ bs i xx bi bx : Pattern, P (jWf (cLit bs)) → P (jNth bs i xx) → P (jNatLit i bi) → P (jNatLit xx bx) → P (jThm (closedApp2 patEq (closedApp2 (patBuiltinSym .litGet) (cLit bs) (cLit bi)) (cLit bx)))) :
@@ -2860,28 +1759,17 @@ theorem sound_rLitGet {P : Pattern → Prop}
       (∀ x ∈ rLitGet.instPremises args, P x) → P (rLitGet.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [bs, i, xx, bi, bx], _ =>
-    rw [(inst_rLitGet bs i xx bi bx).1] at hprem
-    rw [(inst_rLitGet bs i xx bi bx).2]
-    exact h bs i xx bi bx (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [bs, i, xx, bi, bx], _ => exact FORule.sound_of_shape (inst_rLitGet bs i xx bi bx) (h bs i xx bi bx) hprem
 
 theorem intro_rLitGet {R : List FORule} (hr : rLitGet ∈ R) {bs i xx bi bx : Pattern}
     (hd_bs : IsData bs) (hd_i : IsData i) (hd_xx : IsData xx) (hd_bi : IsData bi) (hd_bx : IsData bx) (h0 : FODerivable R (jWf (cLit bs))) (h1 : FODerivable R (jNth bs i xx)) (h2 : FODerivable R (jNatLit i bi)) (h3 : FODerivable R (jNatLit xx bx)) :
-    FODerivable R (jThm (closedApp2 patEq (closedApp2 (patBuiltinSym .litGet) (cLit bs) (cLit bi)) (cLit bx))) := by
-  apply FODerivable.intro hr [bs, i, xx, bi, bx] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rLitGet bs i xx bi bx).2
-  · rw [(inst_rLitGet bs i xx bi bx).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl | rfl <;> assumption
+    FODerivable R (jThm (closedApp2 patEq (closedApp2 (patBuiltinSym .litGet) (cLit bs) (cLit bi)) (cLit bx))) :=
+  FODerivable.intro_of_shape hr (inst_rLitGet bs i xx bi bx) rfl ⟨hd_bs, hd_i, hd_xx, hd_bi, hd_bx⟩ ⟨h0, h1, h2, h3⟩
 
 theorem inst_rAritiesNil :
     rAritiesNil.instPremises [] = [] ∧
       rAritiesNil.instConclusion [] = (jArities cNil cNil) := by
-  constructor <;> simp [rAritiesNil, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rAritiesNil, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, ab_apply, cNil, jArities]
 
 theorem sound_rAritiesNil {P : Pattern → Prop}
     (h : P (jArities cNil cNil)) :
@@ -2889,28 +1777,17 @@ theorem sound_rAritiesNil {P : Pattern → Prop}
       (∀ x ∈ rAritiesNil.instPremises args, P x) → P (rAritiesNil.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [], _ =>
-    rw [(inst_rAritiesNil ).1] at hprem
-    rw [(inst_rAritiesNil ).2]
-    exact h  
+  | [], _ => exact FORule.sound_of_shape (inst_rAritiesNil) h hprem
 
 theorem intro_rAritiesNil {R : List FORule} (hr : rAritiesNil ∈ R) 
       :
-    FODerivable R (jArities cNil cNil) := by
-  apply FODerivable.intro hr [] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-
-  · exact (inst_rAritiesNil ).2
-  · rw [(inst_rAritiesNil ).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jArities cNil cNil) :=
+  FODerivable.intro_of_shape hr (inst_rAritiesNil) rfl trivial trivial
 
 theorem inst_rAritiesCons (idv fbs fvars n bs : Pattern) :
     rAritiesCons.instPremises [idv, fbs, fvars, n, bs] = [jSymDecl (cSym idv cKFvar fbs), jLen fbs n, jArities fvars bs] ∧
       rAritiesCons.instConclusion [idv, fbs, fvars, n, bs] = (jArities (cCons (cSym idv cKFvar fbs) fvars) (cCons n bs)) := by
-  constructor <;> simp [rAritiesCons, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rAritiesCons, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cCons, cKFvar, cSym, jLen, jSymDecl, jArities]
 
 theorem sound_rAritiesCons {P : Pattern → Prop}
     (h : ∀ idv fbs fvars n bs : Pattern, P (jSymDecl (cSym idv cKFvar fbs)) → P (jLen fbs n) → P (jArities fvars bs) → P (jArities (cCons (cSym idv cKFvar fbs) fvars) (cCons n bs))) :
@@ -2918,28 +1795,17 @@ theorem sound_rAritiesCons {P : Pattern → Prop}
       (∀ x ∈ rAritiesCons.instPremises args, P x) → P (rAritiesCons.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [idv, fbs, fvars, n, bs], _ =>
-    rw [(inst_rAritiesCons idv fbs fvars n bs).1] at hprem
-    rw [(inst_rAritiesCons idv fbs fvars n bs).2]
-    exact h idv fbs fvars n bs (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [idv, fbs, fvars, n, bs], _ => exact FORule.sound_of_shape (inst_rAritiesCons idv fbs fvars n bs) (h idv fbs fvars n bs) hprem
 
 theorem intro_rAritiesCons {R : List FORule} (hr : rAritiesCons ∈ R) {idv fbs fvars n bs : Pattern}
     (hd_idv : IsData idv) (hd_fbs : IsData fbs) (hd_fvars : IsData fvars) (hd_n : IsData n) (hd_bs : IsData bs) (h0 : FODerivable R (jSymDecl (cSym idv cKFvar fbs))) (h1 : FODerivable R (jLen fbs n)) (h2 : FODerivable R (jArities fvars bs)) :
-    FODerivable R (jArities (cCons (cSym idv cKFvar fbs) fvars) (cCons n bs)) := by
-  apply FODerivable.intro hr [idv, fbs, fvars, n, bs] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rAritiesCons idv fbs fvars n bs).2
-  · rw [(inst_rAritiesCons idv fbs fvars n bs).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl <;> assumption
+    FODerivable R (jArities (cCons (cSym idv cKFvar fbs) fvars) (cCons n bs)) :=
+  FODerivable.intro_of_shape hr (inst_rAritiesCons idv fbs fvars n bs) rfl ⟨hd_idv, hd_fbs, hd_fvars, hd_n, hd_bs⟩ ⟨h0, h1, h2⟩
 
 theorem inst_rHintsinNil (n : Pattern) :
     rHintsinNil.instPremises [n] = [] ∧
       rHintsinNil.instConclusion [n] = (jHintsIn cNil n) := by
-  constructor <;> simp [rHintsinNil, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rHintsinNil, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, cNil, jHintsIn]
 
 theorem sound_rHintsinNil {P : Pattern → Prop}
     (h : ∀ n : Pattern, P (jHintsIn cNil n)) :
@@ -2947,29 +1813,17 @@ theorem sound_rHintsinNil {P : Pattern → Prop}
       (∀ x ∈ rHintsinNil.instPremises args, P x) → P (rHintsinNil.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [n], _ =>
-    rw [(inst_rHintsinNil n).1] at hprem
-    rw [(inst_rHintsinNil n).2]
-    exact h n 
+  | [n], _ => exact FORule.sound_of_shape (inst_rHintsinNil n) (h n) hprem
 
 theorem intro_rHintsinNil {R : List FORule} (hr : rHintsinNil ∈ R) {n : Pattern}
     (hd_n : IsData n)  :
-    FODerivable R (jHintsIn cNil n) := by
-  apply FODerivable.intro hr [n] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl
-    assumption
-  · exact (inst_rHintsinNil n).2
-  · rw [(inst_rHintsinNil n).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jHintsIn cNil n) :=
+  FODerivable.intro_of_shape hr (inst_rHintsinNil n) rfl hd_n trivial
 
 theorem inst_rHintsinCons (hh hs n : Pattern) :
     rHintsinCons.instPremises [hh, hs, n] = [jNLt hh n, jHintsIn hs n] ∧
       rHintsinCons.instConclusion [hh, hs, n] = (jHintsIn (cCons hh hs) n) := by
-  constructor <;> simp [rHintsinCons, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rHintsinCons, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cCons, jNLt, jHintsIn]
 
 theorem sound_rHintsinCons {P : Pattern → Prop}
     (h : ∀ hh hs n : Pattern, P (jNLt hh n) → P (jHintsIn hs n) → P (jHintsIn (cCons hh hs) n)) :
@@ -2977,28 +1831,17 @@ theorem sound_rHintsinCons {P : Pattern → Prop}
       (∀ x ∈ rHintsinCons.instPremises args, P x) → P (rHintsinCons.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [hh, hs, n], _ =>
-    rw [(inst_rHintsinCons hh hs n).1] at hprem
-    rw [(inst_rHintsinCons hh hs n).2]
-    exact h hh hs n (hprem _ (by simp)) (hprem _ (by simp))
+  | [hh, hs, n], _ => exact FORule.sound_of_shape (inst_rHintsinCons hh hs n) (h hh hs n) hprem
 
 theorem intro_rHintsinCons {R : List FORule} (hr : rHintsinCons ∈ R) {hh hs n : Pattern}
     (hd_hh : IsData hh) (hd_hs : IsData hs) (hd_n : IsData n) (h0 : FODerivable R (jNLt hh n)) (h1 : FODerivable R (jHintsIn hs n)) :
-    FODerivable R (jHintsIn (cCons hh hs) n) := by
-  apply FODerivable.intro hr [hh, hs, n] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl <;> assumption
-  · exact (inst_rHintsinCons hh hs n).2
-  · rw [(inst_rHintsinCons hh hs n).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl <;> assumption
+    FODerivable R (jHintsIn (cCons hh hs) n) :=
+  FODerivable.intro_of_shape hr (inst_rHintsinCons hh hs n) rfl ⟨hd_hh, hd_hs, hd_n⟩ ⟨h0, h1⟩
 
 theorem inst_rOccBvar (fvars i hs : Pattern) :
     rOccBvar.instPremises [fvars, i, hs] = [] ∧
       rOccBvar.instConclusion [fvars, i, hs] = (jOcc fvars (cBVar i) hs hs) := by
-  constructor <;> simp [rOccBvar, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rOccBvar, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cBVar, jOcc]
 
 theorem sound_rOccBvar {P : Pattern → Prop}
     (h : ∀ fvars i hs : Pattern, P (jOcc fvars (cBVar i) hs hs)) :
@@ -3006,28 +1849,17 @@ theorem sound_rOccBvar {P : Pattern → Prop}
       (∀ x ∈ rOccBvar.instPremises args, P x) → P (rOccBvar.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [fvars, i, hs], _ =>
-    rw [(inst_rOccBvar fvars i hs).1] at hprem
-    rw [(inst_rOccBvar fvars i hs).2]
-    exact h fvars i hs 
+  | [fvars, i, hs], _ => exact FORule.sound_of_shape (inst_rOccBvar fvars i hs) (h fvars i hs) hprem
 
 theorem intro_rOccBvar {R : List FORule} (hr : rOccBvar ∈ R) {fvars i hs : Pattern}
     (hd_fvars : IsData fvars) (hd_i : IsData i) (hd_hs : IsData hs)  :
-    FODerivable R (jOcc fvars (cBVar i) hs hs) := by
-  apply FODerivable.intro hr [fvars, i, hs] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl <;> assumption
-  · exact (inst_rOccBvar fvars i hs).2
-  · rw [(inst_rOccBvar fvars i hs).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jOcc fvars (cBVar i) hs hs) :=
+  FODerivable.intro_of_shape hr (inst_rOccBvar fvars i hs) rfl ⟨hd_fvars, hd_i, hd_hs⟩ trivial
 
 theorem inst_rOccLit (fvars bs hs : Pattern) :
     rOccLit.instPremises [fvars, bs, hs] = [] ∧
       rOccLit.instConclusion [fvars, bs, hs] = (jOcc fvars (cLit bs) hs hs) := by
-  constructor <;> simp [rOccLit, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rOccLit, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cLit, jOcc]
 
 theorem sound_rOccLit {P : Pattern → Prop}
     (h : ∀ fvars bs hs : Pattern, P (jOcc fvars (cLit bs) hs hs)) :
@@ -3035,28 +1867,17 @@ theorem sound_rOccLit {P : Pattern → Prop}
       (∀ x ∈ rOccLit.instPremises args, P x) → P (rOccLit.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [fvars, bs, hs], _ =>
-    rw [(inst_rOccLit fvars bs hs).1] at hprem
-    rw [(inst_rOccLit fvars bs hs).2]
-    exact h fvars bs hs 
+  | [fvars, bs, hs], _ => exact FORule.sound_of_shape (inst_rOccLit fvars bs hs) (h fvars bs hs) hprem
 
 theorem intro_rOccLit {R : List FORule} (hr : rOccLit ∈ R) {fvars bs hs : Pattern}
     (hd_fvars : IsData fvars) (hd_bs : IsData bs) (hd_hs : IsData hs)  :
-    FODerivable R (jOcc fvars (cLit bs) hs hs) := by
-  apply FODerivable.intro hr [fvars, bs, hs] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl <;> assumption
-  · exact (inst_rOccLit fvars bs hs).2
-  · rw [(inst_rOccLit fvars bs hs).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jOcc fvars (cLit bs) hs hs) :=
+  FODerivable.intro_of_shape hr (inst_rOccLit fvars bs hs) rfl ⟨hd_fvars, hd_bs, hd_hs⟩ trivial
 
 theorem inst_rOccConst (fvars idv bs ts ann hs rest : Pattern) :
     rOccConst.instPremises [fvars, idv, bs, ts, ann, hs, rest] = [jOccArgs fvars ts hs rest] ∧
       rOccConst.instConclusion [fvars, idv, bs, ts, ann, hs, rest] = (jOcc fvars (cApp (cSym idv cKConst bs) ts ann) hs rest) := by
-  constructor <;> simp [rOccConst, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rOccConst, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cKConst, cSym, cApp, jOcc, jOccArgs]
 
 theorem sound_rOccConst {P : Pattern → Prop}
     (h : ∀ fvars idv bs ts ann hs rest : Pattern, P (jOccArgs fvars ts hs rest) → P (jOcc fvars (cApp (cSym idv cKConst bs) ts ann) hs rest)) :
@@ -3064,29 +1885,17 @@ theorem sound_rOccConst {P : Pattern → Prop}
       (∀ x ∈ rOccConst.instPremises args, P x) → P (rOccConst.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [fvars, idv, bs, ts, ann, hs, rest], _ =>
-    rw [(inst_rOccConst fvars idv bs ts ann hs rest).1] at hprem
-    rw [(inst_rOccConst fvars idv bs ts ann hs rest).2]
-    exact h fvars idv bs ts ann hs rest (hprem _ (by simp))
+  | [fvars, idv, bs, ts, ann, hs, rest], _ => exact FORule.sound_of_shape (inst_rOccConst fvars idv bs ts ann hs rest) (h fvars idv bs ts ann hs rest) hprem
 
 theorem intro_rOccConst {R : List FORule} (hr : rOccConst ∈ R) {fvars idv bs ts ann hs rest : Pattern}
     (hd_fvars : IsData fvars) (hd_idv : IsData idv) (hd_bs : IsData bs) (hd_ts : IsData ts) (hd_ann : IsData ann) (hd_hs : IsData hs) (hd_rest : IsData rest) (h0 : FODerivable R (jOccArgs fvars ts hs rest)) :
-    FODerivable R (jOcc fvars (cApp (cSym idv cKConst bs) ts ann) hs rest) := by
-  apply FODerivable.intro hr [fvars, idv, bs, ts, ann, hs, rest] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rOccConst fvars idv bs ts ann hs rest).2
-  · rw [(inst_rOccConst fvars idv bs ts ann hs rest).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl
-    assumption
+    FODerivable R (jOcc fvars (cApp (cSym idv cKConst bs) ts ann) hs rest) :=
+  FODerivable.intro_of_shape hr (inst_rOccConst fvars idv bs ts ann hs rest) rfl ⟨hd_fvars, hd_idv, hd_bs, hd_ts, hd_ann, hd_hs, hd_rest⟩ h0
 
 theorem inst_rOccFvar (fvars idv bs ts ann hh hs rest : Pattern) :
     rOccFvar.instPremises [fvars, idv, bs, ts, ann, hh, hs, rest] = [jNth fvars hh (cSym idv cKFvar bs), jOccArgs fvars ts hs rest] ∧
       rOccFvar.instConclusion [fvars, idv, bs, ts, ann, hh, hs, rest] = (jOcc fvars (cApp (cSym idv cKFvar bs) ts ann) (cCons hh hs) rest) := by
-  constructor <;> simp [rOccFvar, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rOccFvar, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cCons, cKFvar, cSym, cApp, jNth, jOcc, jOccArgs]
 
 theorem sound_rOccFvar {P : Pattern → Prop}
     (h : ∀ fvars idv bs ts ann hh hs rest : Pattern, P (jNth fvars hh (cSym idv cKFvar bs)) → P (jOccArgs fvars ts hs rest) → P (jOcc fvars (cApp (cSym idv cKFvar bs) ts ann) (cCons hh hs) rest)) :
@@ -3094,28 +1903,17 @@ theorem sound_rOccFvar {P : Pattern → Prop}
       (∀ x ∈ rOccFvar.instPremises args, P x) → P (rOccFvar.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [fvars, idv, bs, ts, ann, hh, hs, rest], _ =>
-    rw [(inst_rOccFvar fvars idv bs ts ann hh hs rest).1] at hprem
-    rw [(inst_rOccFvar fvars idv bs ts ann hh hs rest).2]
-    exact h fvars idv bs ts ann hh hs rest (hprem _ (by simp)) (hprem _ (by simp))
+  | [fvars, idv, bs, ts, ann, hh, hs, rest], _ => exact FORule.sound_of_shape (inst_rOccFvar fvars idv bs ts ann hh hs rest) (h fvars idv bs ts ann hh hs rest) hprem
 
 theorem intro_rOccFvar {R : List FORule} (hr : rOccFvar ∈ R) {fvars idv bs ts ann hh hs rest : Pattern}
     (hd_fvars : IsData fvars) (hd_idv : IsData idv) (hd_bs : IsData bs) (hd_ts : IsData ts) (hd_ann : IsData ann) (hd_hh : IsData hh) (hd_hs : IsData hs) (hd_rest : IsData rest) (h0 : FODerivable R (jNth fvars hh (cSym idv cKFvar bs))) (h1 : FODerivable R (jOccArgs fvars ts hs rest)) :
-    FODerivable R (jOcc fvars (cApp (cSym idv cKFvar bs) ts ann) (cCons hh hs) rest) := by
-  apply FODerivable.intro hr [fvars, idv, bs, ts, ann, hh, hs, rest] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rOccFvar fvars idv bs ts ann hh hs rest).2
-  · rw [(inst_rOccFvar fvars idv bs ts ann hh hs rest).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl <;> assumption
+    FODerivable R (jOcc fvars (cApp (cSym idv cKFvar bs) ts ann) (cCons hh hs) rest) :=
+  FODerivable.intro_of_shape hr (inst_rOccFvar fvars idv bs ts ann hh hs rest) rfl ⟨hd_fvars, hd_idv, hd_bs, hd_ts, hd_ann, hd_hh, hd_hs, hd_rest⟩ ⟨h0, h1⟩
 
 theorem inst_rOccargsNil (fvars hs : Pattern) :
     rOccargsNil.instPremises [fvars, hs] = [] ∧
       rOccargsNil.instConclusion [fvars, hs] = (jOccArgs fvars cNil hs hs) := by
-  constructor <;> simp [rOccargsNil, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rOccargsNil, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cNil, jOccArgs]
 
 theorem sound_rOccargsNil {P : Pattern → Prop}
     (h : ∀ fvars hs : Pattern, P (jOccArgs fvars cNil hs hs)) :
@@ -3123,28 +1921,17 @@ theorem sound_rOccargsNil {P : Pattern → Prop}
       (∀ x ∈ rOccargsNil.instPremises args, P x) → P (rOccargsNil.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [fvars, hs], _ =>
-    rw [(inst_rOccargsNil fvars hs).1] at hprem
-    rw [(inst_rOccargsNil fvars hs).2]
-    exact h fvars hs 
+  | [fvars, hs], _ => exact FORule.sound_of_shape (inst_rOccargsNil fvars hs) (h fvars hs) hprem
 
 theorem intro_rOccargsNil {R : List FORule} (hr : rOccargsNil ∈ R) {fvars hs : Pattern}
     (hd_fvars : IsData fvars) (hd_hs : IsData hs)  :
-    FODerivable R (jOccArgs fvars cNil hs hs) := by
-  apply FODerivable.intro hr [fvars, hs] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl <;> assumption
-  · exact (inst_rOccargsNil fvars hs).2
-  · rw [(inst_rOccargsNil fvars hs).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jOccArgs fvars cNil hs hs) :=
+  FODerivable.intro_of_shape hr (inst_rOccargsNil fvars hs) rfl ⟨hd_fvars, hd_hs⟩ trivial
 
 theorem inst_rOccargsCons (fvars t ts hs mid rest : Pattern) :
     rOccargsCons.instPremises [fvars, t, ts, hs, mid, rest] = [jOcc fvars t hs mid, jOccArgs fvars ts mid rest] ∧
       rOccargsCons.instConclusion [fvars, t, ts, hs, mid, rest] = (jOccArgs fvars (cCons t ts) hs rest) := by
-  constructor <;> simp [rOccargsCons, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rOccargsCons, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cCons, jOcc, jOccArgs]
 
 theorem sound_rOccargsCons {P : Pattern → Prop}
     (h : ∀ fvars t ts hs mid rest : Pattern, P (jOcc fvars t hs mid) → P (jOccArgs fvars ts mid rest) → P (jOccArgs fvars (cCons t ts) hs rest)) :
@@ -3152,28 +1939,17 @@ theorem sound_rOccargsCons {P : Pattern → Prop}
       (∀ x ∈ rOccargsCons.instPremises args, P x) → P (rOccargsCons.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [fvars, t, ts, hs, mid, rest], _ =>
-    rw [(inst_rOccargsCons fvars t ts hs mid rest).1] at hprem
-    rw [(inst_rOccargsCons fvars t ts hs mid rest).2]
-    exact h fvars t ts hs mid rest (hprem _ (by simp)) (hprem _ (by simp))
+  | [fvars, t, ts, hs, mid, rest], _ => exact FORule.sound_of_shape (inst_rOccargsCons fvars t ts hs mid rest) (h fvars t ts hs mid rest) hprem
 
 theorem intro_rOccargsCons {R : List FORule} (hr : rOccargsCons ∈ R) {fvars t ts hs mid rest : Pattern}
     (hd_fvars : IsData fvars) (hd_t : IsData t) (hd_ts : IsData ts) (hd_hs : IsData hs) (hd_mid : IsData mid) (hd_rest : IsData rest) (h0 : FODerivable R (jOcc fvars t hs mid)) (h1 : FODerivable R (jOccArgs fvars ts mid rest)) :
-    FODerivable R (jOccArgs fvars (cCons t ts) hs rest) := by
-  apply FODerivable.intro hr [fvars, t, ts, hs, mid, rest] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rOccargsCons fvars t ts hs mid rest).2
-  · rw [(inst_rOccargsCons fvars t ts hs mid rest).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl <;> assumption
+    FODerivable R (jOccArgs fvars (cCons t ts) hs rest) :=
+  FODerivable.intro_of_shape hr (inst_rOccargsCons fvars t ts hs mid rest) rfl ⟨hd_fvars, hd_t, hd_ts, hd_hs, hd_mid, hd_rest⟩ ⟨h0, h1⟩
 
 theorem inst_rDesc0 :
     rDesc0.instPremises [] = [] ∧
       rDesc0.instConclusion [] = (jDescBVars cN0 cNil) := by
-  constructor <;> simp [rDesc0, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rDesc0, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, ab_apply, cN0, cNil, jDescBVars]
 
 theorem sound_rDesc0 {P : Pattern → Prop}
     (h : P (jDescBVars cN0 cNil)) :
@@ -3181,28 +1957,17 @@ theorem sound_rDesc0 {P : Pattern → Prop}
       (∀ x ∈ rDesc0.instPremises args, P x) → P (rDesc0.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [], _ =>
-    rw [(inst_rDesc0 ).1] at hprem
-    rw [(inst_rDesc0 ).2]
-    exact h  
+  | [], _ => exact FORule.sound_of_shape (inst_rDesc0) h hprem
 
 theorem intro_rDesc0 {R : List FORule} (hr : rDesc0 ∈ R) 
       :
-    FODerivable R (jDescBVars cN0 cNil) := by
-  apply FODerivable.intro hr [] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-
-  · exact (inst_rDesc0 ).2
-  · rw [(inst_rDesc0 ).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jDescBVars cN0 cNil) :=
+  FODerivable.intro_of_shape hr (inst_rDesc0) rfl trivial trivial
 
 theorem inst_rDescS (n k vars : Pattern) :
     rDescS.instPremises [n, k, vars] = [jNAdd k patOne n, jDescBVars k vars] ∧
       rDescS.instConclusion [n, k, vars] = (jDescBVars n (cCons (cBVar k) vars)) := by
-  constructor <;> simp [rDescS, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rDescS, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cCons, cBVar, jNAdd, jDescBVars]
 
 theorem sound_rDescS {P : Pattern → Prop}
     (h : ∀ n k vars : Pattern, P (jNAdd k patOne n) → P (jDescBVars k vars) → P (jDescBVars n (cCons (cBVar k) vars))) :
@@ -3210,28 +1975,17 @@ theorem sound_rDescS {P : Pattern → Prop}
       (∀ x ∈ rDescS.instPremises args, P x) → P (rDescS.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [n, k, vars], _ =>
-    rw [(inst_rDescS n k vars).1] at hprem
-    rw [(inst_rDescS n k vars).2]
-    exact h n k vars (hprem _ (by simp)) (hprem _ (by simp))
+  | [n, k, vars], _ => exact FORule.sound_of_shape (inst_rDescS n k vars) (h n k vars) hprem
 
 theorem intro_rDescS {R : List FORule} (hr : rDescS ∈ R) {n k vars : Pattern}
     (hd_n : IsData n) (hd_k : IsData k) (hd_vars : IsData vars) (h0 : FODerivable R (jNAdd k patOne n)) (h1 : FODerivable R (jDescBVars k vars)) :
-    FODerivable R (jDescBVars n (cCons (cBVar k) vars)) := by
-  apply FODerivable.intro hr [n, k, vars] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl <;> assumption
-  · exact (inst_rDescS n k vars).2
-  · rw [(inst_rDescS n k vars).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl <;> assumption
+    FODerivable R (jDescBVars n (cCons (cBVar k) vars)) :=
+  FODerivable.intro_of_shape hr (inst_rDescS n k vars) rfl ⟨hd_n, hd_k, hd_vars⟩ ⟨h0, h1⟩
 
 theorem inst_rEtasNil :
     rEtasNil.instPremises [] = [] ∧
       rEtasNil.instConclusion [] = (jEtas cNil cNil) := by
-  constructor <;> simp [rEtasNil, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rEtasNil, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, ab_apply, cNil, jEtas]
 
 theorem sound_rEtasNil {P : Pattern → Prop}
     (h : P (jEtas cNil cNil)) :
@@ -3239,28 +1993,17 @@ theorem sound_rEtasNil {P : Pattern → Prop}
       (∀ x ∈ rEtasNil.instPremises args, P x) → P (rEtasNil.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [], _ =>
-    rw [(inst_rEtasNil ).1] at hprem
-    rw [(inst_rEtasNil ).2]
-    exact h  
+  | [], _ => exact FORule.sound_of_shape (inst_rEtasNil) h hprem
 
 theorem intro_rEtasNil {R : List FORule} (hr : rEtasNil ∈ R) 
       :
-    FODerivable R (jEtas cNil cNil) := by
-  apply FODerivable.intro hr [] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-
-  · exact (inst_rEtasNil ).2
-  · rw [(inst_rEtasNil ).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-
+    FODerivable R (jEtas cNil cNil) :=
+  FODerivable.intro_of_shape hr (inst_rEtasNil) rfl trivial trivial
 
 theorem inst_rEtasCons (idv fbs fvars n vars etas : Pattern) :
     rEtasCons.instPremises [idv, fbs, fvars, n, vars, etas] = [jLen fbs n, jDescBVars n vars, jEtas fvars etas] ∧
       rEtasCons.instConclusion [idv, fbs, fvars, n, vars, etas] = (jEtas (cCons (cSym idv cKFvar fbs) fvars) (cCons (cApp (cSym idv cKFvar fbs) vars (cAnn n cTrue)) etas)) := by
-  constructor <;> simp [rEtasCons, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rEtasCons, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cTrue, cCons, cKFvar, cSym, cAnn, cApp, jLen, jEtas, jDescBVars]
 
 theorem sound_rEtasCons {P : Pattern → Prop}
     (h : ∀ idv fbs fvars n vars etas : Pattern, P (jLen fbs n) → P (jDescBVars n vars) → P (jEtas fvars etas) → P (jEtas (cCons (cSym idv cKFvar fbs) fvars) (cCons (cApp (cSym idv cKFvar fbs) vars (cAnn n cTrue)) etas))) :
@@ -3268,28 +2011,17 @@ theorem sound_rEtasCons {P : Pattern → Prop}
       (∀ x ∈ rEtasCons.instPremises args, P x) → P (rEtasCons.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [idv, fbs, fvars, n, vars, etas], _ =>
-    rw [(inst_rEtasCons idv fbs fvars n vars etas).1] at hprem
-    rw [(inst_rEtasCons idv fbs fvars n vars etas).2]
-    exact h idv fbs fvars n vars etas (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [idv, fbs, fvars, n, vars, etas], _ => exact FORule.sound_of_shape (inst_rEtasCons idv fbs fvars n vars etas) (h idv fbs fvars n vars etas) hprem
 
 theorem intro_rEtasCons {R : List FORule} (hr : rEtasCons ∈ R) {idv fbs fvars n vars etas : Pattern}
     (hd_idv : IsData idv) (hd_fbs : IsData fbs) (hd_fvars : IsData fvars) (hd_n : IsData n) (hd_vars : IsData vars) (hd_etas : IsData etas) (h0 : FODerivable R (jLen fbs n)) (h1 : FODerivable R (jDescBVars n vars)) (h2 : FODerivable R (jEtas fvars etas)) :
-    FODerivable R (jEtas (cCons (cSym idv cKFvar fbs) fvars) (cCons (cApp (cSym idv cKFvar fbs) vars (cAnn n cTrue)) etas)) := by
-  apply FODerivable.intro hr [idv, fbs, fvars, n, vars, etas] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rEtasCons idv fbs fvars n vars etas).2
-  · rw [(inst_rEtasCons idv fbs fvars n vars etas).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl <;> assumption
+    FODerivable R (jEtas (cCons (cSym idv cKFvar fbs) fvars) (cCons (cApp (cSym idv cKFvar fbs) vars (cAnn n cTrue)) etas)) :=
+  FODerivable.intro_of_shape hr (inst_rEtasCons idv fbs fvars n vars etas) rfl ⟨hd_idv, hd_fbs, hd_fvars, hd_n, hd_vars, hd_etas⟩ ⟨h0, h1, h2⟩
 
 theorem inst_rDefstmt (cid fvars bs n hints value rest etas dl fl de fe : Pattern) :
     rDefstmt.instPremises [cid, fvars, bs, n, hints, value, rest, etas, dl, fl, de, fe] = [jArities fvars bs, jLen fvars n, jHintsIn hints n, jWf value, jDepth value cN0, jOcc fvars value hints rest, jEtas fvars etas, jAnnArgs bs etas dl fl, jAnnArgs (cCons cN0 (cCons cN0 cNil)) (cCons (cApp (cSym cid cKConst bs) etas (cAnn dl fl)) (cCons value cNil)) de fe] ∧
       rDefstmt.instConclusion [cid, fvars, bs, n, hints, value, rest, etas, dl, fl, de, fe] = (jDefStmt (cSym cid cKConst bs) fvars hints value (cApp patEq (cCons (cApp (cSym cid cKConst bs) etas (cAnn dl fl)) (cCons value cNil)) (cAnn de fe))) := by
-  constructor <;> simp [rDefstmt, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, fvarSym, byteList8, cP1, cPO, cPI, cN0, cNPos, cU0, cUS, cFalse, cTrue, cNil, cCons, cKConst, cKFvar, cSym, cAnn, cBVar, cLit, cApp, jPSucc, jPAdd, jPAddC, jNAdd, jNLt, jNLe, jPMul, jNMul, jNDivMod, jNMod64, jPBits, jNWord, jNMonus, jNMax, jBOr, jLen, jNth, jBytes, jSymDecl, jWf, jWfArgs, jKindFv, jDepth, jHasFv, jAnnArgs, jShift, jShiftArgs, jSubst, jSubstArgs, jSubstTop, jInst, jInstArgs, jNatLit, jArities, jHintsIn, jOcc, jOccArgs, jEtas, jDescBVars, jDefStmt, jThm, closedApp1, closedApp2, patAnnClosed, patImpl, patEq]
+  constructor <;> simp [rDefstmt, FORule.instPremises, FORule.instConclusion, FORule.bindings, mkRule, mv, ab_apply, ab_fvar_hit, ab_fvar_miss, cN0, cNil, cCons, cKConst, cSym, cAnn, cApp, jLen, jWf, jDepth, jAnnArgs, jArities, jHintsIn, jOcc, jEtas, jDefStmt, patEq]
 
 theorem sound_rDefstmt {P : Pattern → Prop}
     (h : ∀ cid fvars bs n hints value rest etas dl fl de fe : Pattern, P (jArities fvars bs) → P (jLen fvars n) → P (jHintsIn hints n) → P (jWf value) → P (jDepth value cN0) → P (jOcc fvars value hints rest) → P (jEtas fvars etas) → P (jAnnArgs bs etas dl fl) → P (jAnnArgs (cCons cN0 (cCons cN0 cNil)) (cCons (cApp (cSym cid cKConst bs) etas (cAnn dl fl)) (cCons value cNil)) de fe) → P (jDefStmt (cSym cid cKConst bs) fvars hints value (cApp patEq (cCons (cApp (cSym cid cKConst bs) etas (cAnn dl fl)) (cCons value cNil)) (cAnn de fe)))) :
@@ -3297,23 +2029,12 @@ theorem sound_rDefstmt {P : Pattern → Prop}
       (∀ x ∈ rDefstmt.instPremises args, P x) → P (rDefstmt.instConclusion args) := by
   intro args hlen hprem
   match args, hlen with
-  | [cid, fvars, bs, n, hints, value, rest, etas, dl, fl, de, fe], _ =>
-    rw [(inst_rDefstmt cid fvars bs n hints value rest etas dl fl de fe).1] at hprem
-    rw [(inst_rDefstmt cid fvars bs n hints value rest etas dl fl de fe).2]
-    exact h cid fvars bs n hints value rest etas dl fl de fe (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp)) (hprem _ (by simp))
+  | [cid, fvars, bs, n, hints, value, rest, etas, dl, fl, de, fe], _ => exact FORule.sound_of_shape (inst_rDefstmt cid fvars bs n hints value rest etas dl fl de fe) (h cid fvars bs n hints value rest etas dl fl de fe) hprem
 
 theorem intro_rDefstmt {R : List FORule} (hr : rDefstmt ∈ R) {cid fvars bs n hints value rest etas dl fl de fe : Pattern}
     (hd_cid : IsData cid) (hd_fvars : IsData fvars) (hd_bs : IsData bs) (hd_n : IsData n) (hd_hints : IsData hints) (hd_value : IsData value) (hd_rest : IsData rest) (hd_etas : IsData etas) (hd_dl : IsData dl) (hd_fl : IsData fl) (hd_de : IsData de) (hd_fe : IsData fe) (h0 : FODerivable R (jArities fvars bs)) (h1 : FODerivable R (jLen fvars n)) (h2 : FODerivable R (jHintsIn hints n)) (h3 : FODerivable R (jWf value)) (h4 : FODerivable R (jDepth value cN0)) (h5 : FODerivable R (jOcc fvars value hints rest)) (h6 : FODerivable R (jEtas fvars etas)) (h7 : FODerivable R (jAnnArgs bs etas dl fl)) (h8 : FODerivable R (jAnnArgs (cCons cN0 (cCons cN0 cNil)) (cCons (cApp (cSym cid cKConst bs) etas (cAnn dl fl)) (cCons value cNil)) de fe)) :
-    FODerivable R (jDefStmt (cSym cid cKConst bs) fvars hints value (cApp patEq (cCons (cApp (cSym cid cKConst bs) etas (cAnn dl fl)) (cCons value cNil)) (cAnn de fe))) := by
-  apply FODerivable.intro hr [cid, fvars, bs, n, hints, value, rest, etas, dl, fl, de, fe] rfl
-  · intro a ha
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
-    rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
-  · exact (inst_rDefstmt cid fvars bs n hints value rest etas dl fl de fe).2
-  · rw [(inst_rDefstmt cid fvars bs n hints value rest etas dl fl de fe).1]
-    intro x hx
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
-    rcases hx with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> assumption
+    FODerivable R (jDefStmt (cSym cid cKConst bs) fvars hints value (cApp patEq (cCons (cApp (cSym cid cKConst bs) etas (cAnn dl fl)) (cCons value cNil)) (cAnn de fe))) :=
+  FODerivable.intro_of_shape hr (inst_rDefstmt cid fvars bs n hints value rest etas dl fl de fe) rfl ⟨hd_cid, hd_fvars, hd_bs, hd_n, hd_hints, hd_value, hd_rest, hd_etas, hd_dl, hd_fl, hd_de, hd_fe⟩ ⟨h0, h1, h2, h3, h4, h5, h6, h7, h8⟩
 
 theorem inst_builtin (b : Builtin) :
     (mkRule ("vibe-builtin-" ++ toString b.slot) [] []
@@ -3332,19 +2053,14 @@ theorem sound_builtin {P : Pattern → Prop} (b : Builtin)
         (jSymDecl (patBuiltinSym b))).instPremises args, P x) →
       P ((mkRule ("vibe-builtin-" ++ toString b.slot) [] []
         (jSymDecl (patBuiltinSym b))).instConclusion args) := by
-  intro args hlen _
+  intro args hlen premises
   have ha : args = [] := List.length_eq_zero_iff.mp hlen
   subst args
-  rw [(inst_builtin b).2]
-  exact h
+  exact FORule.sound_of_shape (inst_builtin b) h premises
 
 theorem intro_builtin {R : List FORule} (b : Builtin)
     (hr : mkRule ("vibe-builtin-" ++ toString b.slot) [] []
-      (jSymDecl (patBuiltinSym b)) ∈ R) : FODerivable R (jSymDecl (patBuiltinSym b)) := by
-  apply FODerivable.intro hr [] rfl
-  · simp
-  · exact (inst_builtin b).2
-  · rw [(inst_builtin b).1]
-    simp
+        (jSymDecl (patBuiltinSym b)) ∈ R) : FODerivable R (jSymDecl (patBuiltinSym b)) :=
+  FODerivable.intro_of_shape hr (inst_builtin b) rfl trivial trivial
 
 end Mettapedia.Languages.VibeITP.Presentation

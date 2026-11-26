@@ -117,6 +117,30 @@ theorem PolicyStep.refined {program : Program} {state next : State} (step : Poli
     exact .guardFault state active cursor tail occurrence rule environment selection reason tasks running atCursor atRule
       matched activeHead fresh fault
 
+/-- On a pending goal, the refined and newest-first semantics have the same
+one-step judgement. Partner selection is reached through a scan task. -/
+theorem PolicyStep.of_goal_task {program : Program} {state next : State}
+    {environment : Environment} {goals : List Goal} {tail : List Task}
+    (tasks : state.tasks = .goals environment goals :: tail)
+    (step : Step program state next) : PolicyStep program state next := by
+  cases step with
+  | endGoals environment tail taskList running => exact .endGoals state environment tail taskList running
+  | introduce environment head goals tail constraint taskList running grounded =>
+    exact .introduce state environment head goals tail constraint taskList running grounded
+  | tellFault environment head goals tail taskList running ungrounded =>
+    exact .tellFault state environment head goals tail taskList running ungrounded
+  | assign environment index expression goals tail result taskList running evaluated compatible =>
+    exact .assign state environment index expression goals tail result taskList running evaluated compatible
+  | assignFailed environment index expression goals tail result old taskList running evaluated bound different =>
+    exact .assignFailed state environment index expression goals tail result old taskList running evaluated bound different
+  | assignFault environment index expression goals tail reason taskList running evaluated =>
+    exact .assignFault state environment index expression goals tail reason taskList running evaluated
+  | fail environment goals tail taskList running => exact .fail state environment goals tail taskList running
+  | missingActive _ _ _ scan _ _ | endScan _ _ _ scan _ _ | skip _ _ _ _ _ scan _ _ _ _ =>
+    simp [tasks] at scan
+  | fire _ _ _ _ _ _ _ scan _ _ _ _ _ _ _ | guardFault _ _ _ _ _ _ _ _ scan _ _ _ _ _ _ _ =>
+    simp [tasks] at scan
+
 theorem PolicyStep.runs_refined {program : Program} {state final : State}
     (run : Relation.ReflTransGen (PolicyStep program) state final) : Relation.ReflTransGen (Step program) state final := by
   induction run with

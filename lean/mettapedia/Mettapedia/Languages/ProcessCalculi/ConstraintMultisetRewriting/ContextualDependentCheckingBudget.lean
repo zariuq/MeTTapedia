@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentConversionBudget
 import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.TypedEquality.Normalization.ExecutableChecking
 
@@ -21,8 +22,7 @@ open ExecutableReduction ExecutableChecking ContextualDependentConversionBudget
 variable {Head : Type} (rules : Rules Head) [DecidableEq Head]
 variable [DecidableRel rules.headEq] [∀ head, Decidable (rules.isUniverse head)] [DecidableRel rules.cumulative]
 variable (choices : HeadChoices rules) (reducer : Reducer rules)
-variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
-  Keeps (reducer fuel term) (reducer (fuel + 1) term))
+variable (stable : SolverPremises.StableReducer (rules := rules) reducer)
 
 include stable in
 omit [DecidableEq Head] [DecidableRel rules.headEq] [DecidableRel rules.cumulative] in

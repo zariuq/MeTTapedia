@@ -1,3 +1,4 @@
+import Mettapedia.Data.List.OptionMapM
 import Mathlib.Data.List.Forall2
 import Mathlib.Algebra.Order.Quantale
 import Mettapedia.Algebra.QuantaleWeakness
@@ -774,6 +775,26 @@ theorem decodeWrappedValues?_map_wrappedValue :
       simp [decodeWrappedValues?, decodeWrappedValue?_wrappedValue,
         decodeWrappedValues?_map_wrappedValue xs]
 
+private theorem decodeWrappedValues_eq_mapM (ps : List Pattern) :
+    decodeWrappedValues? ps = ps.mapM decodeWrappedValue? := by
+  induction ps with
+  | nil => rfl
+  | cons p ps ih => simp only [decodeWrappedValues?, List.mapM_cons, ih]
+
+/-- Successful wrapper decoding identifies the original list in order,
+including repeated occurrences of the same value. -/
+theorem decodeWrappedValues?_eq_some_iff {ps : List Pattern} {xs : List Atom} :
+    decodeWrappedValues? ps = some xs ↔ ps = xs.map wrappedValue := by
+  constructor
+  · intro decoded
+    rw [decodeWrappedValues_eq_mapM] at decoded
+    have readback := Mettapedia.Data.List.option_mapM_projection
+      decodeWrappedValue? ps xs id wrappedValue decoded
+      (fun _ _ accepted => (eq_wrappedValue_of_decodeWrappedValue_eq_some accepted).symm)
+    simpa using readback.symm
+  · rintro rfl
+    exact decodeWrappedValues?_map_wrappedValue xs
+
 private theorem patternToAtoms?_eq_of_pointwise
     {ps qs : List Pattern}
     (hlen : ps.length = qs.length)
@@ -1359,6 +1380,65 @@ private theorem strippedNonZeroElems_perm
     (List.Perm.filter (p := fun e => e ≠ .apply "PZero" [])
       (hperm.map stripSCWrappers))
 
+private theorem strip_parallel_collection {kind : CollType}
+    (parallel : kind = .hashBag ∨ kind = .hashSet) (elems : List Pattern) :
+    stripSCWrappers (.collection kind elems none) =
+      (match strippedNonZeroElems elems with
+      | [] => .apply "PZero" []
+      | [p] => p
+      | _ => .collection kind (strippedNonZeroElems elems) none) := by
+  rcases parallel with rfl | rfl <;> simp only [stripSCWrappers, strippedNonZeroElems]
+
+private theorem stripSCWrappersList_measure_sum (measure : Pattern → Nat)
+    {ps : List Pattern} (hpoint : ∀ p ∈ ps, measure (stripSCWrappers p) = measure p) :
+    ((stripSCWrappersList ps).map measure).sum = (ps.map measure).sum := by
+  rw [stripSCWrappersList_eq_map, List.map_map]
+  exact congrArg List.sum (List.map_congr_left hpoint)
+
+private theorem measure_filter_nonzero_sum (measure : Pattern → Nat)
+    (zero : measure (.apply "PZero" []) = 0) (ps : List Pattern) :
+    ((ps.filter (fun p => decide (p ≠ .apply "PZero" []))).map measure).sum =
+      (ps.map measure).sum := by
+  induction ps with
+  | nil => rfl
+  | cons p ps ih =>
+      simp only [ne_eq, decide_not] at ih
+      by_cases unit : p = .apply "PZero" []
+      · simp [unit, zero, ih]
+      · simp [unit, ih]
+
+/-- An additive collection measure is preserved by removing its neutral unit
+and unwrapping a singleton. The element checks retain each occurrence. -/
+private theorem stripSCWrappers_measure_collection (measure : Pattern → Nat)
+    (zero : measure (.apply "PZero" []) = 0)
+    (collection : ∀ kind elems guard,
+      measure (.collection kind elems guard) = (elems.map measure).sum)
+    (kind : CollType) (elems : List Pattern) (guard : Option String)
+    (hpoint : ∀ p ∈ elems, measure (stripSCWrappers p) = measure p) :
+    measure (stripSCWrappers (.collection kind elems guard)) =
+      measure (.collection kind elems guard) := by
+  rw [collection]
+  have total := stripSCWrappersList_measure_sum measure hpoint
+  have closed {kind : CollType} (parallel : kind = .hashBag ∨ kind = .hashSet) :
+      measure (stripSCWrappers (.collection kind elems none)) = (elems.map measure).sum := by
+    rw [strip_parallel_collection parallel]
+    have filtered : ((strippedNonZeroElems elems).map measure).sum = (elems.map measure).sum := by
+      unfold strippedNonZeroElems
+      rw [measure_filter_nonzero_sum measure zero, total]
+    cases retained : strippedNonZeroElems elems with
+    | nil => simpa [retained, zero] using filtered
+    | cons first rest =>
+        cases rest with
+        | nil => simpa [retained] using filtered
+        | cons next rest => simpa [retained, collection] using filtered
+  cases guard with
+  | some g => cases kind <;> simpa [stripSCWrappers, collection] using total
+  | none =>
+      cases kind with
+      | vec => simpa [stripSCWrappers, collection] using total
+      | hashBag => exact closed (.inl rfl)
+      | hashSet => exact closed (.inr rfl)
+
 /-- A closed parallel collection exposes an application precisely when its
 nonzero elements consist of that application alone. -/
 private theorem strip_parallel_eq_apply_iff {kind : CollType}
@@ -1367,13 +1447,7 @@ private theorem strip_parallel_eq_apply_iff {kind : CollType}
     (named : label ≠ "PZero") :
     stripSCWrappers (.collection kind elems none) = .apply label args ↔
       strippedNonZeroElems elems = [.apply label args] := by
-  have reduced : stripSCWrappers (.collection kind elems none) =
-      (match strippedNonZeroElems elems with
-      | [] => .apply "PZero" []
-      | [p] => p
-      | _ => .collection kind (strippedNonZeroElems elems) none) := by
-    rcases parallel with rfl | rfl <;> simp only [stripSCWrappers, strippedNonZeroElems]
-  rw [reduced]
+  rw [strip_parallel_collection parallel]
   cases strippedNonZeroElems elems with
   | nil => simp [Ne.symm named]
   | cons head tail =>
@@ -2301,70 +2375,13 @@ private theorem decodeWrappedValues?_multiset_eq_of_perm
   | @trans _ _ _ h₁ h₂ ih₁ ih₂ =>
       exact ih₁.trans ih₂
 
-private theorem decodeWrappedValues?_length_eq
-    {ps : List Pattern} {xs : List Atom}
-    (h : decodeWrappedValues? ps = some xs) :
-    xs.length = ps.length := by
-  induction ps generalizing xs with
-  | nil =>
-      simp [decodeWrappedValues?] at h
-      cases h
-      rfl
-  | cons p ps ih =>
-      simp only [decodeWrappedValues?] at h
-      cases hp : decodeWrappedValue? p <;> simp [hp] at h
-      rename_i a
-      cases hs : decodeWrappedValues? ps <;> simp [hs] at h
-      rename_i ys
-      subst xs
-      simp [ih hs]
-
-private theorem decodeWrappedValues?_singleton_source_length
-    {ps : List Pattern} {xs : List Atom} {value : Atom}
-    (hdec : decodeWrappedValues? ps = some xs)
-    (hms : (xs : Multiset Atom) = ({value} : Multiset Atom)) :
-    ps.length = 1 := by
-  have hperm : xs.Perm [value] := by
-    exact Multiset.coe_eq_coe.mp (by simpa using hms)
-  have hxs : xs.length = 1 := by
-    simpa using hperm.length_eq
-  have hlen : xs.length = ps.length := decodeWrappedValues?_length_eq hdec
-  omega
-
-private theorem decodeWrappedValues?_singleton_source
-    {ps : List Pattern} {xs : List Atom} {value : Atom}
-    (hdec : decodeWrappedValues? ps = some xs)
-    (hms : (xs : Multiset Atom) = ({value} : Multiset Atom)) :
-    ∃ p, ps = [p] ∧ decodeWrappedValue? p = some value := by
-  have hlen : ps.length = 1 :=
-    decodeWrappedValues?_singleton_source_length hdec hms
-  cases ps with
-  | nil =>
-      simp at hlen
-  | cons p ps =>
-      cases ps with
-      | nil =>
-          simp only [decodeWrappedValues?] at hdec
-          cases hp : decodeWrappedValue? p <;> simp [hp] at hdec
-          rename_i value'
-          cases hdec
-          have hvalue : value' = value := by
-            have hperm : [value'].Perm [value] := by
-              exact Multiset.coe_eq_coe.mp (by simpa using hms)
-            simpa using hperm
-          subst hvalue
-          exact ⟨p, rfl, hp⟩
-      | cons p' ps' =>
-          simp at hlen
-
 private theorem decodeWrappedValues?_singleton_source_eq
     {ps : List Pattern} {xs : List Atom} {value : Atom}
     (hdec : decodeWrappedValues? ps = some xs)
     (hms : (xs : Multiset Atom) = ({value} : Multiset Atom)) :
     ps = [wrappedValue value] := by
-  rcases decodeWrappedValues?_singleton_source hdec hms with
-    ⟨p, hps, hp⟩
-  rw [hps, eq_wrappedValue_of_decodeWrappedValue_eq_some hp]
+  have same : xs.Perm [value] := Multiset.coe_eq_coe.mp (by simpa using hms)
+  simpa [same.eq_singleton] using decodeWrappedValues?_eq_some_iff.mp hdec
 
 theorem ioCount_natToPattern_zero (n : Nat) :
     ioCount (natToPattern n) = 0 := by
@@ -3280,50 +3297,31 @@ private theorem scResidualResultMultiset_eq_of_stripSCWrappers_eq
   unfold scResidualResultMultiset?
   rw [h]
 
-private theorem scResidualResultMultiset_hashBag_singleton_length
-    {p : Pattern} {elems : List Pattern} {value : Atom}
-    (hstrip : stripSCWrappers p = .collection .hashBag elems none)
-    (h : scResidualResultMultiset? p = some ({value} : Multiset Atom)) :
-    elems.length = 1 := by
-  unfold scResidualResultMultiset? at h
-  rw [hstrip] at h
-  cases hdec : decodeWrappedValues? elems with
-  | none =>
-      simp [hdec] at h
-  | some xs =>
-      have hms : (xs : Multiset Atom) = ({value} : Multiset Atom) := by
-        simpa [hdec] using h
-      exact decodeWrappedValues?_singleton_source_length hdec hms
-
-private theorem scResidualResultMultiset_hashBag_singleton_source
-    {p : Pattern} {elems : List Pattern} {value : Atom}
-    (hstrip : stripSCWrappers p = .collection .hashBag elems none)
-    (h : scResidualResultMultiset? p = some ({value} : Multiset Atom)) :
-    ∃ elem, elems = [elem] ∧ decodeWrappedValue? elem = some value := by
-  unfold scResidualResultMultiset? at h
-  rw [hstrip] at h
-  cases hdec : decodeWrappedValues? elems with
-  | none =>
-      simp [hdec] at h
-  | some xs =>
-      have hms : (xs : Multiset Atom) = ({value} : Multiset Atom) := by
-        simpa [hdec] using h
-      exact decodeWrappedValues?_singleton_source hdec hms
-
 private theorem scResidualResultMultiset_hashBag_singleton_source_eq
     {p : Pattern} {elems : List Pattern} {value : Atom}
     (hstrip : stripSCWrappers p = .collection .hashBag elems none)
     (h : scResidualResultMultiset? p = some ({value} : Multiset Atom)) :
     elems = [wrappedValue value] := by
-  unfold scResidualResultMultiset? at h
-  rw [hstrip] at h
-  cases hdec : decodeWrappedValues? elems with
-  | none =>
-      simp [hdec] at h
-  | some xs =>
-      have hms : (xs : Multiset Atom) = ({value} : Multiset Atom) := by
-        simpa [hdec] using h
-      exact decodeWrappedValues?_singleton_source_eq hdec hms
+  rw [scResidualResultMultiset?, hstrip] at h
+  cases decoded : decodeWrappedValues? elems with
+  | none => simp [decoded] at h
+  | some xs => exact decodeWrappedValues?_singleton_source_eq decoded (by simpa [decoded] using h)
+
+private theorem scResidualResultMultiset_hashBag_singleton_length
+    {p : Pattern} {elems : List Pattern} {value : Atom}
+    (hstrip : stripSCWrappers p = .collection .hashBag elems none)
+    (h : scResidualResultMultiset? p = some ({value} : Multiset Atom)) :
+    elems.length = 1 := by
+  rw [scResidualResultMultiset_hashBag_singleton_source_eq hstrip h]
+  rfl
+
+private theorem scResidualResultMultiset_hashBag_singleton_source
+    {p : Pattern} {elems : List Pattern} {value : Atom}
+    (hstrip : stripSCWrappers p = .collection .hashBag elems none)
+    (h : scResidualResultMultiset? p = some ({value} : Multiset Atom)) :
+    ∃ elem, elems = [elem] ∧ decodeWrappedValue? elem = some value :=
+  ⟨wrappedValue value, scResidualResultMultiset_hashBag_singleton_source_eq hstrip h,
+    decodeWrappedValue?_wrappedValue value⟩
 
 /-- SC-aware operational quiescent outcomes in the post-reification carrier. -/
 def scReifiedOutcomeOf? (p : Pattern) :
@@ -3839,23 +3837,8 @@ private theorem decodeWrappedValues?_shellWidth_sum_eq_length
     {ps : List Pattern} {xs : List Atom}
     (h : decodeWrappedValues? ps = some xs) :
     (ps.map shellWidth).sum = xs.length := by
-  induction ps generalizing xs with
-  | nil =>
-      simp [decodeWrappedValues?] at h
-      cases h
-      rfl
-  | cons p ps ih =>
-      simp only [decodeWrappedValues?] at h
-      cases hp : decodeWrappedValue? p <;> simp [hp] at h
-      rename_i a
-      cases hs : decodeWrappedValues? ps <;> simp [hs] at h
-      rename_i ys
-      subst xs
-      have hpwidth : shellWidth p = 1 := by
-        rw [eq_wrappedValue_of_decodeWrappedValue_eq_some hp]
-        exact shellWidth_wrappedValue a
-      simp [hpwidth, ih hs]
-      omega
+  rw [decodeWrappedValues?_eq_some_iff.mp h, List.map_map]
+  simp [Function.comp_def, shellWidth_wrappedValue]
 
 private theorem shellWidth_list_SC
     {ps qs : List Pattern} (hlen : ps.length = qs.length)
@@ -4009,36 +3992,6 @@ private theorem shellWidth_SC {p q : Pattern}
   | quote_drop n =>
       simp [shellWidth]
 
-private theorem shellWidth_filter_nonzero_sum (ps : List Pattern) :
-    ((ps.filter (fun e => !decide (e = .apply "PZero" []))).map shellWidth).sum =
-      (ps.map shellWidth).sum := by
-  induction ps with
-  | nil =>
-      simp
-  | cons p ps ih =>
-      by_cases hpzero : p = .apply "PZero" []
-      · simp [hpzero, shellWidth, ih]
-      · simp [hpzero, ih]
-
-private theorem shellWidth_stripSCWrappersList_sum
-    {ps : List Pattern}
-    (hpoint : ∀ q ∈ ps, shellWidth (stripSCWrappers q) = shellWidth q) :
-    ((stripSCWrappersList ps).map shellWidth).sum =
-      (ps.map shellWidth).sum := by
-  induction ps with
-  | nil =>
-      simp [stripSCWrappersList]
-  | cons p ps ih =>
-      have hp : shellWidth (stripSCWrappers p) = shellWidth p :=
-        hpoint p (by simp)
-      have htail :
-          ((stripSCWrappersList ps).map shellWidth).sum =
-            (ps.map shellWidth).sum := by
-        apply ih
-        intro q hq
-        exact hpoint q (by simp [hq])
-      simp [stripSCWrappersList, hp, htail]
-
 private theorem shellWidth_stripSCWrappers (p : Pattern) :
     shellWidth (stripSCWrappers p) = shellWidth p := by
   refine Pattern.inductionOn
@@ -4117,55 +4070,8 @@ private theorem shellWidth_stripSCWrappers (p : Pattern) :
   · intro body repl ihBody ihRepl
     simp [stripSCWrappers, shellWidth]
   · intro ct elems guard ih
-    have hsum :
-        ((stripSCWrappersList elems).map shellWidth).sum =
-          (elems.map shellWidth).sum :=
-      shellWidth_stripSCWrappersList_sum ih
-    cases ct with
-    | vec =>
-        simpa [stripSCWrappers, shellWidth] using hsum
-    | hashBag =>
-        cases guard with
-        | some g =>
-            simpa [stripSCWrappers, shellWidth] using hsum
-        | none =>
-            have hfilter :
-                (((stripSCWrappersList elems).filter
-                  (fun e => !decide (e = .apply "PZero" []))).map shellWidth).sum =
-                    (elems.map shellWidth).sum := by
-              rw [shellWidth_filter_nonzero_sum, hsum]
-            cases hshape :
-                (stripSCWrappersList elems).filter
-                  (fun e => !decide (e = .apply "PZero" [])) with
-            | nil =>
-                simpa [stripSCWrappers, shellWidth, hshape] using hfilter
-            | cons e rest =>
-                cases rest with
-                | nil =>
-                    simpa [stripSCWrappers, shellWidth, hshape] using hfilter
-                | cons e' rest' =>
-                    simpa [stripSCWrappers, shellWidth, hshape] using hfilter
-    | hashSet =>
-        cases guard with
-        | some g =>
-            simpa [stripSCWrappers, shellWidth] using hsum
-        | none =>
-            have hfilter :
-                (((stripSCWrappersList elems).filter
-                  (fun e => !decide (e = .apply "PZero" []))).map shellWidth).sum =
-                    (elems.map shellWidth).sum := by
-              rw [shellWidth_filter_nonzero_sum, hsum]
-            cases hshape :
-                (stripSCWrappersList elems).filter
-                  (fun e => !decide (e = .apply "PZero" [])) with
-            | nil =>
-                simpa [stripSCWrappers, shellWidth, hshape] using hfilter
-            | cons e rest =>
-                cases rest with
-                | nil =>
-                    simpa [stripSCWrappers, shellWidth, hshape] using hfilter
-                | cons e' rest' =>
-                    simpa [stripSCWrappers, shellWidth, hshape] using hfilter
+    exact stripSCWrappers_measure_collection shellWidth (by simp [shellWidth])
+      (by intro; simp [shellWidth]) ct elems guard ih
 
 private structure DropShellLike
     (chan : Pattern) (payload : Atom) (p : Pattern) : Prop where
@@ -6215,66 +6121,11 @@ private theorem noHashSet_evalDropSource_of_channel
   simp [evalDropSource, evalSource, NoHashSet, NoHashSetList,
     hchan, noHashSet_deferredPayload]
 
-private theorem ioCount_zero_of_decodeWrappedValue_eq_some
-    {p : Pattern} {value : Atom}
-    (hdecode : decodeWrappedValue? p = some value) :
-    ioCount p = 0 := by
-  rw [eq_wrappedValue_of_decodeWrappedValue_eq_some hdecode]
-  exact ioCount_wrappedValue_zero value
-
-private theorem ioCount_sum_zero_of_decodeWrappedValues_eq_some :
-    ∀ {ps : List Pattern} {values : List Atom},
-      decodeWrappedValues? ps = some values →
-      (ps.map ioCount).sum = 0
-  | [], values, hdecode => by
-      simp [decodeWrappedValues?] at hdecode
-      simp
-  | p :: ps, values, hdecode => by
-      simp only [decodeWrappedValues?] at hdecode
-      cases hp : decodeWrappedValue? p with
-      | none =>
-          simp [hp] at hdecode
-      | some value =>
-          cases hps : decodeWrappedValues? ps with
-          | none =>
-              simp [hp, hps] at hdecode
-          | some values' =>
-              have hpzero : ioCount p = 0 :=
-                ioCount_zero_of_decodeWrappedValue_eq_some hp
-              have htail :
-                  (ps.map ioCount).sum = 0 :=
-                ioCount_sum_zero_of_decodeWrappedValues_eq_some hps
-              simp [hpzero, htail]
-
-private theorem ioCount_filter_nonzero_sum (ps : List Pattern) :
-    ((ps.filter (fun e => !decide (e = .apply "PZero" []))).map ioCount).sum =
-      (ps.map ioCount).sum := by
-  induction ps with
-  | nil =>
-      simp
-  | cons p ps ih =>
-      by_cases hpzero : p = .apply "PZero" []
-      · simp [hpzero, ioCount, ih]
-      · simp [hpzero, ih]
-
-private theorem ioCount_stripSCWrappersList_sum
-    {ps : List Pattern}
-    (hpoint : ∀ q ∈ ps, ioCount (stripSCWrappers q) = ioCount q) :
-    ((stripSCWrappersList ps).map ioCount).sum =
-      (ps.map ioCount).sum := by
-  induction ps with
-  | nil =>
-      simp [stripSCWrappersList]
-  | cons p ps ih =>
-      have hp : ioCount (stripSCWrappers p) = ioCount p :=
-        hpoint p (by simp)
-      have htail :
-          ((stripSCWrappersList ps).map ioCount).sum =
-            (ps.map ioCount).sum := by
-        apply ih
-        intro q hq
-        exact hpoint q (by simp [hq])
-      simp [stripSCWrappersList, hp, htail]
+private theorem ioCount_sum_zero_of_decodeWrappedValues_eq_some
+    {ps : List Pattern} {values : List Atom} (decoded : decodeWrappedValues? ps = some values) :
+    (ps.map ioCount).sum = 0 := by
+  rw [decodeWrappedValues?_eq_some_iff.mp decoded, List.map_map]
+  simp [Function.comp_def, ioCount_wrappedValue_zero]
 
 private theorem ioCount_stripSCWrappers (p : Pattern) :
     ioCount (stripSCWrappers p) = ioCount p := by
@@ -6289,7 +6140,7 @@ private theorem ioCount_stripSCWrappers (p : Pattern) :
     have hsumArgs :
         ((stripSCWrappersList args).map ioCount).sum =
           (args.map ioCount).sum :=
-      ioCount_stripSCWrappersList_sum ih
+      stripSCWrappersList_measure_sum ioCount ih
     by_cases hquote : f = "NQuote"
     · subst hquote
       cases args with
@@ -6357,55 +6208,8 @@ private theorem ioCount_stripSCWrappers (p : Pattern) :
   · intro body repl ihBody ihRepl
     simp [stripSCWrappers, ioCount, ihBody, ihRepl]
   · intro ct elems guard ih
-    have hsum :
-        ((stripSCWrappersList elems).map ioCount).sum =
-          (elems.map ioCount).sum :=
-      ioCount_stripSCWrappersList_sum ih
-    cases ct with
-    | vec =>
-        simpa [stripSCWrappers, ioCount] using hsum
-    | hashBag =>
-        cases guard with
-        | some g =>
-            simpa [stripSCWrappers, ioCount] using hsum
-        | none =>
-            have hfilter :
-                (((stripSCWrappersList elems).filter
-                  (fun e => !decide (e = .apply "PZero" []))).map ioCount).sum =
-                    (elems.map ioCount).sum := by
-              rw [ioCount_filter_nonzero_sum, hsum]
-            cases hshape :
-                (stripSCWrappersList elems).filter
-                  (fun e => !decide (e = .apply "PZero" [])) with
-            | nil =>
-                simpa [stripSCWrappers, ioCount, hshape] using hfilter
-            | cons e rest =>
-                cases rest with
-                | nil =>
-                    simpa [stripSCWrappers, ioCount, hshape] using hfilter
-                | cons e' rest' =>
-                    simpa [stripSCWrappers, ioCount, hshape] using hfilter
-    | hashSet =>
-        cases guard with
-        | some g =>
-            simpa [stripSCWrappers, ioCount] using hsum
-        | none =>
-            have hfilter :
-                (((stripSCWrappersList elems).filter
-                  (fun e => !decide (e = .apply "PZero" []))).map ioCount).sum =
-                    (elems.map ioCount).sum := by
-              rw [ioCount_filter_nonzero_sum, hsum]
-            cases hshape :
-                (stripSCWrappersList elems).filter
-                  (fun e => !decide (e = .apply "PZero" [])) with
-            | nil =>
-                simpa [stripSCWrappers, ioCount, hshape] using hfilter
-            | cons e rest =>
-                cases rest with
-                | nil =>
-                    simpa [stripSCWrappers, ioCount, hshape] using hfilter
-                | cons e' rest' =>
-                    simpa [stripSCWrappers, ioCount, hshape] using hfilter
+    exact stripSCWrappers_measure_collection ioCount (by simp [ioCount])
+      (by intro; simp [ioCount]) ct elems guard ih
 
 private theorem ioCount_zero_of_scDecodeWrappedValue_eq_some
     {p : Pattern} {value : Atom}
@@ -8377,55 +8181,19 @@ private theorem scResidualResultMultiset_width_one_singleton
     (hdecode : scResidualResultMultiset? p = some rs) :
     ∃ value, rs = ({value} : Multiset Atom) := by
   unfold scResidualResultMultiset? at hdecode
-  cases hstrip : stripSCWrappers p with
-  | collection ct elems g =>
-      cases ct <;> cases g <;> simp [hstrip] at hdecode hwidth
-      · rcases hdecode with ⟨value, _, hrs⟩
-        exact ⟨value, hrs.symm⟩
-      · rcases hdecode with ⟨value, _, hrs⟩
-        exact ⟨value, hrs.symm⟩
-      · cases hdec : decodeWrappedValues? elems with
-        | none =>
-            simp [hdec] at hdecode
-        | some xs =>
-            have hrs : (xs : Multiset Atom) = rs := by
-              simpa [hdec] using hdecode
-            have hsum : (elems.map shellWidth).sum = xs.length :=
-              decodeWrappedValues?_shellWidth_sum_eq_length hdec
-            have hsumwidth : (elems.map shellWidth).sum = 1 := by
-              simpa [shellWidth] using hwidth
-            have hxslen : xs.length = 1 := by
-              omega
-            cases xs with
-            | nil =>
-                simp at hxslen
-            | cons value rest =>
-                cases rest with
-                | nil =>
-                    refine ⟨value, ?_⟩
-                    simpa using hrs.symm
-                | cons value' rest' =>
-                    simp at hxslen
-      · rcases hdecode with ⟨value, _, hrs⟩
-        exact ⟨value, hrs.symm⟩
-      · rcases hdecode with ⟨value, _, hrs⟩
-        exact ⟨value, hrs.symm⟩
-      · rcases hdecode with ⟨value, _, hrs⟩
-        exact ⟨value, hrs.symm⟩
-  | apply f args =>
-      simp [hstrip] at hdecode
-      rcases hdecode with ⟨value, _, hrs⟩
-      exact ⟨value, hrs.symm⟩
-  | bvar i =>
-      simp [hstrip, scDecodeWrappedValue?, stripSCWrappers] at hdecode
-  | fvar x =>
-      simp [hstrip, scDecodeWrappedValue?, stripSCWrappers] at hdecode
-  | lambda nm body =>
-      simp [hstrip, scDecodeWrappedValue?, stripSCWrappers] at hdecode
-  | multiLambda n nms body =>
-      simp [hstrip, scDecodeWrappedValue?, stripSCWrappers] at hdecode
-  | subst body repl =>
-      simp [hstrip, scDecodeWrappedValue?, stripSCWrappers] at hdecode
+  split at hdecode
+  · rename_i elems hstrip
+    cases decoded : decodeWrappedValues? elems with
+    | none => simp [decoded] at hdecode
+    | some xs =>
+        have results : (xs : Multiset Atom) = rs := by simpa [decoded] using hdecode
+        have summed : (elems.map shellWidth).sum = 1 := by
+          simpa [hstrip, shellWidth] using hwidth
+        have length := (decodeWrappedValues?_shellWidth_sum_eq_length decoded).symm.trans summed
+        obtain ⟨value, rfl⟩ := List.length_eq_one_iff.mp length
+        exact ⟨value, by simpa using results.symm⟩
+  · obtain ⟨value, _, results⟩ := Option.map_eq_some_iff.mp hdecode
+    exact ⟨value, results.symm⟩
 
 private theorem scResidualResultMultiset_singleton_of_structuralResidual
     {value : Atom} {p : Pattern} {rs : Multiset Atom}
@@ -9156,9 +8924,8 @@ private theorem dropShellLike_par_rest_nf_nil
   have hheadwidth :
       (((bagSplice (nfAtom p0)).filter (fun e => e ≠ .apply "PZero" [])).map shellWidth).sum
         = shellWidth p0 := by
-    have hfilt := shellWidth_filter_nonzero_sum (bagSplice (nfAtom p0))
-    simp only [ne_eq, decide_not] at hfilt ⊢
-    rw [hfilt, shellWidth_bagSplice_sum, shellWidth_nfAtom hns_p0]
+    rw [measure_filter_nonzero_sum shellWidth (by simp [shellWidth]), shellWidth_bagSplice_sum,
+      shellWidth_nfAtom hns_p0]
   -- Head card = head `shellWidth` (all head elements have `shellWidth` 1).
   have hheadcard :
       ((bagSplice (nfAtom p0)).filter (fun e => e ≠ .apply "PZero" [])).length

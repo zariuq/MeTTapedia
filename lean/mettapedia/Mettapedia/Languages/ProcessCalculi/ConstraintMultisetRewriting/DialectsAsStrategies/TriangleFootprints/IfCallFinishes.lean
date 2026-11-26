@@ -228,95 +228,31 @@ theorem call_fine (notHost : ¬ dispatch.executable (.symbol "if")) (policy : Po
   obtain ⟨Tc, typesC, acceptsC, keepsC⟩ := condition.typed
   obtain ⟨Ty, typesY⟩ := branches.typedYes
   obtain ⟨Tn, typesN⟩ := branches.typedNo
-  have entry := call_entry policy if_data [c, y, n]
-  have shape : Completed.Frame.empty.read policy (Entry.Value.ofAtom (callC c y n)) =
-      .expression .active (Entry.Value.ofAtom (.symbol "if") ::
-        [c, y, n].map Entry.Value.ofAtom) := by
-    rw [Completed.Frame.read_empty]
-    simp only [callC, app, Entry.Value.ofAtom, List.map_cons, List.map_nil]
-  have selection : Completed.ArgumentService.historical.selection (Space.ofList atoms)
-      Completed.rawLookup policy [] []
-      (Completed.Frame.empty.read policy (Entry.Value.ofAtom (callC c y n))).erase
-      (Entry.Value.ofAtom (.symbol "if")).erase Atom.undefinedType Completed.Frame.empty
-      (.selected ifPolicy [Completed.Frame.empty]) := by
-    rw [Completed.Frame.read_empty, Entry.Value.erase_ofAtom, Entry.Value.erase_ofAtom]
-    exact cond_selection_succeeds policy program typesC acceptsC typesY typesN
   have cleanL : ∀ a ∈ L, Answerable a := (settlesK_shape branches.takenSettles).1.answers
-  show Fine dispatch Completed.rawLookup policy ⟨Space.ofList atoms,
-    .work (.atom [] [] (Entry.Value.ofAtom (callC c y n)) Atom.undefinedType Completed.Frame.empty),
-    [], []⟩
-  refine .step ⟨_, .internal (LocalStepWith.atomFunction (admission := .historical) entry shape
-    selection)⟩ ?_
-  intro z moved
-  cases moved with
-  | internal l =>
-      cases l with
-      | delivered entered => cases Entry.functional entered entry
-      | cast entered => cases Entry.functional entered entry
-      | atomTuple _ shaped occurs =>
-          rw [shape] at shaped
-          simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-          obtain ⟨_, rfl, _⟩ := shaped
-          rw [Entry.Value.erase_ofAtom] at occurs
-          have same := Mettapedia.Languages.MeTTa.HE.Spec.Type.TypeOccurrencesRel.unique occurs
-            program.types.occurrences
-          simp [Atom.undefinedType] at same
-      | atomFallback _ shaped chosen =>
-          rw [shape] at shaped
-          simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-          obtain ⟨_, rfl, _⟩ := shaped
-          rw [Completed.Frame.read_empty, Entry.Value.erase_ofAtom, Entry.Value.erase_ofAtom]
-            at chosen
-          obtain ⟨_, _, _, _, impossible⟩ := cond_selection program typesC acceptsC keepsC typesY
-            typesN chosen
-          cases impossible
-      | atomSelectionFailed _ shaped chosen =>
-          rw [shape] at shaped
-          simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-          obtain ⟨_, rfl, _⟩ := shaped
-          rw [Completed.Frame.read_empty, Entry.Value.erase_ofAtom, Entry.Value.erase_ofAtom]
-            at chosen
-          obtain ⟨_, _, _, _, impossible⟩ := cond_selection program typesC acceptsC keepsC typesY
-            typesN chosen
-          cases impossible
-      | atomFunction _ shaped chosen =>
-          rw [shape] at shaped
-          simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-          obtain ⟨_, rfl, rfl⟩ := shaped
-          rw [Completed.Frame.read_empty, Entry.Value.erase_ofAtom, Entry.Value.erase_ofAtom]
-            at chosen
-          obtain ⟨signature, after, functionType, afterBindings, selected⟩ :=
-            cond_selection program typesC acceptsC keepsC typesY typesN chosen
-          simp only [Completed.InvocationSelection.selected.injEq] at selected
-          obtain ⟨rfl, rfl⟩ := selected
-          have returnTypeOf : ∀ {s : SelectedTypePolicy}, s.returnType = .var "t" →
-              Completed.invocationReturnType s = .var "t" := by
-            intro s same
-            simp [Completed.invocationReturnType, same, Atom.expressionType]
-          apply fine_invocations_cons
-          rw [returnTypeOf (if_projections functionType).2]
-          simp only [List.map_cons, List.map_nil]
-          refine fine_call_function program condition branches.closedYes branches.closedNo
-            functionType afterBindings _ _ ?_
-          intro R firstR
-          obtain ⟨r, rfl, rFirst⟩ : ∃ r, R = [r] ∧ r.1 = callValueOf b y n := by
-            obtain ⟨r, sameR, rFirst⟩ := List.map_eq_singleton_iff.mp firstR
-            exact ⟨r, sameR, rFirst⟩
-          obtain ⟨value, frame⟩ := r
-          simp only at rFirst
-          subst rFirst
-          apply fine_calls_frame
-          apply fine_calls_cons
-          refine fine_call_query notHost program branches frame _ _ ?_
-          intro Q eraseQ
-          apply fine_append
-          apply fine_calls_nil
-          apply fine_prepend
-          apply fine_append
-          apply fine_invocations_nil
-          apply fine_prepend
-          refine fine_publish (HENested.clean_of_erase (by simpa using eraseQ) cleanL) ?_
-          exact fine_top _ _
+  refine fine_if_entry program.types (cond_selection_succeeds policy program typesC acceptsC typesY typesN)
+    (fun {_} chosen => cond_selection program typesC acceptsC keepsC typesY typesN chosen) ?_
+  intro _ _ functionType afterBindings
+  refine fine_call_function program condition branches.closedYes branches.closedNo
+    functionType afterBindings _ _ ?_
+  intro R firstR
+  obtain ⟨r, rfl, rFirst⟩ : ∃ r, R = [r] ∧ r.1 = callValueOf b y n := by
+    obtain ⟨r, sameR, rFirst⟩ := List.map_eq_singleton_iff.mp firstR
+    exact ⟨r, sameR, rFirst⟩
+  obtain ⟨value, frame⟩ := r
+  simp only at rFirst
+  subst rFirst
+  apply fine_calls_frame
+  apply fine_calls_cons
+  refine fine_call_query notHost program branches frame _ _ ?_
+  intro Q eraseQ
+  apply fine_append
+  apply fine_calls_nil
+  apply fine_prepend
+  apply fine_append
+  apply fine_invocations_nil
+  apply fine_prepend
+  refine fine_publish (HENested.clean_of_erase (by simpa using eraseQ) cleanL) ?_
+  exact fine_top _ _
 
 /-- **Every run of `(if c y n)` with a call branch finishes, and every finished run publishes the
 taken branch's answers.** Under the hypotheses of `IfCallBranches.call_every_run`: HE's step relation
@@ -338,13 +274,7 @@ theorem call_every_run_finishes (dispatch : GroundedDispatch)
   have fine := call_fine notHost policy program condition branches
   refine ⟨fine.acc, fun x path => ?_,
     (call_every_run dispatch notHost policy program condition branches).2.2⟩
-  rcases (fine.reaches path).progress with moves | ⟨space, emitted, rfl⟩
-  · exact Or.inl moves
-  · have sameSpace := space_fixed path
-    simp only [load, Mettapedia.Languages.MeTTa.HE.RecursiveTasks.Contextual.Configuration.initial]
-      at sameSpace
-    subst sameSpace
-    exact Or.inr ⟨emitted, rfl, call_source program condition branches (complete_source path)⟩
+  exact fine.progress_observing path fun _ run => call_source program condition branches (complete_source run)
 
 /-! ## Controls -/
 

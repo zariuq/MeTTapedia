@@ -7,6 +7,7 @@ import Mettapedia.Languages.Prolog.SWI.Supervisor
 import Mettapedia.Languages.Prolog.SWI.Retract
 import Mettapedia.Languages.Prolog.SWI.Mutation
 import Mettapedia.Languages.Prolog.SWI.SnapshotContracts
+import Mettapedia.Languages.Prolog.SWI.StockSnapshotObstruction
 import Mettapedia.Languages.Prolog.SWI.EmptyCutoff
 import Mettapedia.Languages.Prolog.SWI.ReadyFixes
 

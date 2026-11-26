@@ -482,6 +482,85 @@ theorem fine_branch_function {atoms : List Atom} (program : IfProgram atoms) {b 
 
 /-! ## Every run of `(if b y n)` -/
 
+/-- A declared `if` starts one invocation for each admissible selection.
+The continuation must handle the actual frame of that selection. -/
+theorem fine_if_entry {atoms : List Atom} {c y n : Atom}
+    (operatorType : StorageTypesRel (Space.ofList atoms) (.symbol "if") [ifArrow])
+    (canSelect : Completed.InvocationSelectionRel (Space.ofList atoms) Completed.rawLookup policy
+      [] [] (app "if" [c, y, n]) (.symbol "if") Atom.undefinedType Frame.empty
+      (.selected ifPolicy [Frame.empty]))
+    (selected : ∀ ⦃outcome⦄, Completed.InvocationSelectionRel (Space.ofList atoms)
+      Completed.rawLookup policy [] [] (app "if" [c, y, n]) (.symbol "if") Atom.undefinedType
+      Frame.empty outcome → ∃ (signature : SelectedTypePolicy) (frame : Frame),
+        signature.functionType = ifArrow ∧ frame.bindings = Bindings.empty ∧
+          outcome = .selected signature [frame])
+    (next : ∀ (signature : SelectedTypePolicy) (frame : Frame),
+      signature.functionType = ifArrow → frame.bindings = Bindings.empty →
+      Fine dispatch Completed.rawLookup policy ⟨Space.ofList atoms,
+        .work (.function [.var "t"] [] Atom.undefinedType signature
+          (Entry.Value.ofAtom (.symbol "if")) ([c, y, n].map Entry.Value.ofAtom) frame),
+        [.calls [] [] (.var "t"), .append (.invocations [] [] Atom.undefinedType signature
+          (Entry.Value.ofAtom (.symbol "if")) ([c, y, n].map Entry.Value.ofAtom) []),
+          .publish (app "if" [c, y, n])], []⟩) :
+    Fine dispatch Completed.rawLookup policy
+      (load (Space.ofList atoms) (app "if" [c, y, n]) Atom.undefinedType) := by
+  have entry := call_entry policy if_data [c, y, n]
+  have shape : Frame.empty.read policy (Entry.Value.ofAtom (app "if" [c, y, n])) =
+      .expression .active (Entry.Value.ofAtom (.symbol "if") :: [c, y, n].map Entry.Value.ofAtom) := by
+    rw [Completed.Frame.read_empty]
+    simp only [app, Entry.Value.ofAtom, List.map_cons, List.map_nil]
+  have selection : Completed.ArgumentService.historical.selection (Space.ofList atoms)
+      Completed.rawLookup policy [] []
+      (Frame.empty.read policy (Entry.Value.ofAtom (app "if" [c, y, n]))).erase
+      (Entry.Value.ofAtom (.symbol "if")).erase Atom.undefinedType Frame.empty
+      (.selected ifPolicy [Frame.empty]) := by
+    rw [Completed.Frame.read_empty, Entry.Value.erase_ofAtom, Entry.Value.erase_ofAtom]
+    exact canSelect
+  show Fine dispatch Completed.rawLookup policy ⟨Space.ofList atoms,
+    .work (.atom [] [] (Entry.Value.ofAtom (app "if" [c, y, n])) Atom.undefinedType Frame.empty),
+    [], []⟩
+  refine .step ⟨_, .internal (LocalStepWith.atomFunction (admission := .historical) entry shape
+    selection)⟩ ?_
+  intro _ moved
+  cases moved with
+  | internal localStep =>
+      cases localStep with
+      | delivered entered => cases Entry.functional entered entry
+      | cast entered => cases Entry.functional entered entry
+      | atomTuple _ shaped occurs =>
+          rw [shape] at shaped
+          simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
+          obtain ⟨_, rfl, _⟩ := shaped
+          rw [Entry.Value.erase_ofAtom] at occurs
+          have same := Mettapedia.Languages.MeTTa.HE.Spec.Type.TypeOccurrencesRel.unique occurs
+            operatorType.occurrences
+          simp [Atom.undefinedType] at same
+      | atomFallback _ shaped chosen | atomSelectionFailed _ shaped chosen =>
+          rw [shape] at shaped
+          simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
+          obtain ⟨_, rfl, _⟩ := shaped
+          rw [Completed.Frame.read_empty, Entry.Value.erase_ofAtom, Entry.Value.erase_ofAtom]
+            at chosen
+          obtain ⟨_, _, _, _, impossible⟩ := selected chosen
+          cases impossible
+      | atomFunction _ shaped chosen =>
+          rw [shape] at shaped
+          simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
+          obtain ⟨_, rfl, rfl⟩ := shaped
+          rw [Completed.Frame.read_empty, Entry.Value.erase_ofAtom, Entry.Value.erase_ofAtom]
+            at chosen
+          obtain ⟨signature, frame, functionType, bindings, same⟩ := selected chosen
+          simp only [Completed.InvocationSelection.selected.injEq] at same
+          obtain ⟨rfl, rfl⟩ := same
+          apply fine_invocations_cons
+          have returnType {s : SelectedTypePolicy} (sameType : s.functionType = ifArrow) :
+              Completed.invocationReturnType s = .var "t" := by
+            simp [Completed.invocationReturnType, (if_projections sameType).2, Atom.expressionType]
+          rw [returnType functionType, Completed.Frame.read_empty, Entry.Value.erase_ofAtom]
+          exact next _ _ functionType bindings
+
+#print axioms fine_if_entry
+
 /-- **Every run of `(if b y n)` from HE's entry finishes**: the admission selects `if`'s arrow (no
 other entry rule applies), the function application and the typed query follow. -/
 theorem branch_fine (notHost : ¬ dispatch.executable (.symbol "if")) (policy : Policy)
@@ -491,19 +570,6 @@ theorem branch_fine (notHost : ¬ dispatch.executable (.symbol "if")) (policy : 
       (load (Space.ofList atoms) (callOf b y n) Atom.undefinedType) := by
   obtain ⟨Ty, typesY⟩ := branches.typedYes
   obtain ⟨Tn, typesN⟩ := branches.typedNo
-  have entry := call_entry policy if_data [.grounded (.bool b), y, n]
-  have shape : Completed.Frame.empty.read policy (Entry.Value.ofAtom (callOf b y n)) =
-      .expression .active (Entry.Value.ofAtom (.symbol "if") ::
-        [Atom.grounded (.bool b), y, n].map Entry.Value.ofAtom) := by
-    rw [Completed.Frame.read_empty]
-    simp only [callOf, app, Entry.Value.ofAtom, List.map_cons, List.map_nil]
-  have selection : Completed.ArgumentService.historical.selection (Space.ofList atoms)
-      Completed.rawLookup policy [] []
-      (Completed.Frame.empty.read policy (Entry.Value.ofAtom (callOf b y n))).erase
-      (Entry.Value.ofAtom (.symbol "if")).erase Atom.undefinedType Completed.Frame.empty
-      (.selected ifPolicy [Completed.Frame.empty]) := by
-    rw [Completed.Frame.read_empty, Entry.Value.erase_ofAtom, Entry.Value.erase_ofAtom]
-    exact branch_selection_succeeds policy program b typesY typesN
   have clean : ∀ R : List Result, R.map (fun r => r.1.erase) = [pick b y n] →
       ∀ r ∈ R, Answerable r.1.erase := by
     intro R eraseR r member
@@ -513,76 +579,27 @@ theorem branch_fine (notHost : ¬ dispatch.executable (.symbol "if")) (policy : 
     rw [List.mem_singleton] at inR
     rw [inR]
     exact answerable_of_data branches.takenData
-  show Fine dispatch Completed.rawLookup policy ⟨Space.ofList atoms,
-    .work (.atom [] [] (Entry.Value.ofAtom (callOf b y n)) Atom.undefinedType Completed.Frame.empty),
-    [], []⟩
-  refine .step ⟨_, .internal (LocalStepWith.atomFunction (admission := .historical) entry shape
-    selection)⟩ ?_
-  intro z moved
-  cases moved with
-  | internal l =>
-      cases l with
-      | delivered entered => cases Entry.functional entered entry
-      | cast entered => cases Entry.functional entered entry
-      | atomTuple _ shaped occurs =>
-          rw [shape] at shaped
-          simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-          obtain ⟨_, rfl, _⟩ := shaped
-          rw [Entry.Value.erase_ofAtom] at occurs
-          have same := Mettapedia.Languages.MeTTa.HE.Spec.Type.TypeOccurrencesRel.unique occurs
-            program.types.occurrences
-          simp [Atom.undefinedType] at same
-      | atomFallback _ shaped chosen =>
-          rw [shape] at shaped
-          simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-          obtain ⟨_, rfl, _⟩ := shaped
-          rw [Completed.Frame.read_empty, Entry.Value.erase_ofAtom, Entry.Value.erase_ofAtom]
-            at chosen
-          obtain ⟨_, _, _, _, impossible⟩ := branch_selection program b typesY typesN chosen
-          cases impossible
-      | atomSelectionFailed _ shaped chosen =>
-          rw [shape] at shaped
-          simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-          obtain ⟨_, rfl, _⟩ := shaped
-          rw [Completed.Frame.read_empty, Entry.Value.erase_ofAtom, Entry.Value.erase_ofAtom]
-            at chosen
-          obtain ⟨_, _, _, _, impossible⟩ := branch_selection program b typesY typesN chosen
-          cases impossible
-      | atomFunction _ shaped chosen =>
-          rw [shape] at shaped
-          simp only [Entry.Value.expression.injEq, List.cons.injEq] at shaped
-          obtain ⟨_, rfl, rfl⟩ := shaped
-          rw [Completed.Frame.read_empty, Entry.Value.erase_ofAtom, Entry.Value.erase_ofAtom]
-            at chosen
-          obtain ⟨signature, after, functionType, afterBindings, selected⟩ :=
-            branch_selection program b typesY typesN chosen
-          simp only [Completed.InvocationSelection.selected.injEq] at selected
-          obtain ⟨rfl, rfl⟩ := selected
-          have returnTypeOf : ∀ {s : SelectedTypePolicy}, s.returnType = .var "t" →
-              Completed.invocationReturnType s = .var "t" := by
-            intro s same
-            simp [Completed.invocationReturnType, same, Atom.expressionType]
-          apply fine_invocations_cons
-          rw [returnTypeOf (if_projections functionType).2]
-          simp only [List.map_cons, List.map_nil]
-          refine fine_branch_function program branches.closedYes branches.closedNo functionType
-            afterBindings _ _ ?_
-          intro R eraseR
-          obtain ⟨r, rfl, rErase⟩ : ∃ r, R = [r] ∧ r.1.erase = callOf b y n := by
-            obtain ⟨r, sameR, rErase⟩ := List.map_eq_singleton_iff.mp eraseR
-            exact ⟨r, sameR, rErase⟩
-          apply fine_calls_frame
-          apply fine_calls_cons
-          refine fine_branch_query notHost program branches rErase r.2 _ _ ?_
-          intro Q eraseQ
-          apply fine_append
-          apply fine_calls_nil
-          apply fine_prepend
-          apply fine_append
-          apply fine_invocations_nil
-          apply fine_prepend
-          refine fine_publish (clean _ (by simpa using eraseQ)) ?_
-          exact fine_top _ _
+  refine fine_if_entry program.types (branch_selection_succeeds policy program b typesY typesN)
+    (fun {_} chosen => branch_selection program b typesY typesN chosen) ?_
+  intro _ _ functionType afterBindings
+  refine fine_branch_function program branches.closedYes branches.closedNo functionType
+    afterBindings _ _ ?_
+  intro R eraseR
+  obtain ⟨r, rfl, rErase⟩ : ∃ r, R = [r] ∧ r.1.erase = callOf b y n := by
+    obtain ⟨r, sameR, rErase⟩ := List.map_eq_singleton_iff.mp eraseR
+    exact ⟨r, sameR, rErase⟩
+  apply fine_calls_frame
+  apply fine_calls_cons
+  refine fine_branch_query notHost program branches rErase r.2 _ _ ?_
+  intro Q eraseQ
+  apply fine_append
+  apply fine_calls_nil
+  apply fine_prepend
+  apply fine_append
+  apply fine_invocations_nil
+  apply fine_prepend
+  refine fine_publish (clean _ (by simpa using eraseQ)) ?_
+  exact fine_top _ _
 
 /-- **Every run of `(if b y n)` finishes, and every finished run publishes the taken branch.** Under
 the hypotheses of `IfBranches.branch_every_run`: HE's step relation is well founded from the entry
@@ -604,13 +621,7 @@ theorem branch_every_run_finishes (dispatch : GroundedDispatch)
   have fine := branch_fine notHost policy program branches
   refine ⟨fine.acc, fun c path => ?_, petta_branch atoms branches.groundYes branches.groundNo
     branches.takenData⟩
-  rcases (fine.reaches path).progress with moves | ⟨space, emitted, rfl⟩
-  · exact Or.inl moves
-  · have sameSpace := space_fixed path
-    simp only [load, Mettapedia.Languages.MeTTa.HE.RecursiveTasks.Contextual.Configuration.initial]
-      at sameSpace
-    subst sameSpace
-    exact Or.inr ⟨emitted, rfl, branch_source program branches (complete_source path)⟩
+  exact fine.progress_observing path fun _ run => branch_source program branches (complete_source run)
 
 /-! ## Controls -/
 

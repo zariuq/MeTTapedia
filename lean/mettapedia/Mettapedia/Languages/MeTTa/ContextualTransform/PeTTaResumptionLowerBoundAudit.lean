@@ -1,0 +1,28 @@
+import Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaEquationHeadElision
+
+namespace Mettapedia.Languages.MeTTa.ContextualTransform
+
+#print axioms PeTTaResumptionLowerBound.source_trace
+#print axioms PeTTaResumptionLowerBound.liveAnswers_eq
+#print axioms PeTTaResumptionLowerBound.rigid_head_fails_after_install
+#print axioms PeTTaResumptionLowerBound.retaining_data_agrees_iff
+#print axioms PeTTaResumptionLowerBound.every_world_schedule_is_realizable
+#print axioms PeTTaResumptionLowerBound.notification_or_read
+#print axioms PeTTaResumptionLowerBound.pull_read_lower_bound
+#print axioms PeTTaResumptionLowerBound.quiet_run_still_polls
+#print axioms PeTTaResumptionLowerBound.polling_attains_bound
+#print axioms PeTTaResumptionLowerBound.relinking_has_zero_pull_reads
+#print axioms PeTTaResumptionLowerBound.one_read_per_answer_at_any_depth
+#print axioms PeTTaStaticHeadElision.afterEditor_eq
+#print axioms PeTTaStaticHeadElision.installsAt_primitive_recursive
+#print axioms PeTTaStaticHeadElision.safeToHoist_iff_nonhalting
+#print axioms PeTTaStaticHeadElision.safeToHoist_not_re
+#print axioms PeTTaStaticHeadElision.exact_elision_undecidable
+#print axioms PeTTaStaticHeadElision.sound_recognizer_misses_safe_editor
+#print axioms PeTTaEquationHeadElision.installs_iff_equationHalts
+#print axioms PeTTaEquationHeadElision.input_term_primitive_recursive
+#print axioms PeTTaEquationHeadElision.safeOnInput_iff
+#print axioms PeTTaEquationHeadElision.same_safe_inputs
+#print axioms PeTTaEquationHeadElision.exact_equation_elision_undecidable
+
+end Mettapedia.Languages.MeTTa.ContextualTransform

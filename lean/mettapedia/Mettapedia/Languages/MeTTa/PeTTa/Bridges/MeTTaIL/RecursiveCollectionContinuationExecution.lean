@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.PeTTa.EquationEquality
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CompleteExecution.DescentExpand
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CompleteExecution.RootFamily
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.RecursiveCollectionHandoffExecution
@@ -955,20 +956,8 @@ open Mettapedia.OSLF.MeTTaIL Syntax GeneralPremise
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open SpaceSemantics Eval BridgeKit WireKit
 
-private local instance equationEq : DecidableEq SpaceSemantics.Equation := by
-  intro left right
-  apply decidable_of_iff (left.head = right.head ∧ left.arguments = right.arguments ∧ left.body = right.body)
-  constructor
-  · rintro ⟨head, arguments, body⟩
-    cases left
-    cases right
-    cases head
-    cases arguments
-    cases body
-    rfl
-  · intro same
-    cases same
-    exact ⟨rfl, rfl, rfl⟩
+private local instance equationEq : DecidableEq SpaceSemantics.Equation :=
+  SpaceSemantics.Equation.decideEq
 
 /-- Actual source rows in their retained order; this view is proof metadata. -/
 def viewProgram : Program where
@@ -1233,20 +1222,8 @@ open Mettapedia.OSLF.MeTTaIL Syntax GeneralPremise RecursiveCollectionContinuati
 open SpaceSemantics Eval BridgeKit WireKit
 open CanonicalCompare.AllNameSupport
 
-private local instance runEquationEq : DecidableEq SpaceSemantics.Equation := by
-  intro left right
-  apply decidable_of_iff (left.head = right.head ∧ left.arguments = right.arguments ∧ left.body = right.body)
-  constructor
-  · rintro ⟨head, arguments, body⟩
-    cases left
-    cases right
-    cases head
-    cases arguments
-    cases body
-    rfl
-  · intro same
-    cases same
-    exact ⟨rfl, rfl, rfl⟩
+private local instance runEquationEq : DecidableEq SpaceSemantics.Equation :=
+  SpaceSemantics.Equation.decideEq
 
 /-- Only the unchanged run bodies are used from the inherited continuation metadata. -/
 def runHeads (head : String) : Bool := !head.startsWith "gslt:" ||

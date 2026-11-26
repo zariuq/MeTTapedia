@@ -57,6 +57,9 @@ private def named (site : Syntax) (stem : Ident) (field : String) (index : Nat) 
 declare_syntax_cat checkedHolRow
 syntax ident ident "[" num,* "]" : checkedHolRow
 syntax ident ident "[" num,* "]" "checked_by" ident : checkedHolRow
+syntax ident ident "[" num,* "]" "formed_by" "(" term ")" : checkedHolRow
+syntax ident ident "[" num,* "]" "checked_by" "(" term ")"
+  ("formed_by" "(" term ")")? : checkedHolRow
 
 /-- Check closed rows against the supplied policy and formation function.
 The certificate keeps the original order, addresses, and origin. -/
@@ -73,13 +76,18 @@ elab_rules : command
       let mut saved : Std.HashMap (Lean.Name × Lean.Name) (Ident × Ident) := {}
       let mut before := initial
       for (row, index) in entries.zipIdx do
-        let (fact, request, parents, supplied) ← withRef row do
-            match row with
-            | `(checkedHolRow| $fact:ident $request:ident [$parents:num,*]) =>
-                pure (fact, request, parents.getElems, none)
-            | `(checkedHolRow| $fact:ident $request:ident [$parents:num,*] checked_by $check:ident) =>
-                pure (fact, request, parents.getElems, some check)
-            | _ => throwUnsupportedSyntax
+        let (fact, request, parents, supplied, formationProof) ← withRef row do
+          match row with
+          | `(checkedHolRow| $fact:ident $request:ident [$parents:num,*]) =>
+              pure (fact, request, parents.getElems, none, none)
+          | `(checkedHolRow| $fact:ident $request:ident [$parents:num,*] checked_by $check:ident) =>
+              pure (fact, request, parents.getElems, some (⟨check.raw⟩ : TSyntax `term), none)
+          | `(checkedHolRow| $fact:ident $request:ident [$parents:num,*] formed_by ($form:term)) =>
+              pure (fact, request, parents.getElems, none, some form)
+          | `(checkedHolRow| $fact:ident $request:ident [$parents:num,*] checked_by ($check:term)
+              $[formed_by ($form:term)]?) =>
+              pure (fact, request, parents.getElems, some check, form)
+          | _ => throwUnsupportedSyntax
         let addresses : Array (TSyntax `term) := parents.map (fun n => ⟨n.raw⟩)
         let receipt := named row stem "node" index
         let after := named row stem "cache" (index + 1)
@@ -89,22 +97,27 @@ elab_rules : command
           elabCommand (← `(private def $receipt : Receipt :=
             ⟨$fact, .inference $request, [$addresses,*], $origin⟩))
           elabCommand (← `(private def $after : Array Theorem := ($before).push $fact))
-          match previous, supplied with
-            | some proofs, none => pure proofs
-            | previous, supplied => do
-                let accepted := named row stem "checked" index
+          let accepted ← match previous.map Prod.fst, supplied with
+            | some proof, none => pure proof
+            | _, supplied => do
+                let id := named row stem "checked" index
                 let proof ← match supplied with
                   | some method => `($method)
                   | none => `(by decide +kernel)
-                elabCommand (← `(private theorem $accepted :
+                elabCommand (← `(private theorem $id :
                   ($receipt).witness.check $policy = some $fact := $proof))
-                match previous with
-                | some (_, formed) => pure (accepted, formed)
-                | none =>
-                    let formed := named row stem "formed" index
-                    elabCommand (← `(private theorem $formed :
-                      $formation ($receipt).witness $fact = true := by decide +kernel))
-                    pure (accepted, formed)
+                pure id
+          let formed ← match previous.map Prod.snd, formationProof with
+            | some proof, none => pure proof
+            | _, supplied => do
+                let id := named row stem "formed" index
+                let proof ← match supplied with
+                  | some method => `($method)
+                  | none => `(by decide +kernel)
+                elabCommand (← `(private theorem $id :
+                  $formation ($receipt).witness $fact = true := $proof))
+                pure id
+          pure (accepted, formed)
         if previous.isNone then
           saved := saved.insert key (accepted, formed)
         tracked := tracked.push { receipt, before, accepted, formed }

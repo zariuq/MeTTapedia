@@ -1,3 +1,4 @@
+import Mettapedia.TypeTheory.Calculi.ParameterizedPiSigmaId.FormationSensitiveConversionReplay
 import Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.NativeVectorAllCommonRecursorEvidence
 import Mettapedia.TypeTheory.Calculi.CumulativePiSigmaId.Declarations.FormationSensitiveNativeVectorAllUniverseMaps
 
@@ -37,10 +38,14 @@ def upperReplayed : Bool := FormationSensitiveElaboration.replay rules decoder .
   (programme evidenceUpperLevel) (programmeType evidenceUpperLevel) Evidence.upperSubmission
 
 set_option maxRecDepth 8192 in
-theorem lower_replayed : lowerReplayed = true := by decide +kernel
+theorem lower_replayed : lowerReplayed = true := by
+  rw [lowerReplayed, ← FormationSensitiveElaboration.replayWithSyntaxConversions_eq]
+  decide +kernel
 
 set_option maxRecDepth 8192 in
-theorem upper_replayed : upperReplayed = true := by decide +kernel
+theorem upper_replayed : upperReplayed = true := by
+  rw [upperReplayed, ← FormationSensitiveElaboration.replayWithSyntaxConversions_eq]
+  decide +kernel
 
 theorem lower_typed : FormationSensitive.Judgment rules .nil
     OriginalInputUniverses.program OriginalInputUniverses.programType := by

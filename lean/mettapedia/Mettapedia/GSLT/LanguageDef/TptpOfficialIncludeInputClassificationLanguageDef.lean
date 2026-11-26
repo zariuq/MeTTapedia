@@ -1,3 +1,4 @@
+import Mettapedia.GSLT.LanguageDef.BaseSortDeclarations
 import Mettapedia.GSLT.LanguageDef.TptpOfficialIncludeResolutionResultCarrier
 import Mettapedia.GSLT.LanguageDef.RewriteValidationCertificate
 import Mettapedia.GSLT.LanguageDef.RewriteValidationCertificateExtension
@@ -40,7 +41,7 @@ def a (label : String) (arguments : List Pattern := []) : Pattern :=
 def v (name : String) : Pattern := .fvar name
 
 def typed (entries : List (String × String)) : List (String × TypeExpr) :=
-  entries.map fun entry => (entry.1, .base entry.2)
+  BaseSortDeclarations.context entries
 
 def ctor (label category : String) (parameters : List (String × String))
     (policy : Option TermEvalPolicy := none) : GrammarRule := {
@@ -53,13 +54,8 @@ def ctor (label category : String) (parameters : List (String × String))
 }
 
 def mkRule (name : String) (context : List (String × String))
-    (premises : List Premise) (left right : Pattern) : RewriteRule := {
-  name
-  typeContext := typed context
-  premises
-  left
-  right
-}
+    (premises : List Premise) (left right : Pattern) : RewriteRule :=
+  BaseSortDeclarations.rule name (typed context) premises left right
 
 def congruence (source target : Pattern) : Premise :=
   .congruence source target

@@ -97,22 +97,9 @@ noncomputable def selectedCanonicalOccurrences_commonRestorationApex_of_closeSma
           sizeOf rightStopped.certified.typed.boundary.content < parentMeasure)
     (rightAdmissible : rhoCanonicalRecursiveTypeDomain.Admissible
       rightStopped.certified.typed.boundary.targetType)
-    (closeSmaller :
-      ∀ {childAvailable childOuter : List TypeExpr}
-        {leftChild rightChild : Pattern} {childType : TypeExpr},
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType leftChild →
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType rightChild →
-        canonicalize childDeclaration leftChild =
-          canonicalize childDeclaration rightChild →
-        sizeOf leftChild + sizeOf rightChild < parentMeasure →
-        rhoCanonicalRecursiveTypeDomain.Admissible childType →
-        Nonempty (CostCanonicalPairElaboration rhoCIGSLT
-          rhoHereditaryNormalizationKernel targetFree childAvailable
-          childOuter leftChild rightChild childType))
+    (closeSmaller : CostCanonicalPairElaboration.CloseBelow
+      rhoCanonicalRecursiveTypeDomain rhoHereditaryNormalizationKernel
+      childDeclaration targetFree (parentMeasure))
     (depth : Nat) :
     let cospan := leftEnvironment.semanticKeyCospan rightEnvironment
     CostStaticAtomKeyCospan.CommonRestorationApex rhoCIGSLT cospan

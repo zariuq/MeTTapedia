@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.PeTTa.EquationEquality
 import Mettapedia.OSLF.MeTTaIL.GeneralTypedSitesFocus
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CollectionOccurrenceCollectorExecution
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CollectionOccurrenceInstallationExecution
@@ -39,20 +40,8 @@ def library : Library :=
 theorem checked : library.check = true := CollectionOccurrenceSearchExecution.SelectedNativeSource.checked
 
 section ProofMetadata
-private local instance machineEquationEq : DecidableEq SpaceSemantics.Equation := by
-  intro left right
-  apply decidable_of_iff (left.head = right.head ∧ left.arguments = right.arguments ∧ left.body = right.body)
-  constructor
-  · rintro ⟨head, arguments, body⟩
-    cases left
-    cases right
-    cases head
-    cases arguments
-    cases body
-    rfl
-  · intro same
-    cases same
-    exact ⟨rfl, rfl, rfl⟩
+private local instance machineEquationEq : DecidableEq SpaceSemantics.Equation :=
+  SpaceSemantics.Equation.decideEq
 
 private def machineProofBase : Program :=
   (((RuleExecutionProgram.callFragment ["gslt:occurrence-batch:begin", "gslt:occurrence-batch:run",

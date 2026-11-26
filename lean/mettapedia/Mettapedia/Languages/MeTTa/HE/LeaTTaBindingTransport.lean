@@ -5014,6 +5014,59 @@ private theorem reachable_sup_edge_congr
     · exact (hreach u v).mpr hright.reachable |>.mono le_sup_left
     · exact hedge.reachable.mono le_sup_right
 
+/-- Fresh HE assignment presents exactly the old binding equations conjoined
+with the new value equation. -/
+theorem heBindingSatisfied_assign_fresh_iff
+    (valuation : String → Metta.Atom)
+    {b : Bindings} {v : String} {value : Atom}
+    (hlookup : b.lookup v = none) :
+    HEBindingSatisfied valuation (b.assign v value) ↔
+      HEBindingSatisfied valuation b ∧
+        valuation v =
+          applyClassSolution valuation (encodeModelAtom value) := by
+  have hbound : b.isBound v = false := by
+    simp [Bindings.isBound, hlookup]
+  constructor
+  · rintro ⟨hvalues, hequalities⟩
+    refine ⟨⟨?_, hequalities⟩, ?_⟩
+    · intro x oldValue hmem
+      exact hvalues x oldValue (by
+        simp [Bindings.assign, hbound, hmem])
+    · exact hvalues v value (by
+        simp [Bindings.assign, hbound])
+  · rintro ⟨⟨hvalues, hequalities⟩, hnew⟩
+    refine ⟨?_, hequalities⟩
+    intro x outValue hmem
+    simp only [Bindings.assign, hbound, Bool.false_eq_true, if_false,
+      List.mem_append, List.mem_singleton, Prod.mk.injEq] at hmem
+    rcases hmem with hold | ⟨rfl, rfl⟩
+    · exact hvalues x outValue hold
+    · exact hnew
+
+/-- Adding one HE equality presents exactly the old binding equations
+conjoined with that equality. -/
+theorem heBindingSatisfied_addEquality_iff
+    (valuation : String → Metta.Atom)
+    (b : Bindings) (left right : String) :
+    HEBindingSatisfied valuation (b.addEquality left right) ↔
+      HEBindingSatisfied valuation b ∧ valuation left = valuation right := by
+  constructor
+  · rintro ⟨hvalues, hequalities⟩
+    refine ⟨⟨hvalues, ?_⟩, ?_⟩
+    · intro x y hmem
+      exact hequalities x y (by
+        simp [Bindings.addEquality, hmem])
+    · exact hequalities left right (by
+        simp [Bindings.addEquality])
+  · rintro ⟨⟨hvalues, hequalities⟩, hnew⟩
+    refine ⟨hvalues, ?_⟩
+    intro x y hmem
+    simp only [Bindings.addEquality, List.mem_append, List.mem_singleton,
+      Prod.mk.injEq] at hmem
+    rcases hmem with hold | ⟨rfl, rfl⟩
+    · exact hequalities x y hold
+    · exact hnew
+
 /-- Raw insertion of one common alias preserves equality classes and complete
 solution theory without requiring relation-list or representative agreement. -/
 theorem LeaBindingSolutionEquiv.addEqRaw
@@ -5060,58 +5113,8 @@ theorem LeaBindingSolutionEquiv.addEqRaw
       mem_leaEqClass_iff_reachable, hheGraph, hleaGraph]
     exact reachable_sup_edge_congr holdReach queryVar patternVar start finish
   · intro valuation
-    have hold := h.solutions valuation
-    constructor
-    · rintro ⟨hvalues, hequalities⟩
-      have holdHE : HEBindingSatisfied valuation b := by
-        refine ⟨?_, ?_⟩
-        · intro x value hmem
-          exact hvalues x value (by
-            simpa [Bindings.addEquality] using hmem)
-        · intro x y hmem
-          exact hequalities x y (by
-            simp [Bindings.addEquality, hmem])
-      obtain ⟨holdValues, holdEqualities⟩ := hold.mp holdHE
-      have hnew : valuation queryVar = valuation patternVar :=
-        hequalities queryVar patternVar (by
-          simp [Bindings.addEquality])
-      refine ⟨?_, ?_⟩
-      · intro x value hmem
-        exact holdValues x value
-          ((Metta.Bindings.val_mem_addEqRaw_iff
-            lb patternVar queryVar x value).mp hmem)
-      · intro x y hmem
-        have hmem := (Metta.Bindings.mem_addEqRaw_iff
-          lb patternVar queryVar hne' (Metta.BindingRel.eq x y)).mp hmem
-        simp only [List.mem_cons, Metta.BindingRel.eq.injEq] at hmem
-        rcases hmem with ⟨rfl, rfl⟩ | holdMem
-        · exact hnew.symm
-        · exact holdEqualities x y holdMem
-    · rintro ⟨hvalues, hequalities⟩
-      have holdLea : LeaBindingSatisfied valuation lb := by
-        refine ⟨?_, ?_⟩
-        · intro x value hmem
-          exact hvalues x value
-            (Metta.Bindings.mem_addEqRaw_of_mem
-              lb patternVar queryVar hmem)
-        · intro x y hmem
-          exact hequalities x y
-            (Metta.Bindings.mem_addEqRaw_of_mem
-              lb patternVar queryVar hmem)
-      obtain ⟨holdValues, holdEqualities⟩ := hold.mpr holdLea
-      have hnew : valuation patternVar = valuation queryVar :=
-        hequalities patternVar queryVar
-          (Metta.Bindings.eq_mem_addEqRaw lb patternVar queryVar hne')
-      refine ⟨?_, ?_⟩
-      · intro x value hmem
-        exact holdValues x value (by
-          simpa [Bindings.addEquality] using hmem)
-      · intro x y hmem
-        simp only [Bindings.addEquality, List.mem_append,
-          List.mem_singleton, Prod.mk.injEq] at hmem
-        rcases hmem with holdMem | ⟨rfl, rfl⟩
-        · exact holdEqualities x y holdMem
-        · exact hnew.symm
+    rw [heBindingSatisfied_addEquality_iff, leaBindingSatisfied_addEqRaw_iff]
+    exact and_congr (h.solutions valuation) eq_comm
 
 /-- Raw insertion of one common alias preserves the strengthened
 compositional invariant.  Existing raw values remain present unchanged, while
@@ -5922,59 +5925,6 @@ private theorem assignment_not_mem_of_lookup_none
             simp at hvk
           · exact ih htail htailMem
 
-/-- Fresh HE assignment presents exactly the old binding equations conjoined
-with the new value equation. -/
-theorem heBindingSatisfied_assign_fresh_iff
-    (valuation : String → Metta.Atom)
-    {b : Bindings} {v : String} {value : Atom}
-    (hlookup : b.lookup v = none) :
-    HEBindingSatisfied valuation (b.assign v value) ↔
-      HEBindingSatisfied valuation b ∧
-        valuation v =
-          applyClassSolution valuation (encodeModelAtom value) := by
-  have hbound : b.isBound v = false := by
-    simp [Bindings.isBound, hlookup]
-  constructor
-  · rintro ⟨hvalues, hequalities⟩
-    refine ⟨⟨?_, hequalities⟩, ?_⟩
-    · intro x oldValue hmem
-      exact hvalues x oldValue (by
-        simp [Bindings.assign, hbound, hmem])
-    · exact hvalues v value (by
-        simp [Bindings.assign, hbound])
-  · rintro ⟨⟨hvalues, hequalities⟩, hnew⟩
-    refine ⟨?_, hequalities⟩
-    intro x outValue hmem
-    simp only [Bindings.assign, hbound, Bool.false_eq_true, if_false,
-      List.mem_append, List.mem_singleton, Prod.mk.injEq] at hmem
-    rcases hmem with hold | ⟨rfl, rfl⟩
-    · exact hvalues x outValue hold
-    · exact hnew
-
-/-- Adding one HE equality presents exactly the old binding equations
-conjoined with that equality. -/
-theorem heBindingSatisfied_addEquality_iff
-    (valuation : String → Metta.Atom)
-    (b : Bindings) (left right : String) :
-    HEBindingSatisfied valuation (b.addEquality left right) ↔
-      HEBindingSatisfied valuation b ∧ valuation left = valuation right := by
-  constructor
-  · rintro ⟨hvalues, hequalities⟩
-    refine ⟨⟨hvalues, ?_⟩, ?_⟩
-    · intro x y hmem
-      exact hequalities x y (by
-        simp [Bindings.addEquality, hmem])
-    · exact hequalities left right (by
-        simp [Bindings.addEquality])
-  · rintro ⟨⟨hvalues, hequalities⟩, hnew⟩
-    refine ⟨hvalues, ?_⟩
-    intro x y hmem
-    simp only [Bindings.addEquality, List.mem_append, List.mem_singleton,
-      Prod.mk.injEq] at hmem
-    rcases hmem with hold | ⟨rfl, rfl⟩
-    · exact hequalities x y hold
-    · exact hnew
-
 /-- Fresh direct-value insertion preserves the order-free binding relation.
 The value is required to be non-variable because matcher var/var constraints
 travel through the explicit equality lane. -/
@@ -6059,6 +6009,26 @@ theorem LeaBindingTransport.addEqRaw
   ⟨htransport.relations.addEqRaw hne,
     htransport.chronology.addEqRaw hne hnot⟩
 
+private theorem addVarBinding_of_empty_class
+    {lb : Metta.Bindings} {v : String} {value : Atom}
+    (hnonvar : DeclMatchSpec.Atom.isVarB value = false)
+    (hclass : Metta.Bindings.classValues lb v = []) :
+    Metta.Bindings.addVarBinding lb v (encodeModelAtom value) =
+      [Metta.Bindings.addValRaw lb v (encodeModelAtom value)] := by
+  cases value <;>
+    simp [Metta.Bindings.addVarBinding, hclass, encodeModelAtom,
+      DeclMatchSpec.Atom.isVarB] at hnonvar ⊢
+
+private theorem addVarEquality_of_empty_class
+    {lb : Metta.Bindings} {patternVar queryVar : String}
+    (hclass :
+      Metta.Bindings.classValues
+          (Metta.Bindings.addEqRaw lb patternVar queryVar) patternVar = []) :
+    Metta.Bindings.addVarEquality lb patternVar queryVar =
+      [Metta.Bindings.addEqRaw lb patternVar queryVar] := by
+  simp only [Metta.Bindings.addVarEquality, hclass,
+    Metta.Bindings.unifyValues]
+
 /-- The executable fresh-value branch realizes the raw structural transport.
 The class-value premise is explicit here; the general merge theorem will obtain
 it from equality-closure correspondence. -/
@@ -6073,9 +6043,8 @@ theorem LeaBindingRelEquiv.addVarBinding_fresh
         LeaBindingRelEquiv (b.assign v value) lb' := by
   refine ⟨Metta.Bindings.addValRaw lb v (encodeModelAtom value), ?_,
     hequiv.addValRaw_fresh hlookup hnonvar⟩
-  cases value <;>
-    simp [Metta.Bindings.addVarBinding, hclass, encodeModelAtom,
-      DeclMatchSpec.Atom.isVarB] at hnonvar ⊢
+  rw [addVarBinding_of_empty_class hnonvar hclass]
+  exact List.mem_singleton_self _
 
 /-- The executable valueless-class equality branch realizes the raw alias
 transport. -/
@@ -6091,9 +6060,8 @@ theorem LeaBindingRelEquiv.addVarEquality_valueless
         LeaBindingRelEquiv (b.addEquality queryVar patternVar) lb' := by
   refine ⟨Metta.Bindings.addEqRaw lb patternVar queryVar, ?_,
     hequiv.addEqRaw hne⟩
-  simp only [Metta.Bindings.addVarEquality, hclass,
-    Metta.Bindings.unifyValues]
-  simp
+  rw [addVarEquality_of_empty_class hclass]
+  exact List.mem_singleton_self _
 
 theorem LeaBindingTransport.addVarBinding_fresh
     {b : Bindings} {lb : Metta.Bindings} {v : String} {value : Atom}
@@ -6106,9 +6074,8 @@ theorem LeaBindingTransport.addVarBinding_fresh
         LeaBindingTransport (b.assign v value) lb' := by
   refine ⟨Metta.Bindings.addValRaw lb v (encodeModelAtom value), ?_,
     htransport.addValRaw_fresh hlookup hnonvar⟩
-  cases value <;>
-    simp [Metta.Bindings.addVarBinding, hclass, encodeModelAtom,
-      DeclMatchSpec.Atom.isVarB] at hnonvar ⊢
+  rw [addVarBinding_of_empty_class hnonvar hclass]
+  exact List.mem_singleton_self _
 
 theorem LeaBindingTransport.addVarEquality_valueless
     {b : Bindings} {lb : Metta.Bindings} {queryVar patternVar : String}
@@ -6123,9 +6090,8 @@ theorem LeaBindingTransport.addVarEquality_valueless
         LeaBindingTransport (b.addEquality queryVar patternVar) lb' := by
   refine ⟨Metta.Bindings.addEqRaw lb patternVar queryVar, ?_,
     htransport.addEqRaw hne hnot⟩
-  simp only [Metta.Bindings.addVarEquality, hclass,
-    Metta.Bindings.unifyValues]
-  simp
+  rw [addVarEquality_of_empty_class hclass]
+  exact List.mem_singleton_self _
 
 private theorem leaLookupVal_eq_none_of_no_value
     {lb : Metta.Bindings} {x : String}
@@ -6185,6 +6151,24 @@ private theorem removeVal_eq_self_of_lookupVal_eq_none
         exact no_leaValue_of_lookupVal_eq_none hlookup value hmem
       simp [hne]
 
+/-- Raw insertion at a variable with no direct value presents the old binding
+theory conjoined with the inserted value equation. -/
+theorem leaBindingSatisfied_addValRaw_fresh_iff
+    (valuation : String → Metta.Atom)
+    (bindings : Metta.Bindings) (v : String) (value : Metta.Atom)
+    (hlookup : Metta.Bindings.lookupVal bindings v = none) :
+    LeaBindingSatisfied valuation
+        (Metta.Bindings.addValRaw bindings v value) ↔
+      LeaBindingSatisfied valuation bindings ∧
+        valuation v = applyClassSolution valuation value := by
+  have hremove : Metta.Bindings.removeVal bindings v = bindings :=
+    removeVal_eq_self_of_lookupVal_eq_none hlookup
+  rw [show Metta.Bindings.addValRaw bindings v value =
+      [Metta.BindingRel.val v value] ++ bindings by
+    simp [Metta.Bindings.addValRaw, hremove]]
+  rw [leaBindingSatisfied_append_iff]
+  simp [LeaBindingSatisfied, and_comm]
+
 /-- Fresh raw value insertion preserves the compositional solution invariant.
 The direct-lookup hypotheses express the normalized fresh branch on each
 presentation; no relation ordering or representative premise is used. -/
@@ -6214,58 +6198,9 @@ theorem LeaBindingSolutionEquiv.addValRaw_fresh
     simpa [Bindings.assign, hbound, Metta.Bindings.addValRaw,
       hremove, leaEqualityEdges] using holdReach
   · intro valuation
-    have hold := h.solutions valuation
-    constructor
-    · rintro ⟨hvalues, hequalities⟩
-      have holdHE : HEBindingSatisfied valuation b := by
-        refine ⟨?_, ?_⟩
-        · intro x oldValue hmem
-          exact hvalues x oldValue (by
-            simp [Bindings.assign, hbound, hmem])
-        · intro x y hmem
-          exact hequalities x y (by
-            simpa [Bindings.assign, hbound] using hmem)
-      obtain ⟨holdValues, holdEqualities⟩ := hold.mp holdHE
-      have hnew :
-          valuation v =
-            applyClassSolution valuation (encodeModelAtom value) :=
-        hvalues v value (by
-          simp [Bindings.assign, hbound])
-      refine ⟨?_, ?_⟩
-      · intro x leaValue hmem
-        simp only [Metta.Bindings.addValRaw, hremove, List.mem_cons,
-          Metta.BindingRel.val.injEq] at hmem
-        rcases hmem with ⟨rfl, rfl⟩ | holdMem
-        · exact hnew
-        · exact holdValues x leaValue holdMem
-      · intro x y hmem
-        exact holdEqualities x y (by
-          simpa [Metta.Bindings.addValRaw, hremove] using hmem)
-    · rintro ⟨hvalues, hequalities⟩
-      have holdLea : LeaBindingSatisfied valuation lb := by
-        refine ⟨?_, ?_⟩
-        · intro x oldValue hmem
-          exact hvalues x oldValue (by
-            simp [Metta.Bindings.addValRaw, hremove, hmem])
-        · intro x y hmem
-          exact hequalities x y (by
-            simp [Metta.Bindings.addValRaw, hremove, hmem])
-      obtain ⟨holdValues, holdEqualities⟩ := hold.mpr holdLea
-      have hnew :
-          valuation v =
-            applyClassSolution valuation (encodeModelAtom value) :=
-        hvalues v (encodeModelAtom value) (by
-          simp [Metta.Bindings.addValRaw, hremove])
-      refine ⟨?_, ?_⟩
-      · intro x heValue hmem
-        simp only [Bindings.assign, hbound, Bool.false_eq_true, if_false,
-          List.mem_append, List.mem_singleton, Prod.mk.injEq] at hmem
-        rcases hmem with holdMem | ⟨rfl, rfl⟩
-        · exact holdValues x heValue holdMem
-        · exact hnew
-      · intro x y hmem
-        exact holdEqualities x y (by
-          simpa [Bindings.assign, hbound] using hmem)
+    rw [heBindingSatisfied_assign_fresh_iff valuation hheLookup,
+      leaBindingSatisfied_addValRaw_fresh_iff valuation lb v _ hleaLookup,
+      h.solutions valuation]
 
 /-- Fresh raw value insertion preserves the strengthened compositional
 invariant.  Existing raw values retain their provenance because neither
@@ -6338,9 +6273,8 @@ theorem LeaBindingSolutionEquiv.addVarBinding_fresh
         LeaBindingSolutionEquiv (b.assign v value) lb' := by
   refine ⟨Metta.Bindings.addValRaw lb v (encodeModelAtom value), ?_,
     h.addValRaw_fresh hheLookup hleaLookup⟩
-  cases value <;>
-    simp [Metta.Bindings.addVarBinding, hclass, encodeModelAtom,
-      DeclMatchSpec.Atom.isVarB] at hnonvar ⊢
+  rw [addVarBinding_of_empty_class hnonvar hclass]
+  exact List.mem_singleton_self _
 
 /-- The executable fresh-value branch preserves class-indexed raw provenance
 as well as equality closure and complete solution theory. -/
@@ -6357,9 +6291,8 @@ theorem LeaBindingCongruence.addVarBinding_fresh
         LeaBindingCongruence (b.assign v value) lb' := by
   refine ⟨Metta.Bindings.addValRaw lb v (encodeModelAtom value), ?_,
     h.addValRaw_fresh hheLookup hleaLookup⟩
-  cases value <;>
-    simp [Metta.Bindings.addVarBinding, hclass, encodeModelAtom,
-      DeclMatchSpec.Atom.isVarB] at hnonvar ⊢
+  rw [addVarBinding_of_empty_class hnonvar hclass]
+  exact List.mem_singleton_self _
 
 /-- The executable valueless equality branch preserves equality classes and
 complete solution theory without any chronology premise. -/
@@ -6376,9 +6309,8 @@ theorem LeaBindingSolutionEquiv.addVarEquality_valueless
         LeaBindingSolutionEquiv
           (b.addEquality queryVar patternVar) lb' := by
   refine ⟨Metta.Bindings.addEqRaw lb patternVar queryVar, ?_, h.addEqRaw hne⟩
-  simp only [Metta.Bindings.addVarEquality, hclass,
-    Metta.Bindings.unifyValues]
-  simp
+  rw [addVarEquality_of_empty_class hclass]
+  exact List.mem_singleton_self _
 
 /-- The executable valueless equality branch preserves the strengthened
 compositional invariant without exposing relation order or representative
@@ -6397,9 +6329,8 @@ theorem LeaBindingCongruence.addVarEquality_valueless
           (b.addEquality queryVar patternVar) lb' := by
   refine ⟨Metta.Bindings.addEqRaw lb patternVar queryVar, ?_,
     h.addEqRaw hne⟩
-  simp only [Metta.Bindings.addVarEquality, hclass,
-    Metta.Bindings.unifyValues]
-  simp
+  rw [addVarEquality_of_empty_class hclass]
+  exact List.mem_singleton_self _
 
 private theorem leaValue_mem_of_lookupVal_eq_some
     {lb : Metta.Bindings} {x : String} {value : Metta.Atom}
@@ -6672,24 +6603,6 @@ theorem leaClassValue_noFloat
   obtain ⟨key, _hkey, hlookup⟩ := List.mem_filterMap.mp hvalue
   exact hbindingsNoFloat key value
     (leaValue_mem_of_lookupVal_eq_some hlookup)
-
-/-- Raw insertion at a variable with no direct value presents the old binding
-theory conjoined with the inserted value equation. -/
-theorem leaBindingSatisfied_addValRaw_fresh_iff
-    (valuation : String → Metta.Atom)
-    (bindings : Metta.Bindings) (v : String) (value : Metta.Atom)
-    (hlookup : Metta.Bindings.lookupVal bindings v = none) :
-    LeaBindingSatisfied valuation
-        (Metta.Bindings.addValRaw bindings v value) ↔
-      LeaBindingSatisfied valuation bindings ∧
-        valuation v = applyClassSolution valuation value := by
-  have hremove : Metta.Bindings.removeVal bindings v = bindings :=
-    removeVal_eq_self_of_lookupVal_eq_none hlookup
-  rw [show Metta.Bindings.addValRaw bindings v value =
-      [Metta.BindingRel.val v value] ++ bindings by
-    simp [Metta.Bindings.addValRaw, hremove]]
-  rw [leaBindingSatisfied_append_iff]
-  simp [LeaBindingSatisfied, and_comm]
 
 private theorem leaAddVarBinding_nonVar_solution_iff
     (valuation : String → Metta.Atom)

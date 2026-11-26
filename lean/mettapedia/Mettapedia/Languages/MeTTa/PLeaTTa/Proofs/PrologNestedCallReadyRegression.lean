@@ -812,6 +812,68 @@ private theorem pActive
 
 /-! ## State-indexed nested `q/1` readiness -/
 
+private abbrev groundCallHead (state : ActivePayloadState) (predicate : String)
+    (referenceHead : state.index.bodyReferences = [.call predicate [resultTerm]])
+    (executableHead : state.index.bodyExecutables = [.call predicate [] resultAtom]) :
+    NestedCallHead state :=
+  ⟨predicate, [resultTerm], [], [], resultAtom, [], referenceHead, executableHead⟩
+
+private theorem groundCall_opened_of_reservation (state : ActivePayloadState)
+    (predicate : String) (database : Database) (branch : ClauseBranch)
+    (currentNil : state.index.current = [])
+    (databaseExact : state.index.session.resolver.database = database)
+    (nextFreshZero : state.index.session.resolver.nextFresh = 0)
+    (reserved : (reserveVisible database.generation [resultTerm] [] 0
+      (database.visibleClausesAt database.generation predicate 1)).1 = [branch]) :
+    (openedFor state.index.session predicate [resultTerm] state.index.current).cursor.remaining =
+      [branch] := by
+  rw [currentNil]
+  change (prepareCall state.index.session.resolver (requestFor predicate [resultTerm] [])).1.remaining =
+    [branch]
+  simp only [prepareCall, requestFor]
+  rw [databaseExact, nextFreshZero]
+  exact reserved
+
+/-- A singleton cursor fixes the selected occurrence. The head resolution
+remains tied to that occurrence and the carrier retains its whole frame. -/
+private theorem groundCall_ready (state : ActivePayloadState) (head : NestedCallHead state)
+    (fresh : state.index.freshFrontier = AlphaFreshFrontier state.index.alpha)
+    (supportNil : state.index.support = [])
+    (below : ConfBelowResolutionCounter state.index.openConf.toConf)
+    (indexReady : state.index.openConf.persistent.world.clauseIndexReady = true)
+    (candidateSupported : SupportedCandidateBank head.predicate
+      (state.index.session.resolver.database.visibleClausesAt
+        state.index.session.resolver.database.generation head.predicate head.referencePayload.length)
+      (state.index.openConf.persistent.world.resolutionCandidates
+        head.predicate head.arguments.length))
+    (sourceNonempty : state.index.session.resolver.database.visibleClausesAt
+      state.index.session.resolver.database.generation head.predicate head.referencePayload.length ≠ [])
+    (scanNonempty : head.scan.1 ≠ [])
+    {only : ClauseBranch} {binding : Substitution}
+    (openedSingleton : (openedFor state.index.session head.predicate head.referencePayload
+      state.index.current).cursor.remaining = [only])
+    (resolves : HeadResolution only binding)
+    (notThrow : ¬ BuiltinThrowCall head.predicate head.referencePayload)
+    (notDatabase : DatabaseActions.recognizeDatabaseAction head.predicate head.referencePayload = none)
+    (payloadSupported : AlphaTermsSupported state.index.alpha state.index.support head.referencePayload) :
+    NestedCallReady state head := by
+  refine ⟨⟨fresh, indexReady, below, candidateSupported, sourceNonempty, scanNonempty,
+    ?_, notThrow, notDatabase⟩, payloadSupported⟩
+  intro _ finish branch _ _ _ _ _ pulls frontier
+  have finishNonempty : finish.remaining ≠ [] := by
+    rw [frontier.finishRemaining]
+    simp
+  have pathExact := RejectedPullsN.eq_zero_of_singleton_of_finish_nonempty
+    openedSingleton pulls finishNonempty
+  have remaining := frontier.finishRemaining
+  rw [pathExact.2, openedSingleton] at remaining
+  have branchExact : branch = only := (List.cons.inj remaining).1.symm
+  refine ⟨binding, ?_, ?_⟩
+  · simpa only [branchExact] using resolves
+  · rw [supportNil]
+    intro identity name member
+    simp at member
+
 /-- The literal successor of the ground `p/1` activation is ready to enter
 and select the unique ground `q/1` occurrence.  No payload, session, frontier,
 or endpoint is supplied independently of that successor. -/
@@ -864,15 +926,7 @@ theorem qReadyAfterP
       rootFineSteps, representative, representativeCarrier,
       materializedHeads⟩ :=
     pActive (prog := prog) (gt := gt)
-  let head : NestedCallHead state :=
-    { predicate := "q"
-      referencePayload := [resultTerm]
-      referenceRest := []
-      arguments := []
-      result := resultAtom
-      executableRest := []
-      referenceHead := referenceHead
-      executableHead := executableHead }
+  let head := groundCallHead state "q" referenceHead executableHead
   have headMaterialized :
       MaterializedCallAgreesWith state.index.alpha state.index.current
         head.referencePayload
@@ -883,16 +937,8 @@ theorem qReadyAfterP
   have openedSingleton :
       (openedFor state.index.session "q" [resultTerm]
         state.index.current).cursor.remaining = [qPreparedBranch] := by
-    rw [currentNil]
-    change
-      (prepareCall state.index.session.resolver
-        (requestFor "q" [resultTerm] [])).1.remaining = [qPreparedBranch]
-    simp only [prepareCall, requestFor]
-    rw [databaseExact, nextFreshZero]
-    change
-      (reserveVisible referenceDatabase.generation [resultTerm] [] 0
-        (referenceDatabase.visibleClausesAt referenceDatabase.generation
-          "q" 1)).1 = [qPreparedBranch]
+    apply groundCall_opened_of_reservation state "q" referenceDatabase qPreparedBranch
+      currentNil databaseExact nextFreshZero
     rw [qVisibleClauses]
     rfl
   refine
@@ -902,18 +948,8 @@ theorem qReadyAfterP
       nextFreshZero, worldExact, rootSourceSteps, rootFineSteps,
       ⟨representative, representativeCarrier, headMaterialized⟩,
       ⟨qPreparedBranch, openedSingleton⟩⟩
-  refine
-    { toNestedCallOperationalReady :=
-        { exactFresh := freshExact
-          indexReady := ?_
-          below := below
-          candidateSupported := ?_
-          sourceNonempty := ?_
-          scanNonempty := ?_
-          selected := ?_
-          notThrow := ?_
-          notDatabase := ?_ }
-      payloadSupported := ?_ }
+  refine groundCall_ready state head freshExact supportNil below ?_ ?_ ?_ ?_
+    openedSingleton qPreparedBranch_resolves_empty ?_ ?_ ?_
   · rw [worldExact]
     rfl
   · change
@@ -942,23 +978,6 @@ theorem qReadyAfterP
       rfl
     simp [resolveAlts, qExecutableClause, resultAtom, argumentsMatch,
       resultMatch]
-  · intro count finish branch clause branchTail clauseTail altTail copied
-      pulls frontier
-    have finishNonempty : finish.remaining ≠ [] := by
-      rw [frontier.finishRemaining]
-      simp
-    have pathExact :=
-      _root_.Mettapedia.Languages.MeTTa.PLeaTTa.PrologNestedCallReadyBridge.RejectedPullsN.eq_zero_of_singleton_of_finish_nonempty
-        openedSingleton pulls finishNonempty
-    have branchExact : branch = qPreparedBranch := by
-      have remaining := frontier.finishRemaining
-      rw [pathExact.2, openedSingleton] at remaining
-      exact (List.cons.inj remaining).1.symm
-    refine ⟨[], ?_, ?_⟩
-    · simpa [branchExact] using qPreparedBranch_resolves_empty
-    · rw [supportNil]
-      intro identity name member
-      simp at member
   · simp [head, BuiltinThrowCall]
   · rfl
   · simpa [alphaNil, supportNil] using groundPayloadSupported
@@ -990,43 +1009,17 @@ private theorem rReadyFromGroundState
         head.arguments = [] ∧
         head.result = resultAtom ∧
         head.executableRest = [] := by
-  let head : NestedCallHead state :=
-    { predicate := "r"
-      referencePayload := [resultTerm]
-      referenceRest := []
-      arguments := []
-      result := resultAtom
-      executableRest := []
-      referenceHead := referenceHead
-      executableHead := executableHead }
+  let head := groundCallHead state "r" referenceHead executableHead
   have openedSingleton :
       (openedFor state.index.session "r" [resultTerm]
         state.index.current).cursor.remaining = [rPreparedBranch] := by
-    rw [currentNil]
-    change
-      (prepareCall state.index.session.resolver
-        (requestFor "r" [resultTerm] [])).1.remaining = [rPreparedBranch]
-    simp only [prepareCall, requestFor]
-    rw [databaseExact, nextFreshZero]
-    change
-      (reserveVisible referenceDatabase.generation [resultTerm] [] 0
-        (referenceDatabase.visibleClausesAt referenceDatabase.generation
-          "r" 1)).1 = [rPreparedBranch]
+    apply groundCall_opened_of_reservation state "r" referenceDatabase rPreparedBranch
+      currentNil databaseExact nextFreshZero
     rw [rVisibleClauses]
     rfl
   refine ⟨head, ?_, rfl, rfl, rfl, rfl, rfl, rfl⟩
-  refine
-    { toNestedCallOperationalReady :=
-        { exactFresh := freshExact
-          indexReady := ?_
-          below := below
-          candidateSupported := ?_
-          sourceNonempty := ?_
-          scanNonempty := ?_
-          selected := ?_
-          notThrow := ?_
-          notDatabase := ?_ }
-      payloadSupported := ?_ }
+  refine groundCall_ready state head freshExact supportNil below ?_ ?_ ?_ ?_
+    openedSingleton rPreparedBranch_resolves_empty ?_ ?_ ?_
   · rw [worldExact]
     rfl
   · change
@@ -1055,23 +1048,6 @@ private theorem rReadyFromGroundState
       rfl
     simp [resolveAlts, rExecutableClause, resultAtom, argumentsMatch,
       resultMatch]
-  · intro count finish branch clause branchTail clauseTail altTail copied
-      pulls frontier
-    have finishNonempty : finish.remaining ≠ [] := by
-      rw [frontier.finishRemaining]
-      simp
-    have pathExact :=
-      _root_.Mettapedia.Languages.MeTTa.PLeaTTa.PrologNestedCallReadyBridge.RejectedPullsN.eq_zero_of_singleton_of_finish_nonempty
-        openedSingleton pulls finishNonempty
-    have branchExact : branch = rPreparedBranch := by
-      have remaining := frontier.finishRemaining
-      rw [pathExact.2, openedSingleton] at remaining
-      exact (List.cons.inj remaining).1.symm
-    refine ⟨[], ?_, ?_⟩
-    · simpa [branchExact] using rPreparedBranch_resolves_empty
-    · rw [supportNil]
-      intro identity name member
-      simp at member
   · simp [head, BuiltinThrowCall]
   · rfl
   · simpa [alphaNil, supportNil] using groundPayloadSupported
@@ -2028,15 +2004,7 @@ private theorem siblingQReadyAfterP
       rootSourceSteps, rootFineSteps, representative,
       representativeCarrier, materializedHeads⟩ :=
     siblingPActive (prog := prog) (gt := gt)
-  let head : NestedCallHead state :=
-    { predicate := "q"
-      referencePayload := [resultTerm]
-      referenceRest := []
-      arguments := []
-      result := resultAtom
-      executableRest := []
-      referenceHead := referenceHead
-      executableHead := executableHead }
+  let head := groundCallHead state "q" referenceHead executableHead
   have headMaterialized :
       MaterializedCallAgreesWith state.index.alpha state.index.current
         head.referencePayload
@@ -2047,18 +2015,8 @@ private theorem siblingQReadyAfterP
   have openedSingleton :
       (openedFor state.index.session "q" [resultTerm]
         state.index.current).cursor.remaining = [siblingQPreparedBranch] := by
-    rw [currentNil]
-    change
-      (prepareCall state.index.session.resolver
-        (requestFor "q" [resultTerm] [])).1.remaining =
-          [siblingQPreparedBranch]
-    simp only [prepareCall, requestFor]
-    rw [databaseExact, nextFreshZero]
-    change
-      (reserveVisible siblingReferenceDatabase.generation [resultTerm] [] 0
-        (siblingReferenceDatabase.visibleClausesAt
-          siblingReferenceDatabase.generation "q" 1)).1 =
-        [siblingQPreparedBranch]
+    apply groundCall_opened_of_reservation state "q" siblingReferenceDatabase siblingQPreparedBranch
+      currentNil databaseExact nextFreshZero
     rw [siblingQVisibleClauses]
     rfl
   refine
@@ -2069,18 +2027,8 @@ private theorem siblingQReadyAfterP
       rootSourceSteps, rootFineSteps,
       ⟨representative, representativeCarrier, headMaterialized⟩,
       ⟨siblingQPreparedBranch, openedSingleton⟩⟩
-  refine
-    { toNestedCallOperationalReady :=
-        { exactFresh := freshExact
-          indexReady := ?_
-          below := below
-          candidateSupported := ?_
-          sourceNonempty := ?_
-          scanNonempty := ?_
-          selected := ?_
-          notThrow := ?_
-          notDatabase := ?_ }
-      payloadSupported := ?_ }
+  refine groundCall_ready state head freshExact supportNil below ?_ ?_ ?_ ?_
+    openedSingleton siblingQPreparedBranch_resolves_empty ?_ ?_ ?_
   · rw [worldExact]
     rfl
   · change
@@ -2109,23 +2057,6 @@ private theorem siblingQReadyAfterP
       rfl
     simp [resolveAlts, qExecutableClause, resultAtom, argumentsMatch,
       resultMatch]
-  · intro count finish branch clause branchTail clauseTail altTail copied
-      pulls frontier
-    have finishNonempty : finish.remaining ≠ [] := by
-      rw [frontier.finishRemaining]
-      simp
-    have pathExact :=
-      _root_.Mettapedia.Languages.MeTTa.PLeaTTa.PrologNestedCallReadyBridge.RejectedPullsN.eq_zero_of_singleton_of_finish_nonempty
-        openedSingleton pulls finishNonempty
-    have branchExact : branch = siblingQPreparedBranch := by
-      have remaining := frontier.finishRemaining
-      rw [pathExact.2, openedSingleton] at remaining
-      exact (List.cons.inj remaining).1.symm
-    refine ⟨[], ?_, ?_⟩
-    · simpa [branchExact] using siblingQPreparedBranch_resolves_empty
-    · rw [supportNil]
-      intro identity name member
-      simp at member
   · simp [head, BuiltinThrowCall]
   · rfl
   · simpa [alphaNil, supportNil] using groundPayloadSupported
@@ -2155,45 +2086,17 @@ private theorem siblingRReadyFromGroundState
         head.arguments = [] ∧
         head.result = resultAtom ∧
         head.executableRest = [] := by
-  let head : NestedCallHead state :=
-    { predicate := "r"
-      referencePayload := [resultTerm]
-      referenceRest := []
-      arguments := []
-      result := resultAtom
-      executableRest := []
-      referenceHead := referenceHead
-      executableHead := executableHead }
+  let head := groundCallHead state "r" referenceHead executableHead
   have openedSingleton :
       (openedFor state.index.session "r" [resultTerm]
         state.index.current).cursor.remaining = [siblingRPreparedBranch] := by
-    rw [currentNil]
-    change
-      (prepareCall state.index.session.resolver
-        (requestFor "r" [resultTerm] [])).1.remaining =
-          [siblingRPreparedBranch]
-    simp only [prepareCall, requestFor]
-    rw [databaseExact, nextFreshZero]
-    change
-      (reserveVisible siblingReferenceDatabase.generation [resultTerm] [] 0
-        (siblingReferenceDatabase.visibleClausesAt
-          siblingReferenceDatabase.generation "r" 1)).1 =
-        [siblingRPreparedBranch]
+    apply groundCall_opened_of_reservation state "r" siblingReferenceDatabase siblingRPreparedBranch
+      currentNil databaseExact nextFreshZero
     rw [siblingRVisibleClauses]
     rfl
   refine ⟨head, ?_, rfl, rfl, rfl, rfl, rfl, rfl⟩
-  refine
-    { toNestedCallOperationalReady :=
-        { exactFresh := freshExact
-          indexReady := ?_
-          below := below
-          candidateSupported := ?_
-          sourceNonempty := ?_
-          scanNonempty := ?_
-          selected := ?_
-          notThrow := ?_
-          notDatabase := ?_ }
-      payloadSupported := ?_ }
+  refine groundCall_ready state head freshExact supportNil below ?_ ?_ ?_ ?_
+    openedSingleton siblingRPreparedBranch_resolves_empty ?_ ?_ ?_
   · rw [worldExact]
     rfl
   · change
@@ -2222,23 +2125,6 @@ private theorem siblingRReadyFromGroundState
       rfl
     simp [resolveAlts, rExecutableClause, resultAtom, argumentsMatch,
       resultMatch]
-  · intro count finish branch clause branchTail clauseTail altTail copied
-      pulls frontier
-    have finishNonempty : finish.remaining ≠ [] := by
-      rw [frontier.finishRemaining]
-      simp
-    have pathExact :=
-      _root_.Mettapedia.Languages.MeTTa.PLeaTTa.PrologNestedCallReadyBridge.RejectedPullsN.eq_zero_of_singleton_of_finish_nonempty
-        openedSingleton pulls finishNonempty
-    have branchExact : branch = siblingRPreparedBranch := by
-      have remaining := frontier.finishRemaining
-      rw [pathExact.2, openedSingleton] at remaining
-      exact (List.cons.inj remaining).1.symm
-    refine ⟨[], ?_, ?_⟩
-    · simpa [branchExact] using siblingRPreparedBranch_resolves_empty
-    · rw [supportNil]
-      intro identity name member
-      simp at member
   · simp [head, BuiltinThrowCall]
   · rfl
   · simpa [alphaNil, supportNil] using groundPayloadSupported

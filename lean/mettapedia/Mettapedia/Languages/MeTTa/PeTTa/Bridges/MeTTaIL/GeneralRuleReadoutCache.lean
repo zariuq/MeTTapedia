@@ -1,3 +1,5 @@
+import Mettapedia.Languages.MeTTa.PeTTa.BridgeTransport
+import Mettapedia.Languages.MeTTa.PeTTa.AppendAgreement
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.GeneralRuleJobExecution
 import Mettapedia.OSLF.MeTTaIL.GeneralRuleJobReadoutCache
 import Mettapedia.Languages.MeTTa.PeTTa.OperationalGSLT
@@ -119,24 +121,7 @@ private theorem helper_capture (helper : Helper) (caller : Subst) (state : State
 
 private theorem original_append_agreement :
     ProgramAgreementOn ScopedRuleJobReadoutExecution.executionHeads RuleExecutionProgram.scopedProgram runtime := by
-  apply appended_program_agreement
-  · intro equation member
-    have checked : source.program.equations.all (fun equation =>
-        !ScopedRuleJobReadoutExecution.executionHeads equation.head) = true := by decide +kernel
-    have row := List.all_eq_true.mp checked equation member
-    cases supported : ScopedRuleJobReadoutExecution.executionHeads equation.head with
-    | false => rfl
-    | true => simp [supported] at row
-  · intro name types member
-    have checked : source.program.declarations.all (fun declaration => match declaration with
-        | .expression [.symbol ":", .symbol head, .expression (.symbol "->" :: _)] =>
-            !ScopedRuleJobReadoutExecution.executionHeads head
-        | _ => true) = true := by decide +kernel
-    have row := List.all_eq_true.mp checked
-      (.expression [.symbol ":", .symbol name, .expression (.symbol "->" :: types)]) member
-    cases supported : ScopedRuleJobReadoutExecution.executionHeads name with
-    | false => rfl
-    | true => simp [supported] at row
+  exact appended_program_agreement_of_all _ _ _ (by decide +kernel) (by decide +kernel)
 
 theorem original_readout_agreement :
     ProgramAgreementOn ScopedRuleJobReadoutExecution.executionHeads ScopedRuleJobReadoutExecution.runtime runtime := by
@@ -796,13 +781,7 @@ def executionHeadNames : List String :=
 def executionHeads (head : String) : Bool := executionHeadNames.contains head
 
 theorem runtime_closed : ProgramClosed executionHeads runtime := by
-  constructor
-  · decide +kernel
-  · intro equation member supported
-    have checked : runtime.equations.all (fun equation =>
-        !executionHeads equation.head || codeWithin executionHeads equation.body) = true := by decide +kernel
-    have row := List.all_eq_true.mp checked equation member
-    simpa only [supported, Bool.not_true, Bool.false_or] using row
+  exact BridgeKit.closed_of_all _ _ (by decide +kernel) (by decide +kernel)
 
 theorem job_readouts_captured_variables_returns_in_extension (targetProgram : Program)
     (agreement : ProgramAgreementOn executionHeads runtime targetProgram)

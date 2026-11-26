@@ -847,7 +847,8 @@ theorem cicStage3Type0Type0ExactConditionalNatFrontier :
         HasTypeDecl natRecDeclEnv natRecSuccOpenCtx natRecSuccOpenSource A ∧
         HasTypeDecl natRecDeclEnv natRecSuccOpenCtx natRecSuccOpenTarget A := by
   rcases cicStage3Type0Type0ExactConditionalFrontierPackage with hUnit | hNat
-  · simp [natRecContract, natRecName, unitRecName] at hUnit
+  · have different : natRecContract.recursorName ≠ unitRecName := by decide +kernel
+    exact (not_closedUnitBoundary_of_name_ne different hUnit).elim
   · exact hNat
 
 theorem cicStage3Type0Type0ExactResolvedFrontierPackage :
@@ -959,7 +960,8 @@ theorem CicStage3MaxTypeTypeFrontier.exact_conditional_nat_frontier
         HasTypeDecl natRecDeclEnv natRecSuccOpenCtx natRecSuccOpenSource A ∧
         HasTypeDecl natRecDeclEnv natRecSuccOpenCtx natRecSuccOpenTarget A := by
   rcases frontier.exact_conditional_frontier_package with hUnit | hNat
-  · simp [natRecContract, natRecName, unitRecName] at hUnit
+  · have different : natRecContract.recursorName ≠ unitRecName := by decide +kernel
+    exact (not_closedUnitBoundary_of_name_ne different hUnit).elim
   · exact hNat
 
 theorem CicStage3MaxTypeTypeFrontier.exact_resolved_nat_frontier
@@ -4296,7 +4298,8 @@ theorem CicStage3HostedMetatheoryTheoremSlice.max_type0_type0_conditional_fronti
         HasTypeDecl natRecDeclEnv natRecSuccOpenCtx natRecSuccOpenSource A ∧
         HasTypeDecl natRecDeclEnv natRecSuccOpenCtx natRecSuccOpenTarget A := by
   rcases slice.max_type0_type0_exact_conditional_frontier_package with hUnit | hNat
-  · simp [natRecContract, natRecName, unitRecName] at hUnit
+  · have different : natRecContract.recursorName ≠ unitRecName := by decide +kernel
+    exact (not_closedUnitBoundary_of_name_ne different hUnit).elim
   · exact ⟨slice.max_type0_type0_conditional_frontier, hNat⟩
 
 theorem CicStage3HostedMetatheoryTheoremSlice.max_type0_type0_resolved_frontier_and_nat_limitation

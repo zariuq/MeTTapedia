@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentGeneralPatternRefutation
 
 /-!
@@ -322,9 +323,7 @@ end Normality
 section NormalSolutions
 
 variable {Head L : Type} [UniverseLevel.LevelOrder L] {S : Setting Head L}
-variable (normalizes : ∀ {Θ : Context S.R} {type : TypeOver Θ} (term : Term Θ type),
-  ∃ code : Tm Head Θ.arity, ContextualDependentNormalChecking.Normal (S := S) code ∧
-    Equal S.R Θ.raw term.code code type.code)
+variable (normalizes : SolverPremises.HasNormalForms S)
 
 include normalizes in
 /-- Every solution is typed-equal to one whose components are normal. -/
@@ -352,9 +351,7 @@ section RigidRefutation
 
 variable {Head L : Type} [UniverseLevel.LevelOrder L] {S : Setting Head L}
 variable (rigid : ∀ name, S.roles name = .rigid) (complete : AlgorithmicComplete S.R S.roles)
-variable (normalizes : ∀ {Θ : Context S.R} {type : TypeOver Θ} (term : Term Θ type),
-  ∃ code : Tm Head Θ.arity, ContextualDependentNormalChecking.Normal (S := S) code ∧
-    Equal S.R Θ.raw term.code code type.code)
+variable (normalizes : SolverPremises.HasNormalForms S)
 
 /-- The outer variables of a local telescope are the flexible ones. -/
 def outerFlexible {Γ : Context S.R} {scopeType : TypeOver Γ} (scope : Spine scopeType) :

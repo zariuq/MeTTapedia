@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.PeTTa.EquationEquality
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CompleteExecution.Canonical
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CompleteExecution.QuoteDropNormal
 import Mettapedia.OSLF.MeTTaIL.WrapperLaws
@@ -43,20 +44,8 @@ private def scopedFinishProofHeads (head : String) : Bool :=
 
 private theorem scopedFinishProof_checked : scopedFinishProofLibrary.check = true := by decide +kernel
 
-private local instance finishEquationEq : DecidableEq SpaceSemantics.Equation := by
-  intro left right
-  apply decidable_of_iff (left.head = right.head ∧ left.arguments = right.arguments ∧ left.body = right.body)
-  constructor
-  · rintro ⟨head, arguments, body⟩
-    cases left
-    cases right
-    cases head
-    cases arguments
-    cases body
-    rfl
-  · intro same
-    cases same
-    exact ⟨rfl, rfl, rfl⟩
+private local instance finishEquationEq : DecidableEq SpaceSemantics.Equation :=
+  SpaceSemantics.Equation.decideEq
 
 private theorem scopedFinishProof_agreement : ProgramAgreementOn scopedFinishProofHeads
     scopedFinishProofLibrary.runtime scopedLibrary.runtime := by

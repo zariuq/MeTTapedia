@@ -163,6 +163,191 @@ theorem tuplePrepend_erase (head : Entry.Value) {r : Result} {children : List En
   simp only [Entry.Value.erase, Atom.expression.injEq] at erased ⊢
   rw [List.map_cons, erased]
 
+section Traversal
+
+variable {path : HEConfig → HEConfig → Prop}
+
+/-- Evaluating an argument returns an ordered batch in the incoming continuation.
+The run relation supplies the admissible transitions between the actual configurations. -/
+abbrev ArgumentRuns (path : HEConfig → HEConfig → Prop) (atoms : List Atom)
+    (demand : Atom) (value : Entry.Value) (answers : List Atom) : Prop :=
+  ∀ (live : List Atom) (scope : List String) (activation : Frame) (stack : List Continuation)
+    (emitted : List Result),
+    ∃ results : List Result, results.map (fun result => result.1.erase) = answers ∧
+      path ⟨Space.ofList atoms, .work (.atom live scope value demand activation), stack, emitted⟩
+        ⟨Space.ofList atoms, .returning results, stack, emitted⟩
+
+/-- A query runs on every contextual presentation of the call, returning its ordered batch. -/
+abbrev QueryRuns (path : HEConfig → HEConfig → Prop) (atoms : List Atom)
+    (demand : Atom) (f : String) (vals answers : List Atom) : Prop :=
+  ∀ (live : List Atom) (scope : List String) (activation : Frame) (value : Entry.Value),
+    value.erase = .expression (.symbol f :: vals) → ∀ (stack : List Continuation)
+      (emitted : List Result), ∃ results : List Result,
+        results.map (fun result => result.1.erase) = answers ∧
+        path ⟨Space.ofList atoms, .work (.call live scope value demand activation), stack, emitted⟩
+          ⟨Space.ofList atoms, .returning results, stack, emitted⟩
+
+/-- The continuation traverses heads in order. Every recursive tail starts in the frame
+attached to its head result and the composition retains all list occurrences. -/
+theorem branches_loop_of_steps
+    (compose : ∀ {a b c : HEConfig}, path a b → path b c → path a c)
+    (step : ∀ {a b : HEConfig}, HEStep dispatch lookup policy a b → path a b)
+    (atoms : List Atom) {live : List Atom} {scope : List String}
+    {tail : List Entry.Value} {Ts : List (List Atom)}
+    (tailRuns : ∀ (live' : List Atom) (activation : Frame) (stack : List Continuation)
+      (emitted : List Result), ∃ R : List Result,
+        R.map (fun r => r.1.erase) = Ts.map Atom.expression ∧
+        (∀ r ∈ R, ∃ children, r.1 = .expression .active children) ∧
+        path
+          ⟨Space.ofList atoms, .work (.tuple live' scope tail activation), stack, emitted⟩
+          ⟨Space.ofList atoms, .returning R, stack, emitted⟩)
+    (tailClean : ∀ c ∈ Ts, ∃ c0 cs, c = c0 :: cs ∧ Answerable c0) :
+    ∀ (heads : List Result), (∀ h ∈ heads, Answerable h.1.erase) →
+      ∀ (stack : List Continuation) (emitted : List Result), ∃ R : List Result,
+        R.map (fun r => r.1.erase) =
+          heads.flatMap (fun h => Ts.map fun c => Atom.expression (h.1.erase :: c)) ∧
+        (∀ r ∈ R, ∃ children, r.1 = .expression .active children) ∧
+        path
+          ⟨Space.ofList atoms, .work (.branches live scope tail heads), stack, emitted⟩
+          ⟨Space.ofList atoms, .returning R, stack, emitted⟩
+  | [], _, stack, emitted => ⟨[], rfl, (fun _ member => by cases member),
+      step (.internal .branchesNil)⟩
+  | h :: hs, clean, stack, emitted => by
+      have hClean := clean h List.mem_cons_self
+      obtain ⟨Rt, eraseRt, shapeRt, pathRt⟩ := tailRuns (h.1.erase :: live) h.2
+        (.tupleTail h.1 :: .append (.branches live scope tail hs) :: stack) emitted
+      have pointwise : ∀ r ∈ Rt, (∃ children,
+            (Completed.tuplePrepend h.1 r).1 = .expression .active children) ∧
+          (Completed.tuplePrepend h.1 r).1.erase = prependAtom h.1.erase r.1.erase := by
+        intro r member
+        obtain ⟨children, shape⟩ := shapeRt r member
+        have inTs : r.1.erase ∈ Ts.map Atom.expression := by
+          rw [← eraseRt]
+          exact List.mem_map.mpr ⟨r, member, rfl⟩
+        obtain ⟨c, cMem, cEq⟩ := List.mem_map.mp inTs
+        obtain ⟨c0, cs, rfl, clean0⟩ := tailClean c cMem
+        have result := tuplePrepend_erase h.1 shape cEq.symm clean0
+        refine ⟨⟨_, result.1⟩, ?_⟩
+        rw [result.2, ← cEq]
+        rfl
+      obtain ⟨Rh, eraseRh, shapeRh, pathRh⟩ := branches_loop_of_steps compose step atoms tailRuns tailClean hs
+        (fun x member => clean x (List.mem_cons_of_mem _ member))
+        (.prepend (Rt.map (Completed.tuplePrepend h.1)) :: stack) emitted
+      refine ⟨Rt.map (Completed.tuplePrepend h.1) ++ Rh, ?_, ?_, ?_⟩
+      · rw [List.map_append, eraseRh, List.flatMap_cons, List.map_map]
+        congr 1
+        have mapped : (Rt.map ((fun r : Result => r.1.erase) ∘ Completed.tuplePrepend h.1)) =
+            (Rt.map fun r => r.1.erase).map (prependAtom h.1.erase) := by
+          rw [List.map_map]
+          apply List.map_congr_left
+          intro r member
+          exact (pointwise r member).2
+        rw [mapped, eraseRt, List.map_map]
+        rfl
+      · intro r member
+        rcases List.mem_append.mp member with inPrepended | inRest
+        · obtain ⟨r', member', rfl⟩ := List.mem_map.mp inPrepended
+          exact (pointwise r' member').1
+        · exact shapeRh r inRest
+      · refine compose (step (.internal (.branchesContinue hClean.notStopped))) ?_
+        refine compose pathRt ?_
+        refine compose (step (.internal .tupleTail)) ?_
+        refine compose (step (.internal .append)) ?_
+        refine compose pathRh ?_
+        exact step (.internal .prepend)
+
+/-- The tuple product uses the same continuation steps for any run relation containing the
+contextual steps. The argument runs can use the relation's additional transitions. -/
+theorem tuple_product_of_steps
+    (compose : ∀ {a b c : HEConfig}, path a b → path b c → path a c)
+    (step : ∀ {a b : HEConfig}, HEStep dispatch lookup policy a b → path a b)
+    (atoms : List Atom) :
+    ∀ (vs : List Entry.Value) (Ls : List (List Atom)), vs ≠ [] →
+      List.Forall₂ (fun v L => ArgumentRuns path atoms Atom.undefinedType v L ∧
+        ∀ a ∈ L, Answerable a) vs Ls →
+      ∀ (live : List Atom) (scope : List String) (activation : Frame) (stack : List Continuation)
+        (emitted : List Result), ∃ R : List Result,
+          R.map (fun r => r.1.erase) = (combos Ls).map Atom.expression ∧
+          (∀ r ∈ R, ∃ children, r.1 = .expression .active children) ∧
+          path
+            ⟨Space.ofList atoms, .work (.tuple live scope vs activation), stack, emitted⟩
+            ⟨Space.ofList atoms, .returning R, stack, emitted⟩
+  | [], _, nonempty, _ => absurd rfl nonempty
+  | [v], Ls, _, related => by
+      intro live scope activation stack emitted
+      cases related with
+      | cons here rest =>
+          rename_i L Ls'
+          cases rest
+          obtain ⟨R, eraseR, argumentPath⟩ := here.1 live scope activation (.singleton :: stack) emitted
+          have clean := HENested.clean_of_erase eraseR here.2
+          have singled : ∀ r ∈ R, Completed.tupleSingleton r = (.expression .active [r.1], r.2) := by
+            intro r member
+            unfold Completed.tupleSingleton
+            rw [HENested.emptyOrError_false (clean r member)]
+            rfl
+          refine ⟨R.map Completed.tupleSingleton, ?_, ?_, ?_⟩
+          · rw [List.map_map]
+            have mapped : R.map ((fun r : Result => r.1.erase) ∘ Completed.tupleSingleton) =
+                (R.map fun r => r.1.erase).map fun a => Atom.expression [a] := by
+              rw [List.map_map]
+              apply List.map_congr_left
+              intro r member
+              simp only [Function.comp_apply, singled r member, Entry.Value.erase, List.map_cons,
+                List.map_nil]
+            rw [mapped, eraseR, combos_singleton, List.map_map]
+            rfl
+          · intro r member
+            obtain ⟨r', member', rfl⟩ := List.mem_map.mp member
+            exact ⟨_, by rw [singled r' member']⟩
+          · refine compose (step (.internal .tupleSingleton)) ?_
+            refine compose argumentPath ?_
+            exact step (.internal .singleton)
+  | v :: v2 :: rest, Ls, _, related => by
+      intro live scope activation stack emitted
+      cases related with
+      | cons here later =>
+          rename_i L Ls'
+          obtain ⟨R, eraseR, argumentPath⟩ := here.1 _ scope activation
+            (.branches live scope (v2 :: rest) :: stack) emitted
+          have clean := HENested.clean_of_erase eraseR here.2
+          have tailRuns := tuple_product_of_steps compose step atoms (v2 :: rest) Ls' (List.cons_ne_nil _ _) later
+          have tailClean : ∀ c ∈ combos Ls', ∃ c0 cs, c = c0 :: cs ∧ Answerable c0 := by
+            intro c member
+            have lengths := combos_length member
+            have positive : Ls'.length = (v2 :: rest).length := (List.Forall₂.length_eq later).symm
+            obtain ⟨c0, cs, rfl⟩ : ∃ c0 cs, c = c0 :: cs := by
+              cases c with
+              | nil =>
+                  simp only [List.length_nil] at lengths
+                  simp only [List.length_cons] at positive
+                  omega
+              | cons c0 cs => exact ⟨c0, cs, rfl⟩
+            refine ⟨c0, cs, rfl, ?_⟩
+            have allClean : ∀ L' ∈ Ls', ∀ a ∈ L', Answerable a := by
+              intro L' member' a inside
+              obtain ⟨t', both⟩ := forall₂_right_exists later L' member'
+              exact both.2 a inside
+            exact combos_answerable allClean _ member c0 List.mem_cons_self
+          obtain ⟨R', eraseR', shapeR', loop⟩ := branches_loop_of_steps (path := path) compose step atoms (live := live)
+            (fun live' activation' stack' emitted' => tailRuns live' scope activation' stack' emitted')
+            tailClean R clean stack emitted
+          refine ⟨R', ?_, shapeR', ?_⟩
+          · rw [eraseR']
+            have flat : R.flatMap (fun h => (combos Ls').map fun c => Atom.expression (h.1.erase :: c)) =
+                (R.map fun h => h.1.erase).flatMap
+                  (fun a => (combos Ls').map fun c => Atom.expression (a :: c)) := by
+              rw [List.flatMap_map]
+            rw [flat, eraseR]
+            simp only [combos, List.map_flatMap, List.map_map]
+            rfl
+          · refine compose (step (.internal .tupleCons)) ?_
+            refine compose argumentPath ?_
+            refine compose (step (.internal .branches)) ?_
+            exact loop
+
+end Traversal
+
 /-- **The branches of a tuple's head**: for each answer of the head, in order, the rest of the tuple
 is evaluated under that answer's activation, and the head is prepended to every combination. -/
 theorem branches_loop (atoms : List Atom) {live : List Atom} {scope : List String}
@@ -182,52 +367,9 @@ theorem branches_loop (atoms : List Atom) {live : List Atom} {scope : List Strin
         (∀ r ∈ R, ∃ children, r.1 = .expression .active children) ∧
         Relation.ReflTransGen (HEStep dispatch lookup policy)
           ⟨Space.ofList atoms, .work (.branches live scope tail heads), stack, emitted⟩
-          ⟨Space.ofList atoms, .returning R, stack, emitted⟩
-  | [], _, stack, emitted => ⟨[], rfl, (fun _ member => by cases member),
-      .single (.internal .branchesNil)⟩
-  | h :: hs, clean, stack, emitted => by
-      have hClean := clean h List.mem_cons_self
-      obtain ⟨Rt, eraseRt, shapeRt, pathRt⟩ := tailRuns (h.1.erase :: live) h.2
-        (.tupleTail h.1 :: .append (.branches live scope tail hs) :: stack) emitted
-      have pointwise : ∀ r ∈ Rt, (∃ children,
-            (Completed.tuplePrepend h.1 r).1 = .expression .active children) ∧
-          (Completed.tuplePrepend h.1 r).1.erase = prependAtom h.1.erase r.1.erase := by
-        intro r member
-        obtain ⟨children, shape⟩ := shapeRt r member
-        have inTs : r.1.erase ∈ Ts.map Atom.expression := by
-          rw [← eraseRt]
-          exact List.mem_map.mpr ⟨r, member, rfl⟩
-        obtain ⟨c, cMem, cEq⟩ := List.mem_map.mp inTs
-        obtain ⟨c0, cs, rfl, clean0⟩ := tailClean c cMem
-        have result := tuplePrepend_erase h.1 shape cEq.symm clean0
-        refine ⟨⟨_, result.1⟩, ?_⟩
-        rw [result.2, ← cEq]
-        rfl
-      obtain ⟨Rh, eraseRh, shapeRh, pathRh⟩ := branches_loop atoms tailRuns tailClean hs
-        (fun x member => clean x (List.mem_cons_of_mem _ member))
-        (.prepend (Rt.map (Completed.tuplePrepend h.1)) :: stack) emitted
-      refine ⟨Rt.map (Completed.tuplePrepend h.1) ++ Rh, ?_, ?_, ?_⟩
-      · rw [List.map_append, eraseRh, List.flatMap_cons, List.map_map]
-        congr 1
-        have mapped : (Rt.map ((fun r : Result => r.1.erase) ∘ Completed.tuplePrepend h.1)) =
-            (Rt.map fun r => r.1.erase).map (prependAtom h.1.erase) := by
-          rw [List.map_map]
-          apply List.map_congr_left
-          intro r member
-          exact (pointwise r member).2
-        rw [mapped, eraseRt, List.map_map]
-        rfl
-      · intro r member
-        rcases List.mem_append.mp member with inPrepended | inRest
-        · obtain ⟨r', member', rfl⟩ := List.mem_map.mp inPrepended
-          exact (pointwise r' member').1
-        · exact shapeRh r inRest
-      · refine .head (.internal (.branchesContinue hClean.notStopped)) ?_
-        refine .trans pathRt ?_
-        refine .head (.internal .tupleTail) ?_
-        refine .head (.internal .append) ?_
-        refine .trans pathRh ?_
-        exact .single (.internal .prepend)
+          ⟨Space.ofList atoms, .returning R, stack, emitted⟩ :=
+  branches_loop_of_steps (dispatch := dispatch) (lookup := lookup) (policy := policy)
+    (path := Relation.ReflTransGen (HEStep dispatch lookup policy)) Relation.ReflTransGen.trans Relation.ReflTransGen.single atoms tailRuns tailClean
 
 /-- **HE's tuple traversal of nested arguments**: every element is evaluated to its answers, and
 the tuple returns every combination in one batch, the first element varying slowest. -/
@@ -242,85 +384,48 @@ theorem tuple_product (atoms : List Atom) :
           Relation.ReflTransGen (HEStep dispatch lookup policy)
             ⟨Space.ofList atoms, .work (.tuple live scope (ts.map Entry.Value.ofAtom) activation),
               stack, emitted⟩
-            ⟨Space.ofList atoms, .returning R, stack, emitted⟩
-  | [], _, nonempty, _ => absurd rfl nonempty
-  | [t], Ls, _, related => by
-      intro live scope activation stack emitted
-      cases related with
-      | cons here rest =>
-          rename_i L Ls'
-          cases rest
-          obtain ⟨R, eraseR, path⟩ := here.1 live scope activation (.singleton :: stack) emitted
-          have clean := clean_of_erase eraseR here.2
-          have singled : ∀ r ∈ R, Completed.tupleSingleton r = (.expression .active [r.1], r.2) := by
-            intro r member
-            unfold Completed.tupleSingleton
-            rw [emptyOrError_false (clean r member)]
-            rfl
-          refine ⟨R.map Completed.tupleSingleton, ?_, ?_, ?_⟩
-          · rw [List.map_map]
-            have mapped : R.map ((fun r : Result => r.1.erase) ∘ Completed.tupleSingleton) =
-                (R.map fun r => r.1.erase).map fun a => Atom.expression [a] := by
-              rw [List.map_map]
-              apply List.map_congr_left
-              intro r member
-              simp only [Function.comp_apply, singled r member, Entry.Value.erase, List.map_cons,
-                List.map_nil]
-            rw [mapped, eraseR, combos_singleton, List.map_map]
-            rfl
-          · intro r member
-            obtain ⟨r', member', rfl⟩ := List.mem_map.mp member
-            exact ⟨_, by rw [singled r' member']⟩
-          · refine .head (.internal .tupleSingleton) ?_
-            refine .trans path ?_
-            exact .single (.internal .singleton)
-  | t :: t2 :: rest, Ls, _, related => by
-      intro live scope activation stack emitted
-      cases related with
-      | cons here later =>
-          rename_i L Ls'
-          obtain ⟨R, eraseR, path⟩ := here.1 _ scope activation
-            (.branches live scope ((t2 :: rest).map Entry.Value.ofAtom) :: stack) emitted
-          have clean := clean_of_erase eraseR here.2
-          have tailRuns := tuple_product atoms (t2 :: rest) Ls' (List.cons_ne_nil _ _) later
-          have tailClean : ∀ c ∈ combos Ls', ∃ c0 cs, c = c0 :: cs ∧ Answerable c0 := by
-            intro c member
-            have lengths := combos_length member
-            have positive : Ls'.length = (t2 :: rest).length := (List.Forall₂.length_eq later).symm
-            obtain ⟨c0, cs, rfl⟩ : ∃ c0 cs, c = c0 :: cs := by
-              cases c with
-              | nil =>
-                  simp only [List.length_nil] at lengths
-                  simp only [List.length_cons] at positive
-                  omega
-              | cons c0 cs => exact ⟨c0, cs, rfl⟩
-            refine ⟨c0, cs, rfl, ?_⟩
-            have allClean : ∀ L' ∈ Ls', ∀ a ∈ L', Answerable a := by
-              intro L' member' a inside
-              obtain ⟨t', both⟩ := forall₂_right_exists later L' member'
-              exact both.2 a inside
-            exact combos_answerable allClean _ member c0 List.mem_cons_self
-          obtain ⟨R', eraseR', shapeR', loop⟩ := branches_loop atoms (live := live)
-            (fun live' activation' stack' emitted' => tailRuns live' scope activation' stack' emitted')
-            tailClean R clean stack emitted
-          refine ⟨R', ?_, shapeR', ?_⟩
-          · rw [eraseR']
-            have flat : R.flatMap (fun h => (combos Ls').map fun c => Atom.expression (h.1.erase :: c)) =
-                (R.map fun h => h.1.erase).flatMap
-                  (fun a => (combos Ls').map fun c => Atom.expression (a :: c)) := by
-              rw [List.flatMap_map]
-            rw [flat, eraseR]
-            simp only [combos, List.map_flatMap, List.map_map]
-            rfl
-          · refine .head (.internal .tupleCons) ?_
-            refine .trans path ?_
-            refine .head (.internal .branches) ?_
-            exact loop
+            ⟨Space.ofList atoms, .returning R, stack, emitted⟩ :=
+  fun ts Ls nonempty runs =>
+    tuple_product_of_steps (dispatch := dispatch) (lookup := lookup) (policy := policy) (path := Relation.ReflTransGen (HEStep dispatch lookup policy))
+      Relation.ReflTransGen.trans Relation.ReflTransGen.single atoms (ts.map Entry.Value.ofAtom) Ls
+      (by simpa using nonempty)
+      (List.forall₂_map_left_iff.mpr runs)
 
 /-- The arguments of a call atom. -/
 def argsOf : Atom → List Atom
   | .expression (_ :: vals) => vals
   | _ => []
+
+/-- The calls continuation concatenates one batch per row, preserving the requested type,
+the row's frame, and the original order. -/
+theorem calls_loop_of_steps {path : HEConfig → HEConfig → Prop}
+    (compose : ∀ {a b c : HEConfig}, path a b → path b c → path a c)
+    (step : ∀ {a b : HEConfig}, HEStep dispatch lookup policy a b → path a b)
+    (atoms : List Atom) (demand : Atom) {live : List Atom} {scope : List String} {f : String}
+    (Q : List Atom → List Atom) :
+    ∀ (rows : List Result),
+      (∀ r ∈ rows, ∃ vals, r.1.erase = .expression (.symbol f :: vals) ∧
+        QueryRuns path atoms demand f vals (Q vals)) →
+      ∀ (stack : List Continuation) (emitted : List Result), ∃ R : List Result,
+        R.map (fun r => r.1.erase) = rows.flatMap (fun r => Q (argsOf r.1.erase)) ∧
+        path
+          ⟨Space.ofList atoms, .work (.calls live scope demand rows), stack, emitted⟩
+          ⟨Space.ofList atoms, .returning R, stack, emitted⟩
+  | [], _, stack, emitted => ⟨[], rfl, step (.internal .callsNil)⟩
+  | r :: rs, queries, stack, emitted => by
+      obtain ⟨vals, erased, query⟩ := queries r List.mem_cons_self
+      obtain ⟨Qr, eraseQr, pathQr⟩ := query live scope r.2 r.1 erased
+        (.append (.calls live scope demand rs) :: stack) emitted
+      obtain ⟨Rs, eraseRs, pathRs⟩ := calls_loop_of_steps (path := path) compose step atoms demand (f := f) Q rs
+        (fun x member => queries x (List.mem_cons_of_mem _ member)) (.prepend Qr :: stack) emitted
+      refine ⟨Qr ++ Rs, ?_, ?_⟩
+      · rw [List.map_append, eraseQr, eraseRs, List.flatMap_cons, erased]
+        rfl
+      · refine compose (step (.internal .callsCons)) ?_
+        refine compose pathQr ?_
+        refine compose (step (.internal .append)) ?_
+        refine compose pathRs ?_
+        exact step (.internal .prepend)
 
 /-- **The calls continuation over the argument product**: each combination's call value is queried
 in turn, and the batches are concatenated in combination order. -/
@@ -333,30 +438,19 @@ theorem calls_loop (atoms : List Atom) {live : List Atom} {scope : List String} 
         R.map (fun r => r.1.erase) = rows.flatMap (fun r => Q (argsOf r.1.erase)) ∧
         Relation.ReflTransGen (HEStep dispatch lookup policy)
           ⟨Space.ofList atoms, .work (.calls live scope Atom.undefinedType rows), stack, emitted⟩
-          ⟨Space.ofList atoms, .returning R, stack, emitted⟩
-  | [], _, stack, emitted => ⟨[], rfl, .single (.internal .callsNil)⟩
-  | r :: rs, queries, stack, emitted => by
-      obtain ⟨vals, erased, query⟩ := queries r List.mem_cons_self
-      obtain ⟨Qr, eraseQr, pathQr⟩ := query live scope r.2 r.1 erased
-        (.append (.calls live scope Atom.undefinedType rs) :: stack) emitted
-      obtain ⟨Rs, eraseRs, pathRs⟩ := calls_loop atoms Q rs
-        (fun x member => queries x (List.mem_cons_of_mem _ member)) (.prepend Qr :: stack) emitted
-      refine ⟨Qr ++ Rs, ?_, ?_⟩
-      · rw [List.map_append, eraseQr, eraseRs, List.flatMap_cons, erased]
-        rfl
-      · refine .head (.internal .callsCons) ?_
-        refine .trans pathQr ?_
-        refine .head (.internal .append) ?_
-        refine .trans pathRs ?_
-        exact .single (.internal .prepend)
+          ⟨Space.ofList atoms, .returning R, stack, emitted⟩ :=
+  calls_loop_of_steps (dispatch := dispatch) (lookup := lookup) (policy := policy)
+    (path := Relation.ReflTransGen (HEStep dispatch lookup policy)) Relation.ReflTransGen.trans Relation.ReflTransGen.single atoms Atom.undefinedType Q
 
-/-- **The call's batch is published**: none of its answers is an error, so all are kept. -/
-theorem publish_step {atoms : List Atom} (c : Atom) (results : List Result)
+/-- Publication retains all results when every answer passes the success guard. -/
+theorem publish_step_of_steps {path : HEConfig → HEConfig → Prop}
+    (step : ∀ {a b : HEConfig}, HEStep dispatch lookup policy a b → path a b)
+    {atoms : List Atom} (c : Atom) (results : List Result)
     (clean : ∀ r ∈ results, Answerable r.1.erase) (stack : List Continuation)
     (emitted : List Result) :
     ∃ published : List Result,
       published.map (fun r => r.1.erase) = results.map (fun r => r.1.erase) ∧
-      Relation.ReflTransGen (HEStep dispatch lookup policy)
+      path
         ⟨Space.ofList atoms, .returning results, .publish c :: stack, emitted⟩
         ⟨Space.ofList atoms, .returning published, stack, emitted⟩ := by
   have unchanged : results.map (Completed.readResult policy) = results :=
@@ -367,7 +461,19 @@ theorem publish_step {atoms : List Atom} (c : Atom) (results : List Result)
     rw [unchanged]
     exact HERuns.success_all results fun r member => (clean r member).notError
   exact ⟨results.map (Completed.publishResult policy c), by simp [Completed.publishResult],
-    .single (.internal (.publish selected))⟩
+    step (.internal (.publish selected))⟩
+
+/-- **The call's batch is published**: none of its answers is an error, so all are kept. -/
+theorem publish_step {atoms : List Atom} (c : Atom) (results : List Result)
+    (clean : ∀ r ∈ results, Answerable r.1.erase) (stack : List Continuation)
+    (emitted : List Result) :
+    ∃ published : List Result,
+      published.map (fun r => r.1.erase) = results.map (fun r => r.1.erase) ∧
+      Relation.ReflTransGen (HEStep dispatch lookup policy)
+        ⟨Space.ofList atoms, .returning results, .publish c :: stack, emitted⟩
+        ⟨Space.ofList atoms, .returning published, stack, emitted⟩ :=
+  publish_step_of_steps (dispatch := dispatch) (lookup := lookup) (policy := policy)
+    (path := Relation.ReflTransGen (HEStep dispatch lookup policy)) Relation.ReflTransGen.single c results clean stack emitted
 
 /-- **HE evaluates a nested call**: the type-directed entry, the whole argument product, the query
 of `f` on each combination in turn, and the publication. -/

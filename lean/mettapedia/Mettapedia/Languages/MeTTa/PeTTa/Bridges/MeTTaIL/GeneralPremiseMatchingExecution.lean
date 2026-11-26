@@ -1,3 +1,5 @@
+import Mettapedia.Languages.MeTTa.PeTTa.BridgeTransport
+import Mettapedia.Languages.MeTTa.PeTTa.AppendAgreement
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.GeneralPremiseEnvironmentExecution
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.ScopedRuleInstantiationExecution
 import Mettapedia.OSLF.MeTTaIL.GeneralPremiseExecutionCoverage
@@ -2083,33 +2085,12 @@ private def MatchingTypedPrepared_preparedHeads : List String :=
 def basePreparedHead (head : String) : Bool := head != "eval" && !(MatchingTypedPrepared_preparedHeads.contains head)
 
 theorem base_prepared_closed : ProgramClosed basePreparedHead RuleExecutionProgram.program := by
-  constructor
-  · decide +kernel
-  · intro equation member supported
-    have checked : RuleExecutionProgram.program.equations.all (fun equation =>
-        !basePreparedHead equation.head || codeWithin basePreparedHead equation.body) = true := by decide +kernel
-    have row := List.all_eq_true.mp checked equation member
-    simpa only [supported, Bool.not_true, Bool.false_or] using row
+  exact BridgeKit.closed_of_all _ _ (by decide +kernel) (by decide +kernel)
 
 theorem base_prepared_agreement :
     ProgramAgreementOn basePreparedHead RuleExecutionProgram.program premiseRuntimeProgram := by
   rw [← base_append_prepared]
-  apply appended_program_agreement
-  · intro equation member
-    have checked : MatchingTypedPrepared_preparedTail.equations.all (fun equation => !basePreparedHead equation.head) = true := by decide +kernel
-    have row := List.all_eq_true.mp checked equation member
-    cases allowed : basePreparedHead equation.head with
-    | false => rfl
-    | true => simp [allowed] at row
-  · intro name types member
-    have checked : MatchingTypedPrepared_preparedTail.declarations.all (fun declaration => match declaration with
-        | .expression [.symbol ":", .symbol head, .expression (.symbol "->" :: _)] => !basePreparedHead head
-        | _ => true) = true := by decide +kernel
-    have row := List.all_eq_true.mp checked
-      (.expression [.symbol ":", .symbol name, .expression (.symbol "->" :: types)]) member
-    cases allowed : basePreparedHead name with
-    | false => rfl
-    | true => simp [allowed] at row
+  exact appended_program_agreement_of_all _ _ _ (by decide +kernel) (by decide +kernel)
 
 
 end Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.PremiseOperationsExecution.GeneralExecution.AssembledLower

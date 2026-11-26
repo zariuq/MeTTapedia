@@ -1,3 +1,5 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentRoundProofPlan
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentIntersectionGeneralAnywhere
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentEtaLongWeakening
 
@@ -267,8 +269,7 @@ def deadBinder (fuel : Nat) {Θ : Context S.R} (equation : Equation (TotalTerm �
     (openAbstraction facts roots heads algebra declared choices reducer equation.1 fuel,
       openAbstraction facts roots heads algebra declared choices reducer equation.2 fuel)
 
-variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
-  Keeps (reducer fuel term) (reducer (fuel + 1) term))
+variable (stable : SolverPremises.StableReducer (rules := S.R) reducer)
 
 include stable in
 theorem openWith_const {Θ : Context S.R} (term : TotalTerm Θ) {P : Tm Head Θ.arity} {C M : Tm Head (Θ.arity + 1)}
@@ -338,14 +339,10 @@ variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R) (heads : H
   (complete : AlgorithmicComplete S.R S.roles) (declared : DeclaredTypesFormed S.R)
   (choices : ExecutableChecking.HeadChoices S.R) (reducer : ExecutableReduction.Reducer S.R)
   (root : ExecutableReduction.RootEvaluator S.R)
-  (normalizes : ∀ {Θ : Context S.R} {type : TypeOver Θ} (term : Term Θ type),
-    ∃ code : Tm Head Θ.arity, ContextualDependentNormalChecking.Normal (S := S) code ∧
-      Equal S.R Θ.raw term.code code type.code)
-  (certifyNormal : ∀ {n : Nat} (term : Tm Head n),
-    Option (PLift (ContextualDependentNormalChecking.Normal (S := S) term)))
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
-  (rootComplete : ∀ {n : Nat} (term : Tm Head n), root term = none → ∀ target, ¬ S.R.computation.step term target)
+  (normalizes : SolverPremises.HasNormalForms S)
+  (certifyNormal : SolverPremises.NormalityCertifier S)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
+  (rootComplete : SolverPremises.CompleteRootEvaluation (rules := S.R) root)
   (strengthening : EqualStrengthening S.R)
 
 omit [DecidableEq Head] [∀ head, Decidable (S.R.isUniverse head)] [DecidableRel S.R.headEq]
@@ -435,11 +432,7 @@ theorem deadRound_eq_of_anywhere (fuel : Nat) {Θ : Context S.R} {problem : Equa
       anywhereRound facts roots heads algebra rigid complete declared choices reducer root normalizes certifyNormal
         headTypingUnique rootComplete fuel problem := by
   unfold deadRound
-  cases computed : anywhereRound facts roots heads algebra rigid complete declared choices reducer root normalizes
-      certifyNormal headTypingUnique rootComplete fuel problem with
-  | stuck => exact absurd computed moving
-  | progress update smaller => rfl
-  | refuted absent => rfl
+  keep_round_result moving
 
 /-- **Every run that the anywhere family decides, the dead-binder family decides with the same outcome.** -/
 theorem dead_run_of_anywhere (fuel rounds : Nat) {Θ : Context S.R} (problem : EquationStore (TotalTerm Θ))
@@ -458,8 +451,7 @@ theorem dead_run_of_anywhere (fuel rounds : Nat) {Θ : Context S.R} (problem : E
       reducer root normalizes certifyNormal headTypingUnique rootComplete strengthening fuel moving)
     rounds _ decided
 
-variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
-  Keeps (reducer fuel term) (reducer (fuel + 1) term))
+variable (stable : SolverPremises.StableReducer (rules := S.R) reducer)
 
 include stable in
 theorem deadAt_const {Θ : Context S.R} :

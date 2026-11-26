@@ -1,3 +1,6 @@
+import Mettapedia.GSLT.LanguageDef.BaseSortDeclarations
+import Mettapedia.GSLT.LanguageDef.BaseSortOperatorRows
+import Mettapedia.GSLT.LanguageDef.StructuralInclusion
 import Mettapedia.GSLT.LanguageDef.TptpFofDefinitionalCnfLanguageDef
 import Mettapedia.GSLT.LanguageDef.RewriteValidationCertificate
 import Mettapedia.GSLT.LanguageDef.StructuralCategory
@@ -30,7 +33,7 @@ def a (label : String) (arguments : List Pattern := []) : Pattern :=
 def v (name : String) : Pattern := .fvar name
 
 def typed (entries : List (String × String)) : List (String × TypeExpr) :=
-  entries.map fun entry => (entry.1, .base entry.2)
+  BaseSortDeclarations.context entries
 
 def ctor (label category : String) (parameters : List (String × String)) :
     GrammarRule := {
@@ -43,13 +46,8 @@ def ctor (label category : String) (parameters : List (String × String)) :
 }
 
 def mkRule (name : String) (context : List (String × String))
-    (premises : List Premise) (left right : Pattern) : RewriteRule := {
-  name
-  typeContext := typed context
-  premises
-  left
-  right
-}
+    (premises : List Premise) (left right : Pattern) : RewriteRule :=
+  BaseSortDeclarations.rule name (typed context) premises left right
 
 def congruence (source target : Pattern) : Premise :=
   .congruence source target
@@ -58,85 +56,37 @@ def indexZero : Pattern := a "tptp-fof-resolved:index-zero"
 def indexSucc (index : Pattern) : Pattern :=
   a "tptp-fof-resolved:index-succ" [index]
 
-def variablesRequest (remaining next : Pattern) : Pattern :=
-  a "tptp-fof-name:variables-request" [remaining, next]
-def variablesResult (remaining next arguments : Pattern) : Pattern :=
-  a "tptp-fof-name:variables-result" [remaining, next, arguments]
-
-def nameRequest (depth frontier source definitions introduced : Pattern) :
-    Pattern :=
-  a "tptp-fof-name:name-request"
-    [depth, frontier, source, definitions, introduced]
-def nameResult (depth frontier source root next definitions introduced :
-    Pattern) : Pattern :=
-  a "tptp-fof-name:name-result"
-    [depth, frontier, source, root, next, definitions, introduced]
-
-def reverseDefinitionsRequest (source accumulator : Pattern) : Pattern :=
-  a "tptp-fof-name:reverse-definitions-request" [source, accumulator]
-def reverseDefinitionsResult (source accumulator target : Pattern) : Pattern :=
-  a "tptp-fof-name:reverse-definitions-result"
-    [source, accumulator, target]
-def reverseIntroducedRequest (source accumulator : Pattern) : Pattern :=
-  a "tptp-fof-name:reverse-introduced-request" [source, accumulator]
-def reverseIntroducedResult (source accumulator target : Pattern) : Pattern :=
-  a "tptp-fof-name:reverse-introduced-result"
-    [source, accumulator, target]
-
-def openRequest (depth frontier source : Pattern) : Pattern :=
-  a "tptp-fof-name:open-request" [depth, frontier, source]
-def openResult (depth frontier source target : Pattern) : Pattern :=
-  a "tptp-fof-name:open-result" [depth, frontier, source, target]
-
-def operationTerms : List GrammarRule := [
-  ctor "tptp-fof-name:variables-request" "TptpFofName:VariablesResult"
-    [("remaining", "TptpResolvedFof:Index"),
-     ("next", "TptpResolvedFof:Index")],
-  ctor "tptp-fof-name:variables-result" "TptpFofName:VariablesResult"
-    [("remaining", "TptpResolvedFof:Index"),
-     ("next", "TptpResolvedFof:Index"),
-     ("arguments", "TptpFofSkolem:Terms")],
-  ctor "tptp-fof-name:name-request" "TptpFofName:NameResult"
-    [("depth", "TptpResolvedFof:Index"),
-     ("frontier", "TptpResolvedFof:Index"),
-     ("source", "TptpFofSkolem:Formula"),
-     ("definitions", "TptpFofNamed:Definitions"),
-     ("introduced", "TptpFofNamed:IntroducedList")],
-  ctor "tptp-fof-name:name-result" "TptpFofName:NameResult"
-    [("depth", "TptpResolvedFof:Index"),
-     ("frontier", "TptpResolvedFof:Index"),
-     ("source", "TptpFofSkolem:Formula"),
-     ("root", "TptpFofNamed:Reference"),
-     ("next", "TptpResolvedFof:Index"),
-     ("definitions", "TptpFofNamed:Definitions"),
-     ("introduced", "TptpFofNamed:IntroducedList")],
-  ctor "tptp-fof-name:reverse-definitions-request"
-    "TptpFofName:ReverseDefinitionsResult"
-    [("source", "TptpFofNamed:Definitions"),
-     ("accumulator", "TptpFofNamed:Definitions")],
-  ctor "tptp-fof-name:reverse-definitions-result"
-    "TptpFofName:ReverseDefinitionsResult"
-    [("source", "TptpFofNamed:Definitions"),
-     ("accumulator", "TptpFofNamed:Definitions"),
-     ("target", "TptpFofNamed:Definitions")],
-  ctor "tptp-fof-name:reverse-introduced-request"
-    "TptpFofName:ReverseIntroducedResult"
-    [("source", "TptpFofNamed:IntroducedList"),
-     ("accumulator", "TptpFofNamed:IntroducedList")],
-  ctor "tptp-fof-name:reverse-introduced-result"
-    "TptpFofName:ReverseIntroducedResult"
-    [("source", "TptpFofNamed:IntroducedList"),
-     ("accumulator", "TptpFofNamed:IntroducedList"),
-     ("target", "TptpFofNamed:IntroducedList")],
-  ctor "tptp-fof-name:open-request" "TptpFofName:OpenResult"
-    [("depth", "TptpResolvedFof:Index"),
-     ("frontier", "TptpResolvedFof:Index"),
-     ("source", "TptpFofSkolem:Formula")],
-  ctor "tptp-fof-name:open-result" "TptpFofName:OpenResult"
-    [("depth", "TptpResolvedFof:Index"),
-     ("frontier", "TptpResolvedFof:Index"),
-     ("source", "TptpFofSkolem:Formula"),
-     ("target", "TptpFofNamed:Output")]
+declare_base_sort_operators operationTerms (a, ctor) [
+  variablesRequest "tptp-fof-name:variables-request" "TptpFofName:VariablesResult"
+    [(remaining : "TptpResolvedFof:Index"), (next : "TptpResolvedFof:Index")],
+  variablesResult "tptp-fof-name:variables-result" "TptpFofName:VariablesResult"
+    [(remaining : "TptpResolvedFof:Index"), (next : "TptpResolvedFof:Index"),
+     (arguments : "TptpFofSkolem:Terms")],
+  nameRequest "tptp-fof-name:name-request" "TptpFofName:NameResult"
+    [(depth : "TptpResolvedFof:Index"), (frontier : "TptpResolvedFof:Index"),
+     (source : "TptpFofSkolem:Formula"), (definitions : "TptpFofNamed:Definitions"),
+     (introduced : "TptpFofNamed:IntroducedList")],
+  nameResult "tptp-fof-name:name-result" "TptpFofName:NameResult"
+    [(depth : "TptpResolvedFof:Index"), (frontier : "TptpResolvedFof:Index"),
+     (source : "TptpFofSkolem:Formula"), (root : "TptpFofNamed:Reference"),
+     (next : "TptpResolvedFof:Index"), (definitions : "TptpFofNamed:Definitions"),
+     (introduced : "TptpFofNamed:IntroducedList")],
+  reverseDefinitionsRequest "tptp-fof-name:reverse-definitions-request" "TptpFofName:ReverseDefinitionsResult"
+    [(source : "TptpFofNamed:Definitions"), (accumulator : "TptpFofNamed:Definitions")],
+  reverseDefinitionsResult "tptp-fof-name:reverse-definitions-result" "TptpFofName:ReverseDefinitionsResult"
+    [(source : "TptpFofNamed:Definitions"), (accumulator : "TptpFofNamed:Definitions"),
+     (target : "TptpFofNamed:Definitions")],
+  reverseIntroducedRequest "tptp-fof-name:reverse-introduced-request" "TptpFofName:ReverseIntroducedResult"
+    [(source : "TptpFofNamed:IntroducedList"), (accumulator : "TptpFofNamed:IntroducedList")],
+  reverseIntroducedResult "tptp-fof-name:reverse-introduced-result" "TptpFofName:ReverseIntroducedResult"
+    [(source : "TptpFofNamed:IntroducedList"), (accumulator : "TptpFofNamed:IntroducedList"),
+     (target : "TptpFofNamed:IntroducedList")],
+  openRequest "tptp-fof-name:open-request" "TptpFofName:OpenResult"
+    [(depth : "TptpResolvedFof:Index"), (frontier : "TptpResolvedFof:Index"),
+     (source : "TptpFofSkolem:Formula")],
+  openResult "tptp-fof-name:open-result" "TptpFofName:OpenResult"
+    [(depth : "TptpResolvedFof:Index"), (frontier : "TptpResolvedFof:Index"),
+     (source : "TptpFofSkolem:Formula"), (target : "TptpFofNamed:Output")]
 ]
 
 def variablesRewrites : List RewriteRule := [
@@ -893,22 +843,16 @@ theorem language_validate : language.validate = [] := by
 def validated : ValidatedLanguageDef := ⟨language, language_validate⟩
 
 def sourceInclusion :
-    StructuralMorphism TptpFofDefinitionalCnfLanguageDef.validated validated where
-  symbols := LanguageDefSymbolMap.id
-  mapsTypes declaration membership := by
-    rw [mapTypeDecl_id]
-    exact List.mem_append_left _ membership
-  mapsTerms declaration membership := by
-    rw [mapGrammarRule_id]
-    exact List.mem_append_left _ membership
-  mapsEquations declaration membership := by
-    change declaration ∈
-      TptpFofDefinitionalCnfLanguageDef.language.equations at membership
-    simp [TptpFofDefinitionalCnfLanguageDef.no_equations] at membership
-  mapsRewrites declaration membership := by
-    change declaration ∈
-      TptpFofDefinitionalCnfLanguageDef.language.rewrites at membership
-    simp [TptpFofDefinitionalCnfLanguageDef.no_rewrites] at membership
+    StructuralMorphism TptpFofDefinitionalCnfLanguageDef.validated validated :=
+  StructuralMorphism.ofDeclarationInclusion {
+    types := fun _ member => List.mem_append_left _ member
+    terms := fun _ member => List.mem_append_left _ member
+    equations := by
+      change TptpFofDefinitionalCnfLanguageDef.language.equations ⊆ _
+      exact TptpFofDefinitionalCnfLanguageDef.no_equations ▸ List.nil_subset _
+    rewrites := by
+      change TptpFofDefinitionalCnfLanguageDef.language.rewrites ⊆ _
+      exact TptpFofDefinitionalCnfLanguageDef.no_rewrites ▸ List.nil_subset _ }
 
 theorem language_supported : CanonicalWire.languageSupported language := by
   decide +kernel

@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentAcceptance4Under
 
 /-!
@@ -124,8 +125,7 @@ def readDead (fuel : Nat) : Nat → {Θ : Context S.R} → (equation : Equation 
 
 /-! ## Eventual constancy -/
 
-variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
-  Keeps (reducer fuel term) (reducer (fuel + 1) term))
+variable (stable : SolverPremises.StableReducer (rules := S.R) reducer)
 
 include stable in
 theorem openPairWith_const {Θ : Context S.R} (equation : Equation (TotalTerm Θ)) {P : Tm Head Θ.arity}

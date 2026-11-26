@@ -1,0 +1,66 @@
+import Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaResumptionSemantics
+import Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaStagedSemantics
+import Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaCallGrain
+import Mettapedia.Languages.Prolog.SWI.StockSnapshotObstruction
+
+open Mettapedia.Languages.MeTTa.ContextualTransform.PeTTaWorldSemantics
+
+#print axioms Trace.bind_assoc
+#print axioms Search.bind_assoc
+#print axioms DecisionStaging.refresh_capture
+#print axioms DecisionStaging.bind_revalidated_eq_live
+#print axioms line_break_invariance
+#print axioms evalForms_append
+#print axioms sequence_associative
+#print axioms inert_wrapper
+#print axioms invokeAtEntry_selected
+#print axioms compiled_stretch_after_prefix
+#print axioms compiled_stretch_fast_path
+#print axioms compiled_stretch_slow_path
+#print axioms Controls.edit_flows_to_next_application
+#print axioms Controls.carried_value_is_not_retranslated
+#print axioms Controls.candidate_selection_follows_argument_evaluation
+#print axioms Controls.alternatives_share_the_world_left_to_right
+#print axioms Controls.argument_mode_precedes_argument_evaluation
+
+open Mettapedia.Languages.MeTTa.ContextualTransform in
+section
+#print axioms PeTTaResumptionSemantics.checked_resume_eq_live
+#print axioms PeTTaResumptionSemantics.resume_eq_unchecked_of_disjoint
+#print axioms PeTTaResumptionSemantics.live_resume_eq_fresh_entry
+#print axioms PeTTaResumptionSemantics.argument_edit_keeps_entry_modes
+#print axioms PeTTaResumptionSemantics.Controls.live_named_eq_source
+#print axioms PeTTaResumptionSemantics.Controls.forward_edit
+#print axioms PeTTaResumptionSemantics.Controls.later_alternative
+#print axioms PeTTaResumptionSemantics.Controls.fresh_wrapper_changes_editsOnly
+#print axioms PeTTaResumptionSemantics.Controls.existing_call_reads_new_equations
+#print axioms PeTTaResumptionSemantics.Controls.entered_call_retains_candidates_and_resumes_body
+#print axioms PeTTaResumptionSemantics.Controls.answerless_edit_reaches_next_alternative
+#print axioms PeTTaResumptionSemantics.Controls.collecting_requests_and_binding_differ
+#print axioms PeTTaResumptionSemantics.Controls.argument_declaration_affects_the_next_invocation
+#print axioms PeTTaResumptionSemantics.Controls.transform_first_answer_preserves_pending_work
+#print axioms PeTTaResumptionSemantics.Controls.transform_resume_respects_demand_and_current_interface
+#print axioms PeTTaResumptionSemantics.Controls.prepared_transform_resumes_the_same_search
+end
+
+open Mettapedia.Languages.MeTTa.ContextualTransform in
+section
+#print axioms PeTTaStagedSemantics.staged_entry_eq_live
+#print axioms PeTTaStagedSemantics.staged_resume_eq_editsOnly
+#print axioms PeTTaStagedSemantics.staged_eq_live_of_agrees
+#print axioms PeTTaStagedSemantics.Controls.edit_then_plain_or_entry
+#print axioms PeTTaStagedSemantics.Controls.later_branch_plain_or_entry
+#print axioms PeTTaStagedSemantics.Controls.kept_call_reads_new_equations
+#print axioms PeTTaStagedSemantics.refreshAfter_current
+#print axioms PeTTaStagedSemantics.refreshAll_current
+#print axioms PeTTaStagedSemantics.enter_current_eq_live
+#print axioms PeTTaStagedSemantics.within_of_rows
+#print axioms PeTTaStagedSemantics.FootprintControls.pattern_removal_needs_removed_rows
+#print axioms PeTTaStagedSemantics.FootprintControls.combined_key_needs_every_source
+#print axioms PeTTaCallGrain.loaded_store_current
+#print axioms PeTTaCallGrain.refreshed_current
+#print axioms PeTTaCallGrain.every_call_is_live
+#print axioms PeTTaCallGrain.Controls.late_definition_by_grain
+#print axioms Mettapedia.Languages.Prolog.SWI.StockSnapshotObstruction.every_future_key_is_observed
+#print axioms Mettapedia.Languages.Prolog.SWI.StockSnapshotObstruction.entry_read_lower_bound
+end

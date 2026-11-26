@@ -31,32 +31,18 @@ theorem WeightedObservable.windowedColeHopfHeatShiftKernel_abs_totalCoeffSum_le_
     (curlBound_nonneg : 0 ≤ curlBound)
     (hcurl : ∀ x, gamma (fun i => curlFrame i x) ≤ curlBound)
     (x : ModeState)
-    (hseedInv :
-      ∀ i : κ, ∀ t : NNReal, ∀ y : X,
-        (L.windowedColeHopfHeatUniformVorticityTendril
+    (hseedInv : SeedLiveShiftKernel.IsShiftInvariantAlong K.seedShift
+      (L.windowedColeHopfHeatUniformVorticityTendril
           (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t
-          (y + K.seedShift i) =
-        (L.windowedColeHopfHeatUniformVorticityTendril
+          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity)
+    (hliveInv : SeedLiveShiftKernel.IsShiftInvariantAlong K.liveShift
+      (L.windowedColeHopfHeatUniformVorticityTendril
           (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t y)
-    (hliveInv :
-      ∀ i : κ, ∀ t : NNReal, ∀ y : X,
-        (L.windowedColeHopfHeatUniformVorticityTendril
+          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity)
+    (hstat : UniformVorticityTendril.IsVorticityStationaryAt 1
+      (L.windowedColeHopfHeatUniformVorticityTendril
           (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t
-          (y + K.liveShift i) =
-        (L.windowedColeHopfHeatUniformVorticityTendril
-          (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t y)
-    (hstat :
-      ∀ t : NNReal, ∀ y : X,
-        (L.windowedColeHopfHeatUniformVorticityTendril
-          (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity 1 y =
-        (L.windowedColeHopfHeatUniformVorticityTendril
-          (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t y)
+          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity)
     (B :
       TopDownFeffermanBridge
         (pressureSeededPredicateKit
@@ -126,32 +112,18 @@ theorem WeightedObservable.windowedColeHopfHeatShiftKernel_abs_totalCoeffSum_lt_
     (curlBound_nonneg : 0 ≤ curlBound)
     (hcurl : ∀ x, gamma (fun i => curlFrame i x) ≤ curlBound)
     (x : ModeState)
-    (hseedInv :
-      ∀ i : κ, ∀ t : NNReal, ∀ y : X,
-        (L.windowedColeHopfHeatUniformVorticityTendril
+    (hseedInv : SeedLiveShiftKernel.IsShiftInvariantAlong K.seedShift
+      (L.windowedColeHopfHeatUniformVorticityTendril
           (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t
-          (y + K.seedShift i) =
-        (L.windowedColeHopfHeatUniformVorticityTendril
+          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity)
+    (hliveInv : SeedLiveShiftKernel.IsShiftInvariantAlong K.liveShift
+      (L.windowedColeHopfHeatUniformVorticityTendril
           (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t y)
-    (hliveInv :
-      ∀ i : κ, ∀ t : NNReal, ∀ y : X,
-        (L.windowedColeHopfHeatUniformVorticityTendril
+          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity)
+    (hstat : UniformVorticityTendril.IsVorticityStationaryAt 1
+      (L.windowedColeHopfHeatUniformVorticityTendril
           (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t
-          (y + K.liveShift i) =
-        (L.windowedColeHopfHeatUniformVorticityTendril
-          (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t y)
-    (hstat :
-      ∀ t : NNReal, ∀ y : X,
-        (L.windowedColeHopfHeatUniformVorticityTendril
-          (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity 1 y =
-        (L.windowedColeHopfHeatUniformVorticityTendril
-          (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t y)
+          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity)
     (B :
       TopDownFeffermanBridge
         (pressureSeededPredicateKit
@@ -216,32 +188,18 @@ theorem WeightedObservable.not_exists_windowedColeHopfHeatShiftKernelTopDownBrid
     (curlBound_nonneg : 0 ≤ curlBound)
     (hcurl : ∀ x, gamma (fun i => curlFrame i x) ≤ curlBound)
     (x : ModeState)
-    (hseedInv :
-      ∀ i : κ, ∀ t : NNReal, ∀ y : X,
-        (L.windowedColeHopfHeatUniformVorticityTendril
+    (hseedInv : SeedLiveShiftKernel.IsShiftInvariantAlong K.seedShift
+      (L.windowedColeHopfHeatUniformVorticityTendril
           (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t
-          (y + K.seedShift i) =
-        (L.windowedColeHopfHeatUniformVorticityTendril
+          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity)
+    (hliveInv : SeedLiveShiftKernel.IsShiftInvariantAlong K.liveShift
+      (L.windowedColeHopfHeatUniformVorticityTendril
           (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t y)
-    (hliveInv :
-      ∀ i : κ, ∀ t : NNReal, ∀ y : X,
-        (L.windowedColeHopfHeatUniformVorticityTendril
+          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity)
+    (hstat : UniformVorticityTendril.IsVorticityStationaryAt 1
+      (L.windowedColeHopfHeatUniformVorticityTendril
           (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t
-          (y + K.liveShift i) =
-        (L.windowedColeHopfHeatUniformVorticityTendril
-          (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t y)
-    (hstat :
-      ∀ t : NNReal, ∀ y : X,
-        (L.windowedColeHopfHeatUniformVorticityTendril
-          (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity 1 y =
-        (L.windowedColeHopfHeatUniformVorticityTendril
-          (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t y)
+          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity)
     {t : NNReal} {y : X}
     (hnz :
       (L.windowedColeHopfHeatUniformVorticityTendril
@@ -285,32 +243,18 @@ theorem WeightedObservable.not_exists_windowedColeHopfHeatShiftKernelTopDownBrid
     (curlBound_nonneg : 0 ≤ curlBound)
     (hcurl : ∀ x, gamma (fun i => curlFrame i x) ≤ curlBound)
     (x : ModeState)
-    (hseedInv :
-      ∀ i : κ, ∀ t : NNReal, ∀ y : X,
-        (L.windowedColeHopfHeatUniformVorticityTendril
+    (hseedInv : SeedLiveShiftKernel.IsShiftInvariantAlong K.seedShift
+      (L.windowedColeHopfHeatUniformVorticityTendril
           (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t
-          (y + K.seedShift i) =
-        (L.windowedColeHopfHeatUniformVorticityTendril
+          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity)
+    (hliveInv : SeedLiveShiftKernel.IsShiftInvariantAlong K.liveShift
+      (L.windowedColeHopfHeatUniformVorticityTendril
           (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t y)
-    (hliveInv :
-      ∀ i : κ, ∀ t : NNReal, ∀ y : X,
-        (L.windowedColeHopfHeatUniformVorticityTendril
+          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity)
+    (hstat : UniformVorticityTendril.IsVorticityStationaryAt 1
+      (L.windowedColeHopfHeatUniformVorticityTendril
           (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t
-          (y + K.liveShift i) =
-        (L.windowedColeHopfHeatUniformVorticityTendril
-          (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t y)
-    (hstat :
-      ∀ t : NNReal, ∀ y : X,
-        (L.windowedColeHopfHeatUniformVorticityTendril
-          (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity 1 y =
-        (L.windowedColeHopfHeatUniformVorticityTendril
-          (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t y)
+          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity)
     {t : NNReal} {y : X}
     (hnz :
       (L.windowedColeHopfHeatUniformVorticityTendril
@@ -353,32 +297,18 @@ theorem WeightedObservable.windowedColeHopfHeatShiftKernel_saturatedCoeff_eq_zer
     (curlBound_nonneg : 0 ≤ curlBound)
     (hcurl : ∀ x, gamma (fun i => curlFrame i x) ≤ curlBound)
     (x : ModeState)
-    (hseedInv :
-      ∀ i : κ, ∀ t : NNReal, ∀ y : X,
-        (L.windowedColeHopfHeatUniformVorticityTendril
+    (hseedInv : SeedLiveShiftKernel.IsShiftInvariantAlong K.seedShift
+      (L.windowedColeHopfHeatUniformVorticityTendril
           (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t
-          (y + K.seedShift i) =
-        (L.windowedColeHopfHeatUniformVorticityTendril
+          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity)
+    (hliveInv : SeedLiveShiftKernel.IsShiftInvariantAlong K.liveShift
+      (L.windowedColeHopfHeatUniformVorticityTendril
           (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t y)
-    (hliveInv :
-      ∀ i : κ, ∀ t : NNReal, ∀ y : X,
-        (L.windowedColeHopfHeatUniformVorticityTendril
+          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity)
+    (hstat : UniformVorticityTendril.IsVorticityStationaryAt 1
+      (L.windowedColeHopfHeatUniformVorticityTendril
           (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t
-          (y + K.liveShift i) =
-        (L.windowedColeHopfHeatUniformVorticityTendril
-          (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t y)
-    (hstat :
-      ∀ t : NNReal, ∀ y : X,
-        (L.windowedColeHopfHeatUniformVorticityTendril
-          (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity 1 y =
-        (L.windowedColeHopfHeatUniformVorticityTendril
-          (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t y)
+          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity)
     (B :
       TopDownFeffermanBridge
         (pressureSeededPredicateKit
@@ -422,32 +352,18 @@ theorem WeightedObservable.not_exists_windowedColeHopfHeatShiftKernelTopDownBrid
     (curlBound_nonneg : 0 ≤ curlBound)
     (hcurl : ∀ x, gamma (fun i => curlFrame i x) ≤ curlBound)
     (x : ModeState)
-    (hseedInv :
-      ∀ i : κ, ∀ t : NNReal, ∀ y : X,
-        (L.windowedColeHopfHeatUniformVorticityTendril
+    (hseedInv : SeedLiveShiftKernel.IsShiftInvariantAlong K.seedShift
+      (L.windowedColeHopfHeatUniformVorticityTendril
           (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t
-          (y + K.seedShift i) =
-        (L.windowedColeHopfHeatUniformVorticityTendril
+          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity)
+    (hliveInv : SeedLiveShiftKernel.IsShiftInvariantAlong K.liveShift
+      (L.windowedColeHopfHeatUniformVorticityTendril
           (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t y)
-    (hliveInv :
-      ∀ i : κ, ∀ t : NNReal, ∀ y : X,
-        (L.windowedColeHopfHeatUniformVorticityTendril
+          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity)
+    (hstat : UniformVorticityTendril.IsVorticityStationaryAt 1
+      (L.windowedColeHopfHeatUniformVorticityTendril
           (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t
-          (y + K.liveShift i) =
-        (L.windowedColeHopfHeatUniformVorticityTendril
-          (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t y)
-    (hstat :
-      ∀ t : NNReal, ∀ y : X,
-        (L.windowedColeHopfHeatUniformVorticityTendril
-          (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity 1 y =
-        (L.windowedColeHopfHeatUniformVorticityTendril
-          (ι := ι) (X := X)
-          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity t y)
+          selector c ν hc hν curlFrame curlBound curlBound_nonneg hcurl x).vorticity)
     {t : NNReal} {y : X}
     (hnz :
       (L.windowedColeHopfHeatUniformVorticityTendril

@@ -1,3 +1,4 @@
+import Mettapedia.GSLT.LanguageDef.StructuralInclusion
 import Mettapedia.GSLT.LanguageDef.TptpFofNormalizationSemantics
 import Mettapedia.GSLT.LanguageDef.TptpResolvedFofLanguageDef
 import Mettapedia.GSLT.LanguageDef.TptpFofNnfLanguageDef
@@ -790,20 +791,16 @@ def validated : ValidatedLanguageDef where
 Identity symbol action is sufficient because the target rows are actual
 prefixes, rather than independently maintained copies. -/
 def targetInclusion :
-    StructuralMorphism TptpFofNnfLanguageDef.validated validated where
-  symbols := LanguageDefSymbolMap.id
-  mapsTypes declaration membership := by
-    rw [mapTypeDecl_id]
-    exact List.mem_append_left _ membership
-  mapsTerms declaration membership := by
-    rw [mapGrammarRule_id]
-    exact List.mem_append_left _ membership
-  mapsEquations declaration membership := by
-    change declaration ∈ TptpFofNnfLanguageDef.language.equations at membership
-    simp [TptpFofNnfLanguageDef.no_equations] at membership
-  mapsRewrites declaration membership := by
-    change declaration ∈ TptpFofNnfLanguageDef.language.rewrites at membership
-    simp [TptpFofNnfLanguageDef.no_rewrites] at membership
+    StructuralMorphism TptpFofNnfLanguageDef.validated validated :=
+  StructuralMorphism.ofDeclarationInclusion {
+    types := fun _ member => List.mem_append_left _ member
+    terms := fun _ member => List.mem_append_left _ member
+    equations := by
+      change TptpFofNnfLanguageDef.language.equations ⊆ _
+      exact TptpFofNnfLanguageDef.no_equations ▸ List.nil_subset _
+    rewrites := by
+      change TptpFofNnfLanguageDef.language.rewrites ⊆ _
+      exact TptpFofNnfLanguageDef.no_rewrites ▸ List.nil_subset _ }
 
 /-- The source inclusion is the categorical composite through the actual NNF
 carrier.  This makes the shared intermediate object load-bearing. -/

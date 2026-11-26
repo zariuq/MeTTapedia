@@ -610,8 +610,8 @@ mutual
           rawDeclaration
           rawStop)
         leftPlan.abstractPattern rightPlan.abstractPattern := by
-    cases rawAligned with
-    | leaf given =>
+    match (generalizing := true) leftPattern, rightPattern, rawAligned with
+    | _, _, .leaf given =>
         exact .leaf (costStaticPlanCanonicalStop_of_reached leftRootPlan
           rightRootPlan leftPlan rightPlan leftAdmission rightAdmission
           leftSkeletonContext
@@ -619,7 +619,7 @@ mutual
           availableEq leftEmbedding rightEmbedding leftRoute rightRoute
           leftSizeLe rightSizeLe
           (Or.inl given) (.leaf given))
-    | bvar targetIndex =>
+    | _, _, .bvar targetIndex =>
         cases leftPlan with
         | bvar leftSourceIndex leftLookup leftCorrespondence
             leftAvailableScope =>
@@ -631,12 +631,12 @@ mutual
                 (leftCorrespondence.symm.trans rightCorrespondence)
             subst rightSourceIndex
             exact .bvar leftSourceIndex
-    | fvar name =>
+    | _, _, .fvar name =>
         cases leftPlan with
         | fvar leftLookup =>
           cases rightPlan with
           | fvar rightLookup => exact .fvar (costRegionSourceVariableName name)
-    | @apply wireName rawNe leftArguments rightArguments argumentsAligned =>
+    | _, _, @CanonicalStopAligned.apply _ _ wireName rawNe leftArguments rightArguments argumentsAligned =>
         cases leftPlan with
         | boundaryApplication leftConstructor leftRendered leftOutside
             leftCertified leftCertifies =>
@@ -822,8 +822,8 @@ mutual
                     source.costWholeReflectionProfile_validate
                     materializedMembership rightArgumentsTypedForQuote
                     targetQuoted rightParentReflective
-                have childrenAligned :=
-                  costStaticArgumentPlan_canonicalStopAligned
+                have childrenBelow :=
+                  costStaticArgumentPlan_canonicalStopAlignedBelow
                     collectionDeterministic declaration rawDeclaration
                     leftRootPlan rightRootPlan
                     leftPreimage.sourceConstructor.1.label [] [] leftChildren
@@ -858,7 +858,9 @@ mutual
                     (by simp at rightSizeLe ⊢; omega)
                     argumentsAligned
                 simpa [CostStaticRegionPlan.abstractPattern] using
-                  (CanonicalStopAligned.apply sourceNe childrenAligned)
+                  (CanonicalStopAligned.apply sourceNe
+                    (canonicalStopAlignedList_map
+                      CostStaticPlanCanonicalStopBelow.toCanonicalStop childrenBelow))
               · have sourceOrdinary :
                     ReflectiveContextSupport.isQuoteConstructor
                       source.reflection.1
@@ -878,8 +880,8 @@ mutual
                 have rightReflective :=
                   WellSorted.reflectiveScopeSafeListAt_of_nonquote
                     targetOrdinary rightParentReflective
-                have childrenAligned :=
-                  costStaticArgumentPlan_canonicalStopAligned
+                have childrenBelow :=
+                  costStaticArgumentPlan_canonicalStopAlignedBelow
                   collectionDeterministic declaration rawDeclaration
                   leftRootPlan rightRootPlan
                   leftPreimage.sourceConstructor.1.label [] [] leftChildren
@@ -916,7 +918,9 @@ mutual
                   (by simp at rightSizeLe ⊢; omega)
                   argumentsAligned
                 simpa [CostStaticRegionPlan.abstractPattern] using
-                  (CanonicalStopAligned.apply sourceNe childrenAligned)
+                  (CanonicalStopAligned.apply sourceNe
+                    (canonicalStopAlignedList_map
+                      CostStaticPlanCanonicalStopBelow.toCanonicalStop childrenBelow))
             · exact .leaf (costStaticPlanCanonicalStop_of_reached leftRootPlan
                 rightRootPlan
                 (.application leftConstructor leftRendered leftCurrent
@@ -937,7 +941,7 @@ mutual
                     CostStaticRegionPlan.rootClass] using
                     And.intro sourceNe sourceNe))
                 (.apply rawNe argumentsAligned))
-    | @lambda binder leftBody rightBody bodyAligned =>
+    | _, _, @CanonicalStopAligned.lambda _ _ binder leftBody rightBody bodyAligned =>
         cases leftPlan with
         | lambda leftBodyPlan =>
           cases rightPlan with
@@ -1022,7 +1026,7 @@ mutual
                 (by simp at leftSizeLe ⊢; omega)
                 (by simp at rightSizeLe ⊢; omega)
                 bodyAligned)
-    | @multiLambda arity binders leftBody rightBody bodyAligned =>
+    | _, _, @CanonicalStopAligned.multiLambda _ _ arity binders leftBody rightBody bodyAligned =>
         cases leftPlan with
         | multiLambda leftBodyPlan =>
           cases rightPlan with
@@ -1113,9 +1117,9 @@ mutual
                 (by simp at leftSizeLe ⊢; omega)
                 (by simp at rightSizeLe ⊢; omega)
                 bodyAligned)
-    | subst bodyAligned replacementAligned =>
+    | _, _, .subst bodyAligned replacementAligned =>
         cases leftPlan
-    | @collection collectionType rawNe leftElements rightElements
+    | _, _, @CanonicalStopAligned.collection _ _ collectionType rawNe leftElements rightElements
         elementsAligned =>
         cases leftPlan with
         | boundaryCollection leftRejected leftOpposite leftOppositeSelected
@@ -1233,8 +1237,8 @@ mutual
                     (mapTypeExpr (color.symbols source)) elementTypeEq.symm))
               let rightChildren' :=
                 rightChildren.castSourceElementType elementTypeEq
-              have childrenAligned :=
-                costStaticElementPlan_canonicalStopAligned
+              have childrenBelow :=
+                costStaticElementPlan_canonicalStopAlignedBelow
                   collectionDeterministic declaration rawDeclaration
                   leftRootPlan rightRootPlan
                   collectionType none [] [] leftChildren rightChildren'
@@ -1269,7 +1273,9 @@ mutual
                 CostStaticRegionPlan.abstractPattern,
                 CostStaticElementPlan.abstractPatterns_castSourceElementType]
                 using
-                  (CanonicalStopAligned.collection sourceNe childrenAligned)
+                  (CanonicalStopAligned.collection sourceNe
+                    (canonicalStopAlignedList_map
+                      CostStaticPlanCanonicalStopBelow.toCanonicalStop childrenBelow))
             · exact .leaf (costStaticPlanCanonicalStop_of_reached leftRootPlan
                 rightRootPlan
                 (.collection leftChoice leftSelected leftChildren)
@@ -1285,267 +1291,11 @@ mutual
                     CostStaticRegionPlan.rootClass] using
                     And.intro sourceNe sourceNe))
                 (.collection rawNe elementsAligned))
-    | @collectionRest collectionType rest leftElements rightElements
+    | _, _, @CanonicalStopAligned.collectionRest _ _ collectionType rest leftElements rightElements
         elementsAligned =>
         exact (CostStaticRegionPlan.RawAdmission.not_collectionRest
           leftPlan leftAdmission).elim
-  termination_by 3 * (sizeOf leftPattern + sizeOf rightPattern) + 2
-  decreasing_by
-    all_goals subst rightPattern
-    all_goals subst leftPattern
-    all_goals simp
-    all_goals omega
-
-  /-- Ordered-argument companion of plan canonical alignment. -/
-  theorem costStaticArgumentPlan_canonicalStopAligned
-      {source : CIGSLT} {color : CostStaticColor}
-      (collectionDeterministic : CollectionChoiceDeterministic
-        source.theory.presentation.presentation.language)
-      (declaration : ReflectivePresentationDecl)
-      (rawDeclaration : ReflectivePresentationDecl)
-      {targetFree : WellSorted.FreeTypeContext}
-      {rootSourceBound rootTargetBound : List TypeExpr}
-      {rootThinning : CostStaticBinderThinning source color rootSourceBound
-        rootTargetBound}
-      {leftRootAvailable rightRootAvailable : List TypeExpr}
-      {leftRootOuter rightRootOuter : OneHoleContext}
-      {leftRoot rightRoot : Pattern} {rootSourceType : TypeExpr}
-      (leftRootPlan : CostStaticRegionPlan source color targetFree
-        rootSourceBound rootTargetBound rootThinning leftRootAvailable
-        leftRootOuter leftRoot rootSourceType)
-      (rightRootPlan : CostStaticRegionPlan source color targetFree
-        rootSourceBound rootTargetBound rootThinning rightRootAvailable
-        rightRootOuter rightRoot rootSourceType)
-      {rawStop : Pattern → Pattern → Prop}
-      {sourceBound targetBound : List TypeExpr}
-      {thinning : CostStaticBinderThinning source color sourceBound
-        targetBound}
-      {leftAvailable rightAvailable : List TypeExpr}
-      {leftOuter rightOuter : OneHoleContext} {wireName : String}
-      {leftRawBefore rightRawBefore leftArguments rightArguments :
-        List Pattern}
-      {parameters : List TermParam}
-      (sourceConstructor : String)
-      (leftAbstractBefore rightAbstractBefore : List Pattern)
-      (leftPlan : CostStaticArgumentPlan source color targetFree sourceBound
-        targetBound thinning leftAvailable leftOuter wireName leftRawBefore
-        leftArguments parameters)
-      (rightPlan : CostStaticArgumentPlan source color targetFree sourceBound
-        targetBound thinning rightAvailable rightOuter wireName rightRawBefore
-        rightArguments parameters)
-      (leftTyped : WellSorted.ArgumentsHaveTypes source.costWholeLanguage
-        targetFree leftAvailable leftArguments
-          (parameters.map (mapTermParam (color.symbols source))))
-      (rightTyped : WellSorted.ArgumentsHaveTypes source.costWholeLanguage
-        targetFree rightAvailable rightArguments
-          (parameters.map (mapTermParam (color.symbols source))))
-      (leftCanonical : Pattern.hasCanonicalBinderMetadataList leftArguments =
-        true)
-      (rightCanonical : Pattern.hasCanonicalBinderMetadataList rightArguments =
-        true)
-      (leftObjects : WellSorted.isObjectPatternList leftArguments = true)
-      (rightObjects : WellSorted.isObjectPatternList rightArguments = true)
-      (leftReflective : ∀ presentation ∈
-        source.costWholeReflectionProfile.presentations,
-        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor leftAvailable.length
-          leftArguments = true)
-      (rightReflective : ∀ presentation ∈
-        source.costWholeReflectionProfile.presentations,
-        scopeSafeListAt presentation.quoteScope presentation.quoteConstructor rightAvailable.length
-          rightArguments = true)
-      (leftTargetBoundSplit : ∃ sealed,
-        targetBound = leftAvailable ++ sealed)
-      (rightTargetBoundSplit : ∃ sealed,
-        targetBound = rightAvailable ++ sealed)
-      (leftSkeletonContext rightSkeletonContext : OneHoleContext)
-      (leftAbstractEq : leftRootPlan.abstractPattern =
-        leftSkeletonContext.fill
-          (.apply sourceConstructor
-            (leftAbstractBefore ++ leftPlan.abstractPatterns)))
-      (rightAbstractEq : rightRootPlan.abstractPattern =
-        rightSkeletonContext.fill
-          (.apply sourceConstructor
-            (rightAbstractBefore ++ rightPlan.abstractPatterns)))
-      (leftEmbedding : CostStaticPlanEntryEmbedding source color targetFree
-        leftPlan.boundaryTable.entries leftRootPlan.boundaryTable.entries)
-      (rightEmbedding : CostStaticPlanEntryEmbedding source color targetFree
-        rightPlan.boundaryTable.entries rightRootPlan.boundaryTable.entries)
-      (parameterRoute : ∀ {parameter : TermParam} {expected : TypeExpr},
-        parameter ∈ parameters → parameterType? parameter = some expected →
-          Nonempty (CostCanonicalTypeRoute source color
-            (mapTypeExpr (color.symbols source) rootSourceType)
-            (mapTypeExpr (color.symbols source) expected)))
-      (availableEq : leftAvailable = rightAvailable)
-      (leftArgumentsSizeLt : sizeOf leftArguments < sizeOf leftRoot)
-      (rightArgumentsSizeLt : sizeOf rightArguments < sizeOf rightRoot)
-      (rawAligned : CanonicalStopAlignedList
-        rawDeclaration
-        rawStop leftArguments rightArguments) :
-      CanonicalStopAlignedList declaration
-        (CostStaticPlanCanonicalStop leftRootPlan rightRootPlan declaration
-          rawDeclaration
-          rawStop)
-        leftPlan.abstractPatterns rightPlan.abstractPatterns := by
-    cases rawAligned with
-    | nil =>
-        cases leftPlan
-        cases rightPlan
-        cases leftTyped
-        cases rightTyped
-        exact .nil
-    | cons headAligned tailAligned =>
-        cases leftPlan with
-        | cons leftRepresentation leftParameterType leftHead leftTail =>
-          cases rightPlan with
-          | cons rightRepresentation rightParameterType rightHead rightTail =>
-            cases leftTyped with
-            | @cons _ _ _ _ _ leftTargetExpected _ leftTargetParameterType
-                leftHeadTyped leftTailTyped =>
-              cases rightTyped with
-              | @cons _ _ _ _ _ rightTargetExpected _ rightTargetParameterType
-                  rightHeadTyped rightTailTyped =>
-                simp [WellSorted.parameterType?_mapTermParam,
-                  leftParameterType] at leftTargetParameterType
-                simp [WellSorted.parameterType?_mapTermParam,
-                  rightParameterType] at rightTargetParameterType
-                subst leftTargetExpected
-                subst rightTargetExpected
-                have leftCanonicalParts := leftCanonical
-                simp only [Pattern.hasCanonicalBinderMetadataList,
-                  Bool.and_eq_true] at leftCanonicalParts
-                have rightCanonicalParts := rightCanonical
-                simp only [Pattern.hasCanonicalBinderMetadataList,
-                  Bool.and_eq_true] at rightCanonicalParts
-                have leftObjectParts := leftObjects
-                simp only [WellSorted.isObjectPatternList,
-                  Bool.and_eq_true] at leftObjectParts
-                have rightObjectParts := rightObjects
-                simp only [WellSorted.isObjectPatternList,
-                  Bool.and_eq_true] at rightObjectParts
-                have leftHeadAdmission : leftHead.RawAdmission :=
-                  ⟨⟨⟨leftHeadTyped, leftCanonicalParts.1,
-                    leftObjectParts.1, leftHeadTyped.isWellScopedAt⟩,
-                    reflectiveScopeSafeAt_cons_head leftReflective⟩,
-                    leftTargetBoundSplit⟩
-                have rightHeadAdmission : rightHead.RawAdmission :=
-                  ⟨⟨⟨rightHeadTyped, rightCanonicalParts.1,
-                    rightObjectParts.1, rightHeadTyped.isWellScopedAt⟩,
-                    reflectiveScopeSafeAt_cons_head rightReflective⟩,
-                    rightTargetBoundSplit⟩
-                have headSourceTypeEq :
-                    _ = _ :=
-                  Option.some.inj
-                    (leftParameterType.symm.trans rightParameterType)
-                have leftHeadRoute :=
-                  parameterRoute List.mem_cons_self leftParameterType
-                have rightHeadRoute :=
-                  parameterRoute List.mem_cons_self rightParameterType
-                let leftFrame : OneHoleContext :=
-                  .apply sourceConstructor leftAbstractBefore .hole
-                    leftTail.abstractPatterns
-                let rightFrame : OneHoleContext :=
-                  .apply sourceConstructor rightAbstractBefore .hole
-                    rightTail.abstractPatterns
-                have leftHeadEmbedding :
-                    CostStaticPlanEntryEmbedding source color targetFree
-                      leftHead.boundaryTable.entries
-                      leftRootPlan.boundaryTable.entries := by
-                  apply CostStaticPlanEntryEmbedding.leftOfTableAppend
-                    leftHead.boundaryTable leftTail.boundaryTable
-                  change CostStaticPlanEntryEmbedding source color targetFree
-                    (TypedCostRegionBoundaryTable.append leftHead.boundaryTable
-                      leftTail.boundaryTable).entries
-                    leftRootPlan.boundaryTable.entries at leftEmbedding
-                  exact leftEmbedding
-                have rightHeadEmbedding :
-                    CostStaticPlanEntryEmbedding source color targetFree
-                      rightHead.boundaryTable.entries
-                      rightRootPlan.boundaryTable.entries := by
-                  apply CostStaticPlanEntryEmbedding.leftOfTableAppend
-                    rightHead.boundaryTable rightTail.boundaryTable
-                  change CostStaticPlanEntryEmbedding source color targetFree
-                    (TypedCostRegionBoundaryTable.append rightHead.boundaryTable
-                      rightTail.boundaryTable).entries
-                    rightRootPlan.boundaryTable.entries at rightEmbedding
-                  exact rightEmbedding
-                have headResult := costStaticRegionPlan_canonicalStopAligned
-                  collectionDeterministic declaration rawDeclaration
-                  leftRootPlan rightRootPlan
-                  leftHead rightHead leftHeadAdmission rightHeadAdmission
-                  (leftSkeletonContext.comp leftFrame)
-                  (rightSkeletonContext.comp rightFrame)
-                  (by
-                    rw [OneHoleContext.fill_comp]
-                    simpa [leftFrame, OneHoleContext.fill,
-                      CostStaticArgumentPlan.abstractPatterns,
-                      List.append_assoc] using leftAbstractEq)
-                  (by
-                    rw [OneHoleContext.fill_comp]
-                    simpa [rightFrame, OneHoleContext.fill,
-                      CostStaticArgumentPlan.abstractPatterns,
-                      List.append_assoc] using rightAbstractEq)
-                  leftHeadEmbedding rightHeadEmbedding leftHeadRoute rightHeadRoute
-                    headSourceTypeEq availableEq
-                    (by simp at leftArgumentsSizeLt ⊢; omega)
-                    (by simp at rightArgumentsSizeLt ⊢; omega)
-                    headAligned
-                have leftTailEmbedding :
-                    CostStaticPlanEntryEmbedding source color targetFree
-                      leftTail.boundaryTable.entries
-                      leftRootPlan.boundaryTable.entries := by
-                  apply CostStaticPlanEntryEmbedding.rightOfTableAppend
-                    leftHead.boundaryTable leftTail.boundaryTable
-                  change CostStaticPlanEntryEmbedding source color targetFree
-                    (TypedCostRegionBoundaryTable.append leftHead.boundaryTable
-                      leftTail.boundaryTable).entries
-                    leftRootPlan.boundaryTable.entries at leftEmbedding
-                  exact leftEmbedding
-                have rightTailEmbedding :
-                    CostStaticPlanEntryEmbedding source color targetFree
-                      rightTail.boundaryTable.entries
-                      rightRootPlan.boundaryTable.entries := by
-                  apply CostStaticPlanEntryEmbedding.rightOfTableAppend
-                    rightHead.boundaryTable rightTail.boundaryTable
-                  change CostStaticPlanEntryEmbedding source color targetFree
-                    (TypedCostRegionBoundaryTable.append rightHead.boundaryTable
-                      rightTail.boundaryTable).entries
-                    rightRootPlan.boundaryTable.entries at rightEmbedding
-                  exact rightEmbedding
-                exact .cons headResult
-                  (costStaticArgumentPlan_canonicalStopAligned
-                    collectionDeterministic declaration rawDeclaration
-                    leftRootPlan rightRootPlan
-                    sourceConstructor
-                    (leftAbstractBefore ++ [leftHead.abstractPattern])
-                    (rightAbstractBefore ++ [rightHead.abstractPattern])
-                    leftTail rightTail leftTailTyped rightTailTyped
-                    leftCanonicalParts.2 rightCanonicalParts.2
-                    leftObjectParts.2 rightObjectParts.2
-                    (binderSafeListAt_cons_tail leftReflective)
-                    (binderSafeListAt_cons_tail rightReflective)
-                    leftTargetBoundSplit rightTargetBoundSplit
-                    leftSkeletonContext rightSkeletonContext
-                    (by
-                      simpa [CostStaticArgumentPlan.abstractPatterns,
-                        List.append_assoc] using leftAbstractEq)
-                    (by
-                      simpa [CostStaticArgumentPlan.abstractPatterns,
-                        List.append_assoc] using rightAbstractEq)
-                    leftTailEmbedding rightTailEmbedding
-                    (fun parameterMembership parameterTyped =>
-                      parameterRoute
-                        (List.mem_cons_of_mem _ parameterMembership)
-                        parameterTyped)
-                    availableEq
-                    (by simp at leftArgumentsSizeLt ⊢; omega)
-                    (by simp at rightArgumentsSizeLt ⊢; omega)
-                    tailAligned)
-  termination_by 3 * (sizeOf leftArguments + sizeOf rightArguments) + 1
-  decreasing_by
-    all_goals subst rightArguments
-    all_goals subst leftArguments
-    all_goals simp
-    all_goals omega
+  termination_by structural rawAligned
 
   /-- Ordered arguments preserve canonical alignment while recording that
   every retained stop lies strictly below the enclosing application pair. -/
@@ -1636,14 +1386,14 @@ mutual
         (CostStaticPlanCanonicalStopBelow leftRootPlan rightRootPlan declaration
           rawDeclaration rawStop (sizeOf leftRoot + sizeOf rightRoot))
         leftPlan.abstractPatterns rightPlan.abstractPatterns := by
-    cases rawAligned with
-    | nil =>
+    match (generalizing := true) leftArguments, rightArguments, rawAligned with
+    | _, _, .nil =>
         cases leftPlan
         cases rightPlan
         cases leftTyped
         cases rightTyped
         exact .nil
-    | cons headAligned tailAligned =>
+    | _, _, .cons headAligned tailAligned =>
         cases leftPlan with
         | cons leftRepresentation leftParameterType leftHead leftTail =>
           cases rightPlan with
@@ -1802,20 +1552,15 @@ mutual
                     (by simp at leftArgumentsSizeLt ⊢; omega)
                     (by simp at rightArgumentsSizeLt ⊢; omega)
                     tailAligned)
-  termination_by 3 * (sizeOf leftArguments + sizeOf rightArguments) + 1
-  decreasing_by
-    all_goals subst rightArguments
-    all_goals subst leftArguments
-    all_goals simp
-    all_goals omega
+  termination_by structural rawAligned
 
-  /-- Homogeneous-element companion of plan canonical alignment. -/
-  private theorem costStaticElementPlan_canonicalStopAligned
+  /-- Homogeneous child descent whose every delegated stop is rebased into the
+  enclosing roots and certified strictly below their joint measure. -/
+  theorem costStaticElementPlan_canonicalStopAlignedBelow
       {source : CIGSLT} {color : CostStaticColor}
       (collectionDeterministic : CollectionChoiceDeterministic
         source.theory.presentation.presentation.language)
-      (declaration : ReflectivePresentationDecl)
-      (rawDeclaration : ReflectivePresentationDecl)
+      (declaration rawDeclaration : ReflectivePresentationDecl)
       {targetFree : WellSorted.FreeTypeContext}
       {rootSourceBound rootTargetBound : List TypeExpr}
       {rootThinning : CostStaticBinderThinning source color rootSourceBound
@@ -1831,8 +1576,7 @@ mutual
         rightRootOuter rightRoot rootSourceType)
       {rawStop : Pattern → Pattern → Prop}
       {sourceBound targetBound : List TypeExpr}
-      {thinning : CostStaticBinderThinning source color sourceBound
-        targetBound}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
       {leftAvailable rightAvailable : List TypeExpr}
       {leftOuter rightOuter : OneHoleContext} {collectionType : CollType}
       {rest : Option String}
@@ -1841,8 +1585,8 @@ mutual
       (sourceCollectionType : CollType) (sourceRest : Option String)
       (leftAbstractBefore rightAbstractBefore : List Pattern)
       (leftPlan : CostStaticElementPlan source color targetFree sourceBound
-        targetBound thinning leftAvailable leftOuter collectionType
-        leftRawBefore leftElements rest sourceElementType)
+        targetBound thinning leftAvailable leftOuter collectionType leftRawBefore
+        leftElements rest sourceElementType)
       (rightPlan : CostStaticElementPlan source color targetFree sourceBound
         targetBound thinning rightAvailable rightOuter collectionType
         rightRawBefore rightElements rest sourceElementType)
@@ -1852,10 +1596,8 @@ mutual
       (rightTyped : WellSorted.ElementsHaveType source.costWholeLanguage
         targetFree rightAvailable rightElements
           (mapTypeExpr (color.symbols source) sourceElementType))
-      (leftCanonical : Pattern.hasCanonicalBinderMetadataList leftElements =
-        true)
-      (rightCanonical : Pattern.hasCanonicalBinderMetadataList rightElements =
-        true)
+      (leftCanonical : Pattern.hasCanonicalBinderMetadataList leftElements = true)
+      (rightCanonical : Pattern.hasCanonicalBinderMetadataList rightElements = true)
       (leftObjects : WellSorted.isObjectPatternList leftElements = true)
       (rightObjects : WellSorted.isObjectPatternList rightElements = true)
       (leftReflective : ∀ presentation ∈
@@ -1892,22 +1634,20 @@ mutual
       (availableEq : leftAvailable = rightAvailable)
       (leftElementsSizeLt : sizeOf leftElements < sizeOf leftRoot)
       (rightElementsSizeLt : sizeOf rightElements < sizeOf rightRoot)
-      (rawAligned : CanonicalStopAlignedList
-        rawDeclaration
-        rawStop leftElements rightElements) :
+      (rawAligned : CanonicalStopAlignedList rawDeclaration rawStop leftElements
+        rightElements) :
       CanonicalStopAlignedList declaration
-        (CostStaticPlanCanonicalStop leftRootPlan rightRootPlan declaration
-          rawDeclaration
-          rawStop)
+        (CostStaticPlanCanonicalStopBelow leftRootPlan rightRootPlan declaration
+          rawDeclaration rawStop (sizeOf leftRoot + sizeOf rightRoot))
         leftPlan.abstractPatterns rightPlan.abstractPatterns := by
-    cases rawAligned with
-    | nil =>
+    match (generalizing := true) leftElements, rightElements, rawAligned with
+    | _, _, .nil =>
         cases leftPlan
         cases rightPlan
         cases leftTyped
         cases rightTyped
         exact .nil
-    | cons headAligned tailAligned =>
+    | _, _, .cons headAligned tailAligned =>
         cases leftPlan with
         | cons leftHead leftTail =>
           cases rightPlan with
@@ -1929,13 +1669,13 @@ mutual
                 simp only [WellSorted.isObjectPatternList,
                   Bool.and_eq_true] at rightObjectParts
                 have leftHeadAdmission : leftHead.RawAdmission :=
-                  ⟨⟨⟨leftHeadTyped, leftCanonicalParts.1,
-                    leftObjectParts.1, leftHeadTyped.isWellScopedAt⟩,
+                  ⟨⟨⟨leftHeadTyped, leftCanonicalParts.1, leftObjectParts.1,
+                    leftHeadTyped.isWellScopedAt⟩,
                     reflectiveScopeSafeAt_cons_head leftReflective⟩,
                     leftTargetBoundSplit⟩
                 have rightHeadAdmission : rightHead.RawAdmission :=
-                  ⟨⟨⟨rightHeadTyped, rightCanonicalParts.1,
-                    rightObjectParts.1, rightHeadTyped.isWellScopedAt⟩,
+                  ⟨⟨⟨rightHeadTyped, rightCanonicalParts.1, rightObjectParts.1,
+                    rightHeadTyped.isWellScopedAt⟩,
                     reflectiveScopeSafeAt_cons_head rightReflective⟩,
                     rightTargetBoundSplit⟩
                 let leftFrame : OneHoleContext :=
@@ -1944,6 +1684,20 @@ mutual
                 let rightFrame : OneHoleContext :=
                   .collection sourceCollectionType rightAbstractBefore .hole
                     rightTail.abstractPatterns sourceRest
+                have leftHeadRootEq : leftRootPlan.abstractPattern =
+                    (leftSkeletonContext.comp leftFrame).fill
+                      leftHead.abstractPattern := by
+                  rw [OneHoleContext.fill_comp]
+                  simpa [leftFrame, OneHoleContext.fill,
+                    CostStaticElementPlan.abstractPatterns,
+                    List.append_assoc] using leftAbstractEq
+                have rightHeadRootEq : rightRootPlan.abstractPattern =
+                    (rightSkeletonContext.comp rightFrame).fill
+                      rightHead.abstractPattern := by
+                  rw [OneHoleContext.fill_comp]
+                  simpa [rightFrame, OneHoleContext.fill,
+                    CostStaticElementPlan.abstractPatterns,
+                    List.append_assoc] using rightAbstractEq
                 have leftHeadEmbedding :
                     CostStaticPlanEntryEmbedding source color targetFree
                       leftHead.boundaryTable.entries
@@ -1966,27 +1720,25 @@ mutual
                       rightTail.boundaryTable).entries
                     rightRootPlan.boundaryTable.entries at rightEmbedding
                   exact rightEmbedding
-                have headResult := costStaticRegionPlan_canonicalStopAligned
-                  collectionDeterministic declaration rawDeclaration
-                  leftRootPlan rightRootPlan
-                  leftHead rightHead leftHeadAdmission rightHeadAdmission
-                  (leftSkeletonContext.comp leftFrame)
-                  (rightSkeletonContext.comp rightFrame)
-                  (by
-                    rw [OneHoleContext.fill_comp]
-                    simpa [leftFrame, OneHoleContext.fill,
-                      CostStaticElementPlan.abstractPatterns,
-                      List.append_assoc] using leftAbstractEq)
-                  (by
-                    rw [OneHoleContext.fill_comp]
-                    simpa [rightFrame, OneHoleContext.fill,
-                      CostStaticElementPlan.abstractPatterns,
-                      List.append_assoc] using rightAbstractEq)
-                  leftHeadEmbedding rightHeadEmbedding leftElementRoute
-                    rightElementRoute rfl availableEq
+                have childResult := costStaticRegionPlan_canonicalStopAligned
+                  collectionDeterministic declaration rawDeclaration leftHead
+                  rightHead leftHead rightHead leftHeadAdmission rightHeadAdmission
+                  .hole .hole rfl rfl
+                  (CostStaticPlanEntryEmbedding.refl
+                    leftHead.boundaryTable.entries)
+                  (CostStaticPlanEntryEmbedding.refl
+                    rightHead.boundaryTable.entries)
+                  ⟨.refl⟩ ⟨.refl⟩ rfl availableEq le_rfl le_rfl headAligned
+                have headResult := canonicalStopAligned_map
+                  (fun stopped => stopped.liftBelow leftRootPlan rightRootPlan
+                    leftHead rightHead
+                    (leftSkeletonContext.comp leftFrame)
+                    (rightSkeletonContext.comp rightFrame)
+                    leftHeadRootEq rightHeadRootEq leftHeadEmbedding
+                    rightHeadEmbedding leftElementRoute rightElementRoute
                     (by simp at leftElementsSizeLt ⊢; omega)
-                    (by simp at rightElementsSizeLt ⊢; omega)
-                    headAligned
+                    (by simp at rightElementsSizeLt ⊢; omega) rfl)
+                  childResult
                 have leftTailEmbedding :
                     CostStaticPlanEntryEmbedding source color targetFree
                       leftTail.boundaryTable.entries
@@ -2010,10 +1762,9 @@ mutual
                     rightRootPlan.boundaryTable.entries at rightEmbedding
                   exact rightEmbedding
                 exact .cons headResult
-                  (costStaticElementPlan_canonicalStopAligned
+                  (costStaticElementPlan_canonicalStopAlignedBelow
                     collectionDeterministic declaration rawDeclaration
-                    leftRootPlan rightRootPlan
-                    sourceCollectionType sourceRest
+                    leftRootPlan rightRootPlan sourceCollectionType sourceRest
                     (leftAbstractBefore ++ [leftHead.abstractPattern])
                     (rightAbstractBefore ++ [rightHead.abstractPattern])
                     leftTail rightTail leftTailTyped rightTailTyped
@@ -2021,9 +1772,8 @@ mutual
                     leftObjectParts.2 rightObjectParts.2
                     (binderSafeListAt_cons_tail leftReflective)
                     (binderSafeListAt_cons_tail rightReflective)
-                    leftTargetBoundSplit
-                    rightTargetBoundSplit leftSkeletonContext
-                    rightSkeletonContext
+                    leftTargetBoundSplit rightTargetBoundSplit
+                    leftSkeletonContext rightSkeletonContext
                     (by
                       simpa [CostStaticElementPlan.abstractPatterns,
                         List.append_assoc] using leftAbstractEq)
@@ -2033,25 +1783,18 @@ mutual
                     leftTailEmbedding rightTailEmbedding leftElementRoute
                     rightElementRoute availableEq
                     (by simp at leftElementsSizeLt ⊢; omega)
-                    (by simp at rightElementsSizeLt ⊢; omega)
-                    tailAligned)
-  termination_by 3 * (sizeOf leftElements + sizeOf rightElements) + 1
-  decreasing_by
-    all_goals subst rightElements
-    all_goals subst leftElements
-    all_goals simp
-    all_goals omega
+                    (by simp at rightElementsSizeLt ⊢; omega) tailAligned)
+  termination_by structural rawAligned
 end
 
-set_option maxHeartbeats 12000000 in
-set_option maxRecDepth 8192 in
-/-- Homogeneous child descent whose every delegated stop is rebased into the
-enclosing roots and certified strictly below their joint measure. -/
-theorem costStaticElementPlan_canonicalStopAlignedBelow
+/-- Project an ordinary argument alignment from the strict child descent.
+The projection retains the reached plans and their finite entry embeddings. -/
+theorem costStaticArgumentPlan_canonicalStopAligned
     {source : CIGSLT} {color : CostStaticColor}
     (collectionDeterministic : CollectionChoiceDeterministic
       source.theory.presentation.presentation.language)
-    (declaration rawDeclaration : ReflectivePresentationDecl)
+    (declaration : ReflectivePresentationDecl)
+    (rawDeclaration : ReflectivePresentationDecl)
     {targetFree : WellSorted.FreeTypeContext}
     {rootSourceBound rootTargetBound : List TypeExpr}
     {rootThinning : CostStaticBinderThinning source color rootSourceBound
@@ -2067,38 +1810,41 @@ theorem costStaticElementPlan_canonicalStopAlignedBelow
       rightRootOuter rightRoot rootSourceType)
     {rawStop : Pattern → Pattern → Prop}
     {sourceBound targetBound : List TypeExpr}
-    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+    {thinning : CostStaticBinderThinning source color sourceBound
+      targetBound}
     {leftAvailable rightAvailable : List TypeExpr}
-    {leftOuter rightOuter : OneHoleContext} {collectionType : CollType}
-    {rest : Option String}
-    {leftRawBefore rightRawBefore leftElements rightElements : List Pattern}
-    {sourceElementType : TypeExpr}
-    (sourceCollectionType : CollType) (sourceRest : Option String)
+    {leftOuter rightOuter : OneHoleContext} {wireName : String}
+    {leftRawBefore rightRawBefore leftArguments rightArguments :
+      List Pattern}
+    {parameters : List TermParam}
+    (sourceConstructor : String)
     (leftAbstractBefore rightAbstractBefore : List Pattern)
-    (leftPlan : CostStaticElementPlan source color targetFree sourceBound
-      targetBound thinning leftAvailable leftOuter collectionType leftRawBefore
-      leftElements rest sourceElementType)
-    (rightPlan : CostStaticElementPlan source color targetFree sourceBound
-      targetBound thinning rightAvailable rightOuter collectionType
-      rightRawBefore rightElements rest sourceElementType)
-    (leftTyped : WellSorted.ElementsHaveType source.costWholeLanguage
-      targetFree leftAvailable leftElements
-        (mapTypeExpr (color.symbols source) sourceElementType))
-    (rightTyped : WellSorted.ElementsHaveType source.costWholeLanguage
-      targetFree rightAvailable rightElements
-        (mapTypeExpr (color.symbols source) sourceElementType))
-    (leftCanonical : Pattern.hasCanonicalBinderMetadataList leftElements = true)
-    (rightCanonical : Pattern.hasCanonicalBinderMetadataList rightElements = true)
-    (leftObjects : WellSorted.isObjectPatternList leftElements = true)
-    (rightObjects : WellSorted.isObjectPatternList rightElements = true)
+    (leftPlan : CostStaticArgumentPlan source color targetFree sourceBound
+      targetBound thinning leftAvailable leftOuter wireName leftRawBefore
+      leftArguments parameters)
+    (rightPlan : CostStaticArgumentPlan source color targetFree sourceBound
+      targetBound thinning rightAvailable rightOuter wireName rightRawBefore
+      rightArguments parameters)
+    (leftTyped : WellSorted.ArgumentsHaveTypes source.costWholeLanguage
+      targetFree leftAvailable leftArguments
+        (parameters.map (mapTermParam (color.symbols source))))
+    (rightTyped : WellSorted.ArgumentsHaveTypes source.costWholeLanguage
+      targetFree rightAvailable rightArguments
+        (parameters.map (mapTermParam (color.symbols source))))
+    (leftCanonical : Pattern.hasCanonicalBinderMetadataList leftArguments =
+      true)
+    (rightCanonical : Pattern.hasCanonicalBinderMetadataList rightArguments =
+      true)
+    (leftObjects : WellSorted.isObjectPatternList leftArguments = true)
+    (rightObjects : WellSorted.isObjectPatternList rightArguments = true)
     (leftReflective : ∀ presentation ∈
       source.costWholeReflectionProfile.presentations,
       scopeSafeListAt presentation.quoteScope presentation.quoteConstructor leftAvailable.length
-        leftElements = true)
+        leftArguments = true)
     (rightReflective : ∀ presentation ∈
       source.costWholeReflectionProfile.presentations,
       scopeSafeListAt presentation.quoteScope presentation.quoteConstructor rightAvailable.length
-        rightElements = true)
+        rightArguments = true)
     (leftTargetBoundSplit : ∃ sealed,
       targetBound = leftAvailable ++ sealed)
     (rightTargetBoundSplit : ∃ sealed,
@@ -2106,180 +1852,79 @@ theorem costStaticElementPlan_canonicalStopAlignedBelow
     (leftSkeletonContext rightSkeletonContext : OneHoleContext)
     (leftAbstractEq : leftRootPlan.abstractPattern =
       leftSkeletonContext.fill
-        (.collection sourceCollectionType
-          (leftAbstractBefore ++ leftPlan.abstractPatterns) sourceRest))
+        (.apply sourceConstructor
+          (leftAbstractBefore ++ leftPlan.abstractPatterns)))
     (rightAbstractEq : rightRootPlan.abstractPattern =
       rightSkeletonContext.fill
-        (.collection sourceCollectionType
-          (rightAbstractBefore ++ rightPlan.abstractPatterns) sourceRest))
+        (.apply sourceConstructor
+          (rightAbstractBefore ++ rightPlan.abstractPatterns)))
     (leftEmbedding : CostStaticPlanEntryEmbedding source color targetFree
       leftPlan.boundaryTable.entries leftRootPlan.boundaryTable.entries)
     (rightEmbedding : CostStaticPlanEntryEmbedding source color targetFree
       rightPlan.boundaryTable.entries rightRootPlan.boundaryTable.entries)
-    (leftElementRoute : Nonempty (CostCanonicalTypeRoute source color
-      (mapTypeExpr (color.symbols source) rootSourceType)
-      (mapTypeExpr (color.symbols source) sourceElementType)))
-    (rightElementRoute : Nonempty (CostCanonicalTypeRoute source color
-      (mapTypeExpr (color.symbols source) rootSourceType)
-      (mapTypeExpr (color.symbols source) sourceElementType)))
+    (parameterRoute : ∀ {parameter : TermParam} {expected : TypeExpr},
+      parameter ∈ parameters → parameterType? parameter = some expected →
+        Nonempty (CostCanonicalTypeRoute source color
+          (mapTypeExpr (color.symbols source) rootSourceType)
+          (mapTypeExpr (color.symbols source) expected)))
     (availableEq : leftAvailable = rightAvailable)
-    (leftElementsSizeLt : sizeOf leftElements < sizeOf leftRoot)
-    (rightElementsSizeLt : sizeOf rightElements < sizeOf rightRoot)
-    (rawAligned : CanonicalStopAlignedList rawDeclaration rawStop leftElements
-      rightElements) :
+    (leftArgumentsSizeLt : sizeOf leftArguments < sizeOf leftRoot)
+    (rightArgumentsSizeLt : sizeOf rightArguments < sizeOf rightRoot)
+    (rawAligned : CanonicalStopAlignedList
+      rawDeclaration
+      rawStop leftArguments rightArguments) :
     CanonicalStopAlignedList declaration
-      (CostStaticPlanCanonicalStopBelow leftRootPlan rightRootPlan declaration
-        rawDeclaration rawStop (sizeOf leftRoot + sizeOf rightRoot))
-      leftPlan.abstractPatterns rightPlan.abstractPatterns := by
-  cases rawAligned with
-  | nil =>
-      cases leftPlan
-      cases rightPlan
-      cases leftTyped
-      cases rightTyped
-      exact .nil
-  | cons headAligned tailAligned =>
-      cases leftPlan with
-      | cons leftHead leftTail =>
-        cases rightPlan with
-        | cons rightHead rightTail =>
-          cases leftTyped with
-          | cons leftHeadTyped leftTailTyped =>
-            cases rightTyped with
-            | cons rightHeadTyped rightTailTyped =>
-              have leftCanonicalParts := leftCanonical
-              simp only [Pattern.hasCanonicalBinderMetadataList,
-                Bool.and_eq_true] at leftCanonicalParts
-              have rightCanonicalParts := rightCanonical
-              simp only [Pattern.hasCanonicalBinderMetadataList,
-                Bool.and_eq_true] at rightCanonicalParts
-              have leftObjectParts := leftObjects
-              simp only [WellSorted.isObjectPatternList,
-                Bool.and_eq_true] at leftObjectParts
-              have rightObjectParts := rightObjects
-              simp only [WellSorted.isObjectPatternList,
-                Bool.and_eq_true] at rightObjectParts
-              have leftHeadAdmission : leftHead.RawAdmission :=
-                ⟨⟨⟨leftHeadTyped, leftCanonicalParts.1, leftObjectParts.1,
-                  leftHeadTyped.isWellScopedAt⟩,
-                  reflectiveScopeSafeAt_cons_head leftReflective⟩,
-                  leftTargetBoundSplit⟩
-              have rightHeadAdmission : rightHead.RawAdmission :=
-                ⟨⟨⟨rightHeadTyped, rightCanonicalParts.1, rightObjectParts.1,
-                  rightHeadTyped.isWellScopedAt⟩,
-                  reflectiveScopeSafeAt_cons_head rightReflective⟩,
-                  rightTargetBoundSplit⟩
-              let leftFrame : OneHoleContext :=
-                .collection sourceCollectionType leftAbstractBefore .hole
-                  leftTail.abstractPatterns sourceRest
-              let rightFrame : OneHoleContext :=
-                .collection sourceCollectionType rightAbstractBefore .hole
-                  rightTail.abstractPatterns sourceRest
-              have leftHeadRootEq : leftRootPlan.abstractPattern =
-                  (leftSkeletonContext.comp leftFrame).fill
-                    leftHead.abstractPattern := by
-                rw [OneHoleContext.fill_comp]
-                simpa [leftFrame, OneHoleContext.fill,
-                  CostStaticElementPlan.abstractPatterns,
-                  List.append_assoc] using leftAbstractEq
-              have rightHeadRootEq : rightRootPlan.abstractPattern =
-                  (rightSkeletonContext.comp rightFrame).fill
-                    rightHead.abstractPattern := by
-                rw [OneHoleContext.fill_comp]
-                simpa [rightFrame, OneHoleContext.fill,
-                  CostStaticElementPlan.abstractPatterns,
-                  List.append_assoc] using rightAbstractEq
-              have leftHeadEmbedding :
-                  CostStaticPlanEntryEmbedding source color targetFree
-                    leftHead.boundaryTable.entries
-                    leftRootPlan.boundaryTable.entries := by
-                apply CostStaticPlanEntryEmbedding.leftOfTableAppend
-                  leftHead.boundaryTable leftTail.boundaryTable
-                change CostStaticPlanEntryEmbedding source color targetFree
-                  (TypedCostRegionBoundaryTable.append leftHead.boundaryTable
-                    leftTail.boundaryTable).entries
-                  leftRootPlan.boundaryTable.entries at leftEmbedding
-                exact leftEmbedding
-              have rightHeadEmbedding :
-                  CostStaticPlanEntryEmbedding source color targetFree
-                    rightHead.boundaryTable.entries
-                    rightRootPlan.boundaryTable.entries := by
-                apply CostStaticPlanEntryEmbedding.leftOfTableAppend
-                  rightHead.boundaryTable rightTail.boundaryTable
-                change CostStaticPlanEntryEmbedding source color targetFree
-                  (TypedCostRegionBoundaryTable.append rightHead.boundaryTable
-                    rightTail.boundaryTable).entries
-                  rightRootPlan.boundaryTable.entries at rightEmbedding
-                exact rightEmbedding
-              have childResult := costStaticRegionPlan_canonicalStopAligned
-                collectionDeterministic declaration rawDeclaration leftHead
-                rightHead leftHead rightHead leftHeadAdmission rightHeadAdmission
-                .hole .hole rfl rfl
-                (CostStaticPlanEntryEmbedding.refl
-                  leftHead.boundaryTable.entries)
-                (CostStaticPlanEntryEmbedding.refl
-                  rightHead.boundaryTable.entries)
-                ⟨.refl⟩ ⟨.refl⟩ rfl availableEq le_rfl le_rfl headAligned
-              have headResult := canonicalStopAligned_map
-                (fun stopped => stopped.liftBelow leftRootPlan rightRootPlan
-                  leftHead rightHead
-                  (leftSkeletonContext.comp leftFrame)
-                  (rightSkeletonContext.comp rightFrame)
-                  leftHeadRootEq rightHeadRootEq leftHeadEmbedding
-                  rightHeadEmbedding leftElementRoute rightElementRoute
-                  (by simp at leftElementsSizeLt ⊢; omega)
-                  (by simp at rightElementsSizeLt ⊢; omega) rfl)
-                childResult
-              have leftTailEmbedding :
-                  CostStaticPlanEntryEmbedding source color targetFree
-                    leftTail.boundaryTable.entries
-                    leftRootPlan.boundaryTable.entries := by
-                apply CostStaticPlanEntryEmbedding.rightOfTableAppend
-                  leftHead.boundaryTable leftTail.boundaryTable
-                change CostStaticPlanEntryEmbedding source color targetFree
-                  (TypedCostRegionBoundaryTable.append leftHead.boundaryTable
-                    leftTail.boundaryTable).entries
-                  leftRootPlan.boundaryTable.entries at leftEmbedding
-                exact leftEmbedding
-              have rightTailEmbedding :
-                  CostStaticPlanEntryEmbedding source color targetFree
-                    rightTail.boundaryTable.entries
-                    rightRootPlan.boundaryTable.entries := by
-                apply CostStaticPlanEntryEmbedding.rightOfTableAppend
-                  rightHead.boundaryTable rightTail.boundaryTable
-                change CostStaticPlanEntryEmbedding source color targetFree
-                  (TypedCostRegionBoundaryTable.append rightHead.boundaryTable
-                    rightTail.boundaryTable).entries
-                  rightRootPlan.boundaryTable.entries at rightEmbedding
-                exact rightEmbedding
-              exact .cons headResult
-                (costStaticElementPlan_canonicalStopAlignedBelow
-                  collectionDeterministic declaration rawDeclaration
-                  leftRootPlan rightRootPlan sourceCollectionType sourceRest
-                  (leftAbstractBefore ++ [leftHead.abstractPattern])
-                  (rightAbstractBefore ++ [rightHead.abstractPattern])
-                  leftTail rightTail leftTailTyped rightTailTyped
-                  leftCanonicalParts.2 rightCanonicalParts.2
-                  leftObjectParts.2 rightObjectParts.2
-                  (binderSafeListAt_cons_tail leftReflective)
-                  (binderSafeListAt_cons_tail rightReflective)
-                  leftTargetBoundSplit rightTargetBoundSplit
-                  leftSkeletonContext rightSkeletonContext
-                  (by
-                    simpa [CostStaticElementPlan.abstractPatterns,
-                      List.append_assoc] using leftAbstractEq)
-                  (by
-                    simpa [CostStaticElementPlan.abstractPatterns,
-                      List.append_assoc] using rightAbstractEq)
-                  leftTailEmbedding rightTailEmbedding leftElementRoute
-                  rightElementRoute availableEq
-                  (by simp at leftElementsSizeLt ⊢; omega)
-                  (by simp at rightElementsSizeLt ⊢; omega) tailAligned)
-  termination_by 3 * (sizeOf leftElements + sizeOf rightElements) + 1
-  decreasing_by
-    all_goals subst rightElements
-    all_goals subst leftElements
-    all_goals simp
-    all_goals omega
+      (CostStaticPlanCanonicalStop leftRootPlan rightRootPlan declaration
+        rawDeclaration
+        rawStop)
+      leftPlan.abstractPatterns rightPlan.abstractPatterns :=
+  canonicalStopAlignedList_map CostStaticPlanCanonicalStopBelow.toCanonicalStop
+    (costStaticArgumentPlan_canonicalStopAlignedBelow collectionDeterministic declaration
+      rawDeclaration leftRootPlan rightRootPlan sourceConstructor leftAbstractBefore
+      rightAbstractBefore leftPlan rightPlan leftTyped rightTyped leftCanonical rightCanonical
+      leftObjects rightObjects leftReflective rightReflective leftTargetBoundSplit
+      rightTargetBoundSplit leftSkeletonContext rightSkeletonContext leftAbstractEq
+      rightAbstractEq leftEmbedding rightEmbedding parameterRoute availableEq
+      leftArgumentsSizeLt rightArgumentsSizeLt rawAligned)
+
+section StrictReadoutControls
+
+set_option autoImplicit false
+
+variable {source : CIGSLT} {color : CostStaticColor}
+variable {targetFree : WellSorted.FreeTypeContext}
+variable {sourceBound targetBound : List TypeExpr}
+variable {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+variable {leftAvailable rightAvailable : List TypeExpr}
+variable {leftOuter rightOuter : OneHoleContext}
+variable {leftRoot rightRoot : Pattern} {sourceType : TypeExpr}
+variable (leftPlan : CostStaticRegionPlan source color targetFree sourceBound
+    targetBound thinning leftAvailable leftOuter leftRoot sourceType)
+variable (rightPlan : CostStaticRegionPlan source color targetFree sourceBound
+    targetBound thinning rightAvailable rightOuter rightRoot sourceType)
+variable (declaration rawDeclaration : ReflectivePresentationDecl)
+variable (rawStop : Pattern → Pattern → Prop)
+
+example (measure : Nat) : CanonicalStopAlignedList declaration
+    (CostStaticPlanCanonicalStop leftPlan rightPlan declaration rawDeclaration rawStop)
+    [.bvar 0, .bvar 0] [.bvar 0, .bvar 0] :=
+  canonicalStopAlignedList_map
+    (first := CostStaticPlanCanonicalStopBelow leftPlan rightPlan declaration
+      rawDeclaration rawStop measure)
+    CostStaticPlanCanonicalStopBelow.toCanonicalStop
+    (.cons (.bvar 0) (.cons (.bvar 0) .nil))
+
+example : ¬ CanonicalStopAlignedList declaration
+    (CostStaticPlanCanonicalStopBelow leftPlan rightPlan declaration rawDeclaration rawStop 0)
+    [.bvar 0] [.fvar "changed"] := by
+  intro aligned
+  cases aligned with
+  | cons head _ =>
+    cases head with
+    | leaf stopped =>
+      obtain ⟨_, _, _, smaller⟩ := stopped
+      exact Nat.not_lt_zero _ smaller
+
+end StrictReadoutControls
 
 end Mettapedia.GSLT.LanguageDef

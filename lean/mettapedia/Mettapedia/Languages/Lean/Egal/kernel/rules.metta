@@ -151,7 +151,7 @@
        (case (rule:conclusion (mg:proposition (mg:known (eq:theory $E) $id)) 0)
          (((Concludes $n $conclusion)
            (case (eq:sides $E $conclusion)
-             (((Sides $left $right) (== (mgt:head $right) (Tm.named (lean:id "Lean_DecCanon"))))
+             (((Sides $left $right) (== (mgt:head $right) (Tm.named (egal:id "Lean_DecCanon"))))
               ($other False))))
           ($other False)))
        False))
@@ -180,7 +180,7 @@
        (let $next (rules:declare-one $E $pass (car-atom $declarations) $sum)
          (rules:declare-list $E $pass (cdr-atom $declarations) $next))))
 (= (rules:load $E)
-   (let* (($inventory (mg:inventory (lean:theory)))
+   (let* (($inventory (mg:inventory (egal:theory)))
           ($declarations (cdr-atom $inventory))
           ($first (rules:declare-list $E equations $declarations (Loaded 0 0 ()))))
      (rules:declare-list $E others $declarations $first)))
@@ -202,31 +202,31 @@
 ; and equal functions.
 (= (rules:declare-names $E $set $sources)
    (if (== $sources ()) done
-       (let $head (conv:declare $E (mg:empty-context) $set (lean:id (car-atom $sources)))
+       (let $head (conv:declare $E (mg:empty-context) $set (egal:id (car-atom $sources)))
          (rules:declare-names $E $set (cdr-atom $sources)))))
 (= (rules:type-names $sources)
    (if (== $sources ()) done
-       (let $key (typ:declare (lean:id (car-atom $sources))) (rules:type-names (cdr-atom $sources)))))
+       (let $key (typ:declare (egal:id (car-atom $sources))) (rules:type-names (cdr-atom $sources)))))
 ; A product of propositions is a proposition.  The library states it of
 ; Power 1, which LeanProp is by definition; a typing lemma is found by what
 ; it is stated of, so it is stated here of LeanProp, proved by the library's.
 (= (rules:product-of-propositions $E)
    (case (mg:try-known (eq:theory $E) "Lean_Pi_prop")
      (((Error $call $why)
-       (let* (($in (Tm.named (lean:id "In"))) ($pi (Tm.named (lean:id "Pi"))) ($prop (Tm.named (lean:id "LeanProp")))
+       (let* (($in (Tm.named (egal:id "In"))) ($pi (Tm.named (egal:id "Pi"))) ($prop (Tm.named (egal:id "LeanProp")))
               ($claim (Tm.all (Tp.base 0) (Tm.all (Tp.arr (Tp.base 0) (Tp.base 0))
                         (Tm.imp (Tm.all (Tp.base 0) (Tm.imp (Tm.app (Tm.app $in (Tm.db 0)) (Tm.db 2))
                                                              (Tm.app (Tm.app $in (Tm.app (Tm.db 1) (Tm.db 0))) $prop)))
                                 (Tm.app (Tm.app $in (Tm.app (Tm.app $pi (Tm.db 1)) (Tm.lam (Tp.base 0) (Tm.app (Tm.db 1) (Tm.db 0)))))
                                         $prop))))))
-         (case (mg:prove-by (eq:theory $E) "Lean_Pi_prop" $claim (Tac.exact (mg:known (eq:theory $E) (lean:id "LeanPi_prop"))))
+         (case (mg:prove-by (eq:theory $E) "Lean_Pi_prop" $claim (Tac.exact (mg:known (eq:theory $E) (egal:id "LeanPi_prop"))))
            (((Error $call2 $why2) (Error $call2 $why2))
             ($proved (typ:declare "Lean_Pi_prop"))))))
       ($known (typ:declare "Lean_Pi_prop")))))
 ; Lean's formation rule at a computed level: for checking, not for inference.
 (= (rules:checks-only $cs_sources)
    (if (== $cs_sources ()) done
-       (let* (($cs_id (lean:id (car-atom $cs_sources))) ($cs_kept (add-atom &self (TypChecksOnly $cs_id))))
+       (let* (($cs_id (egal:id (car-atom $cs_sources))) ($cs_kept (add-atom &self (TypChecksOnly $cs_id))))
          (rules:checks-only (cdr-atom $cs_sources)))))
 (= (rules:fixed $E)
    (let* (($computing (rules:declare-names $E lean ("beta" "LeanNum_add" "LeanNum_mul" "LeanSort_0" "LeanSort_S"
@@ -237,8 +237,8 @@
           ($product (rules:product-of-propositions $E))
           ($checking (rules:checks-only ("LeanPi_LeanSort_max_In" "LeanPi_LeanSort_In")))
           ($strict (rules:strict-names ("Lean_Nat_div" "Lean_Nat_mod" "Lean_Nat_sub" "Lean_Nat_decLe")))
-          ($pi (conv:declare-binder (Tm.named (lean:id "Pi")) (lean:id "Pi_family_eq")))
-          ($sigma (conv:declare-binder (Tm.named (lean:id "Sigma")) (lean:id "Sigma_family_eq")))
+          ($pi (conv:declare-binder (Tm.named (egal:id "Pi")) (egal:id "Pi_family_eq")))
+          ($sigma (conv:declare-binder (Tm.named (egal:id "Sigma")) (egal:id "Sigma_family_eq")))
           ($applying (rules:declare-names $E lean-beta ("beta")))
           ($inside (conv:declare-inside lean lean-beta (rules:inside-functions))))
      done))
@@ -254,19 +254,19 @@
 ; (numerals.metta) take their arguments computed.
 (= (rules:strict-names $sources)
    (if (== $sources ()) done
-       (let* (($head (Tm.named (lean:id (car-atom $sources)))) ($kept (conv:declare-strict lean $head)))
+       (let* (($head (Tm.named (egal:id (car-atom $sources)))) ($kept (conv:declare-strict lean $head)))
          (rules:strict-names (cdr-atom $sources)))))
 ; A numeral LeanNum n is Lean's zero or successor, by LeanNum_0 and LeanNum_S:
 ; these are views, used where an equation of Lean asks for a constructor.
 ; The same two turned around are rules: a successor of a numeral, or zero,
 ; is a numeral again.
 (= (rules:numerals $E)
-   (let* (($z (eq:turned $E (lean:id "LeanNum_0") "LeanNum_0_turned"))
-          ($s (eq:turned $E (lean:id "LeanNum_S") "LeanNum_S_turned"))
+   (let* (($z (eq:turned $E (egal:id "LeanNum_0") "LeanNum_0_turned"))
+          ($s (eq:turned $E (egal:id "LeanNum_S") "LeanNum_S_turned"))
           ($a (conv:declare $E (mg:empty-context) lean "LeanNum_0_turned"))
           ($b (conv:declare $E (mg:empty-context) lean "LeanNum_S_turned"))
-          ($c (conv:declare $E (mg:empty-context) lean-views (lean:id "LeanNum_0")))
-          ($d (conv:declare $E (mg:empty-context) lean-views (lean:id "LeanNum_S"))))
+          ($c (conv:declare $E (mg:empty-context) lean-views (egal:id "LeanNum_0")))
+          ($d (conv:declare $E (mg:empty-context) lean-views (egal:id "LeanNum_S"))))
      done))
 (= (rules:open $E)
    (let* (($fixed (rules:fixed $E)) ($numerals (rules:numerals $E))) (rules:load $E)))
@@ -281,5 +281,5 @@
      (if (== $stem $source) none
          (if (str:ends-with $stem "_proof_")
              (let $n (str:byte-length $stem)
-               (conv:declare-companion (lean:id (str:byte-slice $stem 0 (- $n 7))) $id))
+               (conv:declare-companion (egal:id (str:byte-slice $stem 0 (- $n 7))) $id))
              none))))

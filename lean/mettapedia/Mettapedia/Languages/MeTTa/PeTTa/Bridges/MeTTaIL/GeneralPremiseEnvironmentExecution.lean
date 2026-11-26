@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.PeTTa.BridgeTransport
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.GeneralPremiseMachineExecution
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.GeneralScopedMatchExecution
 import Mettapedia.Tools.KernelReflexivity
@@ -1559,14 +1560,7 @@ def groundHeadNames : List String :=
 def groundHeads (head : String) : Bool := groundHeadNames.contains head
 
 theorem member_closed : ProgramClosed memberHeads MatchAutomataProgram.program := by
-  constructor
-  · decide +kernel
-  · intro equation member supported
-    have checked : MatchAutomataProgram.program.equations.all (fun equation =>
-        !memberHeads equation.head || codeWithin memberHeads equation.body) = true := by
-      decide +kernel
-    have row := List.all_eq_true.mp checked equation member
-    simpa only [supported, Bool.not_true, Bool.false_or] using row
+  exact BridgeKit.closed_of_all _ _ (by decide +kernel) (by decide +kernel)
 
 theorem member_retained_equations :
     MatchAutomataProgram.program.equations.filter (fun equation => memberHeads equation.head) =
@@ -1582,14 +1576,7 @@ theorem member_agreement : ProgramAgreementOn memberHeads MatchAutomataProgram.p
   Eval.programAgreementOn_of_retained_rows _ _ _ member_retained_equations member_retained_declarations
 
 theorem metadata_closed : ProgramClosed metadataHeads RuleExecutionProgram.program := by
-  constructor
-  · decide +kernel
-  · intro equation member supported
-    have checked : RuleExecutionProgram.program.equations.all (fun equation =>
-        !metadataHeads equation.head || codeWithin metadataHeads equation.body) = true := by
-      decide +kernel
-    have row := List.all_eq_true.mp checked equation member
-    simpa only [supported, Bool.not_true, Bool.false_or] using row
+  exact BridgeKit.closed_of_all _ _ (by decide +kernel) (by decide +kernel)
 
 theorem metadata_retained_equations :
     RuleExecutionProgram.program.equations.filter (fun equation => metadataHeads equation.head) =
@@ -1605,14 +1592,7 @@ theorem metadata_agreement : ProgramAgreementOn metadataHeads RuleExecutionProgr
   Eval.programAgreementOn_of_retained_rows _ _ _ metadata_retained_equations metadata_retained_declarations
 
 theorem ground_closed : ProgramClosed groundHeads premiseRuntimeProgram := by
-  constructor
-  · decide +kernel
-  · intro equation member supported
-    have checked : premiseRuntimeProgram.equations.all (fun equation =>
-        !groundHeads equation.head || codeWithin groundHeads equation.body) = true := by
-      decide +kernel
-    have row := List.all_eq_true.mp checked equation member
-    simpa only [supported, Bool.not_true, Bool.false_or] using row
+  exact BridgeKit.closed_of_all _ _ (by decide +kernel) (by decide +kernel)
 
 theorem ground_retained_equations :
     premiseRuntimeProgram.equations.filter (fun equation => groundHeads equation.head) =

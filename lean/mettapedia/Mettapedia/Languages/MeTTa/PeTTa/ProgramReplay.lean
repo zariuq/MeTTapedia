@@ -1,5 +1,5 @@
 import Mettapedia.Languages.MeTTa.PeTTa.Resumption
-import Mettapedia.Languages.MeTTa.PeTTa.Bridges.SpaceLanguageDef
+import Mettapedia.Languages.MeTTa.SpaceTheory.PeTTa
 import Mathlib.Data.List.Chain
 
 /-!
@@ -694,13 +694,13 @@ def nativeStep (program : Program) (source : Snapshot) : Option Snapshot :=
 /-- The ordinary evaluator of a space uses the presentation generated from
 its selected rows, with the same finite store and continuation readback. -/
 def nativeStepInSpace (rows : List Atom) (source : Snapshot) : Option Snapshot :=
-  match Bridges.SpaceLanguageDef.step rows source.decode with
+  match SpaceTheory.PeTTaPresentation.step rows source.decode with
   | none => none
   | some target => some (snapshot (supportAfter source.cellNames source.decode) target)
 
 theorem nativeStepInSpace_exact (rows : List Atom) (source : Snapshot) :
     nativeStepInSpace rows source = nativeStep (SpaceSemantics.index rows) source := by
-  simp only [nativeStepInSpace, nativeStep, Bridges.SpaceLanguageDef.step_exact]
+  simp only [nativeStepInSpace, nativeStep, SpaceTheory.PeTTaPresentation.step_exact]
 
 theorem nativeStep_of_transition (program : Program) (source : Snapshot)
     (target : Configuration) (transition : DeclarativeSpec.Transition program source.decode target) :
@@ -1099,11 +1099,11 @@ inductive Transition : Configuration → Configuration → Prop where
 
 /-- Consult the presentation of the actual current store at each step. -/
 def step (source : Configuration) : Option Configuration :=
-  Bridges.SpaceLanguageDef.step source.state.core source
+  SpaceTheory.PeTTaPresentation.step source.state.core source
 
 theorem step_eq_indexed (source : Configuration) :
     step source = Eval.step (index source.state.core) source :=
-  Bridges.SpaceLanguageDef.step_exact _ _
+  SpaceTheory.PeTTaPresentation.step_exact _ _
 
 theorem step_exact (source target : Configuration) :
     step source = some target ↔ Transition source target := by

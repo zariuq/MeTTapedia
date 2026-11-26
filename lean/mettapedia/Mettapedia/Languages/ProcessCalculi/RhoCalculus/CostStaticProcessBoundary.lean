@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryPairRecursion
 import Mettapedia.OSLF.MeTTaIL.ReflectiveCanonicalCollapse
 import Mettapedia.OSLF.MeTTaIL.ReflectiveCanonicalOrderAgnosticDepths
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryBoundVariableExposure
@@ -300,29 +301,8 @@ noncomputable def stoppedProbeCollapseOfCloseSmaller
     (boundarySupport :
       state.certified.typed.boundary.targetSupport = available)
     (boundaryType : state.certified.typed.boundary.targetType = type)
-    (closeSmaller :
-      ∀ {childAvailable childOuter : List TypeExpr}
-        {leftChild rightChild : Pattern} {childType : TypeExpr},
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType leftChild →
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType rightChild →
-        canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
-              rhoReflectivePresentation)
-            leftChild =
-          canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
-              rhoReflectivePresentation)
-            rightChild →
-        sizeOf leftChild + sizeOf rightChild <
-          sizeOf leftPattern + sizeOf rightPattern →
-        rhoCanonicalRecursiveTypeDomain.Admissible childType →
-        Nonempty (CostCanonicalPairElaboration rhoCIGSLT
-          rhoHereditaryNormalizationKernel targetFree childAvailable
-          childOuter leftChild rightChild childType)) :
+    (closeSmaller : RhoPairCloseSmaller declarationColor targetFree
+      (sizeOf leftPattern + sizeOf rightPattern)) :
     RhoCollapsingLeafExposure leftView.node leftView.children right := by
   have boundaryWellSorted : ReflectiveWellSorted.OpenPatternWellSorted
       rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
@@ -436,29 +416,8 @@ noncomputable def stoppedProbeCollapseSourceVariableOfCloseSmaller
             rhoReflectivePresentation)
           (.fvar name))
     (boundaryType : state.certified.typed.boundary.targetType = type)
-    (closeSmaller :
-      ∀ {childAvailable childOuter : List TypeExpr}
-        {leftChild rightChild : Pattern} {childType : TypeExpr},
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType leftChild →
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType rightChild →
-        canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
-              rhoReflectivePresentation)
-            leftChild =
-          canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
-              rhoReflectivePresentation)
-            rightChild →
-        sizeOf leftChild + sizeOf rightChild <
-          sizeOf leftPattern + sizeOf (Pattern.fvar name) →
-        rhoCanonicalRecursiveTypeDomain.Admissible childType →
-        Nonempty (CostCanonicalPairElaboration rhoCIGSLT
-          rhoHereditaryNormalizationKernel targetFree childAvailable
-          childOuter leftChild rightChild childType)) :
+    (closeSmaller : RhoPairCloseSmaller declarationColor targetFree
+      (sizeOf leftPattern + sizeOf (Pattern.fvar name))) :
     RhoCollapsingLeafExposure leftView.node leftView.children right := by
   have boundaryWellSorted : ReflectiveWellSorted.OpenPatternWellSorted
       rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
@@ -567,29 +526,8 @@ noncomputable def leftStoppedProbeCollapseOfCloseSmaller
     (boundarySupport :
       state.certified.typed.boundary.targetSupport = available)
     (boundaryType : state.certified.typed.boundary.targetType = type)
-    (closeSmaller :
-      ∀ {childAvailable childOuter : List TypeExpr}
-        {leftChild rightChild : Pattern} {childType : TypeExpr},
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType leftChild →
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType rightChild →
-        canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
-              rhoReflectivePresentation)
-            leftChild =
-          canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
-              rhoReflectivePresentation)
-            rightChild →
-        sizeOf leftChild + sizeOf rightChild <
-          sizeOf leftPattern + sizeOf rightPattern →
-        rhoCanonicalRecursiveTypeDomain.Admissible childType →
-        Nonempty (CostCanonicalPairElaboration rhoCIGSLT
-          rhoHereditaryNormalizationKernel targetFree childAvailable
-          childOuter leftChild rightChild childType)) :
+    (closeSmaller : RhoPairCloseSmaller declarationColor targetFree
+      (sizeOf leftPattern + sizeOf rightPattern)) :
     RhoCanonicalStaticPairSemanticCut declarationColor left right
       (.leftCollapsing color leftView collapsing) :=
   .leftEnclosing leftView collapsing
@@ -638,29 +576,8 @@ noncomputable def rightStoppedProbeCollapseOfCloseSmaller
     (boundarySupport :
       state.certified.typed.boundary.targetSupport = available)
     (boundaryType : state.certified.typed.boundary.targetType = type)
-    (closeSmaller :
-      ∀ {childAvailable childOuter : List TypeExpr}
-        {leftChild rightChild : Pattern} {childType : TypeExpr},
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType leftChild →
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType rightChild →
-        canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
-              rhoReflectivePresentation)
-            leftChild =
-          canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
-              rhoReflectivePresentation)
-            rightChild →
-        sizeOf leftChild + sizeOf rightChild <
-          sizeOf leftPattern + sizeOf rightPattern →
-        rhoCanonicalRecursiveTypeDomain.Admissible childType →
-        Nonempty (CostCanonicalPairElaboration rhoCIGSLT
-          rhoHereditaryNormalizationKernel targetFree childAvailable
-          childOuter leftChild rightChild childType)) :
+    (closeSmaller : RhoPairCloseSmaller declarationColor targetFree
+      (sizeOf leftPattern + sizeOf rightPattern)) :
     RhoCanonicalStaticPairSemanticCut declarationColor left right
       (.rightCollapsing color rightView collapsing) :=
   .rightEnclosing rightView collapsing
@@ -718,29 +635,8 @@ noncomputable def leftStoppedProbeCollapseSourceVariableOfCloseSmaller
             rhoReflectivePresentation)
           (.fvar name))
     (boundaryType : state.certified.typed.boundary.targetType = type)
-    (closeSmaller :
-      ∀ {childAvailable childOuter : List TypeExpr}
-        {leftChild rightChild : Pattern} {childType : TypeExpr},
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType leftChild →
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType rightChild →
-        canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
-              rhoReflectivePresentation)
-            leftChild =
-          canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
-              rhoReflectivePresentation)
-            rightChild →
-        sizeOf leftChild + sizeOf rightChild <
-          sizeOf leftPattern + sizeOf (Pattern.fvar name) →
-        rhoCanonicalRecursiveTypeDomain.Admissible childType →
-        Nonempty (CostCanonicalPairElaboration rhoCIGSLT
-          rhoHereditaryNormalizationKernel targetFree childAvailable
-          childOuter leftChild rightChild childType)) :
+    (closeSmaller : RhoPairCloseSmaller declarationColor targetFree
+      (sizeOf leftPattern + sizeOf (Pattern.fvar name))) :
     RhoCanonicalStaticPairSemanticCut declarationColor left right
       (.leftCollapsing color leftView collapsing) :=
   .leftEnclosing leftView collapsing
@@ -787,29 +683,8 @@ noncomputable def rightStoppedProbeCollapseSourceVariableOfCloseSmaller
             rhoReflectivePresentation)
           (.fvar name))
     (boundaryType : state.certified.typed.boundary.targetType = type)
-    (closeSmaller :
-      ∀ {childAvailable childOuter : List TypeExpr}
-        {leftChild rightChild : Pattern} {childType : TypeExpr},
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType leftChild →
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType rightChild →
-        canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
-              rhoReflectivePresentation)
-            leftChild =
-          canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
-              rhoReflectivePresentation)
-            rightChild →
-        sizeOf leftChild + sizeOf rightChild <
-          sizeOf (Pattern.fvar name) + sizeOf rightPattern →
-        rhoCanonicalRecursiveTypeDomain.Admissible childType →
-        Nonempty (CostCanonicalPairElaboration rhoCIGSLT
-          rhoHereditaryNormalizationKernel targetFree childAvailable
-          childOuter leftChild rightChild childType)) :
+    (closeSmaller : RhoPairCloseSmaller declarationColor targetFree
+      (sizeOf (Pattern.fvar name) + sizeOf rightPattern)) :
     RhoCanonicalStaticPairSemanticCut declarationColor left right
       (.rightCollapsing color rightView collapsing) :=
   .rightEnclosing rightView collapsing

@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.PeTTa.EquationEquality
 import Batteries.Data.List.Lemmas
 import Mettapedia.Languages.MeTTa.PeTTa.BridgeKit
 import Mettapedia.Languages.MeTTa.PeTTa.BridgeTransport
@@ -958,278 +959,78 @@ private theorem append_equations (first second : Program) :
     (first.append second).equations = first.equations ++ second.equations := rfl
 private theorem append_declarations (first second : Program) :
     (first.append second).declarations = first.declarations ++ second.declarations := rfl
-private theorem oldContinuation_equations_erased :
-    oldContinuation.program.equations.filter (fun row => lowerHeads row.head) = [] := by decide +kernel
-private theorem oldContinuation_declarations_erased :
-    oldContinuation.program.declarations.filter (retainedCallDeclaration lowerHeads) = [] := by decide +kernel
-private theorem continuationSource_equations_erased :
-    continuationSource.program.equations.filter (fun row => lowerHeads row.head) = [] := by decide +kernel
-private theorem continuationSource_declarations_erased :
-    continuationSource.program.declarations.filter (retainedCallDeclaration lowerHeads) = [] := by decide +kernel
-private theorem oldOccurrence_equations_erased :
-    oldOccurrence.program.equations.filter (fun row => lowerHeads row.head) = [] := by decide +kernel
-private theorem oldOccurrence_declarations_erased :
-    oldOccurrence.program.declarations.filter (retainedCallDeclaration lowerHeads) = [] := by decide +kernel
-private theorem occurrenceSource_equations_erased :
-    occurrenceSource.program.equations.filter (fun row => lowerHeads row.head) = [] := by decide +kernel
-private theorem occurrenceSource_declarations_erased :
-    occurrenceSource.program.declarations.filter (retainedCallDeclaration lowerHeads) = [] := by decide +kernel
+def retainedRows (allowed : String → Bool) (program : Program) : List Equation × List Atom :=
+  (program.equations.filter (fun row => allowed row.head),
+    program.declarations.filter (retainedCallDeclaration allowed))
 
-private theorem oldCollector_equations_erased :
-    oldCollector.program.equations.filter (fun row => lowerHeads row.head) = [] := by decide +kernel
-private theorem oldCollector_declarations_erased :
-    oldCollector.program.declarations.filter (retainedCallDeclaration lowerHeads) = [] := by decide +kernel
-private theorem collectorSource_equations_erased :
-    collectorSource.program.equations.filter (fun row => lowerHeads row.head) = [] := by decide +kernel
-private theorem collectorSource_declarations_erased :
-    collectorSource.program.declarations.filter (retainedCallDeclaration lowerHeads) = [] := by decide +kernel
-
-private theorem support_equations_agree :
-    (oldSources.flatMap (fun part => part.program.equations)).filter (fun row => lowerHeads row.head) =
-    (sources.flatMap (fun part => part.program.equations)).filter (fun row => lowerHeads row.head) := by
+private theorem supportProjection_eq {Row : Type} (read : ProgramQuotation.QuotedProgram → List Row)
+    (continuation : read oldContinuation = read continuationSource)
+    (collector : read oldCollector = read collectorSource)
+    (occurrence : read oldOccurrence = read occurrenceSource) :
+    oldSources.flatMap read = sources.flatMap read := by
   conv_lhs => rw [oldSources_shape]
-  simp only [sources, List.flatMap_append, List.flatMap_cons, List.flatMap_nil,
-    List.filter_append, oldContinuation_equations_erased, continuationSource_equations_erased,
-    oldOccurrence_equations_erased, occurrenceSource_equations_erased,
-    oldCollector_equations_erased, collectorSource_equations_erased, List.append_nil]
+  simp only [sources, List.flatMap_append, List.flatMap_cons, List.flatMap_nil, List.append_nil,
+    continuation, collector, occurrence]
 
-private theorem support_declarations_agree :
-    (oldSources.flatMap (fun part => part.program.declarations)).filter (retainedCallDeclaration lowerHeads) =
-    (sources.flatMap (fun part => part.program.declarations)).filter (retainedCallDeclaration lowerHeads) := by
-  conv_lhs => rw [oldSources_shape]
-  simp only [sources, List.flatMap_append, List.flatMap_cons, List.flatMap_nil,
-    List.filter_append, oldContinuation_declarations_erased, continuationSource_declarations_erased,
-    oldOccurrence_declarations_erased, occurrenceSource_declarations_erased,
-    oldCollector_declarations_erased, collectorSource_declarations_erased, List.append_nil]
+/-- Segment checks derive agreement on dispatch, demand, and ordered
+bodies, with the consumer's head predicate unchanged. -/
+theorem agreement_of_replacement_rows (allowed : String → Bool)
+    (continuation : retainedRows allowed oldContinuation.program =
+      retainedRows allowed continuationSource.program)
+    (collector : retainedRows allowed oldCollector.program =
+      retainedRows allowed collectorSource.program)
+    (occurrence : retainedRows allowed oldOccurrence.program =
+      retainedRows allowed occurrenceSource.program) :
+    ProgramAgreementOn allowed RuleExecutionProgram.interpretedPremiseProgram runtime := by
+  apply programAgreementOn_of_retained_rows
+  · have same := supportProjection_eq (fun part => (retainedRows allowed part.program).1)
+      (congrArg Prod.fst continuation) (congrArg Prod.fst collector) (congrArg Prod.fst occurrence)
+    simp only [oldSources, retainedRows] at same
+    simp only [RuleExecutionProgram.interpretedPremiseProgram, runtime, append_equations,
+      CompleteExecution.PhysicalSourceAgreement.fold_equations,
+      List.filter_append, List.filter_flatMap]
+    rw [same]
+  · have same := supportProjection_eq (fun part => (retainedRows allowed part.program).2)
+      (congrArg Prod.snd continuation) (congrArg Prod.snd collector) (congrArg Prod.snd occurrence)
+    simp only [oldSources, retainedRows] at same
+    simp only [RuleExecutionProgram.interpretedPremiseProgram, runtime, append_declarations,
+      CompleteExecution.PhysicalSourceAgreement.fold_declarations,
+      List.filter_append, List.filter_flatMap]
+    rw [same]
+
+section
+
+private local instance : DecidableEq Equation := SpaceSemantics.Equation.decideEq
 
 theorem lower_agreement : ProgramAgreementOn lowerHeads RuleExecutionProgram.interpretedPremiseProgram runtime := by
-  apply programAgreementOn_of_retained_rows
-  · have same := support_equations_agree
-    unfold oldSources at same
-    simp only [RuleExecutionProgram.interpretedPremiseProgram, RuleExecutionProgram.interpretedPremiseBase.selected,
-      RuleExecutionProgram.interpretedPremiseMatching.selected, runtime, append_equations,
-      CompleteExecution.PhysicalSourceAgreement.fold_equations, List.filter_append]
-    rw [same]
-  · have same := support_declarations_agree
-    unfold oldSources at same
-    simp only [RuleExecutionProgram.interpretedPremiseProgram, RuleExecutionProgram.interpretedPremiseBase.selected,
-      RuleExecutionProgram.interpretedPremiseMatching.selected, runtime, append_declarations,
-      CompleteExecution.PhysicalSourceAgreement.fold_declarations, List.filter_append]
-    rw [same]
+  apply agreement_of_replacement_rows <;> decide +kernel
+
+end
 
 private def closedRow (row : Equation) : Bool := !lowerHeads row.head || codeWithin lowerHeads row.body
 
-private theorem all_split {α : Type} (items : List α) (test : α → Bool) (count : Nat)
-    (front : (items.take count).all test = true) (back : (items.drop count).all test = true) :
-    items.all test = true := by
-  have together : (items.take count ++ items.drop count).all test = true := by
-    rw [List.all_append, front, back]
-    rfl
-  simpa only [List.take_append_drop] using together
-
-private theorem closed_block_0 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 0).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_20 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 20).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_40 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 40).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_60 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 60).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_80 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 80).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_100 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 100).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_120 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 120).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_140 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 140).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_160 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 160).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_180 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 180).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_200 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 200).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_220 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 220).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_240 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 240).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_260 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 260).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_280 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 280).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_300 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 300).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_320 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 320).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_340 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 340).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_360 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 360).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_380 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 380).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_400 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 400).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_420 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 420).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_440 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 440).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_460 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 460).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_480 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 480).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_500 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 500).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_520 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 520).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_block_540 :
-    ((RuleExecutionProgram.interpretedPremiseProgram.equations.drop 540).take 20).all closedRow = true := by
-  decide +kernel
-private theorem closed_suffix_560 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 560).all closedRow = true := by
-  decide +kernel
-private theorem closed_suffix_540 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 540).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_540
-  simpa only [List.drop_drop] using closed_suffix_560
-private theorem closed_suffix_520 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 520).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_520
-  simpa only [List.drop_drop] using closed_suffix_540
-private theorem closed_suffix_500 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 500).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_500
-  simpa only [List.drop_drop] using closed_suffix_520
-private theorem closed_suffix_480 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 480).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_480
-  simpa only [List.drop_drop] using closed_suffix_500
-private theorem closed_suffix_460 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 460).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_460
-  simpa only [List.drop_drop] using closed_suffix_480
-private theorem closed_suffix_440 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 440).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_440
-  simpa only [List.drop_drop] using closed_suffix_460
-private theorem closed_suffix_420 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 420).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_420
-  simpa only [List.drop_drop] using closed_suffix_440
-private theorem closed_suffix_400 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 400).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_400
-  simpa only [List.drop_drop] using closed_suffix_420
-private theorem closed_suffix_380 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 380).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_380
-  simpa only [List.drop_drop] using closed_suffix_400
-private theorem closed_suffix_360 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 360).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_360
-  simpa only [List.drop_drop] using closed_suffix_380
-private theorem closed_suffix_340 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 340).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_340
-  simpa only [List.drop_drop] using closed_suffix_360
-private theorem closed_suffix_320 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 320).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_320
-  simpa only [List.drop_drop] using closed_suffix_340
-private theorem closed_suffix_300 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 300).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_300
-  simpa only [List.drop_drop] using closed_suffix_320
-private theorem closed_suffix_280 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 280).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_280
-  simpa only [List.drop_drop] using closed_suffix_300
-private theorem closed_suffix_260 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 260).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_260
-  simpa only [List.drop_drop] using closed_suffix_280
-private theorem closed_suffix_240 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 240).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_240
-  simpa only [List.drop_drop] using closed_suffix_260
-private theorem closed_suffix_220 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 220).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_220
-  simpa only [List.drop_drop] using closed_suffix_240
-private theorem closed_suffix_200 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 200).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_200
-  simpa only [List.drop_drop] using closed_suffix_220
-private theorem closed_suffix_180 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 180).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_180
-  simpa only [List.drop_drop] using closed_suffix_200
-private theorem closed_suffix_160 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 160).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_160
-  simpa only [List.drop_drop] using closed_suffix_180
-private theorem closed_suffix_140 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 140).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_140
-  simpa only [List.drop_drop] using closed_suffix_160
-private theorem closed_suffix_120 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 120).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_120
-  simpa only [List.drop_drop] using closed_suffix_140
-private theorem closed_suffix_100 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 100).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_100
-  simpa only [List.drop_drop] using closed_suffix_120
-private theorem closed_suffix_80 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 80).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_80
-  simpa only [List.drop_drop] using closed_suffix_100
-private theorem closed_suffix_60 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 60).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_60
-  simpa only [List.drop_drop] using closed_suffix_80
-private theorem closed_suffix_40 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 40).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_40
-  simpa only [List.drop_drop] using closed_suffix_60
-private theorem closed_suffix_20 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 20).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_20
-  simpa only [List.drop_drop] using closed_suffix_40
-private theorem closed_suffix_0 :
-    (RuleExecutionProgram.interpretedPremiseProgram.equations.drop 0).all closedRow = true := by
-  apply all_split _ _ 20 closed_block_0
-  simpa only [List.drop_drop] using closed_suffix_20
-
 theorem lower_closed : ProgramClosed lowerHeads RuleExecutionProgram.interpretedPremiseProgram := by
   apply closed_of_all _ _ (by decide +kernel)
-  exact closed_suffix_0
+  change RuleExecutionProgram.interpretedPremiseProgram.equations.all closedRow = true
+  have support : RuleExecutionProgram.interpretedPremiseSupportSources.all
+      (fun source => source.program.equations.all closedRow) = true := by
+    simp only [RuleExecutionProgram.interpretedPremiseSupportSources, List.all_cons,
+      List.all_nil, Bool.and_eq_true, and_true]
+    repeat' apply And.intro
+    all_goals decide +kernel
+  have supportRows : (RuleExecutionProgram.interpretedPremiseSupportSources.flatMap
+      (fun source => source.program.equations)).all closedRow = true := by
+    apply List.all_eq_true.mpr
+    intro equation member
+    obtain ⟨source, retained, inSource⟩ := List.mem_flatMap.mp member
+    exact List.all_eq_true.mp (List.all_eq_true.mp support _ retained) _ inSource
+  have base : RuleExecutionProgram.interpretedPremiseBase.equations.all closedRow = true := by
+    decide +kernel
+  have matching : RuleExecutionProgram.interpretedPremiseMatching.equations.all closedRow = true := by
+    decide +kernel
+  simp only [RuleExecutionProgram.interpretedPremiseProgram, append_equations,
+    CompleteExecution.PhysicalSourceAgreement.fold_equations, List.all_append,
+    supportRows, base, matching, Bool.and_self]
 
 theorem transport_lower {caller : Mettapedia.Languages.ProcessCalculi.MORK.Subst}
     {before after : Effects.State} {code answer : Atom}
@@ -1301,20 +1102,8 @@ end Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CollectionOccurrenceSearchE
 
 namespace Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.CollectionOccurrenceSearchExecution.SelectedNativeSource
 open SpaceSemantics Eval BridgeKit
-private local instance equationEq : DecidableEq SpaceSemantics.Equation := by
-  intro left right
-  apply decidable_of_iff (left.head = right.head ∧ left.arguments = right.arguments ∧ left.body = right.body)
-  constructor
-  · rintro ⟨head, arguments, body⟩
-    cases left
-    cases right
-    cases head
-    cases arguments
-    cases body
-    rfl
-  · intro same
-    cases same
-    exact ⟨rfl, rfl, rfl⟩
+private local instance equationEq : DecidableEq SpaceSemantics.Equation :=
+  SpaceSemantics.Equation.decideEq
 
 theorem metadata_agreement :
     ProgramAgreementOn CollectionOccurrenceSearchExecution.Interpreted.metadataHeads
@@ -1410,20 +1199,8 @@ private theorem key_declarations_absent (program : Program)
   exact absent (List.contains_iff_mem.mp known)
 
 
-private local instance keyEquationEq : DecidableEq SpaceSemantics.Equation := by
-  intro left right
-  apply decidable_of_iff (left.head = right.head ∧ left.arguments = right.arguments ∧ left.body = right.body)
-  constructor
-  · rintro ⟨head, arguments, body⟩
-    cases left
-    cases right
-    cases head
-    cases arguments
-    cases body
-    rfl
-  · intro same
-    cases same
-    exact ⟨rfl, rfl, rfl⟩
+private local instance keyEquationEq : DecidableEq SpaceSemantics.Equation :=
+  SpaceSemantics.Equation.decideEq
 
 private theorem key_named_0 : ProgramAgreementOn (fun name => name == "gslt:occurrence-search:key-event")
     keyLibrary.runtime SelectedNativeSource.runtime := by

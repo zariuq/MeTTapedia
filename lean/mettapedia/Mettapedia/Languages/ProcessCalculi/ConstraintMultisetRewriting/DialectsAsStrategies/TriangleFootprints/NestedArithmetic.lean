@@ -69,16 +69,15 @@ variable {T : GroundedTable}
 
 /-! ## HE's world machine on marked values -/
 
+private abbrev WorldPath (minimal : Minimal.Services) (T : GroundedTable)
+    (lookup : CastLookup) (policy : Policy) (before after : HEOnTheStep.HEConfig) : Prop :=
+  WorldSteps (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy
+    (WorldConfiguration.ofReadOnly before) (WorldConfiguration.ofReadOnly after)
+
 /-- **HE's world machine with the table `T` runs the contextual value `v` to the answers `L`.** -/
 def WRunsTo (minimal : Minimal.Services) (T : GroundedTable) (lookup : CastLookup) (policy : Policy)
     (atoms : List Atom) (v : Entry.Value) (L : List Atom) : Prop :=
-  ∀ (live : List Atom) (scope : List String) (activation : Frame) (stack : List Continuation)
-    (emitted : List Result),
-    ∃ results : List Result, results.map (fun result => result.1.erase) = L ∧
-      WorldSteps (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy
-        (WorldConfiguration.ofReadOnly ⟨Space.ofList atoms,
-          .work (.atom live scope v Atom.undefinedType activation), stack, emitted⟩)
-        (WorldConfiguration.ofReadOnly ⟨Space.ofList atoms, .returning results, stack, emitted⟩)
+  HENested.ArgumentRuns (WorldPath minimal T lookup policy) atoms Atom.undefinedType v L
 
 /-- **HE's world machine with the table `T` evaluates every marked presentation of `t` to `L`.** -/
 def HEEvaluatesMW (minimal : Minimal.Services) (T : GroundedTable) (lookup : CastLookup)
@@ -88,13 +87,7 @@ def HEEvaluatesMW (minimal : Minimal.Services) (T : GroundedTable) (lookup : Cas
 /-- **HE's world machine with the table `T` queries every call value of `(f vals)` to `A`.** -/
 def HEQueryW (minimal : Minimal.Services) (T : GroundedTable) (lookup : CastLookup) (policy : Policy)
     (atoms : List Atom) (f : String) (vals : List Atom) (A : List Atom) : Prop :=
-  ∀ (live : List Atom) (scope : List String) (activation : Frame) (value : Entry.Value),
-    value.erase = .expression (.symbol f :: vals) → ∀ (stack : List Continuation) (emitted : List Result),
-      ∃ results : List Result, results.map (fun result => result.1.erase) = A ∧
-        WorldSteps (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy
-          (WorldConfiguration.ofReadOnly ⟨Space.ofList atoms,
-            .work (.call live scope value Atom.undefinedType activation), stack, emitted⟩)
-          (WorldConfiguration.ofReadOnly ⟨Space.ofList atoms, .returning results, stack, emitted⟩)
+  HENested.QueryRuns (WorldPath minimal T lookup policy) atoms Atom.undefinedType f vals A
 
 section WorldMachine
 
@@ -137,52 +130,10 @@ theorem branches_loop_W (atoms : List Atom) {live : List Atom} {scope : List Str
         WorldSteps (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy
           (WorldConfiguration.ofReadOnly ⟨Space.ofList atoms, .work (.branches live scope tail heads),
             stack, emitted⟩)
-          (WorldConfiguration.ofReadOnly ⟨Space.ofList atoms, .returning R, stack, emitted⟩)
-  | [], _, stack, emitted => ⟨[], rfl, (fun _ member => by cases member),
-      .single (lift_step minimal (.internal .branchesNil))⟩
-  | h :: hs, clean, stack, emitted => by
-      have hClean := clean h List.mem_cons_self
-      obtain ⟨Rt, eraseRt, shapeRt, pathRt⟩ := tailRuns (h.1.erase :: live) h.2
-        (.tupleTail h.1 :: .append (.branches live scope tail hs) :: stack) emitted
-      have pointwise : ∀ r ∈ Rt, (∃ children,
-            (Completed.tuplePrepend h.1 r).1 = .expression .active children) ∧
-          (Completed.tuplePrepend h.1 r).1.erase = HENested.prependAtom h.1.erase r.1.erase := by
-        intro r member
-        obtain ⟨children, shape⟩ := shapeRt r member
-        have inTs : r.1.erase ∈ Ts.map Atom.expression := by
-          rw [← eraseRt]
-          exact List.mem_map.mpr ⟨r, member, rfl⟩
-        obtain ⟨c, cMem, cEq⟩ := List.mem_map.mp inTs
-        obtain ⟨c0, cs, rfl, clean0⟩ := tailClean c cMem
-        have result := HENested.tuplePrepend_erase h.1 shape cEq.symm clean0
-        refine ⟨⟨_, result.1⟩, ?_⟩
-        rw [result.2, ← cEq]
-        rfl
-      obtain ⟨Rh, eraseRh, shapeRh, pathRh⟩ := branches_loop_W atoms tailRuns tailClean hs
-        (fun x member => clean x (List.mem_cons_of_mem _ member))
-        (.prepend (Rt.map (Completed.tuplePrepend h.1)) :: stack) emitted
-      refine ⟨Rt.map (Completed.tuplePrepend h.1) ++ Rh, ?_, ?_, ?_⟩
-      · rw [List.map_append, eraseRh, List.flatMap_cons, List.map_map]
-        congr 1
-        have mapped : (Rt.map ((fun r : Result => r.1.erase) ∘ Completed.tuplePrepend h.1)) =
-            (Rt.map fun r => r.1.erase).map (HENested.prependAtom h.1.erase) := by
-          rw [List.map_map]
-          apply List.map_congr_left
-          intro r member
-          exact (pointwise r member).2
-        rw [mapped, eraseRt, List.map_map]
-        rfl
-      · intro r member
-        rcases List.mem_append.mp member with inPrepended | inRest
-        · obtain ⟨r', member', rfl⟩ := List.mem_map.mp inPrepended
-          exact (pointwise r' member').1
-        · exact shapeRh r inRest
-      · refine .head (lift_step minimal (.internal (.branchesContinue hClean.notStopped))) ?_
-        refine .trans pathRt ?_
-        refine .head (lift_step minimal (.internal .tupleTail)) ?_
-        refine .head (lift_step minimal (.internal .append)) ?_
-        refine .trans pathRh ?_
-        exact .single (lift_step minimal (.internal .prepend))
+          (WorldConfiguration.ofReadOnly ⟨Space.ofList atoms, .returning R, stack, emitted⟩) :=
+  HENested.branches_loop_of_steps (dispatch := T.dispatch) (lookup := lookup) (policy := policy)
+    (path := WorldPath minimal T lookup policy)
+    (fun before after => before.trans after) (fun h => .single (lift_step minimal h)) atoms tailRuns tailClean
 
 /-- **HE's tuple traversal of marked values, on the world machine.** -/
 theorem tuple_product_MW (atoms : List Atom) :
@@ -196,80 +147,10 @@ theorem tuple_product_MW (atoms : List Atom) :
           WorldSteps (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy
             (WorldConfiguration.ofReadOnly ⟨Space.ofList atoms, .work (.tuple live scope vs activation),
               stack, emitted⟩)
-            (WorldConfiguration.ofReadOnly ⟨Space.ofList atoms, .returning R, stack, emitted⟩)
-  | [], _, nonempty, _ => absurd rfl nonempty
-  | [v], Ls, _, related => by
-      intro live scope activation stack emitted
-      cases related with
-      | cons here rest =>
-          rename_i L Ls'
-          cases rest
-          obtain ⟨R, eraseR, path⟩ := here.1 live scope activation (.singleton :: stack) emitted
-          have clean := HENested.clean_of_erase eraseR here.2
-          have singled : ∀ r ∈ R, Completed.tupleSingleton r = (.expression .active [r.1], r.2) := by
-            intro r member
-            unfold Completed.tupleSingleton
-            rw [HENested.emptyOrError_false (clean r member)]
-            rfl
-          refine ⟨R.map Completed.tupleSingleton, ?_, ?_, ?_⟩
-          · rw [List.map_map]
-            have mapped : R.map ((fun r : Result => r.1.erase) ∘ Completed.tupleSingleton) =
-                (R.map fun r => r.1.erase).map fun a => Atom.expression [a] := by
-              rw [List.map_map]
-              apply List.map_congr_left
-              intro r member
-              simp only [Function.comp_apply, singled r member, Entry.Value.erase, List.map_cons,
-                List.map_nil]
-            rw [mapped, eraseR, combos_singleton, List.map_map]
-            rfl
-          · intro r member
-            obtain ⟨r', member', rfl⟩ := List.mem_map.mp member
-            exact ⟨_, by rw [singled r' member']⟩
-          · refine .head (lift_step minimal (.internal .tupleSingleton)) ?_
-            refine .trans path ?_
-            exact .single (lift_step minimal (.internal .singleton))
-  | v :: v2 :: rest, Ls, _, related => by
-      intro live scope activation stack emitted
-      cases related with
-      | cons here later =>
-          rename_i L Ls'
-          obtain ⟨R, eraseR, path⟩ := here.1 _ scope activation
-            (.branches live scope (v2 :: rest) :: stack) emitted
-          have clean := HENested.clean_of_erase eraseR here.2
-          have tailRuns := tuple_product_MW atoms (v2 :: rest) Ls' (List.cons_ne_nil _ _) later
-          have tailClean : ∀ c ∈ combos Ls', ∃ c0 cs, c = c0 :: cs ∧ Answerable c0 := by
-            intro c member
-            have lengths := combos_length member
-            have positive : Ls'.length = (v2 :: rest).length := (List.Forall₂.length_eq later).symm
-            obtain ⟨c0, cs, rfl⟩ : ∃ c0 cs, c = c0 :: cs := by
-              cases c with
-              | nil =>
-                  simp only [List.length_nil] at lengths
-                  simp only [List.length_cons] at positive
-                  omega
-              | cons c0 cs => exact ⟨c0, cs, rfl⟩
-            refine ⟨c0, cs, rfl, ?_⟩
-            have allClean : ∀ L' ∈ Ls', ∀ a ∈ L', Answerable a := by
-              intro L' member' a inside
-              obtain ⟨t', both⟩ := forall₂_right_exists later L' member'
-              exact both.2 a inside
-            exact combos_answerable allClean _ member c0 List.mem_cons_self
-          obtain ⟨R', eraseR', shapeR', loop⟩ := branches_loop_W minimal atoms (live := live)
-            (fun live' activation' stack' emitted' => tailRuns live' scope activation' stack' emitted')
-            tailClean R clean stack emitted
-          refine ⟨R', ?_, shapeR', ?_⟩
-          · rw [eraseR']
-            have flat : R.flatMap (fun h => (combos Ls').map fun c => Atom.expression (h.1.erase :: c)) =
-                (R.map fun h => h.1.erase).flatMap
-                  (fun a => (combos Ls').map fun c => Atom.expression (a :: c)) := by
-              rw [List.flatMap_map]
-            rw [flat, eraseR]
-            simp only [combos, List.map_flatMap, List.map_map]
-            rfl
-          · refine .head (lift_step minimal (.internal .tupleCons)) ?_
-            refine .trans path ?_
-            refine .head (lift_step minimal (.internal .branches)) ?_
-            exact loop
+            (WorldConfiguration.ofReadOnly ⟨Space.ofList atoms, .returning R, stack, emitted⟩) :=
+  HENested.tuple_product_of_steps (dispatch := T.dispatch) (lookup := lookup) (policy := policy)
+    (path := WorldPath minimal T lookup policy)
+    (fun before after => before.trans after) (fun h => .single (lift_step minimal h)) atoms
 
 /-- **The calls continuation over the rows, on the world machine.** -/
 theorem calls_loop_W (atoms : List Atom) {live : List Atom} {scope : List String} {f : String}
@@ -282,22 +163,10 @@ theorem calls_loop_W (atoms : List Atom) {live : List Atom} {scope : List String
         WorldSteps (fun (_ : Unit) => id) (services minimal T) T.dispatch lookup policy
           (WorldConfiguration.ofReadOnly ⟨Space.ofList atoms,
             .work (.calls live scope Atom.undefinedType rows), stack, emitted⟩)
-          (WorldConfiguration.ofReadOnly ⟨Space.ofList atoms, .returning R, stack, emitted⟩)
-  | [], _, stack, emitted => ⟨[], rfl, .single (lift_step minimal (.internal .callsNil))⟩
-  | r :: rs, queries, stack, emitted => by
-      obtain ⟨vals, erased, query⟩ := queries r List.mem_cons_self
-      obtain ⟨Qr, eraseQr, pathQr⟩ := query live scope r.2 r.1 erased
-        (.append (.calls live scope Atom.undefinedType rs) :: stack) emitted
-      obtain ⟨Rs, eraseRs, pathRs⟩ := calls_loop_W atoms Q rs
-        (fun x member => queries x (List.mem_cons_of_mem _ member)) (.prepend Qr :: stack) emitted
-      refine ⟨Qr ++ Rs, ?_, ?_⟩
-      · rw [List.map_append, eraseQr, eraseRs, List.flatMap_cons, erased]
-        rfl
-      · refine .head (lift_step minimal (.internal .callsCons)) ?_
-        refine .trans pathQr ?_
-        refine .head (lift_step minimal (.internal .append)) ?_
-        refine .trans pathRs ?_
-        exact .single (lift_step minimal (.internal .prepend))
+          (WorldConfiguration.ofReadOnly ⟨Space.ofList atoms, .returning R, stack, emitted⟩) :=
+  HENested.calls_loop_of_steps (dispatch := T.dispatch) (lookup := lookup) (policy := policy)
+    (path := WorldPath minimal T lookup policy)
+    (fun before after => before.trans after) (fun h => .single (lift_step minimal h)) atoms Atom.undefinedType Q
 
 /-- **HE's world machine evaluates a marked call whose root it interprets.** -/
 theorem he_nested_MW (answers : AnswersUndefined lookup) {atoms : List Atom} {f : String}
@@ -314,75 +183,11 @@ theorem he_nested_MW (answers : AnswersUndefined lookup) {atoms : List Atom} {f 
     (apps : ∀ vals ∈ combos Ls, HEQueryW minimal T lookup policy atoms f vals (Q vals) ∧
       ∀ a ∈ Q vals, Answerable a) :
     WRunsTo minimal T lookup policy atoms (.expression readiness (.symbol f :: vs))
-      ((combos Ls).flatMap Q) := by
-  intro live scope activation stack emitted
-  have eraseV : (Entry.Value.expression readiness (.symbol f :: vs)).erase =
-      .expression (.symbol f :: ts) := by
-    simp only [Entry.Value.erase, List.map_cons, erased]
-  have readV : activation.read policy (.expression readiness (.symbol f :: vs)) =
-      .expression readiness (.symbol f :: vs) :=
-    read_closed_value policy activation (by rw [eraseV]; exact closed)
-  have entry : Entry.Rel policy.reentry
-      (activation.read policy (.expression readiness (.symbol f :: vs))).status
-      (activation.read policy (.expression readiness (.symbol f :: vs))).erase
-      Atom.undefinedType .interpret := by
-    rw [readV, eraseV]
-    exact .expression (call_not_stopped head) undefined_not_raw interpreted
-  have occurrences : Mettapedia.Languages.MeTTa.HE.Spec.Type.TypeOccurrencesRel
-      ((Space.ofList atoms).atoms : Multiset Atom) (Entry.Value.symbol f).erase
-      {Atom.undefinedType} := by
-    simp only [Entry.Value.erase]
-    exact untyped_occurrences untyped
-  have step := LocalStepWith.atomTuple (admission := .historical) (space := Space.ofList atoms)
-    (dispatch := T.dispatch) (lookup := lookup) (live := live) (scope := scope) (stack := stack)
-    entry readV occurrences
-  have published : (activation.read policy (.expression readiness (.symbol f :: vs))).erase =
-      .expression (.symbol f :: ts) := by
-    rw [readV, eraseV]
-  rw [published] at step
-  have headRuns : WRunsTo minimal T lookup policy atoms (.symbol f) [.symbol f] :=
-    he_data_MW minimal answers atoms head (.symbol f) (by simp only [Entry.Value.erase]) (.symbol f)
-  obtain ⟨tuples, eraseT, _, pathT⟩ := tuple_product_MW minimal (lookup := lookup)
-    (policy := policy) atoms (.symbol f :: vs) ([.symbol f] :: Ls) (List.cons_ne_nil _ _)
-    (.cons ⟨headRuns, fun a member => by
-      rw [List.mem_singleton] at member
-      subst member
-      exact answerable_of_data head⟩ args) (Atom.undefinedType :: live) scope activation
-    (.calls live scope Atom.undefinedType :: .publish (.expression (.symbol f :: ts)) :: stack)
-    emitted
-  rw [combos_head] at eraseT
-  have rows : ∀ r ∈ tuples, ∃ vals, r.1.erase = .expression (.symbol f :: vals) ∧
-      HEQueryW minimal T lookup policy atoms f vals (Q vals) := by
-    intro r member
-    have inRows : r.1.erase ∈ ((combos Ls).map (Atom.symbol f :: ·)).map Atom.expression := by
-      rw [← eraseT]
-      exact List.mem_map.mpr ⟨r, member, rfl⟩
-    rw [List.map_map] at inRows
-    obtain ⟨vals, valsMem, valsEq⟩ := List.mem_map.mp inRows
-    exact ⟨vals, valsEq.symm, (apps vals valsMem).1⟩
-  obtain ⟨R, eraseR, pathR⟩ := calls_loop_W minimal (lookup := lookup) (policy := policy) atoms
-    (live := live) (scope := scope) Q tuples rows (.publish (.expression (.symbol f :: ts)) :: stack)
-    emitted
-  have totals : tuples.flatMap (fun r => Q (HENested.argsOf r.1.erase)) = (combos Ls).flatMap Q := by
-    have viaAtoms : tuples.flatMap (fun r => Q (HENested.argsOf r.1.erase)) =
-        (tuples.map fun r => r.1.erase).flatMap (fun a => Q (HENested.argsOf a)) := by
-      rw [List.flatMap_map]
-    rw [viaAtoms, eraseT, List.map_map, List.flatMap_map]
-    rfl
-  rw [totals] at eraseR
-  have clean : ∀ r ∈ R, Answerable r.1.erase := by
-    apply HENested.clean_of_erase eraseR
-    intro a member
-    obtain ⟨vals, valsMem, inner⟩ := List.mem_flatMap.mp member
-    exact (apps vals valsMem).2 a inner
-  obtain ⟨final, eraseFinal, pathFinal⟩ := HENested.publish_step (dispatch := T.dispatch)
-    (lookup := lookup) (policy := policy) (atoms := atoms) (.expression (.symbol f :: ts)) R clean
-    stack emitted
-  refine ⟨final, by rw [eraseFinal, eraseR], ?_⟩
-  refine .head (lift_step minimal (.internal step)) ?_
-  refine .trans pathT ?_
-  refine .head (lift_step minimal (.internal .calls)) ?_
-  exact pathR.trans (lift_path minimal pathFinal)
+      ((combos Ls).flatMap Q) :=
+  MarkedValues.he_nested_of_steps (dispatch := T.dispatch) (lookup := lookup) (policy := policy)
+    (path := WorldPath minimal T lookup policy) (fun before after => before.trans after) (fun h => .single (lift_step minimal h))
+    head untyped closed interpreted erased args Q apps
+    (he_data_MW minimal answers atoms head (.symbol f) (by simp only [Entry.Value.erase]) (.symbol f))
 
 /-- **The equation loop on marked reads, on the world machine.** -/
 theorem equations_steps_KW {atoms : List Atom} {live : List Atom} {scope : List String}

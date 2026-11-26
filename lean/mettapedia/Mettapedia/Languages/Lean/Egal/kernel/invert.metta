@@ -200,6 +200,6 @@
         ($other None)))))
 (= (inv:absurd $E $ctx $goal $false)
    (if (== $false None) None
-       (case (mg:try-proof-app (mg:known-in (eq:theory $E) $ctx (lean:id "FalseE")) $false)
+       (case (mg:try-proof-app (mg:known-in (eq:theory $E) $ctx (egal:id "FalseE")) $false)
          (((Error $c1 $w1) None)
           ($all (case (mg:try-term-app $all $goal) (((Error $c2 $w2) None) ($done $done))))))))

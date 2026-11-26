@@ -9,17 +9,17 @@
 (= (computed-today) (1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30))
 (= (compute:theorem $i)
    (let* (($t (wire (comp-term $i) ())) ($v (wire (readback (answer-of $i) (comp-type $i)) ())))
-     (case (lean:compute $t)
+     (case (egal:compute $t)
        (((Conv $t2 $theorem) (if (== $t2 $v) $theorem stopped))
         ($other stopped)))))
 (= (compute:states $theorem $j)
    (if (== $theorem stopped) False
-       (case (mg:try-convertible (lean:theory) (mg:empty-context) (mg:proposition $theorem) (lean:proposition (test-name $j)))
+       (case (mg:try-convertible (egal:theory) (mg:empty-context) (mg:proposition $theorem) (egal:proposition (test-name $j)))
          (((Error $call $why) False) ($same $same)))))
 ; "computed I OWN CROSSED": whether test I is computed to a theorem that
 ; states its own statement, and whether that theorem is refused as test J's.
 (= (compute:report $i $j)
-   (let* (($opened (lean:open-computation))
+   (let* (($opened (egal:open-computation))
           ($theorem (compute:theorem $i))
           ($own (compute:states $theorem $i))
           ($other (compute:states $theorem $j)))
@@ -29,10 +29,10 @@
 ; under them is the document's (same), another (differs: a premise that was
 ; assumed is false, or the computation is not finished), or none (stopped).
 (= (compute:report-open $i)
-   (let* (($opened (lean:open-computation))
+   (let* (($opened (egal:open-computation))
           ($t (wire (comp-term $i) ()))
           ($v (wire (readback (answer-of $i) (comp-type $i)) ())))
-     (case (lean:compute-open $t)
+     (case (egal:compute-open $t)
        (((Computed $value $theorem $premises)
          (println! (format-args "open {} {} {}" ($i (length-of $premises) (if (== $value $v) same differs)))))
         ((Stopped $premises) (println! (format-args "open {} {} stopped" ($i (length-of $premises)))))

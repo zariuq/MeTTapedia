@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentEtaDepthSkeletonFamily
 
 /-!
@@ -67,16 +68,13 @@ theorem normalCode_typeEq (fuel : Nat) {n : Nat} {Γ : Ctx Head n} (formed : Ctx
     (isType : IsType S.R Γ code) : TypeEq S.R Γ code (normalCode reducer fuel code) :=
   Reduces.typeEq (S := S) facts roots heads formed (normalCode_reduces reducer fuel code) isType
 
-variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
-  ContextualDependentConversionBudget.Keeps (reducer fuel term) (reducer (fuel + 1) term))
+variable (stable : SolverPremises.StableReducer (rules := S.R) reducer)
 
 include stable in
 theorem reducer_keeps {n : Nat} (code : Tm Head n) {fuel larger : Nat}
     {result : ExecutableReduction.Result S.R code} (computed : reducer fuel code = some result)
     (enough : fuel ≤ larger) : reducer larger code = some result := by
-  induction enough with
-  | refl => exact computed
-  | step _ ih => exact stable _ code result ih
+  exact SolverPremises.keeps_of_le (fun budget => stable budget code) enough result computed
 
 include stable in
 theorem normalCode_const {n : Nat} (code : Tm Head n) :
@@ -1019,8 +1017,7 @@ termination_by sizeOf annotation
 
 /-! ### Eventual constancy -/
 
-variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
-  ContextualDependentConversionBudget.Keeps (reducer fuel term) (reducer (fuel + 1) term))
+variable (stable : SolverPremises.StableReducer (rules := S.R) reducer)
 
 include stable in
 theorem argPartsN_const {n : Nat} :

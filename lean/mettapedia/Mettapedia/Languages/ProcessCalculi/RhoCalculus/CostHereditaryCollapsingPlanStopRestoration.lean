@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryPairRecursion
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditarySameColorReachedPairApex
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryForeignPlanStopRestoration
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryAlignedPlanStopRestoration
@@ -1036,27 +1037,8 @@ theorem quotePlanStops_commonRestorationApex_of_closeSmaller_supportCase
     {color : CostStaticColor}
     (leftView : left.StaticRootView color)
     (rightView : right.StaticRootView color)
-    (closeSmaller :
-      ∀ {childAvailable childOuter : List TypeExpr}
-        {leftChild rightChild : Pattern} {childType : TypeExpr},
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType leftChild →
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType rightChild →
-        canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT color
-              rhoReflectivePresentation) leftChild =
-          canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT color
-              rhoReflectivePresentation) rightChild →
-        sizeOf leftChild + sizeOf rightChild <
-          sizeOf leftView.node.term.1 + sizeOf rightView.node.term.1 →
-        rhoCanonicalRecursiveTypeDomain.Admissible childType →
-        Nonempty (CostCanonicalPairElaboration rhoCIGSLT
-          rhoHereditaryNormalizationKernel targetFree childAvailable
-          childOuter leftChild rightChild childType))
+    (closeSmaller : RhoPairCloseSmaller color targetFree
+      (sizeOf leftView.node.term.1 + sizeOf rightView.node.term.1))
     {leftPayload rightPayload leftAbstract rightAbstract : Pattern}
     (leftReached : CostStaticPlanReached rhoCIGSLT color targetFree leftPayload
       leftView.node.plan.abstractPattern)
@@ -1703,27 +1685,8 @@ theorem quotePlanStops_commonRestorationApex_of_leftCanonicalDrop_rightCanonical
     {color : CostStaticColor}
     (leftView : left.StaticRootView color)
     (rightView : right.StaticRootView color)
-    (closeSmaller :
-      ∀ {childAvailable childOuter : List TypeExpr}
-        {leftChild rightChild : Pattern} {childType : TypeExpr},
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType leftChild →
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType rightChild →
-        canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT color
-              rhoReflectivePresentation) leftChild =
-          canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT color
-              rhoReflectivePresentation) rightChild →
-        sizeOf leftChild + sizeOf rightChild <
-          sizeOf leftView.node.term.1 + sizeOf rightView.node.term.1 →
-        rhoCanonicalRecursiveTypeDomain.Admissible childType →
-        Nonempty (CostCanonicalPairElaboration rhoCIGSLT
-          rhoHereditaryNormalizationKernel targetFree childAvailable
-          childOuter leftChild rightChild childType))
+    (closeSmaller : RhoPairCloseSmaller color targetFree
+      (sizeOf leftView.node.term.1 + sizeOf rightView.node.term.1))
     {leftPayload rightPayload leftAbstract rightAbstract inner name
       nameArguments : Pattern}
     (leftReached : CostStaticPlanReached rhoCIGSLT color targetFree leftPayload
@@ -1862,27 +1825,8 @@ theorem quotePlanStops_commonRestorationApex_of_leftQuote_rightCanonicalDrop
     {color : CostStaticColor}
     (leftView : left.StaticRootView color)
     (rightView : right.StaticRootView color)
-    (closeSmaller :
-      ∀ {childAvailable childOuter : List TypeExpr}
-        {leftChild rightChild : Pattern} {childType : TypeExpr},
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType leftChild →
-        ReflectiveWellSorted.OpenPatternWellSorted
-            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
-            targetFree childAvailable childType rightChild →
-        canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT color
-              rhoReflectivePresentation) leftChild =
-          canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT color
-              rhoReflectivePresentation) rightChild →
-        sizeOf leftChild + sizeOf rightChild <
-          sizeOf leftView.node.term.1 + sizeOf rightView.node.term.1 →
-        rhoCanonicalRecursiveTypeDomain.Admissible childType →
-        Nonempty (CostCanonicalPairElaboration rhoCIGSLT
-          rhoHereditaryNormalizationKernel targetFree childAvailable
-          childOuter leftChild rightChild childType))
+    (closeSmaller : RhoPairCloseSmaller color targetFree
+      (sizeOf leftView.node.term.1 + sizeOf rightView.node.term.1))
     {leftPayload rightPayload leftAbstract rightAbstract inner name
       nameArguments : Pattern}
     (leftReached : CostStaticPlanReached rhoCIGSLT color targetFree leftPayload

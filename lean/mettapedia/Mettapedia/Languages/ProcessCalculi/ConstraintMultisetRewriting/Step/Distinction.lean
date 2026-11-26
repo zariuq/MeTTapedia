@@ -3,6 +3,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Dist
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DistinctionFinite
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DistinctionMachine
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DistinctionMinimization
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DistinctionRevision
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DistinctionControls
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DistinctionHistory
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.DistinctionContracts
@@ -17,7 +18,7 @@ import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.Step.Dist
 # Distinction calculus on the transform step
 
 Import surface for behavioural observers of arbitrary transform programs,
-certified finite refinement, exact machine lowering, and serial interpretation
+certified finite refinement, behaviour-preserving revision, exact machine lowering, and serial interpretation
 of the distinction-history grammar. Scoped predicate tests, independently
 failing witness axes, client interactions, choice ownership, consumer
 sensitivity and probabilistic mass preservation have explicit contracts.

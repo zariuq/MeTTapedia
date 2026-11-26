@@ -42,6 +42,37 @@ structure CostCanonicalRecursiveTypeDomain (source : CIGSLT) where
         ∀ {expected : TypeExpr}, parameterType? parameter = some expected →
           Admissible expected
 
+/-- Typed recursive results below a parent pair measure. Both children lie in
+the same available and outer contexts. The result family can retain evidence
+specific to the recursive caller. -/
+abbrev CostCanonicalRecursiveTypeDomain.ClosePairsBelow
+    {source : CIGSLT} (recursive : CostCanonicalRecursiveTypeDomain source)
+    (declaration : ReflectivePresentationDecl) (targetFree : FreeTypeContext)
+    (parentMeasure : Nat)
+    (Result : List TypeExpr → List TypeExpr → Pattern → Pattern → TypeExpr → Type*) : Prop :=
+  ∀ {childAvailable childOuter : List TypeExpr}
+    {leftChild rightChild : Pattern} {childType : TypeExpr},
+    ReflectiveWellSorted.OpenPatternWellSorted
+      source.costWholeReflectionProfile source.costWholeLanguage
+      targetFree childAvailable childType leftChild →
+    ReflectiveWellSorted.OpenPatternWellSorted
+      source.costWholeReflectionProfile source.costWholeLanguage
+      targetFree childAvailable childType rightChild →
+    canonicalize declaration leftChild = canonicalize declaration rightChild →
+    sizeOf leftChild + sizeOf rightChild < parentMeasure →
+    recursive.Admissible childType →
+    Nonempty (Result childAvailable childOuter leftChild rightChild childType)
+
+/-- The recursive interface when the caller needs a canonical pair
+elaboration at the child's exact context. -/
+abbrev CostCanonicalPairElaboration.CloseBelow
+    {source : CIGSLT} (recursive : CostCanonicalRecursiveTypeDomain source)
+    (kernel : CostStaticNormalizationKernel source)
+    (declaration : ReflectivePresentationDecl) (targetFree : FreeTypeContext)
+    (parentMeasure : Nat) : Prop :=
+  recursive.ClosePairsBelow declaration targetFree parentMeasure
+    (CostCanonicalPairElaboration source kernel targetFree)
+
 namespace CostCanonicalRecursiveTypeDomain
 
 /-- In an admitted recursive domain, a well-sorted collapsing root has a base
@@ -138,20 +169,8 @@ def CostCanonicalStaticPairStepInDomain
       canonicalize declaration rightPattern →
     (CostStaticRootShape source leftPattern type ∨
       CostStaticRootShape source rightPattern type) →
-    (∀ {childAvailable childOuter : List TypeExpr}
-      {leftChild rightChild : Pattern} {childType : TypeExpr},
-      ReflectiveWellSorted.OpenPatternWellSorted
-          source.costWholeReflectionProfile source.costWholeLanguage targetFree
-          childAvailable childType leftChild →
-      ReflectiveWellSorted.OpenPatternWellSorted
-          source.costWholeReflectionProfile source.costWholeLanguage targetFree
-          childAvailable childType rightChild →
-      canonicalize declaration leftChild = canonicalize declaration rightChild →
-      sizeOf leftChild + sizeOf rightChild <
-        sizeOf leftPattern + sizeOf rightPattern →
-      recursive.Admissible childType →
-      Nonempty (CostCanonicalPairElaboration source kernel targetFree
-        childAvailable childOuter leftChild rightChild childType)) →
+    CostCanonicalPairElaboration.CloseBelow recursive kernel declaration targetFree
+      (sizeOf leftPattern + sizeOf rightPattern) →
     Nonempty (CostCanonicalPairElaboration source kernel targetFree available
       outer leftPattern rightPattern type)
 
@@ -335,18 +354,8 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned_inDomain
     (declaration : ReflectivePresentationDecl)
     (staticStep : CostCanonicalStaticPairStepInDomain recursive kernel
       declaration)
-    (alignChild : ∀ {childAvailable childOuter : List TypeExpr}
-      {leftChild rightChild : Pattern} {childType : TypeExpr},
-      ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree childAvailable
-          childType leftChild →
-        ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree childAvailable
-          childType rightChild →
-        canonicalize declaration leftChild = canonicalize declaration rightChild →
-        sizeOf leftChild + sizeOf rightChild <
-          sizeOf leftPattern + sizeOf rightPattern →
-        recursive.Admissible childType →
-        Nonempty (CostCanonicalPairElaboration source kernel targetFree
-          childAvailable childOuter leftChild rightChild childType))
+    (alignChild : CostCanonicalPairElaboration.CloseBelow recursive kernel declaration
+      targetFree (sizeOf leftPattern + sizeOf rightPattern))
     (leftWellSorted : ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree
       available type leftPattern)
     (rightWellSorted : ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree

@@ -13,7 +13,16 @@ when an import has been removed. The type and value comparison can use the
 older dependencies once export visibility has been checked through the
 current module alone. Use `--omit-proof-matchers` for the theorem
 interface. This leaves out only registered matchers under theorem names
-that are unreachable from the published types and executable bodies. -/
+that are unreachable from the published types and executable bodies.
+
+`--batch MANIFEST` reads a JSON array with `module` and `baseline` strings.
+It compares types and bodies with exact private scopes and omits isolated
+proof matchers. Each module must retain its original import flags and
+declare its exports in its own compiled artifact. The batch then loads
+the shared imports once.
+
+Prepend `--import-map FILE` to use Lean's module-to-artifact mapping instead
+of materializing a separate directory for the candidate imports. -/
 
 open Lean Meta
 
@@ -144,7 +153,14 @@ private def checkExports (exports : Array ConstantInfo) (checkValues : Bool)
     let currentType ← expand false current.type
     unless ← withCurrHeartbeats (withTransparency .reducible
         (isDefEq previousType currentType)) do
-      throwError "Changed type of {name}"
+      -- The conservative meta check can leave ordinary definitions folded.
+      let equality ← withCurrHeartbeats do
+        let env ← getEnv
+        pure (Kernel.isDefEq env {} previousType currentType)
+      match equality with
+      | .ok true => pure ()
+      | .ok false => throwError "Changed type of {name}"
+      | .error _ => throwError "Kernel could not compare type of {name}"
     if checkValues then
       match (originalScope.bind (·.find? name)).getD declaration with
       | .defnInfo previous =>
@@ -180,7 +196,19 @@ private def readLocalScope (path : System.FilePath) (mainPart : ModuleData) :
       locals := locals.insert declaration.name declaration
   return locals
 
-unsafe def main (arguments : List String) : IO Unit := do
+private def auditOLean (artifacts : NameMap ImportArtifacts) (name : Name) : IO System.FilePath :=
+  match artifacts.find? name with
+  | none => findOLean name
+  | some parts => match parts.olean? with
+    | some path => pure path
+    | none => throw (IO.userError s!"missing mapped olean for {name}")
+
+private unsafe def withAuditImports {α : Type} (artifacts : NameMap ImportArtifacts)
+    (imports : Array Import) (read : Environment → IO α) : IO α := do
+  let env ← importModules imports {} (arts := artifacts)
+  try read env finally env.freeRegions
+
+private unsafe def compareOne (artifacts : NameMap ImportArtifacts) (arguments : List String) : IO Unit := do
   let usage := "Usage: CheckLeanExportTypes MODULE BASELINE_OLEAN [--values] [--exact-private] [--baseline-imports] [--omit-proof-matchers]"
   let moduleName :: baselinePath :: flags := arguments | throw (IO.userError usage)
   unless flags.all (fun flag => flag == "--values" || flag == "--exact-private" || flag == "--baseline-imports" || flag == "--omit-proof-matchers") do
@@ -195,7 +223,7 @@ unsafe def main (arguments : List String) : IO Unit := do
     isolatedProofMatchers baseline baselineScope
   else pure {}
   let scopes ← if flags.contains "--exact-private" then do
-    let candidatePath ← findOLean moduleName.toName
+    let candidatePath ← auditOLean artifacts moduleName.toName
     let (candidate, _) ← readModuleData candidatePath
     let candidateScope ← readLocalScope candidatePath candidate
     pure (some (baselineScope, candidateScope))
@@ -209,9 +237,9 @@ unsafe def main (arguments : List String) : IO Unit := do
   let context : Core.Context := { fileName := baselinePath, fileMap := default, options }
   let includeBaseline := flags.contains "--baseline-imports"
   if includeBaseline then
-    if ← withImportModules target {} (pure ∘ needsReservedNames) then
+    if ← withAuditImports artifacts target (pure ∘ needsReservedNames) then
       enableInitializersExecution
-      let environment ← importModules target {} (loadExts := true)
+      let environment ← importModules target {} (loadExts := true) (arts := artifacts)
       let checkVisibility : MetaM Unit := do
         for declaration in exports do
           let _ ← requireExport declaration.name
@@ -219,7 +247,7 @@ unsafe def main (arguments : List String) : IO Unit := do
   let imports := if includeBaseline then target ++ baseline.imports else target
   let verify (environment : Environment) : IO (Nat × Nat) :=
     (checkExports exports checkValues scopes).run' |>.toIO' context { env := environment }
-  let immediate ← withImportModules imports {} fun environment => do
+  let immediate ← withAuditImports artifacts imports fun environment => do
     if needsReservedNames environment then
       pure none
     else
@@ -229,10 +257,75 @@ unsafe def main (arguments : List String) : IO Unit := do
     | none =>
         -- Ordinary Lean name resolution can create reserved equations on demand.
         enableInitializersExecution
-        let environment ← importModules imports {} (loadExts := true)
+        let environment ← importModules imports {} (loadExts := true) (arts := artifacts)
         verify environment
   IO.println s!"{moduleName}: {count} existing exported types agree"
   if checkValues then
     IO.println s!"{moduleName}: {values} existing definition bodies agree"
   unless omitted.isEmpty do
     IO.println s!"{moduleName}: {omitted.toList.length} isolated theorem matchers"
+
+private structure BatchInput where
+  module : String
+  baseline : String
+  deriving FromJson
+
+private structure BatchJob where
+  input : BatchInput
+  original : NameMap ConstantInfo
+  current : NameMap ConstantInfo
+  exports : Array ConstantInfo
+  omitted : Nat
+
+private unsafe def readBatchJob (artifacts : NameMap ImportArtifacts) (input : BatchInput) : IO BatchJob := do
+  let path ← auditOLean artifacts input.module.toName
+  let (candidate, _) ← readModuleData path
+  let (baseline, _) ← readModuleData input.baseline
+  unless baseline.isModule == candidate.isModule && baseline.imports.all candidate.imports.contains do
+    throw (IO.userError s!"{input.module} needs a separate check for its changed module header")
+  let original ← readLocalScope input.baseline baseline
+  let current ← readLocalScope path candidate
+  let omitted ← isolatedProofMatchers baseline original
+  let exports := baseline.constants.filter fun declaration =>
+    isExportedName declaration.name && !omitted.contains declaration.name
+  let declared := candidate.constNames.foldl (fun (names : NameSet) name => names.insert name) {}
+  for item in exports do
+    unless declared.contains item.name do
+      throw (IO.userError s!"{item.name} needs a separate visibility check in {input.module}")
+  return ⟨input, original, current, exports, omitted.toList.length⟩
+
+private unsafe def compareBatch (artifacts : NameMap ImportArtifacts) (manifest : String) : IO Unit := do
+  let data ← IO.FS.readFile manifest
+  let entries : Array BatchInput ← match (Json.parse data >>= fromJson?) with
+    | .ok entries => pure entries
+    | .error message => throw (IO.userError message)
+  if entries.isEmpty then
+    throw (IO.userError "empty export comparison manifest")
+  initSearchPath (← findSysroot)
+  let jobs ← entries.mapM (readBatchJob artifacts)
+  let targets : Array Import := jobs.map fun job => { module := job.input.module.toName }
+  withAuditImports artifacts targets fun env => do
+    for job in jobs do
+      for declaration in job.exports do
+        unless env.contains declaration.name do
+          throw (IO.userError s!"Missing export {declaration.name} in {job.input.module}")
+      let context : Core.Context := {
+        fileName := job.input.baseline, fileMap := default, options := maxRecDepth.set {} 65536 }
+      let (types, values) ←
+        (checkExports job.exports true (some (job.original, job.current))).run' |>.toIO' context { env }
+      IO.println s!"{job.input.module}: {types} existing exported types agree"
+      IO.println s!"{job.input.module}: {values} existing definition bodies agree"
+      unless job.omitted == 0 do
+        IO.println s!"{job.input.module}: {job.omitted} isolated theorem matchers"
+
+unsafe def main (arguments : List String) : IO Unit := do
+  let (artifacts, arguments) ← match arguments with
+    | "--import-map" :: path :: remaining => do
+        let data ← IO.FS.readFile path
+        match Json.parse data >>= fromJson? with
+        | .ok artifacts => pure (artifacts, remaining)
+        | .error message => throw (IO.userError message)
+    | _ => pure ({}, arguments)
+  match arguments with
+  | ["--batch", manifest] => compareBatch artifacts manifest
+  | _ => compareOne artifacts arguments

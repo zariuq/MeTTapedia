@@ -108,7 +108,7 @@ theorem forall₂_grow {program : Program} {store store' : Store} {history : Lis
     .cons (taskRel_grow first (shallow _ List.mem_cons_self) added addedId grown)
       (forall₂_grow added addedId grown rest (fun task member => shallow task (List.mem_cons_of_mem _ member)))
 
-theorem introduce_simulates (program : Program) (state : State) (abstract : CHR.State)
+theorem introduce_step_simulates (program : Program) (state : State) (abstract : CHR.State)
     (simulates : Simulates program state abstract) (running : state.status = .running)
     (head : Head) (environment other : Environment) (agree : Agree environment other)
     (resume : Task) (goals : List Goal) (tail : List Task) (tailAbstract : List CHR.Task) (seeds : List Nat)
@@ -117,7 +117,7 @@ theorem introduce_simulates (program : Program) (state : State) (abstract : CHR.
     (resumeRel : TaskRel program state.store state.history state.next resume (.goals other goals))
     (resumeNotSearch : resume.isSearch = false)
     (tailRel : List.Forall₂ (TaskRel program state.store state.history state.next) tail tailAbstract) :
-    ∃ abstract', Relation.ReflTransGen (Step program) abstract abstract' ∧
+    ∃ abstract', Step program abstract abstract' ∧
       Simulates program (introduce (table program) head environment resume state.tasks tail state seeds) abstract' := by
   have abstractRunning : abstract.status = .running := statusRel_running (running ▸ simulates.status)
   have tailShallow : ∀ task ∈ tail, task.isSearch = false := by
@@ -132,7 +132,7 @@ theorem introduce_simulates (program : Program) (state : State) (abstract : CHR.
       rw [← instantiateTerms_eq, ← instantiateTerms_agree agree, instantiated]
       rfl
     refine ⟨{ abstract with status := .fault (.uninstantiated (.tuple head.arguments)) },
-      Relation.ReflTransGen.single (Step.tellFault abstract other head goals tailAbstract abstractTasks
+      (Step.tellFault abstract other head goals tailAbstract abstractTasks
         abstractRunning otherNone), ?_⟩
     exact ⟨simulates.store, simulates.coherent, simulates.fresh, simulates.history, simulates.next,
       .faulted _, (fun impossible => by simp at impossible), simulates.shallow⟩
@@ -162,7 +162,7 @@ theorem introduce_simulates (program : Program) (state : State) (abstract : CHR.
         tasks := .scan abstract.nextId 0 :: .goals other goals :: tailAbstract
         store := abstract.store ++ [⟨abstract.nextId, ⟨head.name, values⟩⟩]
         nextId := abstract.nextId + 1 },
-      Relation.ReflTransGen.single (Step.introduce abstract other head goals tailAbstract _ abstractTasks
+      (Step.introduce abstract other head goals tailAbstract _ abstractTasks
         abstractRunning otherSome), ?_⟩
     have nextEq := simulates.next
     refine ⟨?_, coherent', ?_, simulates.history, by simp [nextEq], simulates.status, ?_, ?_⟩
@@ -193,6 +193,22 @@ theorem introduce_simulates (program : Program) (state : State) (abstract : CHR.
       rcases inside with rfl | inTail
       · exact resumeNotSearch
       · exact tailShallow task inTail
+
+theorem introduce_simulates (program : Program) (state : State) (abstract : CHR.State)
+    (simulates : Simulates program state abstract) (running : state.status = .running)
+    (head : Head) (environment other : Environment) (agree : Agree environment other)
+    (resume : Task) (goals : List Goal) (tail : List Task) (tailAbstract : List CHR.Task) (seeds : List Nat)
+    (abstractTasks : abstract.tasks = .goals other (.tell head :: goals) :: tailAbstract)
+    (machineTasks : state.tasks.drop 1 = tail)
+    (resumeRel : TaskRel program state.store state.history state.next resume (.goals other goals))
+    (resumeNotSearch : resume.isSearch = false)
+    (tailRel : List.Forall₂ (TaskRel program state.store state.history state.next) tail tailAbstract) :
+    ∃ abstract', Relation.ReflTransGen (Step program) abstract abstract' ∧
+      Simulates program (introduce (table program) head environment resume state.tasks tail state seeds) abstract' := by
+  obtain ⟨next, step, related⟩ := introduce_step_simulates
+    program state abstract simulates running head environment other agree
+      resume goals tail tailAbstract seeds abstractTasks machineTasks resumeRel resumeNotSearch tailRel
+  exact ⟨next, .single step, related⟩
 
 #print axioms introduce_simulates
 

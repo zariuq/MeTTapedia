@@ -21,13 +21,6 @@ def Subst.cons (head : Term Const delta domain) (tail : Subst Const gamma delta)
   | _, .vz => head
   | _, .vs index => tail index
 
-theorem Subst.lift_comp_eq {later : Ctx Base} (tau : Subst Const delta later)
-    (sigma : Subst Const gamma delta) :
-    (Subst.comp (Subst.lift (σ := domain) tau) (Subst.lift sigma) : Subst Const (domain :: gamma) (domain :: later)) =
-      (Subst.lift (σ := domain) (Subst.comp tau sigma) : Subst Const (domain :: gamma) (domain :: later)) := by
-  funext type index
-  exact (Subst.lift_comp_apply tau sigma index).symm
-
 theorem Subst.single_lift_eq_cons (argument : Term Const delta domain) (sigma : Subst Const gamma delta) :
     (Subst.comp (Subst.single argument) (Subst.lift (σ := domain) sigma) : Subst Const (domain :: gamma) delta) =
       (Subst.cons argument sigma : Subst Const (domain :: gamma) delta) := by
@@ -68,14 +61,7 @@ end Subst.Table
 theorem instantiate_subst_lift (argument : Term Const delta domain)
     (theta : Subst Const gamma delta) (body : Term Const (domain :: gamma) result) :
     instantiate argument (subst (Subst.lift theta) body) = subst (Subst.cons argument theta) body := by
-  rw [instantiate, subst_comp]
-  apply subst_ext
-  intro type index
-  cases index with
-  | vz => rfl
-  | vs index =>
-      change instantiate argument (weaken (theta index)) = theta index
-      exact instantiate_weaken argument (theta index)
+  rw [instantiate, subst_comp, Subst.single_lift_eq_cons]
 
 #print axioms instantiate_subst_lift
 

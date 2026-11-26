@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentRigidDecomposition
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentRecoveryBudget
 
@@ -24,7 +25,7 @@ whose successful runs are kept.
 
 set_option autoImplicit false
 
-universe u
+universe u v
 
 namespace Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting
 namespace ContextualDependentDecisiveFragment
@@ -79,8 +80,7 @@ variable [DecidableEq Head] [DecidableRel S.R.headEq]
 variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R)
   (heads : HeadPreserving S.R) (algebra : CumulativeAlgebra S.R) (declared : DeclaredTypesFormed S.R)
 variable (choices : ExecutableChecking.HeadChoices S.R) (reducer : ExecutableReduction.Reducer S.R)
-variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
-  Keeps (reducer fuel term) (reducer (fuel + 1) term))
+variable (stable : SolverPremises.StableReducer (rules := S.R) reducer)
 include stable
 
 omit [DecidableRel S.R.cumulative] in
@@ -88,9 +88,8 @@ theorem types_mono {n fuel larger : Nat} {Γ : Ctx Head n} {first second : Tm He
     {result : ExecutableConversion.Certificate S.R (.types Γ first second)}
     (accepted : ExecutableConversion.types S.R reducer fuel Γ first second = some result) (enough : fuel ≤ larger) :
     ExecutableConversion.types S.R reducer larger Γ first second = some result := by
-  induction enough with
-  | refl => exact accepted
-  | @step larger _ ih => exact (all_success_succ S.R reducer stable).2.2.2 larger n Γ first second result ih
+  exact SolverPremises.keeps_of_le
+    (fun budget => (all_success_succ S.R reducer stable).2.2.2 budget n Γ first second) enough result accepted
 
 omit [DecidableRel S.R.cumulative] in
 /-- Annotation comparison is eventually constant. -/
@@ -192,9 +191,10 @@ theorem reduceTerm_mono {Γ : Context S.R} (original : TotalTerm Γ) {fuel large
       ExecutableReduction.normalize S.R root fuel term = some found →
         ExecutableReduction.normalize S.R root larger term = some found := by
     intro n term found accepted
-    induction enough with
-    | refl => exact accepted
-    | step _ ih => exact ContextualDependentReductionBudget.success_succ S.R root ih
+    exact SolverPremises.keeps_of_le
+      (run := fun budget => ExecutableReduction.normalize S.R root budget term)
+      (fun _ _ => ContextualDependentReductionBudget.success_succ S.R root)
+      enough found accepted
   unfold ContextualDependentNormalization.reduceTerm at computed ⊢
   split at computed
   · cases computed
@@ -254,8 +254,7 @@ variable (facts : FormFacts S.R S.roles) (roots : RootPreserving S.R)
   (heads : HeadPreserving S.R) (algebra : CumulativeAlgebra S.R) (declared : DeclaredTypesFormed S.R)
 variable (choices : ExecutableChecking.HeadChoices S.R) (reducer : ExecutableReduction.Reducer S.R)
   (root : ExecutableReduction.RootEvaluator S.R)
-variable (stable : ∀ {n : Nat} (fuel : Nat) (term : Tm Head n),
-  Keeps (reducer fuel term) (reducer (fuel + 1) term))
+variable (stable : SolverPremises.StableReducer (rules := S.R) reducer)
 include stable
 
 /-- **The scoped reading of every store equation is eventually constant.** -/
@@ -350,6 +349,66 @@ theorem localsRule_const {Θ : Context S.R} :
         later _ (le_max_right _ _)]
 
 end Reading
+
+end ContextualDependentDecisiveFragment
+
+namespace ContextualDependentFragment
+
+open ContextualDependentDecisiveFragment
+
+/-- A function of an eventually constant sequence is eventually constant. -/
+theorem EventuallyConst.comp {α : Sort u} {β : Sort v} {f : Nat → α} (g : α → β) (constant : EventuallyConst f) :
+    EventuallyConst fun fuel => g (f fuel) := by
+  obtain ⟨threshold, same⟩ := constant
+  exact ⟨threshold, fun fuel enough => congrArg g (same fuel enough)⟩
+
+/-- A stable reading determines a branch whose execution agrees with an
+eventually constant sequence at the budgets where the reading is observed. -/
+theorem EventuallyConst.onReading {α : Sort u} {β : Sort v} {read : Nat → α} {result : Nat → β}
+    (input : EventuallyConst read)
+    (branches : ∀ observed, ∃ run : Nat → β,
+      EventuallyConst run ∧ ∀ fuel, read fuel = observed → result fuel = run fuel) :
+    EventuallyConst result := by
+  obtain ⟨first, fixed⟩ := input
+  obtain ⟨run, ⟨second, settled⟩, execute⟩ := branches (read first)
+  refine ⟨max first second, fun fuel enough => ?_⟩
+  rw [execute fuel (fixed fuel (le_of_max_le_left enough)),
+    execute _ (fixed _ (le_max_left _ _)),
+    settled fuel (le_of_max_le_right enough), settled _ (le_max_right _ _)]
+
+/-- **Dependent composition**: a sequence that reads an eventually constant sequence, and that is
+eventually constant at each fixed reading, is eventually constant. -/
+theorem EventuallyConst.dep {α : Sort u} {β : Sort v} {h : Nat → α} {k : Nat → α → β}
+    (inner : EventuallyConst h) (outer : ∀ a, EventuallyConst fun fuel => k fuel a) :
+    EventuallyConst fun fuel => k fuel (h fuel) :=
+  EventuallyConst.onReading inner fun value =>
+    ⟨fun fuel => k fuel value, outer value, fun fuel same => congrArg (k fuel) same⟩
+
+/-- An eventually constant sequence, restated pointwise. -/
+theorem EventuallyConst.of_eq {α : Sort u} {f g : Nat → α} (same : ∀ fuel, f fuel = g fuel) (constant : EventuallyConst g) :
+    EventuallyConst f := by
+  obtain ⟨threshold, kept⟩ := constant
+  exact ⟨threshold, fun fuel enough => by rw [same, same, kept fuel enough]⟩
+
+end ContextualDependentFragment
+
+namespace ContextualDependentDecisiveFragment
+
+/-- Left-biased choice retains the first result and uses the later rule
+when the first has no result. -/
+theorem EventuallyConst.orElse {α : Type u} {first second : Nat → Option α}
+    (left : EventuallyConst first) (right : EventuallyConst second) :
+    EventuallyConst fun fuel => match first fuel with
+      | some a => some a
+      | none => second fuel := by
+  refine ContextualDependentFragment.EventuallyConst.dep (h := first)
+    (k := fun fuel observed => match observed with
+      | some a => some a
+      | none => second fuel) left ?_
+  intro observed
+  cases observed with
+  | none => exact right
+  | some a => exact EventuallyConst.const (some a)
 
 end ContextualDependentDecisiveFragment
 end Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting

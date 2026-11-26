@@ -612,129 +612,135 @@ theorem list_eight {α : Type} :
       ∃ a b c d e f g h, items = [a, b, c, d, e, f, g, h]
   | [a, b, c, d, e, f, g, h], _ => ⟨a, b, c, d, e, f, g, h, rfl⟩
 
+/-- **Each rule is sound**: an instance with true premises has a true conclusion. -/
+theorem rule_sound {rule : SortedFirstOrderRules.Rule} (member : rule ∈ rules) (arguments : List Pattern)
+    (arity : arguments.length = rule.row.vars.length)
+    (ih : ∀ premise ∈ rule.row.instPremises arguments, Valid premise) :
+    Valid (rule.row.instConclusion arguments) := by
+  simp only [rules, List.mem_cons, List.not_mem_nil, or_false] at member
+  rcases member with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+    rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  · obtain ⟨a, rfl⟩ := list_one arity
+    simp [addZero_conclusion]
+  · obtain ⟨a, b, c, rfl⟩ := list_three arity
+    have sum := ih (addP a b c) (by simp [addSucc_premises])
+    simp only [addSucc_conclusion, valid_add, natValue_succ] at sum ⊢
+    omega
+  · obtain ⟨a, rfl⟩ := list_one arity
+    simp [mulZero_conclusion]
+  · obtain ⟨a, b, c, d, rfl⟩ := list_four arity
+    have product := ih (mulP a b c) (by simp [mulSucc_premises])
+    have sum := ih (addP c a d) (by simp [mulSucc_premises])
+    simp only [mulSucc_conclusion, valid_mul, valid_add, natValue_succ] at product sum ⊢
+    rw [Nat.mul_succ, product, sum]
+  · obtain ⟨a, rfl⟩ := list_one arity
+    simp [ltZero_conclusion]
+  · obtain ⟨a, b, rfl⟩ := list_two arity
+    have below := ih (ltP a b) (by simp [ltSucc_premises])
+    simp only [ltSucc_conclusion, valid_lt, natValue_succ] at below ⊢
+    omega
+  · obtain ⟨a, rfl⟩ := list_one arity
+    simp [leZero_conclusion]
+  · obtain ⟨a, b, rfl⟩ := list_two arity
+    have below := ih (leP a b) (by simp [leSucc_premises])
+    simp only [leSucc_conclusion, valid_le, natValue_succ] at below ⊢
+    omega
+  · obtain ⟨a, b, s, c, rfl⟩ := list_four arity
+    have below := ih (ltP a b) (by simp [pairBelow_premises])
+    have square := ih (mulP b b s) (by simp [pairBelow_premises])
+    have sum := ih (addP s a c) (by simp [pairBelow_premises])
+    simp only [pairBelow_conclusion, valid_lt, valid_mul, valid_add,
+      valid_pair] at below square sum ⊢
+    rw [Nat.pair, if_pos below, square, sum]
+  · obtain ⟨a, b, s, t, c, rfl⟩ := list_five arity
+    have below := ih (leP b a) (by simp [pairAbove_premises])
+    have square := ih (mulP a a s) (by simp [pairAbove_premises])
+    have lower := ih (addP s a t) (by simp [pairAbove_premises])
+    have upper := ih (addP t b c) (by simp [pairAbove_premises])
+    simp only [pairAbove_conclusion, valid_le, valid_mul, valid_add,
+      valid_pair] at below square lower upper ⊢
+    rw [Nat.pair, if_neg (Nat.not_lt.mpr below), square, lower, upper]
+  · obtain ⟨n, rfl⟩ := list_one arity
+    simp only [evalZero_conclusion, valid_eval, codeValue_czero, natValue_zero]
+    exact mem_eval_zero.mpr rfl
+  · obtain ⟨n, rfl⟩ := list_one arity
+    simp only [evalSucc_conclusion, valid_eval, codeValue_csucc, natValue_succ]
+    exact mem_eval_succ.mpr rfl
+  · obtain ⟨n, a, b, rfl⟩ := list_three arity
+    have paired := ih (pairP a b n) (by simp [evalLeft_premises])
+    simp only [evalLeft_conclusion, valid_pair, valid_eval, codeValue_cleft] at paired ⊢
+    rw [mem_eval_left, ← paired, Nat.unpair_pair]
+  · obtain ⟨n, a, b, rfl⟩ := list_three arity
+    have paired := ih (pairP a b n) (by simp [evalRight_premises])
+    simp only [evalRight_conclusion, valid_pair, valid_eval, codeValue_cright] at paired ⊢
+    rw [mem_eval_right, ← paired, Nat.unpair_pair]
+  · obtain ⟨f, g, n, a, b, m, rfl⟩ := list_six arity
+    have left := ih (evalP f n a) (by simp [evalPair_premises])
+    have right := ih (evalP g n b) (by simp [evalPair_premises])
+    have paired := ih (pairP a b m) (by simp [evalPair_premises])
+    simp only [evalPair_conclusion, valid_eval, valid_pair,
+      codeValue_cpair] at left right paired ⊢
+    exact mem_eval_pair.mpr ⟨_, left, _, right, paired⟩
+  · obtain ⟨f, g, n, k, m, rfl⟩ := list_five arity
+    have inner := ih (evalP g n k) (by simp [evalComp_premises])
+    have outer := ih (evalP f k m) (by simp [evalComp_premises])
+    simp only [evalComp_conclusion, valid_eval, codeValue_ccomp] at inner outer ⊢
+    exact mem_eval_comp.mpr ⟨_, inner, outer⟩
+  · obtain ⟨f, g, a, m, rfl⟩ := list_four arity
+    have base := ih (evalP f a m) (by simp [precZero_premises])
+    simp only [precZero_conclusion, valid_eval, valid_prec, natValue_zero] at base ⊢
+    exact base
+  · obtain ⟨f, g, a, k, i, p, q, m, rfl⟩ := list_eight arity
+    have previous := ih (precP f g a k i) (by simp [precSucc_premises])
+    have inner := ih (pairP k i p) (by simp [precSucc_premises])
+    have outer := ih (pairP a p q) (by simp [precSucc_premises])
+    have step := ih (evalP g q m) (by simp [precSucc_premises])
+    simp only [precSucc_conclusion, valid_prec, valid_pair, valid_eval,
+      natValue_succ] at previous inner outer step ⊢
+    rw [mem_precValue_succ]
+    exact ⟨_, previous, by rw [inner, outer]; exact step⟩
+  · obtain ⟨f, g, a, k, n, m, rfl⟩ := list_six arity
+    have paired := ih (pairP a k n) (by simp [evalPrec_premises])
+    have value := ih (precP f g a k m) (by simp [evalPrec_premises])
+    simp only [evalPrec_conclusion, valid_pair, valid_prec, valid_eval,
+      codeValue_cprec] at paired value ⊢
+    rw [← paired, prec_eval]
+    exact value
+  · obtain ⟨f, a, s, rfl⟩ := list_three arity
+    simp [searchZero_conclusion]
+  · obtain ⟨f, a, s, j, t, q, w, rfl⟩ := list_seven arity
+    have earlier := ih (searchP f a s j) (by simp [searchSucc_premises])
+    have sum := ih (addP j s t) (by simp [searchSucc_premises])
+    have paired := ih (pairP a t q) (by simp [searchSucc_premises])
+    have step := ih (evalP f q (succP w)) (by simp [searchSucc_premises])
+    simp only [searchSucc_conclusion, valid_search, valid_add, valid_pair, valid_eval,
+      natValue_succ] at earlier sum paired step ⊢
+    intro i below
+    rcases Nat.lt_succ_iff_lt_or_eq.mp below with below | rfl
+    · exact earlier i below
+    · exact ⟨natValue w, by rw [sum, paired]; exact step⟩
+  · obtain ⟨f, a, s, j, t, q, n, rfl⟩ := list_seven arity
+    have earlier := ih (searchP f a s j) (by simp [evalSearch_premises])
+    have sum := ih (addP j s t) (by simp [evalSearch_premises])
+    have paired := ih (pairP a t q) (by simp [evalSearch_premises])
+    have found := ih (evalP f q zeroP) (by simp [evalSearch_premises])
+    have input := ih (pairP a s n) (by simp [evalSearch_premises])
+    simp only [evalSearch_conclusion, valid_search, valid_add, valid_pair, valid_eval,
+      natValue_zero, codeValue_crfind] at earlier sum paired found input ⊢
+    rw [← input, mem_eval_rfind]
+    simp only [Nat.unpair_pair]
+    exact ⟨natValue j, sum, by rw [sum, paired]; exact found, earlier⟩
+  · obtain ⟨c, n, m, rfl⟩ := list_three arity
+    have value := ih (evalP c n m) (by simp [halting_premises])
+    simp only [halting_conclusion, valid_eval, valid_halts] at value ⊢
+    exact Part.dom_iff_mem.mpr ⟨_, value⟩
+
 /-- **Soundness.** Every derivable pattern is true under the denotation. -/
 theorem valid_of_derives {pattern : Pattern}
     (derived : Derives language rules [] [] pattern) : Valid pattern := by
   induction derived with
   | hypothesis member => simp at member
-  | rule member arguments arity _ _ _ ih =>
-      simp only [rules, List.mem_cons, List.not_mem_nil, or_false] at member
-      rcases member with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
-        rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
-      · obtain ⟨a, rfl⟩ := list_one arity
-        simp [addZero_conclusion]
-      · obtain ⟨a, b, c, rfl⟩ := list_three arity
-        have sum := ih (addP a b c) (by simp [addSucc_premises])
-        simp only [addSucc_conclusion, valid_add, natValue_succ] at sum ⊢
-        omega
-      · obtain ⟨a, rfl⟩ := list_one arity
-        simp [mulZero_conclusion]
-      · obtain ⟨a, b, c, d, rfl⟩ := list_four arity
-        have product := ih (mulP a b c) (by simp [mulSucc_premises])
-        have sum := ih (addP c a d) (by simp [mulSucc_premises])
-        simp only [mulSucc_conclusion, valid_mul, valid_add, natValue_succ] at product sum ⊢
-        rw [Nat.mul_succ, product, sum]
-      · obtain ⟨a, rfl⟩ := list_one arity
-        simp [ltZero_conclusion]
-      · obtain ⟨a, b, rfl⟩ := list_two arity
-        have below := ih (ltP a b) (by simp [ltSucc_premises])
-        simp only [ltSucc_conclusion, valid_lt, natValue_succ] at below ⊢
-        omega
-      · obtain ⟨a, rfl⟩ := list_one arity
-        simp [leZero_conclusion]
-      · obtain ⟨a, b, rfl⟩ := list_two arity
-        have below := ih (leP a b) (by simp [leSucc_premises])
-        simp only [leSucc_conclusion, valid_le, natValue_succ] at below ⊢
-        omega
-      · obtain ⟨a, b, s, c, rfl⟩ := list_four arity
-        have below := ih (ltP a b) (by simp [pairBelow_premises])
-        have square := ih (mulP b b s) (by simp [pairBelow_premises])
-        have sum := ih (addP s a c) (by simp [pairBelow_premises])
-        simp only [pairBelow_conclusion, valid_lt, valid_mul, valid_add,
-          valid_pair] at below square sum ⊢
-        rw [Nat.pair, if_pos below, square, sum]
-      · obtain ⟨a, b, s, t, c, rfl⟩ := list_five arity
-        have below := ih (leP b a) (by simp [pairAbove_premises])
-        have square := ih (mulP a a s) (by simp [pairAbove_premises])
-        have lower := ih (addP s a t) (by simp [pairAbove_premises])
-        have upper := ih (addP t b c) (by simp [pairAbove_premises])
-        simp only [pairAbove_conclusion, valid_le, valid_mul, valid_add,
-          valid_pair] at below square lower upper ⊢
-        rw [Nat.pair, if_neg (Nat.not_lt.mpr below), square, lower, upper]
-      · obtain ⟨n, rfl⟩ := list_one arity
-        simp only [evalZero_conclusion, valid_eval, codeValue_czero, natValue_zero]
-        exact mem_eval_zero.mpr rfl
-      · obtain ⟨n, rfl⟩ := list_one arity
-        simp only [evalSucc_conclusion, valid_eval, codeValue_csucc, natValue_succ]
-        exact mem_eval_succ.mpr rfl
-      · obtain ⟨n, a, b, rfl⟩ := list_three arity
-        have paired := ih (pairP a b n) (by simp [evalLeft_premises])
-        simp only [evalLeft_conclusion, valid_pair, valid_eval, codeValue_cleft] at paired ⊢
-        rw [mem_eval_left, ← paired, Nat.unpair_pair]
-      · obtain ⟨n, a, b, rfl⟩ := list_three arity
-        have paired := ih (pairP a b n) (by simp [evalRight_premises])
-        simp only [evalRight_conclusion, valid_pair, valid_eval, codeValue_cright] at paired ⊢
-        rw [mem_eval_right, ← paired, Nat.unpair_pair]
-      · obtain ⟨f, g, n, a, b, m, rfl⟩ := list_six arity
-        have left := ih (evalP f n a) (by simp [evalPair_premises])
-        have right := ih (evalP g n b) (by simp [evalPair_premises])
-        have paired := ih (pairP a b m) (by simp [evalPair_premises])
-        simp only [evalPair_conclusion, valid_eval, valid_pair,
-          codeValue_cpair] at left right paired ⊢
-        exact mem_eval_pair.mpr ⟨_, left, _, right, paired⟩
-      · obtain ⟨f, g, n, k, m, rfl⟩ := list_five arity
-        have inner := ih (evalP g n k) (by simp [evalComp_premises])
-        have outer := ih (evalP f k m) (by simp [evalComp_premises])
-        simp only [evalComp_conclusion, valid_eval, codeValue_ccomp] at inner outer ⊢
-        exact mem_eval_comp.mpr ⟨_, inner, outer⟩
-      · obtain ⟨f, g, a, m, rfl⟩ := list_four arity
-        have base := ih (evalP f a m) (by simp [precZero_premises])
-        simp only [precZero_conclusion, valid_eval, valid_prec, natValue_zero] at base ⊢
-        exact base
-      · obtain ⟨f, g, a, k, i, p, q, m, rfl⟩ := list_eight arity
-        have previous := ih (precP f g a k i) (by simp [precSucc_premises])
-        have inner := ih (pairP k i p) (by simp [precSucc_premises])
-        have outer := ih (pairP a p q) (by simp [precSucc_premises])
-        have step := ih (evalP g q m) (by simp [precSucc_premises])
-        simp only [precSucc_conclusion, valid_prec, valid_pair, valid_eval,
-          natValue_succ] at previous inner outer step ⊢
-        rw [mem_precValue_succ]
-        exact ⟨_, previous, by rw [inner, outer]; exact step⟩
-      · obtain ⟨f, g, a, k, n, m, rfl⟩ := list_six arity
-        have paired := ih (pairP a k n) (by simp [evalPrec_premises])
-        have value := ih (precP f g a k m) (by simp [evalPrec_premises])
-        simp only [evalPrec_conclusion, valid_pair, valid_prec, valid_eval,
-          codeValue_cprec] at paired value ⊢
-        rw [← paired, prec_eval]
-        exact value
-      · obtain ⟨f, a, s, rfl⟩ := list_three arity
-        simp [searchZero_conclusion]
-      · obtain ⟨f, a, s, j, t, q, w, rfl⟩ := list_seven arity
-        have earlier := ih (searchP f a s j) (by simp [searchSucc_premises])
-        have sum := ih (addP j s t) (by simp [searchSucc_premises])
-        have paired := ih (pairP a t q) (by simp [searchSucc_premises])
-        have step := ih (evalP f q (succP w)) (by simp [searchSucc_premises])
-        simp only [searchSucc_conclusion, valid_search, valid_add, valid_pair, valid_eval,
-          natValue_succ] at earlier sum paired step ⊢
-        intro i below
-        rcases Nat.lt_succ_iff_lt_or_eq.mp below with below | rfl
-        · exact earlier i below
-        · exact ⟨natValue w, by rw [sum, paired]; exact step⟩
-      · obtain ⟨f, a, s, j, t, q, n, rfl⟩ := list_seven arity
-        have earlier := ih (searchP f a s j) (by simp [evalSearch_premises])
-        have sum := ih (addP j s t) (by simp [evalSearch_premises])
-        have paired := ih (pairP a t q) (by simp [evalSearch_premises])
-        have found := ih (evalP f q zeroP) (by simp [evalSearch_premises])
-        have input := ih (pairP a s n) (by simp [evalSearch_premises])
-        simp only [evalSearch_conclusion, valid_search, valid_add, valid_pair, valid_eval,
-          natValue_zero, codeValue_crfind] at earlier sum paired found input ⊢
-        rw [← input, mem_eval_rfind]
-        simp only [Nat.unpair_pair]
-        exact ⟨natValue j, sum, by rw [sum, paired]; exact found, earlier⟩
-      · obtain ⟨c, n, m, rfl⟩ := list_three arity
-        have value := ih (evalP c n m) (by simp [halting_premises])
-        simp only [halting_conclusion, valid_eval, valid_halts] at value ⊢
-        exact Part.dom_iff_mem.mpr ⟨_, value⟩
+  | rule member arguments arity _ _ _ ih => exact rule_sound member arguments arity ih
 
 /-! ## Typing of numerals and codes -/
 
@@ -833,204 +839,224 @@ theorem derives_instance {rule : SortedFirstOrderRules.Rule} (member : rule ∈ 
       exact value_matchCorrect value)
     premises
 
-theorem derives_add (a : ℕ) : ∀ b : ℕ,
-    Derives language rules [] [] (addP (num a) (num b) (num (a + b)))
+/-- A predicate on patterns closed under the instances of every rule at closed values. -/
+abbrev ClosedUnderValues (P : Pattern → Prop) : Prop :=
+  ∀ {rule : SortedFirstOrderRules.Rule}, rule ∈ rules → ∀ (values : List Value),
+    values.map Value.sort = rule.variableTypes → values.length = rule.row.vars.length →
+    (∀ premise ∈ rule.row.instPremises (values.map Value.pattern), P premise) →
+    P (rule.row.instConclusion (values.map Value.pattern))
+
+/-- Derivability is closed under the instances of every rule at closed values. -/
+theorem derives_closed : ClosedUnderValues (Derives language rules [] []) :=
+  fun member values sorts arity premises => derives_instance member values sorts arity premises
+
+/-! Every predicate closed under the rule instances at closed values holds of the true judgments. -/
+
+section Completeness
+
+variable {P : Pattern → Prop} (closed : ClosedUnderValues P)
+include closed
+
+theorem closed_add (a : ℕ) : ∀ b : ℕ,
+    P (addP (num a) (num b) (num (a + b)))
   | 0 => by
-      have step := derives_instance (rule := addZero) (by simp [rules]) [.nat a] rfl rfl
+      have step := closed (rule := addZero) (by simp [rules]) [.nat a] rfl rfl
         (by simp [addZero, inference, FORule.instPremises])
       simpa [addZero_conclusion, Value.pattern, num] using step
   | b + 1 => by
-      have step := derives_instance (rule := addSucc) (by simp [rules])
+      have step := closed (rule := addSucc) (by simp [rules])
         [.nat a, .nat b, .nat (a + b)] rfl rfl
-        (by simpa [addSucc_premises, Value.pattern] using derives_add a b)
+        (by simpa [addSucc_premises, Value.pattern] using closed_add a b)
       simpa [addSucc_conclusion, Value.pattern, num, Nat.add_succ] using step
 
-theorem derives_mul (a : ℕ) : ∀ b : ℕ,
-    Derives language rules [] [] (mulP (num a) (num b) (num (a * b)))
+theorem closed_mul (a : ℕ) : ∀ b : ℕ,
+    P (mulP (num a) (num b) (num (a * b)))
   | 0 => by
-      have step := derives_instance (rule := mulZero) (by simp [rules]) [.nat a] rfl rfl
+      have step := closed (rule := mulZero) (by simp [rules]) [.nat a] rfl rfl
         (by simp [mulZero, inference, FORule.instPremises])
       simpa [mulZero_conclusion, Value.pattern, num] using step
   | b + 1 => by
-      have step := derives_instance (rule := mulSucc) (by simp [rules])
+      have step := closed (rule := mulSucc) (by simp [rules])
         [.nat a, .nat b, .nat (a * b), .nat (a * b + a)] rfl rfl
         (by
           simp only [List.map_cons, List.map_nil, Value.pattern, mulSucc_premises,
             List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq]
-          exact ⟨derives_mul a b, derives_add (a * b) a⟩)
+          exact ⟨closed_mul a b, closed_add closed (a * b) a⟩)
       simpa [mulSucc_conclusion, Value.pattern, num, Nat.mul_succ] using step
 
-theorem derives_lt : ∀ {a b : ℕ}, a < b → Derives language rules [] [] (ltP (num a) (num b))
+theorem closed_lt : ∀ {a b : ℕ}, a < b → P (ltP (num a) (num b))
   | 0, b + 1, _ => by
-      have step := derives_instance (rule := ltZero) (by simp [rules]) [.nat b] rfl rfl
+      have step := closed (rule := ltZero) (by simp [rules]) [.nat b] rfl rfl
         (by simp [ltZero, inference, FORule.instPremises])
       simpa [ltZero_conclusion, Value.pattern, num] using step
   | a + 1, b + 1, below => by
-      have step := derives_instance (rule := ltSucc) (by simp [rules]) [.nat a, .nat b] rfl rfl
-        (by simpa [ltSucc_premises, Value.pattern] using derives_lt (Nat.lt_of_succ_lt_succ below))
+      have step := closed (rule := ltSucc) (by simp [rules]) [.nat a, .nat b] rfl rfl
+        (by simpa [ltSucc_premises, Value.pattern] using closed_lt (Nat.lt_of_succ_lt_succ below))
       simpa [ltSucc_conclusion, Value.pattern, num] using step
   | _, 0, below => absurd below (Nat.not_lt_zero _)
 
-theorem derives_le : ∀ {a b : ℕ}, a ≤ b → Derives language rules [] [] (leP (num a) (num b))
+theorem closed_le : ∀ {a b : ℕ}, a ≤ b → P (leP (num a) (num b))
   | 0, b, _ => by
-      have step := derives_instance (rule := leZero) (by simp [rules]) [.nat b] rfl rfl
+      have step := closed (rule := leZero) (by simp [rules]) [.nat b] rfl rfl
         (by simp [leZero, inference, FORule.instPremises])
       simpa [leZero_conclusion, Value.pattern, num] using step
   | a + 1, b + 1, below => by
-      have step := derives_instance (rule := leSucc) (by simp [rules]) [.nat a, .nat b] rfl rfl
-        (by simpa [leSucc_premises, Value.pattern] using derives_le (Nat.le_of_succ_le_succ below))
+      have step := closed (rule := leSucc) (by simp [rules]) [.nat a, .nat b] rfl rfl
+        (by simpa [leSucc_premises, Value.pattern] using closed_le (Nat.le_of_succ_le_succ below))
       simpa [leSucc_conclusion, Value.pattern, num] using step
   | _ + 1, 0, below => absurd below (Nat.not_succ_le_zero _)
 
-theorem derives_pair (a b : ℕ) :
-    Derives language rules [] [] (pairP (num a) (num b) (num (Nat.pair a b))) := by
+theorem closed_pair (a b : ℕ) :
+    P (pairP (num a) (num b) (num (Nat.pair a b))) := by
   by_cases below : a < b
-  · have step := derives_instance (rule := pairBelow) (by simp [rules])
+  · have step := closed (rule := pairBelow) (by simp [rules])
       [.nat a, .nat b, .nat (b * b), .nat (b * b + a)] rfl rfl
       (by
         simp only [List.map_cons, List.map_nil, Value.pattern, pairBelow_premises,
           List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq]
-        exact ⟨derives_lt below, derives_mul b b, derives_add (b * b) a⟩)
+        exact ⟨closed_lt closed below, closed_mul closed b b, closed_add closed (b * b) a⟩)
     simpa [pairBelow_conclusion, Value.pattern, Nat.pair, below] using step
-  · have step := derives_instance (rule := pairAbove) (by simp [rules])
+  · have step := closed (rule := pairAbove) (by simp [rules])
       [.nat a, .nat b, .nat (a * a), .nat (a * a + a), .nat (a * a + a + b)] rfl rfl
       (by
         simp only [List.map_cons, List.map_nil, Value.pattern, pairAbove_premises,
           List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq]
-        exact ⟨derives_le (Nat.not_lt.mp below), derives_mul a a, derives_add (a * a) a,
-          derives_add (a * a + a) b⟩)
+        exact ⟨closed_le closed (Nat.not_lt.mp below), closed_mul closed a a, closed_add closed (a * a) a,
+          closed_add closed (a * a + a) b⟩)
     simpa [pairAbove_conclusion, Value.pattern, Nat.pair, below] using step
 
-theorem derives_prec_of {f g : Code}
+theorem closed_prec_of {f g : Code}
     (evalF : ∀ {n m : ℕ}, m ∈ f.eval n →
-      Derives language rules [] [] (evalP (codePattern f) (num n) (num m)))
+      P (evalP (codePattern f) (num n) (num m)))
     (evalG : ∀ {n m : ℕ}, m ∈ g.eval n →
-      Derives language rules [] [] (evalP (codePattern g) (num n) (num m)))
+      P (evalP (codePattern g) (num n) (num m)))
     (a : ℕ) : ∀ (k : ℕ) {m : ℕ}, m ∈ precValue f g a k →
-      Derives language rules [] [] (precP (codePattern f) (codePattern g) (num a) (num k) (num m))
+      P (precP (codePattern f) (codePattern g) (num a) (num k) (num m))
   | 0, m, value => by
-      have step := derives_instance (rule := precZero) (by simp [rules])
+      have step := closed (rule := precZero) (by simp [rules])
         [.code f, .code g, .nat a, .nat m] rfl rfl
         (by simpa [precZero_premises, Value.pattern] using evalF (n := a) value)
       simpa [precZero_conclusion, Value.pattern, num] using step
   | k + 1, m, value => by
       obtain ⟨i, previous, step⟩ := Part.mem_bind_iff.mp value
-      have derivation := derives_instance (rule := precSucc) (by simp [rules])
+      have derivation := closed (rule := precSucc) (by simp [rules])
         [.code f, .code g, .nat a, .nat k, .nat i, .nat (Nat.pair k i),
           .nat (Nat.pair a (Nat.pair k i)), .nat m] rfl rfl
         (by
           simp only [List.map_cons, List.map_nil, Value.pattern, precSucc_premises,
             List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq]
-          exact ⟨derives_prec_of evalF evalG a k previous, derives_pair k i,
-            derives_pair a (Nat.pair k i), evalG step⟩)
+          exact ⟨closed_prec_of evalF evalG a k previous, closed_pair closed k i,
+            closed_pair closed a (Nat.pair k i), evalG step⟩)
       simpa [precSucc_conclusion, Value.pattern, num] using derivation
 
-theorem derives_search_of {f : Code}
+theorem closed_search_of {f : Code}
     (evalF : ∀ {n m : ℕ}, m ∈ f.eval n →
-      Derives language rules [] [] (evalP (codePattern f) (num n) (num m)))
+      P (evalP (codePattern f) (num n) (num m)))
     (a s : ℕ) : ∀ j : ℕ, (∀ i < j, ∃ w, w + 1 ∈ f.eval (Nat.pair a (i + s))) →
-      Derives language rules [] [] (searchP (codePattern f) (num a) (num s) (num j))
+      P (searchP (codePattern f) (num a) (num s) (num j))
   | 0, _ => by
-      have step := derives_instance (rule := searchZero) (by simp [rules])
+      have step := closed (rule := searchZero) (by simp [rules])
         [.code f, .nat a, .nat s] rfl rfl
         (by simp [searchZero, inference, FORule.instPremises])
       simpa [searchZero_conclusion, Value.pattern, num] using step
   | j + 1, earlier => by
       obtain ⟨w, value⟩ := earlier j (Nat.lt_succ_self j)
-      have step := derives_instance (rule := searchSucc) (by simp [rules])
+      have step := closed (rule := searchSucc) (by simp [rules])
         [.code f, .nat a, .nat s, .nat j, .nat (j + s), .nat (Nat.pair a (j + s)), .nat w] rfl rfl
         (by
           simp only [List.map_cons, List.map_nil, Value.pattern, searchSucc_premises,
             List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq]
-          exact ⟨derives_search_of evalF a s j
+          exact ⟨closed_search_of evalF a s j
               (fun i below => earlier i (Nat.lt_succ_of_lt below)),
-            derives_add j s, derives_pair a (j + s), evalF value⟩)
+            closed_add closed j s, closed_pair closed a (j + s), evalF value⟩)
       simpa [searchSucc_conclusion, Value.pattern, num] using step
 
 /-- **Completeness for evaluation.** -/
-theorem derives_eval : ∀ (c : Code) {n m : ℕ}, m ∈ c.eval n →
-    Derives language rules [] [] (evalP (codePattern c) (num n) (num m))
+theorem closed_eval : ∀ (c : Code) {n m : ℕ}, m ∈ c.eval n →
+    P (evalP (codePattern c) (num n) (num m))
   | .zero, n, m, value => by
       have zero : m = 0 := mem_eval_zero.mp value
       subst zero
-      have step := derives_instance (rule := evalZero) (by simp [rules]) [.nat n] rfl rfl
+      have step := closed (rule := evalZero) (by simp [rules]) [.nat n] rfl rfl
         (by simp [evalZero, inference, FORule.instPremises])
       simpa [evalZero_conclusion, Value.pattern, codePattern, num] using step
   | .succ, n, m, value => by
       have succ : m = n + 1 := mem_eval_succ.mp value
       subst succ
-      have step := derives_instance (rule := evalSucc) (by simp [rules]) [.nat n] rfl rfl
+      have step := closed (rule := evalSucc) (by simp [rules]) [.nat n] rfl rfl
         (by simp [evalSucc, inference, FORule.instPremises])
       simpa [evalSucc_conclusion, Value.pattern, codePattern, num] using step
   | .left, n, m, value => by
       have left : m = n.unpair.1 := mem_eval_left.mp value
       subst left
-      have step := derives_instance (rule := evalLeft) (by simp [rules])
+      have step := closed (rule := evalLeft) (by simp [rules])
         [.nat n, .nat n.unpair.1, .nat n.unpair.2] rfl rfl
         (by simpa [evalLeft_premises, Value.pattern, Nat.pair_unpair] using
-          derives_pair n.unpair.1 n.unpair.2)
+          closed_pair closed n.unpair.1 n.unpair.2)
       simpa [evalLeft_conclusion, Value.pattern, codePattern] using step
   | .right, n, m, value => by
       have right : m = n.unpair.2 := mem_eval_right.mp value
       subst right
-      have step := derives_instance (rule := evalRight) (by simp [rules])
+      have step := closed (rule := evalRight) (by simp [rules])
         [.nat n, .nat n.unpair.1, .nat n.unpair.2] rfl rfl
         (by simpa [evalRight_premises, Value.pattern, Nat.pair_unpair] using
-          derives_pair n.unpair.1 n.unpair.2)
+          closed_pair closed n.unpair.1 n.unpair.2)
       simpa [evalRight_conclusion, Value.pattern, codePattern] using step
   | .pair f g, n, m, value => by
       obtain ⟨a, left, b, right, rfl⟩ := mem_eval_pair.mp value
-      have step := derives_instance (rule := evalPair) (by simp [rules])
+      have step := closed (rule := evalPair) (by simp [rules])
         [.code f, .code g, .nat n, .nat a, .nat b, .nat (Nat.pair a b)] rfl rfl
         (by
           simp only [List.map_cons, List.map_nil, Value.pattern, evalPair_premises,
             List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq]
-          exact ⟨derives_eval f left, derives_eval g right, derives_pair a b⟩)
+          exact ⟨closed_eval f left, closed_eval g right, closed_pair closed a b⟩)
       simpa [evalPair_conclusion, Value.pattern, codePattern] using step
   | .comp f g, n, m, value => by
       obtain ⟨k, inner, outer⟩ := mem_eval_comp.mp value
-      have step := derives_instance (rule := evalComp) (by simp [rules])
+      have step := closed (rule := evalComp) (by simp [rules])
         [.code f, .code g, .nat n, .nat k, .nat m] rfl rfl
         (by
           simp only [List.map_cons, List.map_nil, Value.pattern, evalComp_premises,
             List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq]
-          exact ⟨derives_eval g inner, derives_eval f outer⟩)
+          exact ⟨closed_eval g inner, closed_eval f outer⟩)
       simpa [evalComp_conclusion, Value.pattern, codePattern] using step
   | .prec f g, n, m, value => by
       rw [← Nat.pair_unpair n, prec_eval] at value
-      have recursion := derives_prec_of (fun found => derives_eval f found)
-        (fun found => derives_eval g found) n.unpair.1 n.unpair.2 value
-      have step := derives_instance (rule := evalPrec) (by simp [rules])
+      have recursion := closed_prec_of closed (fun found => closed_eval f found)
+        (fun found => closed_eval g found) n.unpair.1 n.unpair.2 value
+      have step := closed (rule := evalPrec) (by simp [rules])
         [.code f, .code g, .nat n.unpair.1, .nat n.unpair.2, .nat n, .nat m] rfl rfl
         (by
           simp only [List.map_cons, List.map_nil, Value.pattern, evalPrec_premises,
             List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq]
           refine ⟨?_, recursion⟩
-          simpa [Nat.pair_unpair] using derives_pair n.unpair.1 n.unpair.2)
+          simpa [Nat.pair_unpair] using closed_pair closed n.unpair.1 n.unpair.2)
       simpa [evalPrec_conclusion, Value.pattern, codePattern] using step
   | .rfind' f, n, m, value => by
       obtain ⟨j, rfl, zero, earlier⟩ := mem_eval_rfind.mp value
-      have search := derives_search_of (fun found => derives_eval f found) n.unpair.1 n.unpair.2
+      have search := closed_search_of closed (fun found => closed_eval f found) n.unpair.1 n.unpair.2
         j earlier
-      have step := derives_instance (rule := evalSearch) (by simp [rules])
+      have step := closed (rule := evalSearch) (by simp [rules])
         [.code f, .nat n.unpair.1, .nat n.unpair.2, .nat j, .nat (j + n.unpair.2),
           .nat (Nat.pair n.unpair.1 (j + n.unpair.2)), .nat n] rfl rfl
         (by
           simp only [List.map_cons, List.map_nil, Value.pattern, evalSearch_premises,
             List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq]
-          refine ⟨search, derives_add j n.unpair.2, derives_pair n.unpair.1 (j + n.unpair.2),
+          refine ⟨search, closed_add closed j n.unpair.2, closed_pair closed n.unpair.1 (j + n.unpair.2),
             ?_, ?_⟩
-          · simpa [num] using derives_eval f zero
-          · simpa [Nat.pair_unpair] using derives_pair n.unpair.1 n.unpair.2)
+          · simpa [num] using closed_eval f zero
+          · simpa [Nat.pair_unpair] using closed_pair closed n.unpair.1 n.unpair.2)
       simpa [evalSearch_conclusion, Value.pattern, codePattern] using step
 
-theorem derives_halts {c : Code} {n : ℕ} (defined : (c.eval n).Dom) :
-    Derives language rules [] [] (haltsP (codePattern c) (num n)) := by
+theorem closed_halts {c : Code} {n : ℕ} (defined : (c.eval n).Dom) :
+    P (haltsP (codePattern c) (num n)) := by
   obtain ⟨m, value⟩ := Part.dom_iff_mem.mp defined
-  have step := derives_instance (rule := halting) (by simp [rules])
+  have step := closed (rule := halting) (by simp [rules])
     [.code c, .nat n, .nat m] rfl rfl
-    (by simpa [halting_premises, Value.pattern] using derives_eval c value)
+    (by simpa [halting_premises, Value.pattern] using closed_eval closed c value)
   simpa [halting_conclusion, Value.pattern] using step
+
+end Completeness
 
 /-! ## Judgments -/
 
@@ -1072,23 +1098,28 @@ def Judgment.Holds : Judgment → Prop
 theorem valid_iff_holds (judgment : Judgment) : Valid judgment.pattern ↔ judgment.Holds := by
   cases judgment <;> simp [Judgment.pattern, Judgment.Holds]
 
+/-- **Every predicate closed under the rule instances at closed values holds of every true judgment.** -/
+theorem holds_closed {P : Pattern → Prop} (closed : ClosedUnderValues P) (judgment : Judgment)
+    (holds : judgment.Holds) : P judgment.pattern := by
+  cases judgment with
+  | add a b c => subst holds; exact closed_add closed a b
+  | mul a b c => subst holds; exact closed_mul closed a b
+  | lt a b => exact closed_lt closed holds
+  | le a b => exact closed_le closed holds
+  | pair a b c => subst holds; exact closed_pair closed a b
+  | eval c n m => exact closed_eval closed c holds
+  | prec f g a k m =>
+      exact closed_prec_of closed (fun found => closed_eval closed f found)
+        (fun found => closed_eval closed g found) a k holds
+  | search f a s j => exact closed_search_of closed (fun found => closed_eval closed f found) a s j holds
+  | halts c n => exact closed_halts closed holds
+
 /-- **A closed judgment is derivable exactly when it is true.** -/
 theorem derives_iff (judgment : Judgment) :
     Derives language rules [] [] judgment.pattern ↔ judgment.Holds := by
   refine ⟨fun derived => (valid_iff_holds judgment).mp (valid_of_derives derived), ?_⟩
   intro holds
-  cases judgment with
-  | add a b c => subst holds; exact derives_add a b
-  | mul a b c => subst holds; exact derives_mul a b
-  | lt a b => exact derives_lt holds
-  | le a b => exact derives_le holds
-  | pair a b c => subst holds; exact derives_pair a b
-  | eval c n m => exact derives_eval c holds
-  | prec f g a k m =>
-      exact derives_prec_of (fun found => derives_eval f found)
-        (fun found => derives_eval g found) a k holds
-  | search f a s j => exact derives_search_of (fun found => derives_eval f found) a s j holds
-  | halts c n => exact derives_halts holds
+  exact holds_closed derives_closed judgment holds
 
 /-- The presentation derives that `c` sends `n` to `m` exactly when it does. -/
 theorem derives_eval_iff (c : Code) (n m : ℕ) :

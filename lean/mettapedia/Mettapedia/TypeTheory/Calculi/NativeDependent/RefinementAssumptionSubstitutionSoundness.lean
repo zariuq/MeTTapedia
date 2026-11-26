@@ -1,4 +1,6 @@
 import Mettapedia.TypeTheory.Calculi.NativeDependent.RefinementStructuralSoundness
+import Mettapedia.TypeTheory.Calculi.NativeDependent.RefinementNativeAbstractComparison
+import Mettapedia.TypeTheory.Calculi.NativeDependent.RefinementAbstractAssumptionSubstitutionSoundness
 
 /-!
 # Substitution through actual predicate assumptions
@@ -73,11 +75,10 @@ variable (model : ModelData S C)
 
 theorem substitutionWeakenAssumption_sound (context : ContextExpr S n) (predicate : PropExpr S n)
     (predicateInterpreted : Interprets model (.predicate context predicate)) :
-    Interprets model (.substitution (.assume context predicate) context TermExpr.var) := by
-  rcases predicateInterpreted with ⟨Γ, φ, contextRead, predicateRead⟩
-  exact ⟨Γ.assume φ, Γ, φ.ι,
-    model.evaluateContext_assume context predicate Γ φ contextRead predicateRead,
-    contextRead, (ModelSubstitution.weakenAssumption model Γ φ).evaluate⟩
+    Interprets model (.substitution (.assume context predicate) context TermExpr.var) :=
+  model.interprets_of_abstract
+    (Abstract.ModelData.substitutionWeakenAssumption_sound model.toAbstract context predicate
+      predicateInterpreted.toAbstract)
 
 theorem substitutionIntoAssumption_sound (stable : StrictPiSubstitution model.products)
     (source : ContextExpr S k) (target : ContextExpr S n) (predicate : PropExpr S n)
@@ -85,21 +86,11 @@ theorem substitutionIntoAssumption_sound (stable : StrictPiSubstitution model.pr
     (substitutionInterpreted : Interprets model (.substitution source target substitution))
     (predicateInterpreted : Interprets model (.predicate target predicate))
     (guardInterpreted : Interprets model (.entails source (predicate.substitute substitution))) :
-    Interprets model (.substitution source (.assume target predicate) substitution) := by
-  rcases substitutionInterpreted with ⟨Γ, Δ, σ, sourceRead, targetRead, substitutionRead⟩
-  rcases predicateInterpreted.predicateAt Δ targetRead with ⟨φ, predicateRead⟩
-  let modelMap := ModelSubstitution.ofEvaluated model Γ Δ substitution σ substitutionRead
-  have pulled := model.evaluatePredicate_substitute stable predicate Γ Δ substitution modelMap φ predicateRead
-  have guardRead := guardInterpreted.entailsAt Γ sourceRead
-  have top : φ.preimage σ = ⊤ := Option.some.inj (pulled.symm.trans guardRead)
-  have satisfies : ∀ world value, σ.app world value ∈ φ.obj world := by
-    intro world value
-    change value ∈ (φ.preimage σ).obj world
-    rw [top]
-    trivial
-  let restricted := modelMap.intoAssumption φ satisfies
-  exact ⟨Γ, Δ.assume φ, restricted.arrow, sourceRead,
-    model.evaluateContext_assume target predicate Δ φ targetRead predicateRead, restricted.evaluate⟩
+    Interprets model (.substitution source (.assume target predicate) substitution) :=
+  model.interprets_of_abstract
+    (Abstract.ModelData.substitutionIntoAssumption_sound model.toAbstract (model.stable_toAbstract stable)
+      source target predicate substitution substitutionInterpreted.toAbstract
+      predicateInterpreted.toAbstract guardInterpreted.toAbstract)
 
 theorem substitutionLift_sound (stable : StrictPiSubstitution model.products)
     (source : ContextExpr S k) (target : ContextExpr S n) (type : TypeExpr S n)
@@ -107,15 +98,10 @@ theorem substitutionLift_sound (stable : StrictPiSubstitution model.products)
     (substitutionInterpreted : Interprets model (.substitution source target substitution))
     (typeInterpreted : Interprets model (.type target type)) :
     Interprets model (.substitution (.snoc source (type.substitute substitution))
-      (.snoc target type) (liftSubstitution substitution)) := by
-  rcases substitutionInterpreted with ⟨Γ, Δ, σ, sourceRead, targetRead, substitutionRead⟩
-  rcases typeInterpreted.typeAt Δ targetRead with ⟨A, typeRead⟩
-  let modelMap := ModelSubstitution.ofEvaluated model Γ Δ substitution σ substitutionRead
-  have pulled := model.evaluateType_substitute stable type Γ Δ substitution modelMap A typeRead
-  let lifted := modelMap.lift stable A
-  exact ⟨_, _, lifted.arrow,
-    model.evaluateContext_snoc source (type.substitute substitution) Γ _ sourceRead pulled,
-    model.evaluateContext_snoc target type Δ A targetRead typeRead, lifted.evaluate⟩
+      (.snoc target type) (liftSubstitution substitution)) :=
+  model.interprets_of_abstract
+    (Abstract.ModelData.substitutionLift_sound model.toAbstract (model.stable_toAbstract stable) source
+      target type substitution substitutionInterpreted.toAbstract typeInterpreted.toAbstract)
 
 theorem substitutionAssumptionLift_sound (stable : StrictPiSubstitution model.products)
     (source : ContextExpr S k) (target : ContextExpr S n) (predicate : PropExpr S n)
@@ -123,67 +109,54 @@ theorem substitutionAssumptionLift_sound (stable : StrictPiSubstitution model.pr
     (substitutionInterpreted : Interprets model (.substitution source target substitution))
     (predicateInterpreted : Interprets model (.predicate target predicate)) :
     Interprets model (.substitution (.assume source (predicate.substitute substitution))
-      (.assume target predicate) substitution) := by
-  rcases substitutionInterpreted with ⟨Γ, Δ, σ, sourceRead, targetRead, substitutionRead⟩
-  rcases predicateInterpreted.predicateAt Δ targetRead with ⟨φ, predicateRead⟩
-  let modelMap := ModelSubstitution.ofEvaluated model Γ Δ substitution σ substitutionRead
-  have pulled := model.evaluatePredicate_substitute stable predicate Γ Δ substitution modelMap φ predicateRead
-  let lifted := modelMap.liftAssumption stable φ
-  exact ⟨_, _, lifted.arrow,
-    model.evaluateContext_assume source (predicate.substitute substitution) Γ _ sourceRead pulled,
-    model.evaluateContext_assume target predicate Δ φ targetRead predicateRead, lifted.evaluate⟩
+      (.assume target predicate) substitution) :=
+  model.interprets_of_abstract
+    (Abstract.ModelData.substitutionAssumptionLift_sound model.toAbstract (model.stable_toAbstract stable)
+      source target predicate substitution substitutionInterpreted.toAbstract
+      predicateInterpreted.toAbstract)
 
 theorem substitutePredicate_sound (stable : StrictPiSubstitution model.products)
     (source : ContextExpr S k) (target : ContextExpr S n) (substitution : Substitution S n k)
     (predicate : PropExpr S n)
     (substitutionInterpreted : Interprets model (.substitution source target substitution))
     (predicateInterpreted : Interprets model (.predicate target predicate)) :
-    Interprets model (.predicate source (predicate.substitute substitution)) := by
-  rcases substitutionInterpreted with ⟨Γ, Δ, σ, sourceRead, targetRead, substitutionRead⟩
-  rcases predicateInterpreted.predicateAt Δ targetRead with ⟨φ, predicateRead⟩
-  exact ⟨Γ, φ.preimage σ, sourceRead,
-    model.evaluatePredicate_substitute stable predicate Γ Δ substitution
-      (ModelSubstitution.ofEvaluated model Γ Δ substitution σ substitutionRead) φ predicateRead⟩
+    Interprets model (.predicate source (predicate.substitute substitution)) :=
+  model.interprets_of_abstract
+    (Abstract.ModelData.substitutePredicate_sound model.toAbstract (model.stable_toAbstract stable) source
+      target substitution predicate substitutionInterpreted.toAbstract predicateInterpreted.toAbstract)
 
 theorem substituteEntailment_sound (stable : StrictPiSubstitution model.products)
     (source : ContextExpr S k) (target : ContextExpr S n) (substitution : Substitution S n k)
     (predicate : PropExpr S n)
     (substitutionInterpreted : Interprets model (.substitution source target substitution))
     (entailmentInterpreted : Interprets model (.entails target predicate)) :
-    Interprets model (.entails source (predicate.substitute substitution)) := by
-  rcases substitutionInterpreted with ⟨Γ, Δ, σ, sourceRead, targetRead, substitutionRead⟩
-  have evaluated := model.evaluatePredicate_substitute stable predicate Γ Δ substitution
-    (ModelSubstitution.ofEvaluated model Γ Δ substitution σ substitutionRead) ⊤
-    (entailmentInterpreted.entailsAt Δ targetRead)
-  exact ⟨Γ, sourceRead, evaluated⟩
+    Interprets model (.entails source (predicate.substitute substitution)) :=
+  model.interprets_of_abstract
+    (Abstract.ModelData.substituteEntailment_sound model.toAbstract (model.stable_toAbstract stable)
+      source target substitution predicate substitutionInterpreted.toAbstract
+      entailmentInterpreted.toAbstract)
 
 theorem substitutePredicateEquality_sound (stable : StrictPiSubstitution model.products)
     (source : ContextExpr S k) (target : ContextExpr S n) (substitution : Substitution S n k)
     (first second : PropExpr S n)
     (substitutionInterpreted : Interprets model (.substitution source target substitution))
     (predicatesInterpreted : Interprets model (.predicateEq target first second)) :
-    Interprets model (.predicateEq source (first.substitute substitution) (second.substitute substitution)) := by
-  rcases substitutionInterpreted with ⟨Γ, Δ, σ, sourceRead, targetRead, substitutionRead⟩
-  rcases predicatesInterpreted with ⟨actual, φ, actualRead, firstRead, secondRead⟩
-  cases Option.some.inj (actualRead.symm.trans targetRead)
-  let modelMap := ModelSubstitution.ofEvaluated model Γ Δ substitution σ substitutionRead
-  exact ⟨Γ, φ.preimage σ, sourceRead,
-    model.evaluatePredicate_substitute stable first Γ Δ substitution modelMap φ firstRead,
-    model.evaluatePredicate_substitute stable second Γ Δ substitution modelMap φ secondRead⟩
+    Interprets model (.predicateEq source (first.substitute substitution) (second.substitute substitution)) :=
+  model.interprets_of_abstract
+    (Abstract.ModelData.substitutePredicateEquality_sound model.toAbstract
+      (model.stable_toAbstract stable) source target substitution first second
+      substitutionInterpreted.toAbstract predicatesInterpreted.toAbstract)
 
 theorem predicateSubstitutionCongruence_sound (stable : StrictPiSubstitution model.products)
     (source : ContextExpr S k) (target : ContextExpr S n)
     (first second : Substitution S n k) (predicate : PropExpr S n)
     (substitutionsInterpreted : Interprets model (.substitutionEq source target first second))
     (predicateInterpreted : Interprets model (.predicate target predicate)) :
-    Interprets model (.predicateEq source (predicate.substitute first) (predicate.substitute second)) := by
-  rcases substitutionsInterpreted with ⟨Γ, Δ, σ, sourceRead, targetRead, firstRead, secondRead⟩
-  rcases predicateInterpreted.predicateAt Δ targetRead with ⟨φ, predicateRead⟩
-  exact ⟨Γ, φ.preimage σ, sourceRead,
-    model.evaluatePredicate_substitute stable predicate Γ Δ first
-      (ModelSubstitution.ofEvaluated model Γ Δ first σ firstRead) φ predicateRead,
-    model.evaluatePredicate_substitute stable predicate Γ Δ second
-      (ModelSubstitution.ofEvaluated model Γ Δ second σ secondRead) φ predicateRead⟩
+    Interprets model (.predicateEq source (predicate.substitute first) (predicate.substitute second)) :=
+  model.interprets_of_abstract
+    (Abstract.ModelData.predicateSubstitutionCongruence_sound model.toAbstract
+      (model.stable_toAbstract stable) source target first second predicate
+      substitutionsInterpreted.toAbstract predicateInterpreted.toAbstract)
 
 theorem substitutionIntoAssumptionEquality_sound (stable : StrictPiSubstitution model.products)
     (source : ContextExpr S k) (target : ContextExpr S n) (predicate : PropExpr S n)
@@ -192,28 +165,12 @@ theorem substitutionIntoAssumptionEquality_sound (stable : StrictPiSubstitution 
     (predicateInterpreted : Interprets model (.predicate target predicate))
     (firstGuard : Interprets model (.entails source (predicate.substitute first)))
     (secondGuard : Interprets model (.entails source (predicate.substitute second))) :
-    Interprets model (.substitutionEq source (.assume target predicate) first second) := by
-  rcases substitutionsInterpreted with ⟨Γ, Δ, σ, sourceRead, targetRead, firstRead, secondRead⟩
-  have left := model.substitutionIntoAssumption_sound stable source target predicate first
-    ⟨Γ, Δ, σ, sourceRead, targetRead, firstRead⟩ predicateInterpreted firstGuard
-  have right := model.substitutionIntoAssumption_sound stable source target predicate second
-    ⟨Γ, Δ, σ, sourceRead, targetRead, secondRead⟩ predicateInterpreted secondGuard
-  rcases predicateInterpreted.predicateAt Δ targetRead with ⟨φ, predicateRead⟩
-  have assumedRead := model.evaluateContext_assume target predicate Δ φ targetRead predicateRead
-  rcases left.substitutionAt Γ (Δ.assume φ) sourceRead assumedRead with ⟨leftArrow, leftRead⟩
-  rcases right.substitutionAt Γ (Δ.assume φ) sourceRead assumedRead with ⟨rightArrow, rightRead⟩
-  have equal : leftArrow = rightArrow := by
-    apply (Δ.assume φ).2.components_injective
-    funext index
-    have before := (model.evaluateSubstitution_eq_some_iff _ _ _ _).mp firstRead index
-    have after := (model.evaluateSubstitution_eq_some_iff _ _ _ _).mp secondRead index
-    have leftComponent := (model.evaluateSubstitution_eq_some_iff _ _ _ _).mp leftRead index
-    have rightComponent := (model.evaluateSubstitution_eq_some_iff _ _ _ _).mp rightRead index
-    have oldLeft := Option.some.inj (before.symm.trans leftComponent)
-    have oldRight := Option.some.inj (after.symm.trans rightComponent)
-    exact oldLeft.symm.trans oldRight
-  cases equal
-  exact ⟨Γ, Δ.assume φ, leftArrow, sourceRead, assumedRead, leftRead, rightRead⟩
+    Interprets model (.substitutionEq source (.assume target predicate) first second) :=
+  model.interprets_of_abstract
+    (Abstract.ModelData.substitutionIntoAssumptionEquality_sound model.toAbstract
+      (model.stable_toAbstract stable) source target predicate first second
+      substitutionsInterpreted.toAbstract predicateInterpreted.toAbstract firstGuard.toAbstract
+      secondGuard.toAbstract)
 
 end ModelData
 

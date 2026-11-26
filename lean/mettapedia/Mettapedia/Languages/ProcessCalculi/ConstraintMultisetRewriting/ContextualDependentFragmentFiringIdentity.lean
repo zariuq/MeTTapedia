@@ -1,3 +1,4 @@
+import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentSolverPremises
 import Mettapedia.Languages.ProcessCalculi.ConstraintMultisetRewriting.ContextualDependentFragmentFiring
 
 /-!
@@ -154,13 +155,9 @@ theorem id_replace_equivalent {Θ : Context S.R} {equation : Equation (TotalTerm
 
 variable (rigid : ∀ name, S.roles name = .rigid) (complete : AlgorithmicComplete S.R S.roles)
   (root : ExecutableReduction.RootEvaluator S.R)
-  (normalizes : ∀ {Θ : Context S.R} {type : TypeOver Θ} (term : Term Θ type),
-    ∃ code : Tm Head Θ.arity, ContextualDependentNormalChecking.Normal (S := S) code ∧
-      Equal S.R Θ.raw term.code code type.code)
-  (certifyNormal : ∀ {n : Nat} (term : Tm Head n),
-    Option (PLift (ContextualDependentNormalChecking.Normal (S := S) term)))
-  (headTypingUnique : ∀ {head first second : Head},
-    S.R.headTyping head first → S.R.headTyping head second → first = second)
+  (normalizes : SolverPremises.HasNormalForms S)
+  (certifyNormal : SolverPremises.NormalityCertifier S)
+  (headTypingUnique : SolverPremises.UniqueHeadTyping S.R)
 
 /-- **The identity decomposition of one store equation**, continued on the decomposed store by the
 distinct-locals rule and the pattern rule. -/
@@ -199,7 +196,7 @@ def idDecomposeSearch (fuel : Nat) {Θ : Context S.R} :
       | some found => some found
       | none => (idDecomposeSearch fuel rest).map (Found.keepLeft equation)
 
-variable (rootComplete : ∀ {n : Nat} (term : Tm Head n), root term = none → ∀ target, ¬ S.R.computation.step term target)
+variable (rootComplete : SolverPremises.CompleteRootEvaluation (rules := S.R) root)
 
 /-- **One identity round**: prepare, decompose an identity equation when that decides, and
 otherwise run the fragment round. -/

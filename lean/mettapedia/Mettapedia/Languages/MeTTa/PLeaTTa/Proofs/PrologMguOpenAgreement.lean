@@ -196,6 +196,49 @@ theorem TreeEquationsVariablesSatisfy.apply
 
 mutual
 
+private theorem treeAndForest_binding_variablesSatisfy {predicate : LogicVar → Prop} :
+    (∀ {left right binding}, TreeMgu left right binding →
+      TreeVariablesSatisfy predicate left →
+        TreeVariablesSatisfy predicate right →
+        TreeSubstitutionVariablesSatisfy predicate binding) ∧
+    (∀ {left right binding}, TreesMgu left right binding →
+      TreesVariablesSatisfy predicate left →
+        TreesVariablesSatisfy predicate right →
+        TreeSubstitutionVariablesSatisfy predicate binding) :=
+  TreeMgu.inductBoth
+    (tree := fun left right binding =>
+      TreeVariablesSatisfy predicate left →
+        TreeVariablesSatisfy predicate right →
+        TreeSubstitutionVariablesSatisfy predicate binding)
+    (forest := fun left right binding =>
+      TreesVariablesSatisfy predicate left →
+        TreesVariablesSatisfy predicate right →
+        TreeSubstitutionVariablesSatisfy predicate binding)
+    (fun _ _ _ entry member => by simp at member)
+    (fun source value _ _ sourceSupported valueSupported entry member => by
+      simp only [List.mem_singleton] at member
+      subst entry
+      exact ⟨sourceSupported, valueSupported⟩)
+    (fun value target _ _ valueSupported targetSupported entry member => by
+      simp only [List.mem_singleton] at member
+      subst entry
+      exact ⟨targetSupported, valueSupported⟩)
+    (fun _ _ _ _ _ childrenInduction leftNode rightNode =>
+      childrenInduction leftNode rightNode)
+    (fun _ _ entry member => by simp at member)
+    (fun _ _ _ _ base extension _ _ headInduction tailInduction
+        leftSupported rightSupported => by
+      have baseSupported :=
+        headInduction leftSupported.1 rightSupported.1
+      have extensionSupported :=
+        tailInduction
+          (treeSubstitutionVariablesSatisfy_applyTrees
+            baseSupported leftSupported.2)
+          (treeSubstitutionVariablesSatisfy_applyTrees
+            baseSupported rightSupported.2)
+      exact treeSubstitutionVariablesSatisfy_append
+        extensionSupported baseSupported)
+
 /-- A canonical tree MGU contains no variable outside the two input trees.
 The theorem covers both binding keys and variables nested in replacement
 values. -/
@@ -205,41 +248,8 @@ theorem treeMgu_binding_variablesSatisfy
     (derivation : TreeMgu left right binding)
     (leftSupported : TreeVariablesSatisfy predicate left)
     (rightSupported : TreeVariablesSatisfy predicate right) :
-    TreeSubstitutionVariablesSatisfy predicate binding := by
-  exact TreeMgu.rec
-    (motive_1 := fun left right binding _ =>
-      TreeVariablesSatisfy predicate left →
-        TreeVariablesSatisfy predicate right →
-        TreeSubstitutionVariablesSatisfy predicate binding)
-    (motive_2 := fun left right binding _ =>
-      TreesVariablesSatisfy predicate left →
-        TreesVariablesSatisfy predicate right →
-        TreeSubstitutionVariablesSatisfy predicate binding)
-    (fun _ _ _ entry member => by simp at member)
-    (fun source value _ _ sourceSupported valueSupported entry member => by
-      simp only [List.mem_singleton] at member
-      subst entry
-      exact ⟨sourceSupported, valueSupported⟩)
-    (fun value target _ _ valueSupported targetSupported entry member => by
-      simp only [List.mem_singleton] at member
-      subst entry
-      exact ⟨targetSupported, valueSupported⟩)
-    (fun _ _ _ _ _ childrenInduction leftNode rightNode =>
-      childrenInduction leftNode rightNode)
-    (fun _ _ entry member => by simp at member)
-    (fun _ _ _ _ base extension _ _ headInduction tailInduction
-        leftSupported rightSupported => by
-      have baseSupported :=
-        headInduction leftSupported.1 rightSupported.1
-      have extensionSupported :=
-        tailInduction
-          (treeSubstitutionVariablesSatisfy_applyTrees
-            baseSupported leftSupported.2)
-          (treeSubstitutionVariablesSatisfy_applyTrees
-            baseSupported rightSupported.2)
-      exact treeSubstitutionVariablesSatisfy_append
-        extensionSupported baseSupported)
-    derivation leftSupported rightSupported
+    TreeSubstitutionVariablesSatisfy predicate binding :=
+  (@treeAndForest_binding_variablesSatisfy predicate).1 derivation leftSupported rightSupported
 
 /-- Ordered child-list companion to the MGU variable-origin theorem. -/
 theorem treesMgu_binding_variablesSatisfy
@@ -248,41 +258,8 @@ theorem treesMgu_binding_variablesSatisfy
     (derivation : TreesMgu left right binding)
     (leftSupported : TreesVariablesSatisfy predicate left)
     (rightSupported : TreesVariablesSatisfy predicate right) :
-    TreeSubstitutionVariablesSatisfy predicate binding := by
-  exact TreesMgu.rec
-    (motive_1 := fun left right binding _ =>
-      TreeVariablesSatisfy predicate left →
-        TreeVariablesSatisfy predicate right →
-        TreeSubstitutionVariablesSatisfy predicate binding)
-    (motive_2 := fun left right binding _ =>
-      TreesVariablesSatisfy predicate left →
-        TreesVariablesSatisfy predicate right →
-        TreeSubstitutionVariablesSatisfy predicate binding)
-    (fun _ _ _ entry member => by simp at member)
-    (fun source value _ _ sourceSupported valueSupported entry member => by
-      simp only [List.mem_singleton] at member
-      subst entry
-      exact ⟨sourceSupported, valueSupported⟩)
-    (fun value target _ _ valueSupported targetSupported entry member => by
-      simp only [List.mem_singleton] at member
-      subst entry
-      exact ⟨targetSupported, valueSupported⟩)
-    (fun _ _ _ _ _ childrenInduction leftNode rightNode =>
-      childrenInduction leftNode rightNode)
-    (fun _ _ entry member => by simp at member)
-    (fun _ _ _ _ base extension _ _ headInduction tailInduction
-        leftSupported rightSupported => by
-      have baseSupported :=
-        headInduction leftSupported.1 rightSupported.1
-      have extensionSupported :=
-        tailInduction
-          (treeSubstitutionVariablesSatisfy_applyTrees
-            baseSupported leftSupported.2)
-          (treeSubstitutionVariablesSatisfy_applyTrees
-            baseSupported rightSupported.2)
-      exact treeSubstitutionVariablesSatisfy_append
-        extensionSupported baseSupported)
-    derivation leftSupported rightSupported
+    TreeSubstitutionVariablesSatisfy predicate binding :=
+  (@treeAndForest_binding_variablesSatisfy predicate).2 derivation leftSupported rightSupported
 
 end
 

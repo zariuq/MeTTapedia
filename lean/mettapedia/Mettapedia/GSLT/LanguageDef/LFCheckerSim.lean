@@ -2701,32 +2701,20 @@ theorem first_active_nf_one {call u : AST}
     subst k
     simpa only [eval] using hactive
 
+private theorem eval_guard_one {p : Presentation} {guard : AST → Prop} {s : AST}
+    (initial : guard s) : ∀ k, k < 1 → guard (eval p k s) := by
+  intro k before
+  obtain rfl := Nat.eq_zero_of_le_zero (Nat.le_of_lt_succ before)
+  exact initial
+
 theorem first_active_nf_prepend {u call next : AST}
     (hstep : eval pTC 1 call = next) (hactive : NFActiveShape call)
     (hnext : FirstActiveNF u next) : FirstActiveNF u call := by
   cases hnext with
   | intro hmatch hguard =>
       rename_i N
-      refine FirstActiveNF.intro (N := 1 + N) ?_ ?_
-      · have htotal : eval pTC (1 + N) call = eval pTC N next :=
-          Mettapedia.GSLT.LanguageDef.LFShiftSim.eval_trans
-            pTC 1 N call next (eval pTC N next) hstep rfl
-        rw [htotal]
-        exact hmatch
-      · intro k hk
-        cases k with
-        | zero =>
-            simpa only [eval] using hactive
-        | succ k =>
-            have hk' : Nat.succ k < Nat.succ N := by
-              simpa only [Nat.one_add] using hk
-            have hkN : k < N := Nat.succ_lt_succ_iff.mp hk'
-            have htotal : eval pTC (Nat.succ k) call = eval pTC k next := by
-              have h := Mettapedia.GSLT.LanguageDef.LFShiftSim.eval_trans
-                pTC 1 k call next (eval pTC k next) hstep rfl
-              simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-            rw [htotal]
-            exact hguard k hkN
+      exact FirstActiveNF.intro (N := 1 + N) (by simpa only [eval_add, hstep] using hmatch)
+        (GuardedEvaluation.eval_guard_append pTC hstep (eval_guard_one hactive) hguard)
 
 theorem first_active_nf_bind_active {u v call : AST}
     (F : AST -> AST)
@@ -2850,24 +2838,8 @@ theorem first_payload_nf_prepend {u call next : AST}
     (hnext : FirstPayloadNF u next) : FirstPayloadNF u call := by
   cases hnext with
   | @intro payload N M hmatch hguard hpayload =>
-      refine FirstPayloadNF.intro (payload := payload) (N := 1 + N) (M := M) ?_ ?_ hpayload
-      · have htotal : eval pTC (1 + N) call = eval pTC N next :=
-          eval_trans_tc 1 N call next (eval pTC N next) hstep rfl
-        rw [htotal]
-        exact hmatch
-      · intro k hk
-        cases k with
-        | zero =>
-            simpa only [eval] using hactive
-        | succ k =>
-            have hk' : Nat.succ k < Nat.succ N := by
-              simpa only [Nat.one_add] using hk
-            have hkN : k < N := Nat.succ_lt_succ_iff.mp hk'
-            have htotal : eval pTC (Nat.succ k) call = eval pTC k next := by
-              have h := eval_trans_tc 1 k call next (eval pTC k next) hstep rfl
-              simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-            rw [htotal]
-            exact hguard k hkN
+      exact FirstPayloadNF.intro (payload := payload) (N := 1 + N) (M := M) (by simpa only [eval_add, hstep] using hmatch)
+        (GuardedEvaluation.eval_guard_append pTC hstep (eval_guard_one hactive) hguard) hpayload
 
 theorem nfT_z_first_payload {t u : AST}
     (h : ∃ M, eval pTC M t = u) :
@@ -6096,25 +6068,9 @@ theorem first_strong_nf_prepend {t : LF.Term} {u call next : AST}
     (hnext : FirstStrongNF t u next) : FirstStrongNF t u call := by
   cases hnext with
   | @intro payload N M henc hmatch hguard hpayload hfinal heval =>
-      refine FirstStrongNF.intro (payload := payload) (N := 1 + N) (M := M)
-        henc ?_ ?_ hpayload hfinal heval
-      · have htotal : eval pTC (1 + N) call = eval pTC N next :=
-          eval_trans_tc 1 N call next (eval pTC N next) hstep rfl
-        rw [htotal]
-        exact hmatch
-      · intro k hk
-        cases k with
-        | zero =>
-            simpa only [eval] using hactive
-        | succ k =>
-            have hk' : Nat.succ k < Nat.succ N := by
-              simpa only [Nat.one_add] using hk
-            have hkN : k < N := Nat.succ_lt_succ_iff.mp hk'
-            have htotal : eval pTC (Nat.succ k) call = eval pTC k next := by
-              have h := eval_trans_tc 1 k call next (eval pTC k next) hstep rfl
-              simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-            rw [htotal]
-            exact hguard k hkN
+      exact FirstStrongNF.intro (payload := payload) (N := 1 + N) (M := M)
+        henc (by simpa only [eval_add, hstep] using hmatch)
+        (GuardedEvaluation.eval_guard_append pTC hstep (eval_guard_one hactive) hguard) hpayload hfinal heval
 
 theorem first_strong_nf_prefix {t : LF.Term} {u call next : AST}
     {M : Nat} (hctx : eval pTC M call = next)
@@ -6125,44 +6081,16 @@ theorem first_strong_nf_prefix {t : LF.Term} {u call next : AST}
       refine FirstStrongNF.intro (payload := payload) (N := M + N) (M := MP)
         henc ?_ ?_ hpayload hfinal heval
       · exact eval_trans_tc M N call next (someT payload) hctx hmatch
-      · intro k hk
-        by_cases hkM : k < M
-        · exact hctxGuard k hkM
-        · have hge : M ≤ k := Nat.le_of_not_gt hkM
-          have hkN : k - M < N := by omega
-          have hdecomp : k = M + (k - M) := by omega
-          rw [hdecomp]
-          have htotal : eval pTC (M + (k - M)) call =
-              eval pTC (k - M) next := by
-            exact eval_trans_tc M (k - M) call next
-              (eval pTC (k - M) next) hctx rfl
-          rw [htotal]
-          exact hguard (k - M) hkN
+      · exact GuardedEvaluation.eval_guard_append pTC hctx hctxGuard hguard
 
 theorem first_replay_nf_prepend {t : LF.Term} {u call next : AST}
     (hstep : eval pTC 1 call = next) (hactive : NFActiveShape call)
     (hnext : FirstReplayNF t u next) : FirstReplayNF t u call := by
   cases hnext with
   | @intro payload N M henc hmatch hguard hpayload hpayloadReplay hfinal hfinalReplay heval =>
-      refine FirstReplayNF.intro (payload := payload) (N := 1 + N) (M := M)
-        henc ?_ ?_ hpayload hpayloadReplay hfinal hfinalReplay heval
-      · have htotal : eval pTC (1 + N) call = eval pTC N next :=
-          eval_trans_tc 1 N call next (eval pTC N next) hstep rfl
-        rw [htotal]
-        exact hmatch
-      · intro k hk
-        cases k with
-        | zero =>
-            simpa only [eval] using hactive
-        | succ k =>
-            have hk' : Nat.succ k < Nat.succ N := by
-              simpa only [Nat.one_add] using hk
-            have hkN : k < N := Nat.succ_lt_succ_iff.mp hk'
-            have htotal : eval pTC (Nat.succ k) call = eval pTC k next := by
-              have h := eval_trans_tc 1 k call next (eval pTC k next) hstep rfl
-              simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-            rw [htotal]
-            exact hguard k hkN
+      exact FirstReplayNF.intro (payload := payload) (N := 1 + N) (M := M)
+        henc (by simpa only [eval_add, hstep] using hmatch)
+        (GuardedEvaluation.eval_guard_append pTC hstep (eval_guard_one hactive) hguard) hpayload hpayloadReplay hfinal hfinalReplay heval
 
 theorem first_replay_nf_prefix {t : LF.Term} {u call next : AST}
     {M : Nat} (hctx : eval pTC M call = next)
@@ -6173,19 +6101,7 @@ theorem first_replay_nf_prefix {t : LF.Term} {u call next : AST}
       refine FirstReplayNF.intro (payload := payload) (N := M + N) (M := MP)
         henc ?_ ?_ hpayload hpayloadReplay hfinal hfinalReplay heval
       · exact eval_trans_tc M N call next (someT payload) hctx hmatch
-      · intro k hk
-        by_cases hkM : k < M
-        · exact hctxGuard k hkM
-        · have hge : M ≤ k := Nat.le_of_not_gt hkM
-          have hkN : k - M < N := by omega
-          have hdecomp : k = M + (k - M) := by omega
-          rw [hdecomp]
-          have htotal : eval pTC (M + (k - M)) call =
-              eval pTC (k - M) next := by
-            exact eval_trans_tc M (k - M) call next
-              (eval pTC (k - M) next) hctx rfl
-          rw [htotal]
-          exact hguard (k - M) hkN
+      · exact GuardedEvaluation.eval_guard_append pTC hctx hctxGuard hguard
 
 theorem first_strong_payload_replay_nf_prepend {t : LF.Term} {u call next : AST}
     (hstep : eval pTC 1 call = next) (hactive : NFActiveShape call)
@@ -6193,25 +6109,9 @@ theorem first_strong_payload_replay_nf_prepend {t : LF.Term} {u call next : AST}
     FirstStrongPayloadReplayNF t u call := by
   cases hnext with
   | @intro payload N M henc hmatch hguard hpayload hpayloadReplay hfinal heval =>
-      refine FirstStrongPayloadReplayNF.intro (payload := payload) (N := 1 + N) (M := M)
-        henc ?_ ?_ hpayload hpayloadReplay hfinal heval
-      · have htotal : eval pTC (1 + N) call = eval pTC N next :=
-          eval_trans_tc 1 N call next (eval pTC N next) hstep rfl
-        rw [htotal]
-        exact hmatch
-      · intro k hk
-        cases k with
-        | zero =>
-            simpa only [eval] using hactive
-        | succ k =>
-            have hk' : Nat.succ k < Nat.succ N := by
-              simpa only [Nat.one_add] using hk
-            have hkN : k < N := Nat.succ_lt_succ_iff.mp hk'
-            have htotal : eval pTC (Nat.succ k) call = eval pTC k next := by
-              have h := eval_trans_tc 1 k call next (eval pTC k next) hstep rfl
-              simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-            rw [htotal]
-            exact hguard k hkN
+      exact FirstStrongPayloadReplayNF.intro (payload := payload) (N := 1 + N) (M := M)
+        henc (by simpa only [eval_add, hstep] using hmatch)
+        (GuardedEvaluation.eval_guard_append pTC hstep (eval_guard_one hactive) hguard) hpayload hpayloadReplay hfinal heval
 
 theorem first_strong_payload_replay_nf_prefix {t : LF.Term} {u call next : AST}
     {M : Nat} (hctx : eval pTC M call = next)
@@ -6223,19 +6123,7 @@ theorem first_strong_payload_replay_nf_prefix {t : LF.Term} {u call next : AST}
       refine FirstStrongPayloadReplayNF.intro (payload := payload) (N := M + N) (M := MP)
         henc ?_ ?_ hpayload hpayloadReplay hfinal heval
       · exact eval_trans_tc M N call next (someT payload) hctx hmatch
-      · intro k hk
-        by_cases hkM : k < M
-        · exact hctxGuard k hkM
-        · have hge : M ≤ k := Nat.le_of_not_gt hkM
-          have hkN : k - M < N := by omega
-          have hdecomp : k = M + (k - M) := by omega
-          rw [hdecomp]
-          have htotal : eval pTC (M + (k - M)) call =
-              eval pTC (k - M) next := by
-            exact eval_trans_tc M (k - M) call next
-              (eval pTC (k - M) next) hctx rfl
-          rw [htotal]
-          exact hguard (k - M) hkN
+      · exact GuardedEvaluation.eval_guard_append pTC hctx hctxGuard hguard
 
 theorem FirstLiftableNF.toPayload {t : LF.Term} {u call : AST}
     (h : FirstLiftableNF t u call) : FirstPayloadNF u call := by
@@ -6262,25 +6150,9 @@ theorem first_liftable_nf_prepend {t : LF.Term} {u call next : AST}
     (hnext : FirstLiftableNF t u next) : FirstLiftableNF t u call := by
   cases hnext with
   | @intro payload N M henc hmatch hguard hlift hpayload =>
-      refine FirstLiftableNF.intro (payload := payload) (N := 1 + N) (M := M)
-        henc ?_ ?_ hlift hpayload
-      · have htotal : eval pTC (1 + N) call = eval pTC N next :=
-          eval_trans_tc 1 N call next (eval pTC N next) hstep rfl
-        rw [htotal]
-        exact hmatch
-      · intro k hk
-        cases k with
-        | zero =>
-            simpa only [eval] using hactive
-        | succ k =>
-            have hk' : Nat.succ k < Nat.succ N := by
-              simpa only [Nat.one_add] using hk
-            have hkN : k < N := Nat.succ_lt_succ_iff.mp hk'
-            have htotal : eval pTC (Nat.succ k) call = eval pTC k next := by
-              have h := eval_trans_tc 1 k call next (eval pTC k next) hstep rfl
-              simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-            rw [htotal]
-            exact hguard k hkN
+      exact FirstLiftableNF.intro (payload := payload) (N := 1 + N) (M := M)
+        henc (by simpa only [eval_add, hstep] using hmatch)
+        (GuardedEvaluation.eval_guard_append pTC hstep (eval_guard_one hactive) hguard) hlift hpayload
 
 theorem nfT_z_first_liftable {t : LF.Term} {u call : AST}
     (henc : encTyCore? t = some u)
@@ -9262,6 +9134,82 @@ theorem nfT_substT_con_payload_first_replay (fuelNat j : Nat)
         nfT_substT_con_first_replay (fuel := peano fuelPred) (j := peano j)
           (sAst := sAst) henc (isnormal_peano_tc fuelPred)
 
+/-- Evaluate a child in its frame and fire the frame's root step.
+The guard still covers each index before the root result. -/
+private theorem activeChildThenRoot
+    (wrap : AST → AST)
+    (wrapped : ∀ s, NFActiveShape s → NFActiveShape (wrap s))
+    (cong : ∀ s t, NFActiveShape s → oneStep pTC s = some t →
+      oneStep pTC (wrap s) = some (wrap t))
+    {N : Nat} {child ready result : AST}
+    (evaluated : eval pTC N child = ready)
+    (active : ∀ k, k < N → NFActiveShape (eval pTC k child))
+    (readyActive : NFActiveShape (wrap ready))
+    (root : eval pTC 1 (wrap ready) = result) :
+    ∃ used, eval pTC used (wrap child) = result ∧
+      ∀ k, k < used → NFActiveShape (eval pTC k (wrap child)) := by
+  obtain ⟨used, reached, prefixGuard⟩ :=
+    cong_eval_nf_active_with_guard wrap wrapped cong N evaluated active
+  exact ⟨used + 1, eval_trans_tc used 1 _ _ _ reached root,
+    GuardedEvaluation.eval_guard_append pTC reached prefixGuard (eval_guard_one readyActive)⟩
+
+/-- The first application frame produces the second while retaining the
+function evaluation's active prefix. -/
+private theorem nfApp1_guarded_prefix
+    {fuel aAst fCall fPre : AST} {N : Nat}
+    (hfuel : IsNormal pTC fuel) (haRaw : IsNormal pTC aAst)
+    (reached : eval pTC N fCall = someT fPre)
+    (active : ∀ k, k < N → NFActiveShape (eval pTC k fCall)) :
+    ∃ used, eval pTC used (nfApp1 fuel aAst fCall) = nfApp2 fuel fPre (nfT fuel aAst) ∧
+      ∀ k, k < used → NFActiveShape (eval pTC k (nfApp1 fuel aAst fCall)) :=
+  activeChildThenRoot (nfApp1 fuel aAst) (fun s _ => .app1 fuel aAst s)
+    (hcong_nfApp1_active_tc fuel aAst hfuel haRaw) reached active
+    (.app1 fuel aAst (someT fPre)) (nfApp1_ok_tc fuel aAst fPre)
+
+/-- The second application frame normalizes its function, evaluates the
+argument in the resulting frame, and fires the root. -/
+private theorem nfApp2_guarded_prefix
+    {fuel aAst aPre fPre fVal : AST} {N : Nat}
+    (hfuel : IsNormal pTC fuel) (hfnorm : IsNormal pTC fVal)
+    (functionEval : ∃ M, eval pTC M fPre = fVal)
+    (argumentEval : eval pTC N (nfT fuel aAst) = someT aPre)
+    (active : ∀ k, k < N → NFActiveShape (eval pTC k (nfT fuel aAst))) :
+    ∃ used, eval pTC used (nfApp2 fuel fPre (nfT fuel aAst)) = nfAppT fuel fVal aPre ∧
+      ∀ k, k < used → NFActiveShape (eval pTC k (nfApp2 fuel fPre (nfT fuel aAst))) := by
+  obtain ⟨M, hM⟩ := functionEval
+  obtain ⟨first, reachedFunction, functionGuard⟩ :=
+    cong_eval_nf_wrapper_with_guard (fun f => nfApp2 fuel f (nfT fuel aAst))
+      (fun f => .app2 fuel f (nfT fuel aAst))
+      (hcong_nfApp2_fun_nfT_tc fuel aAst hfuel) M hM hfnorm
+  obtain ⟨second, reachedArgument, argumentGuard⟩ :=
+    activeChildThenRoot (nfApp2 fuel fVal) (fun s _ => .app2 fuel fVal s)
+      (hcong_nfApp2_active_tc fuel fVal hfuel hfnorm) argumentEval active
+      (.app2 fuel fVal (someT aPre)) (nfApp2_ok_tc fuel fVal aPre)
+  exact ⟨first + second, eval_trans_tc first second _ _ _ reachedFunction reachedArgument,
+    GuardedEvaluation.eval_guard_append pTC reachedFunction functionGuard argumentGuard⟩
+
+private theorem first_liftable_nf_prefix {t : LF.Term} {u call next : AST} {M : Nat}
+    (reached : eval pTC M call = next)
+    (active : ∀ k, k < M → NFActiveShape (eval pTC k call))
+    (tail : FirstLiftableNF t u next) : FirstLiftableNF t u call := by
+  cases tail with
+  | @intro payload N MP encoding result guard lift normalized =>
+      exact FirstLiftableNF.intro (payload := payload) (N := M + N) (M := MP)
+        encoding (eval_trans_tc M N _ _ _ reached result)
+        (GuardedEvaluation.eval_guard_append pTC reached active guard) lift normalized
+
+example : ∃ used,
+    eval pTC used (nfApp1 Z (Var Z) (someT (Var Z))) = nfApp2 Z (Var Z) (nfT Z (Var Z)) ∧
+      ∀ k, k < used → NFActiveShape (eval pTC k (nfApp1 Z (Var Z) (someT (Var Z)))) :=
+  nfApp1_guarded_prefix (N := 0) (by rfl) (by rfl) rfl
+    (fun k h => (Nat.not_lt_zero k h).elim)
+
+example : ¬ NFActiveShape (someT (Var Z)) := by
+  have distinct : ∀ {state}, NFActiveShape state → state ≠ someT (Var Z) := by
+    intro state active
+    cases active <;> simp [someT, nfT, nfPi1, nfPi2, nfLam1, nfLam2, nfApp1, nfApp2, nfAppT]
+  exact fun active => distinct active rfl
+
 theorem nfPi2_nfT_first_liftable
     {ATerm BTerm : LF.Term} {Aval Bval fuel B Apre : AST}
     (hAenc : encTyCore? ATerm = some Aval)
@@ -9278,45 +9226,16 @@ theorem nfPi2_nfT_first_liftable
   | @intro Bpre NB MB hBenc hBmatch hBguard hBLift hBpayload =>
       have hBnorm : IsNormal pTC Bval := isnormal_encTyCore?_tc BTerm Bval hBenc
       obtain ⟨MBctx, hMBctx, hMBguard⟩ :=
-        cong_eval_nf_active_with_guard (fun s => nfPi2 Aval s)
-          (fun s _ => NFActiveShape.pi2 Aval s)
-          (hcong_nfPi2_active_tc Aval hAnorm) NB hBmatch hBguard
+        activeChildThenRoot (nfPi2 Aval) (fun s _ => .pi2 Aval s)
+          (hcong_nfPi2_active_tc Aval hAnorm) hBmatch hBguard
+          (.pi2 Aval (someT Bpre)) (nfPi2_ok_tc Aval Bpre)
       obtain ⟨MPayload, hMPayload⟩ :=
         cong_eval_tc (fun s => Pi Aval s) (hcong_Pi2_tc Aval hAnorm) MB hBpayload hBnorm
-      refine FirstLiftableNF.intro (payload := Pi Aval Bpre) (N := MA + (MBctx + 1))
+      refine FirstLiftableNF.intro (payload := Pi Aval Bpre) (N := MA + MBctx)
         (M := MPayload) ?_ ?_ ?_ ?_ hMPayload
       · simp [encTyCore?, hAenc, hBenc]
-      · have hafterB : eval pTC (MA + MBctx) (nfPi2 Apre (nfT fuel B)) =
-            nfPi2 Aval (someT Bpre) := by
-          exact eval_trans_tc MA MBctx _ _ _ hMA hMBctx
-        have hroot : eval pTC 1 (nfPi2 Aval (someT Bpre)) = someT (Pi Aval Bpre) :=
-          nfPi2_ok_tc Aval Bpre
-        have htotal := eval_trans_tc (MA + MBctx) 1 _ _ _ hafterB hroot
-        simpa [Nat.add_assoc] using htotal
-      · intro k hk
-        by_cases hkA : k < MA
-        · exact hMAguard k hkA
-        · have hgeA : MA ≤ k := Nat.le_of_not_gt hkA
-          by_cases hkB : k < MA + MBctx
-          · let j := k - MA
-            have hjlt : j < MBctx := by
-              exact Nat.sub_lt_left_of_lt_add hgeA hkB
-            have hkdecomp : k = MA + j := by
-              exact (Nat.add_sub_of_le hgeA).symm
-            subst j
-            rw [hkdecomp]
-            have htotal : eval pTC (MA + (k - MA)) (nfPi2 Apre (nfT fuel B)) =
-                eval pTC (k - MA) (nfPi2 Aval (nfT fuel B)) :=
-              eval_trans_tc MA (k - MA) _ _ _ hMA rfl
-            rw [htotal]
-            exact hMBguard (k - MA) hjlt
-          · have hkEq : k = MA + MBctx := by omega
-            subst k
-            have htotal : eval pTC (MA + MBctx) (nfPi2 Apre (nfT fuel B)) =
-                nfPi2 Aval (someT Bpre) := by
-              exact eval_trans_tc MA MBctx _ _ _ hMA hMBctx
-            rw [htotal]
-            exact NFActiveShape.pi2 Aval (someT Bpre)
+      · exact eval_trans_tc MA MBctx _ _ _ hMA hMBctx
+      · exact GuardedEvaluation.eval_guard_append pTC hMA hMAguard hMBguard
       · exact liftable_pi_tc (liftable_encTyCore?_tc ATerm Aval hAenc) hBLift
 
 theorem nfPi2_nfT_first_replay
@@ -9339,45 +9258,16 @@ theorem nfPi2_nfT_first_replay
   | @intro Bpre NB MB hBenc hBmatch hBguard hBLift hBReplay hBFinal hBFinalReplay hBpayload =>
       have hBnorm : IsNormal pTC Bval := isnormal_encTyCore?_tc BTerm Bval hBenc
       obtain ⟨MBctx, hMBctx, hMBguard⟩ :=
-        cong_eval_nf_active_with_guard (fun s => nfPi2 Aval s)
-          (fun s _ => NFActiveShape.pi2 Aval s)
-          (hcong_nfPi2_active_tc Aval hAnorm) NB hBmatch hBguard
+        activeChildThenRoot (nfPi2 Aval) (fun s _ => .pi2 Aval s)
+          (hcong_nfPi2_active_tc Aval hAnorm) hBmatch hBguard
+          (.pi2 Aval (someT Bpre)) (nfPi2_ok_tc Aval Bpre)
       obtain ⟨MPayload, hMPayload⟩ :=
         cong_eval_tc (fun s => Pi Aval s) (hcong_Pi2_tc Aval hAnorm) MB hBpayload hBnorm
-      refine FirstReplayNF.intro (payload := Pi Aval Bpre) (N := MA + (MBctx + 1))
+      refine FirstReplayNF.intro (payload := Pi Aval Bpre) (N := MA + MBctx)
         (M := MPayload) ?_ ?_ ?_ ?_ ?_ ?_ ?_ hMPayload
       · simp [encTyCore?, hAenc, hBenc]
-      · have hafterB : eval pTC (MA + MBctx) (nfPi2 Apre (nfT fuel B)) =
-            nfPi2 Aval (someT Bpre) := by
-          exact eval_trans_tc MA MBctx _ _ _ hMA hMBctx
-        have hroot : eval pTC 1 (nfPi2 Aval (someT Bpre)) = someT (Pi Aval Bpre) :=
-          nfPi2_ok_tc Aval Bpre
-        have htotal := eval_trans_tc (MA + MBctx) 1 _ _ _ hafterB hroot
-        simpa [Nat.add_assoc] using htotal
-      · intro k hk
-        by_cases hkA : k < MA
-        · exact hMAguard k hkA
-        · have hgeA : MA ≤ k := Nat.le_of_not_gt hkA
-          by_cases hkB : k < MA + MBctx
-          · let j := k - MA
-            have hjlt : j < MBctx := by
-              exact Nat.sub_lt_left_of_lt_add hgeA hkB
-            have hkdecomp : k = MA + j := by
-              exact (Nat.add_sub_of_le hgeA).symm
-            subst j
-            rw [hkdecomp]
-            have htotal : eval pTC (MA + (k - MA)) (nfPi2 Apre (nfT fuel B)) =
-                eval pTC (k - MA) (nfPi2 Aval (nfT fuel B)) :=
-              eval_trans_tc MA (k - MA) _ _ _ hMA rfl
-            rw [htotal]
-            exact hMBguard (k - MA) hjlt
-          · have hkEq : k = MA + MBctx := by omega
-            subst k
-            have htotal : eval pTC (MA + MBctx) (nfPi2 Apre (nfT fuel B)) =
-                nfPi2 Aval (someT Bpre) := by
-              exact eval_trans_tc MA MBctx _ _ _ hMA hMBctx
-            rw [htotal]
-            exact NFActiveShape.pi2 Aval (someT Bpre)
+      · exact eval_trans_tc MA MBctx _ _ _ hMA hMBctx
+      · exact GuardedEvaluation.eval_guard_append pTC hMA hMAguard hMBguard
       · exact liftable_pi_tc (liftable_encTyCore?_tc ATerm Aval hAenc) hBLift
       · exact hPayloadReplay hBLift ⟨MB, hBpayload⟩ hBReplay
       · exact liftable_pi_tc (liftable_encTyCore?_tc ATerm Aval hAenc) hBFinal
@@ -9391,43 +9281,14 @@ theorem nfPi1_nfT_first_liftable
     FirstLiftableNF (.pi ATerm BTerm) (Pi Aval Bval) (nfPi1 fuel B Acall) := by
   cases hA with
   | @intro Apre NA MA hAenc hAmatch hAguard _ hApayload =>
-      obtain ⟨MActx, hMActx, hMActxGuard⟩ :=
-        cong_eval_nf_active_with_guard (fun s => nfPi1 fuel B s)
-          (fun s _ => NFActiveShape.pi1 fuel B s)
-          (hcong_nfPi1_active_tc fuel B hfuel hBraw) NA hAmatch hAguard
+      obtain ⟨_, reached, active⟩ :=
+        activeChildThenRoot (nfPi1 fuel B) (fun s _ => .pi1 fuel B s)
+          (hcong_nfPi1_active_tc fuel B hfuel hBraw) hAmatch hAguard
+          (.pi1 fuel B (someT Apre)) (nfPi1_ok_tc fuel B Apre)
       have htail := nfPi2_nfT_first_liftable (ATerm := ATerm) (BTerm := BTerm)
         (Aval := Aval) (Bval := Bval) (fuel := fuel) (B := B) (Apre := Apre)
         hAenc ⟨MA, hApayload⟩ hB
-      cases htail with
-      | @intro payloadTail NTail MTail hTailEnc hTailMatch hTailGuard hTailLift hTailPayload =>
-          refine FirstLiftableNF.intro (payload := payloadTail) (N := MActx + (1 + NTail))
-            (M := MTail) hTailEnc ?_ ?_ hTailLift hTailPayload
-          · have hroot : eval pTC 1 (nfPi1 fuel B (someT Apre)) = nfPi2 Apre (nfT fuel B) :=
-              nfPi1_ok_tc fuel B Apre
-            have hafterRoot := eval_trans_tc MActx 1 _ _ _ hMActx hroot
-            have htotal := eval_trans_tc (MActx + 1) NTail _ _ _ hafterRoot hTailMatch
-            simpa [Nat.add_assoc] using htotal
-          · intro k hk
-            by_cases hkA : k < MActx
-            · exact hMActxGuard k hkA
-            · by_cases hkRoot : k = MActx
-              · subst k
-                rw [hMActx]
-                exact NFActiveShape.pi1 fuel B (someT Apre)
-              · let j := k - (MActx + 1)
-                have hjlt : j < NTail := by omega
-                have hkdecomp : k = MActx + 1 + j := by omega
-                subst j
-                rw [hkdecomp]
-                have hroot : eval pTC 1 (nfPi1 fuel B (someT Apre)) =
-                    nfPi2 Apre (nfT fuel B) :=
-                  nfPi1_ok_tc fuel B Apre
-                have hafterRoot := eval_trans_tc MActx 1 _ _ _ hMActx hroot
-                have htotal : eval pTC (MActx + 1 + (k - (MActx + 1))) (nfPi1 fuel B Acall) =
-                    eval pTC (k - (MActx + 1)) (nfPi2 Apre (nfT fuel B)) :=
-                  eval_trans_tc (MActx + 1) (k - (MActx + 1)) _ _ _ hafterRoot rfl
-                rw [htotal]
-                exact hTailGuard (k - (MActx + 1)) hjlt
+      exact first_liftable_nf_prefix reached active htail
 
 theorem nfPi1_nfT_first_replay
     {ATerm BTerm : LF.Term} {Aval Bval fuel B Acall : AST}
@@ -9441,45 +9302,14 @@ theorem nfPi1_nfT_first_replay
     FirstReplayNF (.pi ATerm BTerm) (Pi Aval Bval) (nfPi1 fuel B Acall) := by
   cases hA with
   | @intro Apre NA MA hAenc hAmatch hAguard _ _ _ _ hApayload =>
-      obtain ⟨MActx, hMActx, hMActxGuard⟩ :=
-        cong_eval_nf_active_with_guard (fun s => nfPi1 fuel B s)
-          (fun s _ => NFActiveShape.pi1 fuel B s)
-          (hcong_nfPi1_active_tc fuel B hfuel hBraw) NA hAmatch hAguard
+      obtain ⟨_, reached, active⟩ :=
+        activeChildThenRoot (nfPi1 fuel B) (fun s _ => .pi1 fuel B s)
+          (hcong_nfPi1_active_tc fuel B hfuel hBraw) hAmatch hAguard
+          (.pi1 fuel B (someT Apre)) (nfPi1_ok_tc fuel B Apre)
       have htail := nfPi2_nfT_first_replay (ATerm := ATerm) (BTerm := BTerm)
         (Aval := Aval) (Bval := Bval) (fuel := fuel) (B := B) (Apre := Apre)
         hAenc ⟨MA, hApayload⟩ hB hPayloadReplay hFinalReplay
-      cases htail with
-      | @intro payloadTail NTail MTail hTailEnc hTailMatch hTailGuard
-          hTailLift hTailReplay hTailFinal hTailFinalReplay hTailPayload =>
-          refine FirstReplayNF.intro (payload := payloadTail) (N := MActx + (1 + NTail))
-            (M := MTail) hTailEnc ?_ ?_ hTailLift hTailReplay hTailFinal
-            hTailFinalReplay hTailPayload
-          · have hroot : eval pTC 1 (nfPi1 fuel B (someT Apre)) = nfPi2 Apre (nfT fuel B) :=
-              nfPi1_ok_tc fuel B Apre
-            have hafterRoot := eval_trans_tc MActx 1 _ _ _ hMActx hroot
-            have htotal := eval_trans_tc (MActx + 1) NTail _ _ _ hafterRoot hTailMatch
-            simpa [Nat.add_assoc] using htotal
-          · intro k hk
-            by_cases hkA : k < MActx
-            · exact hMActxGuard k hkA
-            · by_cases hkRoot : k = MActx
-              · subst k
-                rw [hMActx]
-                exact NFActiveShape.pi1 fuel B (someT Apre)
-              · let j := k - (MActx + 1)
-                have hjlt : j < NTail := by omega
-                have hkdecomp : k = MActx + 1 + j := by omega
-                subst j
-                rw [hkdecomp]
-                have hroot : eval pTC 1 (nfPi1 fuel B (someT Apre)) =
-                    nfPi2 Apre (nfT fuel B) :=
-                  nfPi1_ok_tc fuel B Apre
-                have hafterRoot := eval_trans_tc MActx 1 _ _ _ hMActx hroot
-                have htotal : eval pTC (MActx + 1 + (k - (MActx + 1))) (nfPi1 fuel B Acall) =
-                    eval pTC (k - (MActx + 1)) (nfPi2 Apre (nfT fuel B)) :=
-                  eval_trans_tc (MActx + 1) (k - (MActx + 1)) _ _ _ hafterRoot rfl
-                rw [htotal]
-                exact hTailGuard (k - (MActx + 1)) hjlt
+      exact first_replay_nf_prefix reached active htail
 
 theorem nfLam2_nfT_first_liftable
     {ATerm bTerm : LF.Term} {Aval bval fuel b Apre : AST}
@@ -9497,45 +9327,16 @@ theorem nfLam2_nfT_first_liftable
   | @intro bpre NB MB hbenc hbmatch hbguard hbLift hbpayload =>
       have hbnorm : IsNormal pTC bval := isnormal_encTyCore?_tc bTerm bval hbenc
       obtain ⟨MBctx, hMBctx, hMBguard⟩ :=
-        cong_eval_nf_active_with_guard (fun s => nfLam2 Aval s)
-          (fun s _ => NFActiveShape.lam2 Aval s)
-          (hcong_nfLam2_active_tc Aval hAnorm) NB hbmatch hbguard
+        activeChildThenRoot (nfLam2 Aval) (fun s _ => .lam2 Aval s)
+          (hcong_nfLam2_active_tc Aval hAnorm) hbmatch hbguard
+          (.lam2 Aval (someT bpre)) (nfLam2_ok_tc Aval bpre)
       obtain ⟨MPayload, hMPayload⟩ :=
         cong_eval_tc (fun s => Lam Aval s) (hcong_Lam2_tc Aval hAnorm) MB hbpayload hbnorm
-      refine FirstLiftableNF.intro (payload := Lam Aval bpre) (N := MA + (MBctx + 1))
+      refine FirstLiftableNF.intro (payload := Lam Aval bpre) (N := MA + MBctx)
         (M := MPayload) ?_ ?_ ?_ ?_ hMPayload
       · simp [encTyCore?, hAenc, hbenc]
-      · have hafterB : eval pTC (MA + MBctx) (nfLam2 Apre (nfT fuel b)) =
-            nfLam2 Aval (someT bpre) := by
-          exact eval_trans_tc MA MBctx _ _ _ hMA hMBctx
-        have hroot : eval pTC 1 (nfLam2 Aval (someT bpre)) = someT (Lam Aval bpre) :=
-          nfLam2_ok_tc Aval bpre
-        have htotal := eval_trans_tc (MA + MBctx) 1 _ _ _ hafterB hroot
-        simpa [Nat.add_assoc] using htotal
-      · intro k hk
-        by_cases hkA : k < MA
-        · exact hMAguard k hkA
-        · have hgeA : MA ≤ k := Nat.le_of_not_gt hkA
-          by_cases hkB : k < MA + MBctx
-          · let j := k - MA
-            have hjlt : j < MBctx := by
-              exact Nat.sub_lt_left_of_lt_add hgeA hkB
-            have hkdecomp : k = MA + j := by
-              exact (Nat.add_sub_of_le hgeA).symm
-            subst j
-            rw [hkdecomp]
-            have htotal : eval pTC (MA + (k - MA)) (nfLam2 Apre (nfT fuel b)) =
-                eval pTC (k - MA) (nfLam2 Aval (nfT fuel b)) :=
-              eval_trans_tc MA (k - MA) _ _ _ hMA rfl
-            rw [htotal]
-            exact hMBguard (k - MA) hjlt
-          · have hkEq : k = MA + MBctx := by omega
-            subst k
-            have htotal : eval pTC (MA + MBctx) (nfLam2 Apre (nfT fuel b)) =
-                nfLam2 Aval (someT bpre) := by
-              exact eval_trans_tc MA MBctx _ _ _ hMA hMBctx
-            rw [htotal]
-            exact NFActiveShape.lam2 Aval (someT bpre)
+      · exact eval_trans_tc MA MBctx _ _ _ hMA hMBctx
+      · exact GuardedEvaluation.eval_guard_append pTC hMA hMAguard hMBguard
       · exact liftable_lam_tc (liftable_encTyCore?_tc ATerm Aval hAenc) hbLift
 
 theorem nfLam2_nfT_first_replay
@@ -9558,45 +9359,16 @@ theorem nfLam2_nfT_first_replay
   | @intro bpre NB MB hbenc hbmatch hbguard hbLift hbReplay hbFinal hbFinalReplay hbpayload =>
       have hbnorm : IsNormal pTC bval := isnormal_encTyCore?_tc bTerm bval hbenc
       obtain ⟨MBctx, hMBctx, hMBguard⟩ :=
-        cong_eval_nf_active_with_guard (fun s => nfLam2 Aval s)
-          (fun s _ => NFActiveShape.lam2 Aval s)
-          (hcong_nfLam2_active_tc Aval hAnorm) NB hbmatch hbguard
+        activeChildThenRoot (nfLam2 Aval) (fun s _ => .lam2 Aval s)
+          (hcong_nfLam2_active_tc Aval hAnorm) hbmatch hbguard
+          (.lam2 Aval (someT bpre)) (nfLam2_ok_tc Aval bpre)
       obtain ⟨MPayload, hMPayload⟩ :=
         cong_eval_tc (fun s => Lam Aval s) (hcong_Lam2_tc Aval hAnorm) MB hbpayload hbnorm
-      refine FirstReplayNF.intro (payload := Lam Aval bpre) (N := MA + (MBctx + 1))
+      refine FirstReplayNF.intro (payload := Lam Aval bpre) (N := MA + MBctx)
         (M := MPayload) ?_ ?_ ?_ ?_ ?_ ?_ ?_ hMPayload
       · simp [encTyCore?, hAenc, hbenc]
-      · have hafterB : eval pTC (MA + MBctx) (nfLam2 Apre (nfT fuel b)) =
-            nfLam2 Aval (someT bpre) := by
-          exact eval_trans_tc MA MBctx _ _ _ hMA hMBctx
-        have hroot : eval pTC 1 (nfLam2 Aval (someT bpre)) = someT (Lam Aval bpre) :=
-          nfLam2_ok_tc Aval bpre
-        have htotal := eval_trans_tc (MA + MBctx) 1 _ _ _ hafterB hroot
-        simpa [Nat.add_assoc] using htotal
-      · intro k hk
-        by_cases hkA : k < MA
-        · exact hMAguard k hkA
-        · have hgeA : MA ≤ k := Nat.le_of_not_gt hkA
-          by_cases hkB : k < MA + MBctx
-          · let j := k - MA
-            have hjlt : j < MBctx := by
-              exact Nat.sub_lt_left_of_lt_add hgeA hkB
-            have hkdecomp : k = MA + j := by
-              exact (Nat.add_sub_of_le hgeA).symm
-            subst j
-            rw [hkdecomp]
-            have htotal : eval pTC (MA + (k - MA)) (nfLam2 Apre (nfT fuel b)) =
-                eval pTC (k - MA) (nfLam2 Aval (nfT fuel b)) :=
-              eval_trans_tc MA (k - MA) _ _ _ hMA rfl
-            rw [htotal]
-            exact hMBguard (k - MA) hjlt
-          · have hkEq : k = MA + MBctx := by omega
-            subst k
-            have htotal : eval pTC (MA + MBctx) (nfLam2 Apre (nfT fuel b)) =
-                nfLam2 Aval (someT bpre) := by
-              exact eval_trans_tc MA MBctx _ _ _ hMA hMBctx
-            rw [htotal]
-            exact NFActiveShape.lam2 Aval (someT bpre)
+      · exact eval_trans_tc MA MBctx _ _ _ hMA hMBctx
+      · exact GuardedEvaluation.eval_guard_append pTC hMA hMAguard hMBguard
       · exact liftable_lam_tc (liftable_encTyCore?_tc ATerm Aval hAenc) hbLift
       · exact hPayloadReplay hbLift ⟨MB, hbpayload⟩ hbReplay
       · exact liftable_lam_tc (liftable_encTyCore?_tc ATerm Aval hAenc) hbFinal
@@ -9610,43 +9382,14 @@ theorem nfLam1_nfT_first_liftable
     FirstLiftableNF (.lam ATerm bTerm) (Lam Aval bval) (nfLam1 fuel b Acall) := by
   cases hA with
   | @intro Apre NA MA hAenc hAmatch hAguard _ hApayload =>
-      obtain ⟨MActx, hMActx, hMActxGuard⟩ :=
-        cong_eval_nf_active_with_guard (fun s => nfLam1 fuel b s)
-          (fun s _ => NFActiveShape.lam1 fuel b s)
-          (hcong_nfLam1_active_tc fuel b hfuel hbraw) NA hAmatch hAguard
+      obtain ⟨_, reached, active⟩ :=
+        activeChildThenRoot (nfLam1 fuel b) (fun s _ => .lam1 fuel b s)
+          (hcong_nfLam1_active_tc fuel b hfuel hbraw) hAmatch hAguard
+          (.lam1 fuel b (someT Apre)) (nfLam1_ok_tc fuel b Apre)
       have htail := nfLam2_nfT_first_liftable (ATerm := ATerm) (bTerm := bTerm)
         (Aval := Aval) (bval := bval) (fuel := fuel) (b := b) (Apre := Apre)
         hAenc ⟨MA, hApayload⟩ hb
-      cases htail with
-      | @intro payloadTail NTail MTail hTailEnc hTailMatch hTailGuard hTailLift hTailPayload =>
-          refine FirstLiftableNF.intro (payload := payloadTail) (N := MActx + (1 + NTail))
-            (M := MTail) hTailEnc ?_ ?_ hTailLift hTailPayload
-          · have hroot : eval pTC 1 (nfLam1 fuel b (someT Apre)) = nfLam2 Apre (nfT fuel b) :=
-              nfLam1_ok_tc fuel b Apre
-            have hafterRoot := eval_trans_tc MActx 1 _ _ _ hMActx hroot
-            have htotal := eval_trans_tc (MActx + 1) NTail _ _ _ hafterRoot hTailMatch
-            simpa [Nat.add_assoc] using htotal
-          · intro k hk
-            by_cases hkA : k < MActx
-            · exact hMActxGuard k hkA
-            · by_cases hkRoot : k = MActx
-              · subst k
-                rw [hMActx]
-                exact NFActiveShape.lam1 fuel b (someT Apre)
-              · let j := k - (MActx + 1)
-                have hjlt : j < NTail := by omega
-                have hkdecomp : k = MActx + 1 + j := by omega
-                subst j
-                rw [hkdecomp]
-                have hroot : eval pTC 1 (nfLam1 fuel b (someT Apre)) =
-                    nfLam2 Apre (nfT fuel b) :=
-                  nfLam1_ok_tc fuel b Apre
-                have hafterRoot := eval_trans_tc MActx 1 _ _ _ hMActx hroot
-                have htotal : eval pTC (MActx + 1 + (k - (MActx + 1))) (nfLam1 fuel b Acall) =
-                    eval pTC (k - (MActx + 1)) (nfLam2 Apre (nfT fuel b)) :=
-                  eval_trans_tc (MActx + 1) (k - (MActx + 1)) _ _ _ hafterRoot rfl
-                rw [htotal]
-                exact hTailGuard (k - (MActx + 1)) hjlt
+      exact first_liftable_nf_prefix reached active htail
 
 theorem nfLam1_nfT_first_replay
     {ATerm bTerm : LF.Term} {Aval bval fuel b Acall : AST}
@@ -9660,45 +9403,14 @@ theorem nfLam1_nfT_first_replay
     FirstReplayNF (.lam ATerm bTerm) (Lam Aval bval) (nfLam1 fuel b Acall) := by
   cases hA with
   | @intro Apre NA MA hAenc hAmatch hAguard _ _ _ _ hApayload =>
-      obtain ⟨MActx, hMActx, hMActxGuard⟩ :=
-        cong_eval_nf_active_with_guard (fun s => nfLam1 fuel b s)
-          (fun s _ => NFActiveShape.lam1 fuel b s)
-          (hcong_nfLam1_active_tc fuel b hfuel hbraw) NA hAmatch hAguard
+      obtain ⟨_, reached, active⟩ :=
+        activeChildThenRoot (nfLam1 fuel b) (fun s _ => .lam1 fuel b s)
+          (hcong_nfLam1_active_tc fuel b hfuel hbraw) hAmatch hAguard
+          (.lam1 fuel b (someT Apre)) (nfLam1_ok_tc fuel b Apre)
       have htail := nfLam2_nfT_first_replay (ATerm := ATerm) (bTerm := bTerm)
         (Aval := Aval) (bval := bval) (fuel := fuel) (b := b) (Apre := Apre)
         hAenc ⟨MA, hApayload⟩ hb hPayloadReplay hFinalReplay
-      cases htail with
-      | @intro payloadTail NTail MTail hTailEnc hTailMatch hTailGuard
-          hTailLift hTailReplay hTailFinal hTailFinalReplay hTailPayload =>
-          refine FirstReplayNF.intro (payload := payloadTail) (N := MActx + (1 + NTail))
-            (M := MTail) hTailEnc ?_ ?_ hTailLift hTailReplay hTailFinal
-            hTailFinalReplay hTailPayload
-          · have hroot : eval pTC 1 (nfLam1 fuel b (someT Apre)) = nfLam2 Apre (nfT fuel b) :=
-              nfLam1_ok_tc fuel b Apre
-            have hafterRoot := eval_trans_tc MActx 1 _ _ _ hMActx hroot
-            have htotal := eval_trans_tc (MActx + 1) NTail _ _ _ hafterRoot hTailMatch
-            simpa [Nat.add_assoc] using htotal
-          · intro k hk
-            by_cases hkA : k < MActx
-            · exact hMActxGuard k hkA
-            · by_cases hkRoot : k = MActx
-              · subst k
-                rw [hMActx]
-                exact NFActiveShape.lam1 fuel b (someT Apre)
-              · let j := k - (MActx + 1)
-                have hjlt : j < NTail := by omega
-                have hkdecomp : k = MActx + 1 + j := by omega
-                subst j
-                rw [hkdecomp]
-                have hroot : eval pTC 1 (nfLam1 fuel b (someT Apre)) =
-                    nfLam2 Apre (nfT fuel b) :=
-                  nfLam1_ok_tc fuel b Apre
-                have hafterRoot := eval_trans_tc MActx 1 _ _ _ hMActx hroot
-                have htotal : eval pTC (MActx + 1 + (k - (MActx + 1))) (nfLam1 fuel b Acall) =
-                    eval pTC (k - (MActx + 1)) (nfLam2 Apre (nfT fuel b)) :=
-                  eval_trans_tc (MActx + 1) (k - (MActx + 1)) _ _ _ hafterRoot rfl
-                rw [htotal]
-                exact hTailGuard (k - (MActx + 1)) hjlt
+      exact first_replay_nf_prefix reached active htail
 
 theorem nfT_pi_first_liftable
     {ATerm BTerm : LF.Term} {Aval Bval fuel A B : AST}
@@ -9850,73 +9562,10 @@ theorem nfApp2_nfT_first_liftable
       (∃ M, eval pTC M aPre = aVal) ->
         FirstLiftableNF resTerm resVal (nfAppT fuel fVal aPre)) :
     FirstLiftableNF resTerm resVal (nfApp2 fuel fPre (nfT fuel aAst)) := by
-  obtain ⟨MF, hMF⟩ := hfpreEval
-  obtain ⟨MFctx, hMFctx, hMFguard⟩ :=
-    cong_eval_nf_wrapper_with_guard (fun f => nfApp2 fuel f (nfT fuel aAst))
-      (fun f => NFActiveShape.app2 fuel f (nfT fuel aAst))
-      (hcong_nfApp2_fun_nfT_tc fuel aAst hfuel) MF hMF hfnorm
   cases hA with
-  | @intro aPre NA MA haenc hAmatch hAguard haLift haPayload =>
-      obtain ⟨MActx, hMActx, hMActxGuard⟩ :=
-        cong_eval_nf_active_with_guard (fun s => nfApp2 fuel fVal s)
-          (fun s _ => NFActiveShape.app2 fuel fVal s)
-          (hcong_nfApp2_active_tc fuel fVal hfuel hfnorm) NA hAmatch hAguard
-      have htail := hTail haLift ⟨MA, haPayload⟩
-      cases htail with
-      | @intro payloadTail NTail MTail hTailEnc hTailMatch hTailGuard hTailLift hTailPayload =>
-          refine FirstLiftableNF.intro (payload := payloadTail)
-            (N := MFctx + (MActx + (1 + NTail))) (M := MTail)
-            hTailEnc ?_ ?_ hTailLift hTailPayload
-          · have hafterA : eval pTC (MFctx + MActx) (nfApp2 fuel fPre (nfT fuel aAst)) =
-                nfApp2 fuel fVal (someT aPre) := by
-              exact eval_trans_tc MFctx MActx _ _ _ hMFctx hMActx
-            have hroot : eval pTC 1 (nfApp2 fuel fVal (someT aPre)) = nfAppT fuel fVal aPre :=
-              nfApp2_ok_tc fuel fVal aPre
-            have hafterRoot := eval_trans_tc (MFctx + MActx) 1 _ _ _ hafterA hroot
-            have htotal := eval_trans_tc (MFctx + MActx + 1) NTail _ _ _ hafterRoot hTailMatch
-            simpa [Nat.add_assoc] using htotal
-          · intro k hk
-            by_cases hkF : k < MFctx
-            · exact hMFguard k hkF
-            · have hgeF : MFctx ≤ k := Nat.le_of_not_gt hkF
-              by_cases hkA : k < MFctx + MActx
-              · let j := k - MFctx
-                have hjlt : j < MActx := by
-                  exact Nat.sub_lt_left_of_lt_add hgeF hkA
-                have hkdecomp : k = MFctx + j := by
-                  exact (Nat.add_sub_of_le hgeF).symm
-                subst j
-                rw [hkdecomp]
-                have htotal : eval pTC (MFctx + (k - MFctx)) (nfApp2 fuel fPre (nfT fuel aAst)) =
-                    eval pTC (k - MFctx) (nfApp2 fuel fVal (nfT fuel aAst)) :=
-                  eval_trans_tc MFctx (k - MFctx) _ _ _ hMFctx rfl
-                rw [htotal]
-                exact hMActxGuard (k - MFctx) hjlt
-              · by_cases hkRoot : k = MFctx + MActx
-                · subst k
-                  have hafterA : eval pTC (MFctx + MActx) (nfApp2 fuel fPre (nfT fuel aAst)) =
-                      nfApp2 fuel fVal (someT aPre) := by
-                    exact eval_trans_tc MFctx MActx _ _ _ hMFctx hMActx
-                  rw [hafterA]
-                  exact NFActiveShape.app2 fuel fVal (someT aPre)
-                · let j := k - (MFctx + MActx + 1)
-                  have hjlt : j < NTail := by omega
-                  have hkdecomp : k = MFctx + MActx + 1 + j := by omega
-                  subst j
-                  rw [hkdecomp]
-                  have hafterA : eval pTC (MFctx + MActx) (nfApp2 fuel fPre (nfT fuel aAst)) =
-                      nfApp2 fuel fVal (someT aPre) := by
-                    exact eval_trans_tc MFctx MActx _ _ _ hMFctx hMActx
-                  have hroot : eval pTC 1 (nfApp2 fuel fVal (someT aPre)) = nfAppT fuel fVal aPre :=
-                    nfApp2_ok_tc fuel fVal aPre
-                  have hafterRoot := eval_trans_tc (MFctx + MActx) 1 _ _ _ hafterA hroot
-                  have htotal : eval pTC (MFctx + MActx + 1 + (k - (MFctx + MActx + 1)))
-                        (nfApp2 fuel fPre (nfT fuel aAst)) =
-                      eval pTC (k - (MFctx + MActx + 1)) (nfAppT fuel fVal aPre) :=
-                    eval_trans_tc (MFctx + MActx + 1) (k - (MFctx + MActx + 1))
-                      _ _ _ hafterRoot rfl
-                  rw [htotal]
-                  exact hTailGuard (k - (MFctx + MActx + 1)) hjlt
+  | @intro aPre NA MA _ hAmatch hAguard haLift haPayload =>
+      obtain ⟨_, reached, active⟩ := nfApp2_guarded_prefix hfuel hfnorm hfpreEval hAmatch hAguard
+      exact first_liftable_nf_prefix reached active (hTail haLift ⟨MA, haPayload⟩)
 
 theorem nfApp2_nfT_first_replay
     {aTerm resTerm : LF.Term} {aVal resVal fuel fPre fVal aAst : AST}
@@ -9927,74 +9576,10 @@ theorem nfApp2_nfT_first_replay
       (∃ M, eval pTC M aPre = aVal) -> StackReplayablePayload aPre aTerm ->
         FirstReplayNF resTerm resVal (nfAppT fuel fVal aPre)) :
     FirstReplayNF resTerm resVal (nfApp2 fuel fPre (nfT fuel aAst)) := by
-  obtain ⟨MF, hMF⟩ := hfpreEval
-  obtain ⟨MFctx, hMFctx, hMFguard⟩ :=
-    cong_eval_nf_wrapper_with_guard (fun f => nfApp2 fuel f (nfT fuel aAst))
-      (fun f => NFActiveShape.app2 fuel f (nfT fuel aAst))
-      (hcong_nfApp2_fun_nfT_tc fuel aAst hfuel) MF hMF hfnorm
   cases hA with
-  | @intro aPre NA MA haenc hAmatch hAguard haLift haReplay _ _ haPayload =>
-      obtain ⟨MActx, hMActx, hMActxGuard⟩ :=
-        cong_eval_nf_active_with_guard (fun s => nfApp2 fuel fVal s)
-          (fun s _ => NFActiveShape.app2 fuel fVal s)
-          (hcong_nfApp2_active_tc fuel fVal hfuel hfnorm) NA hAmatch hAguard
-      have htail := hTail haLift ⟨MA, haPayload⟩ haReplay
-      cases htail with
-      | @intro payloadTail NTail MTail hTailEnc hTailMatch hTailGuard
-          hTailLift hTailReplay hTailFinal hTailFinalReplay hTailPayload =>
-          refine FirstReplayNF.intro (payload := payloadTail)
-            (N := MFctx + (MActx + (1 + NTail))) (M := MTail)
-            hTailEnc ?_ ?_ hTailLift hTailReplay hTailFinal hTailFinalReplay hTailPayload
-          · have hafterA : eval pTC (MFctx + MActx) (nfApp2 fuel fPre (nfT fuel aAst)) =
-                nfApp2 fuel fVal (someT aPre) := by
-              exact eval_trans_tc MFctx MActx _ _ _ hMFctx hMActx
-            have hroot : eval pTC 1 (nfApp2 fuel fVal (someT aPre)) = nfAppT fuel fVal aPre :=
-              nfApp2_ok_tc fuel fVal aPre
-            have hafterRoot := eval_trans_tc (MFctx + MActx) 1 _ _ _ hafterA hroot
-            have htotal := eval_trans_tc (MFctx + MActx + 1) NTail _ _ _ hafterRoot hTailMatch
-            simpa [Nat.add_assoc] using htotal
-          · intro k hk
-            by_cases hkF : k < MFctx
-            · exact hMFguard k hkF
-            · have hgeF : MFctx ≤ k := Nat.le_of_not_gt hkF
-              by_cases hkA : k < MFctx + MActx
-              · let j := k - MFctx
-                have hjlt : j < MActx := by
-                  exact Nat.sub_lt_left_of_lt_add hgeF hkA
-                have hkdecomp : k = MFctx + j := by
-                  exact (Nat.add_sub_of_le hgeF).symm
-                subst j
-                rw [hkdecomp]
-                have htotal : eval pTC (MFctx + (k - MFctx)) (nfApp2 fuel fPre (nfT fuel aAst)) =
-                    eval pTC (k - MFctx) (nfApp2 fuel fVal (nfT fuel aAst)) :=
-                  eval_trans_tc MFctx (k - MFctx) _ _ _ hMFctx rfl
-                rw [htotal]
-                exact hMActxGuard (k - MFctx) hjlt
-              · by_cases hkRoot : k = MFctx + MActx
-                · subst k
-                  have hafterA : eval pTC (MFctx + MActx) (nfApp2 fuel fPre (nfT fuel aAst)) =
-                      nfApp2 fuel fVal (someT aPre) := by
-                    exact eval_trans_tc MFctx MActx _ _ _ hMFctx hMActx
-                  rw [hafterA]
-                  exact NFActiveShape.app2 fuel fVal (someT aPre)
-                · let j := k - (MFctx + MActx + 1)
-                  have hjlt : j < NTail := by omega
-                  have hkdecomp : k = MFctx + MActx + 1 + j := by omega
-                  subst j
-                  rw [hkdecomp]
-                  have hafterA : eval pTC (MFctx + MActx) (nfApp2 fuel fPre (nfT fuel aAst)) =
-                      nfApp2 fuel fVal (someT aPre) := by
-                    exact eval_trans_tc MFctx MActx _ _ _ hMFctx hMActx
-                  have hroot : eval pTC 1 (nfApp2 fuel fVal (someT aPre)) = nfAppT fuel fVal aPre :=
-                    nfApp2_ok_tc fuel fVal aPre
-                  have hafterRoot := eval_trans_tc (MFctx + MActx) 1 _ _ _ hafterA hroot
-                  have htotal : eval pTC (MFctx + MActx + 1 + (k - (MFctx + MActx + 1)))
-                        (nfApp2 fuel fPre (nfT fuel aAst)) =
-                      eval pTC (k - (MFctx + MActx + 1)) (nfAppT fuel fVal aPre) :=
-                    eval_trans_tc (MFctx + MActx + 1) (k - (MFctx + MActx + 1))
-                      _ _ _ hafterRoot rfl
-                  rw [htotal]
-                  exact hTailGuard (k - (MFctx + MActx + 1)) hjlt
+  | @intro aPre NA MA _ hAmatch hAguard haLift haReplay _ _ haPayload =>
+      obtain ⟨_, reached, active⟩ := nfApp2_guarded_prefix hfuel hfnorm hfpreEval hAmatch hAguard
+      exact first_replay_nf_prefix reached active (hTail haLift ⟨MA, haPayload⟩ haReplay)
 
 theorem nfApp2_nfT_first_strong_payload_replay
     {aTerm resTerm : LF.Term} {aVal resVal fuel fPre fVal aAst : AST}
@@ -10005,74 +9590,10 @@ theorem nfApp2_nfT_first_strong_payload_replay
       (∃ M, eval pTC M aPre = aVal) -> StackReplayablePayload aPre aTerm ->
         FirstStrongNF resTerm resVal (nfAppT fuel fVal aPre)) :
     FirstStrongNF resTerm resVal (nfApp2 fuel fPre (nfT fuel aAst)) := by
-  obtain ⟨MF, hMF⟩ := hfpreEval
-  obtain ⟨MFctx, hMFctx, hMFguard⟩ :=
-    cong_eval_nf_wrapper_with_guard (fun f => nfApp2 fuel f (nfT fuel aAst))
-      (fun f => NFActiveShape.app2 fuel f (nfT fuel aAst))
-      (hcong_nfApp2_fun_nfT_tc fuel aAst hfuel) MF hMF hfnorm
   cases hA with
-  | @intro aPre NA MA haenc hAmatch hAguard haLift haReplay _ _ haPayload =>
-      obtain ⟨MActx, hMActx, hMActxGuard⟩ :=
-        cong_eval_nf_active_with_guard (fun s => nfApp2 fuel fVal s)
-          (fun s _ => NFActiveShape.app2 fuel fVal s)
-          (hcong_nfApp2_active_tc fuel fVal hfuel hfnorm) NA hAmatch hAguard
-      have htail := hTail haLift ⟨MA, haPayload⟩ haReplay
-      cases htail with
-      | @intro payloadTail NTail MTail hTailEnc hTailMatch hTailGuard
-          hTailLift hTailFinal hTailPayload =>
-          refine FirstStrongNF.intro (payload := payloadTail)
-            (N := MFctx + (MActx + (1 + NTail))) (M := MTail)
-            hTailEnc ?_ ?_ hTailLift hTailFinal hTailPayload
-          · have hafterA : eval pTC (MFctx + MActx) (nfApp2 fuel fPre (nfT fuel aAst)) =
-                nfApp2 fuel fVal (someT aPre) := by
-              exact eval_trans_tc MFctx MActx _ _ _ hMFctx hMActx
-            have hroot : eval pTC 1 (nfApp2 fuel fVal (someT aPre)) = nfAppT fuel fVal aPre :=
-              nfApp2_ok_tc fuel fVal aPre
-            have hafterRoot := eval_trans_tc (MFctx + MActx) 1 _ _ _ hafterA hroot
-            have htotal := eval_trans_tc (MFctx + MActx + 1) NTail _ _ _ hafterRoot hTailMatch
-            simpa [Nat.add_assoc] using htotal
-          · intro k hk
-            by_cases hkF : k < MFctx
-            · exact hMFguard k hkF
-            · have hgeF : MFctx ≤ k := Nat.le_of_not_gt hkF
-              by_cases hkA : k < MFctx + MActx
-              · let j := k - MFctx
-                have hjlt : j < MActx := by
-                  exact Nat.sub_lt_left_of_lt_add hgeF hkA
-                have hkdecomp : k = MFctx + j := by
-                  exact (Nat.add_sub_of_le hgeF).symm
-                subst j
-                rw [hkdecomp]
-                have htotal : eval pTC (MFctx + (k - MFctx)) (nfApp2 fuel fPre (nfT fuel aAst)) =
-                    eval pTC (k - MFctx) (nfApp2 fuel fVal (nfT fuel aAst)) :=
-                  eval_trans_tc MFctx (k - MFctx) _ _ _ hMFctx rfl
-                rw [htotal]
-                exact hMActxGuard (k - MFctx) hjlt
-              · by_cases hkRoot : k = MFctx + MActx
-                · subst k
-                  have hafterA : eval pTC (MFctx + MActx) (nfApp2 fuel fPre (nfT fuel aAst)) =
-                      nfApp2 fuel fVal (someT aPre) := by
-                    exact eval_trans_tc MFctx MActx _ _ _ hMFctx hMActx
-                  rw [hafterA]
-                  exact NFActiveShape.app2 fuel fVal (someT aPre)
-                · let j := k - (MFctx + MActx + 1)
-                  have hjlt : j < NTail := by omega
-                  have hkdecomp : k = MFctx + MActx + 1 + j := by omega
-                  subst j
-                  rw [hkdecomp]
-                  have hafterA : eval pTC (MFctx + MActx) (nfApp2 fuel fPre (nfT fuel aAst)) =
-                      nfApp2 fuel fVal (someT aPre) := by
-                    exact eval_trans_tc MFctx MActx _ _ _ hMFctx hMActx
-                  have hroot : eval pTC 1 (nfApp2 fuel fVal (someT aPre)) = nfAppT fuel fVal aPre :=
-                    nfApp2_ok_tc fuel fVal aPre
-                  have hafterRoot := eval_trans_tc (MFctx + MActx) 1 _ _ _ hafterA hroot
-                  have htotal : eval pTC (MFctx + MActx + 1 + (k - (MFctx + MActx + 1)))
-                        (nfApp2 fuel fPre (nfT fuel aAst)) =
-                      eval pTC (k - (MFctx + MActx + 1)) (nfAppT fuel fVal aPre) :=
-                    eval_trans_tc (MFctx + MActx + 1) (k - (MFctx + MActx + 1))
-                      _ _ _ hafterRoot rfl
-                  rw [htotal]
-                  exact hTailGuard (k - (MFctx + MActx + 1)) hjlt
+  | @intro aPre NA MA _ hAmatch hAguard haLift haReplay _ _ haPayload =>
+      obtain ⟨_, reached, active⟩ := nfApp2_guarded_prefix hfuel hfnorm hfpreEval hAmatch hAguard
+      exact first_strong_nf_prefix reached active (hTail haLift ⟨MA, haPayload⟩ haReplay)
 
 theorem nfApp2_nfT_first_strong_payload_replay_nf
     {aTerm resTerm : LF.Term} {aVal resVal fuel fPre fVal aAst : AST}
@@ -10083,74 +9604,10 @@ theorem nfApp2_nfT_first_strong_payload_replay_nf
       (∃ M, eval pTC M aPre = aVal) -> StackReplayablePayload aPre aTerm ->
         FirstStrongPayloadReplayNF resTerm resVal (nfAppT fuel fVal aPre)) :
     FirstStrongPayloadReplayNF resTerm resVal (nfApp2 fuel fPre (nfT fuel aAst)) := by
-  obtain ⟨MF, hMF⟩ := hfpreEval
-  obtain ⟨MFctx, hMFctx, hMFguard⟩ :=
-    cong_eval_nf_wrapper_with_guard (fun f => nfApp2 fuel f (nfT fuel aAst))
-      (fun f => NFActiveShape.app2 fuel f (nfT fuel aAst))
-      (hcong_nfApp2_fun_nfT_tc fuel aAst hfuel) MF hMF hfnorm
   cases hA with
-  | @intro aPre NA MA haenc hAmatch hAguard haLift haReplay _ haPayload =>
-      obtain ⟨MActx, hMActx, hMActxGuard⟩ :=
-        cong_eval_nf_active_with_guard (fun s => nfApp2 fuel fVal s)
-          (fun s _ => NFActiveShape.app2 fuel fVal s)
-          (hcong_nfApp2_active_tc fuel fVal hfuel hfnorm) NA hAmatch hAguard
-      have htail := hTail haLift ⟨MA, haPayload⟩ haReplay
-      cases htail with
-      | @intro payloadTail NTail MTail hTailEnc hTailMatch hTailGuard
-          hTailLift hTailReplay hTailFinal hTailPayload =>
-          refine FirstStrongPayloadReplayNF.intro (payload := payloadTail)
-            (N := MFctx + (MActx + (1 + NTail))) (M := MTail)
-            hTailEnc ?_ ?_ hTailLift hTailReplay hTailFinal hTailPayload
-          · have hafterA : eval pTC (MFctx + MActx) (nfApp2 fuel fPre (nfT fuel aAst)) =
-                nfApp2 fuel fVal (someT aPre) := by
-              exact eval_trans_tc MFctx MActx _ _ _ hMFctx hMActx
-            have hroot : eval pTC 1 (nfApp2 fuel fVal (someT aPre)) = nfAppT fuel fVal aPre :=
-              nfApp2_ok_tc fuel fVal aPre
-            have hafterRoot := eval_trans_tc (MFctx + MActx) 1 _ _ _ hafterA hroot
-            have htotal := eval_trans_tc (MFctx + MActx + 1) NTail _ _ _ hafterRoot hTailMatch
-            simpa [Nat.add_assoc] using htotal
-          · intro k hk
-            by_cases hkF : k < MFctx
-            · exact hMFguard k hkF
-            · have hgeF : MFctx ≤ k := Nat.le_of_not_gt hkF
-              by_cases hkA : k < MFctx + MActx
-              · let j := k - MFctx
-                have hjlt : j < MActx := by
-                  exact Nat.sub_lt_left_of_lt_add hgeF hkA
-                have hkdecomp : k = MFctx + j := by
-                  exact (Nat.add_sub_of_le hgeF).symm
-                subst j
-                rw [hkdecomp]
-                have htotal : eval pTC (MFctx + (k - MFctx)) (nfApp2 fuel fPre (nfT fuel aAst)) =
-                    eval pTC (k - MFctx) (nfApp2 fuel fVal (nfT fuel aAst)) :=
-                  eval_trans_tc MFctx (k - MFctx) _ _ _ hMFctx rfl
-                rw [htotal]
-                exact hMActxGuard (k - MFctx) hjlt
-              · by_cases hkRoot : k = MFctx + MActx
-                · subst k
-                  have hafterA : eval pTC (MFctx + MActx) (nfApp2 fuel fPre (nfT fuel aAst)) =
-                      nfApp2 fuel fVal (someT aPre) := by
-                    exact eval_trans_tc MFctx MActx _ _ _ hMFctx hMActx
-                  rw [hafterA]
-                  exact NFActiveShape.app2 fuel fVal (someT aPre)
-                · let j := k - (MFctx + MActx + 1)
-                  have hjlt : j < NTail := by omega
-                  have hkdecomp : k = MFctx + MActx + 1 + j := by omega
-                  subst j
-                  rw [hkdecomp]
-                  have hafterA : eval pTC (MFctx + MActx) (nfApp2 fuel fPre (nfT fuel aAst)) =
-                      nfApp2 fuel fVal (someT aPre) := by
-                    exact eval_trans_tc MFctx MActx _ _ _ hMFctx hMActx
-                  have hroot : eval pTC 1 (nfApp2 fuel fVal (someT aPre)) = nfAppT fuel fVal aPre :=
-                    nfApp2_ok_tc fuel fVal aPre
-                  have hafterRoot := eval_trans_tc (MFctx + MActx) 1 _ _ _ hafterA hroot
-                  have htotal : eval pTC (MFctx + MActx + 1 + (k - (MFctx + MActx + 1)))
-                        (nfApp2 fuel fPre (nfT fuel aAst)) =
-                      eval pTC (k - (MFctx + MActx + 1)) (nfAppT fuel fVal aPre) :=
-                    eval_trans_tc (MFctx + MActx + 1) (k - (MFctx + MActx + 1))
-                      _ _ _ hafterRoot rfl
-                  rw [htotal]
-                  exact hTailGuard (k - (MFctx + MActx + 1)) hjlt
+  | @intro aPre NA MA _ hAmatch hAguard haLift haReplay _ haPayload =>
+      obtain ⟨_, reached, active⟩ := nfApp2_guarded_prefix hfuel hfnorm hfpreEval hAmatch hAguard
+      exact first_strong_payload_replay_nf_prefix reached active (hTail haLift ⟨MA, haPayload⟩ haReplay)
 
 theorem nfApp2_nfT_first_strong_of_payload_replay_nf
     {aTerm resTerm : LF.Term} {aVal resVal fuel fPre fVal aAst : AST}
@@ -10161,74 +9618,10 @@ theorem nfApp2_nfT_first_strong_of_payload_replay_nf
       (∃ M, eval pTC M aPre = aVal) -> StackReplayablePayload aPre aTerm ->
         FirstStrongNF resTerm resVal (nfAppT fuel fVal aPre)) :
     FirstStrongNF resTerm resVal (nfApp2 fuel fPre (nfT fuel aAst)) := by
-  obtain ⟨MF, hMF⟩ := hfpreEval
-  obtain ⟨MFctx, hMFctx, hMFguard⟩ :=
-    cong_eval_nf_wrapper_with_guard (fun f => nfApp2 fuel f (nfT fuel aAst))
-      (fun f => NFActiveShape.app2 fuel f (nfT fuel aAst))
-      (hcong_nfApp2_fun_nfT_tc fuel aAst hfuel) MF hMF hfnorm
   cases hA with
-  | @intro aPre NA MA haenc hAmatch hAguard haLift haReplay _ haPayload =>
-      obtain ⟨MActx, hMActx, hMActxGuard⟩ :=
-        cong_eval_nf_active_with_guard (fun s => nfApp2 fuel fVal s)
-          (fun s _ => NFActiveShape.app2 fuel fVal s)
-          (hcong_nfApp2_active_tc fuel fVal hfuel hfnorm) NA hAmatch hAguard
-      have htail := hTail haLift ⟨MA, haPayload⟩ haReplay
-      cases htail with
-      | @intro payloadTail NTail MTail hTailEnc hTailMatch hTailGuard
-          hTailLift hTailFinal hTailPayload =>
-          refine FirstStrongNF.intro (payload := payloadTail)
-            (N := MFctx + (MActx + (1 + NTail))) (M := MTail)
-            hTailEnc ?_ ?_ hTailLift hTailFinal hTailPayload
-          · have hafterA : eval pTC (MFctx + MActx) (nfApp2 fuel fPre (nfT fuel aAst)) =
-                nfApp2 fuel fVal (someT aPre) := by
-              exact eval_trans_tc MFctx MActx _ _ _ hMFctx hMActx
-            have hroot : eval pTC 1 (nfApp2 fuel fVal (someT aPre)) = nfAppT fuel fVal aPre :=
-              nfApp2_ok_tc fuel fVal aPre
-            have hafterRoot := eval_trans_tc (MFctx + MActx) 1 _ _ _ hafterA hroot
-            have htotal := eval_trans_tc (MFctx + MActx + 1) NTail _ _ _ hafterRoot hTailMatch
-            simpa [Nat.add_assoc] using htotal
-          · intro k hk
-            by_cases hkF : k < MFctx
-            · exact hMFguard k hkF
-            · have hgeF : MFctx ≤ k := Nat.le_of_not_gt hkF
-              by_cases hkA : k < MFctx + MActx
-              · let j := k - MFctx
-                have hjlt : j < MActx := by
-                  exact Nat.sub_lt_left_of_lt_add hgeF hkA
-                have hkdecomp : k = MFctx + j := by
-                  exact (Nat.add_sub_of_le hgeF).symm
-                subst j
-                rw [hkdecomp]
-                have htotal : eval pTC (MFctx + (k - MFctx)) (nfApp2 fuel fPre (nfT fuel aAst)) =
-                    eval pTC (k - MFctx) (nfApp2 fuel fVal (nfT fuel aAst)) :=
-                  eval_trans_tc MFctx (k - MFctx) _ _ _ hMFctx rfl
-                rw [htotal]
-                exact hMActxGuard (k - MFctx) hjlt
-              · by_cases hkRoot : k = MFctx + MActx
-                · subst k
-                  have hafterA : eval pTC (MFctx + MActx) (nfApp2 fuel fPre (nfT fuel aAst)) =
-                      nfApp2 fuel fVal (someT aPre) := by
-                    exact eval_trans_tc MFctx MActx _ _ _ hMFctx hMActx
-                  rw [hafterA]
-                  exact NFActiveShape.app2 fuel fVal (someT aPre)
-                · let j := k - (MFctx + MActx + 1)
-                  have hjlt : j < NTail := by omega
-                  have hkdecomp : k = MFctx + MActx + 1 + j := by omega
-                  subst j
-                  rw [hkdecomp]
-                  have hafterA : eval pTC (MFctx + MActx) (nfApp2 fuel fPre (nfT fuel aAst)) =
-                      nfApp2 fuel fVal (someT aPre) := by
-                    exact eval_trans_tc MFctx MActx _ _ _ hMFctx hMActx
-                  have hroot : eval pTC 1 (nfApp2 fuel fVal (someT aPre)) = nfAppT fuel fVal aPre :=
-                    nfApp2_ok_tc fuel fVal aPre
-                  have hafterRoot := eval_trans_tc (MFctx + MActx) 1 _ _ _ hafterA hroot
-                  have htotal : eval pTC (MFctx + MActx + 1 + (k - (MFctx + MActx + 1)))
-                        (nfApp2 fuel fPre (nfT fuel aAst)) =
-                      eval pTC (k - (MFctx + MActx + 1)) (nfAppT fuel fVal aPre) :=
-                    eval_trans_tc (MFctx + MActx + 1) (k - (MFctx + MActx + 1))
-                      _ _ _ hafterRoot rfl
-                  rw [htotal]
-                  exact hTailGuard (k - (MFctx + MActx + 1)) hjlt
+  | @intro aPre NA MA _ hAmatch hAguard haLift haReplay _ haPayload =>
+      obtain ⟨_, reached, active⟩ := nfApp2_guarded_prefix hfuel hfnorm hfpreEval hAmatch hAguard
+      exact first_strong_nf_prefix reached active (hTail haLift ⟨MA, haPayload⟩ haReplay)
 
 theorem nfApp1_nfT_first_liftable
     {fTerm resTerm : LF.Term} {fVal resVal fuel aAst fCall : AST}
@@ -10239,43 +9632,9 @@ theorem nfApp1_nfT_first_liftable
         FirstLiftableNF resTerm resVal (nfApp2 fuel fPre (nfT fuel aAst))) :
     FirstLiftableNF resTerm resVal (nfApp1 fuel aAst fCall) := by
   cases hF with
-  | @intro fPre NF MF hfenc hFmatch hFguard hfLift hfPayload =>
-      obtain ⟨MFctx, hMFctx, hMFctxGuard⟩ :=
-        cong_eval_nf_active_with_guard (fun s => nfApp1 fuel aAst s)
-          (fun s _ => NFActiveShape.app1 fuel aAst s)
-          (hcong_nfApp1_active_tc fuel aAst hfuel haRaw) NF hFmatch hFguard
-      have htail := hTail hfLift ⟨MF, hfPayload⟩
-      cases htail with
-      | @intro payloadTail NTail MTail hTailEnc hTailMatch hTailGuard hTailLift hTailPayload =>
-          refine FirstLiftableNF.intro (payload := payloadTail)
-            (N := MFctx + (1 + NTail)) (M := MTail) hTailEnc ?_ ?_ hTailLift hTailPayload
-          · have hroot : eval pTC 1 (nfApp1 fuel aAst (someT fPre)) =
-                nfApp2 fuel fPre (nfT fuel aAst) :=
-              nfApp1_ok_tc fuel aAst fPre
-            have hafterRoot := eval_trans_tc MFctx 1 _ _ _ hMFctx hroot
-            have htotal := eval_trans_tc (MFctx + 1) NTail _ _ _ hafterRoot hTailMatch
-            simpa [Nat.add_assoc] using htotal
-          · intro k hk
-            by_cases hkF : k < MFctx
-            · exact hMFctxGuard k hkF
-            · by_cases hkRoot : k = MFctx
-              · subst k
-                rw [hMFctx]
-                exact NFActiveShape.app1 fuel aAst (someT fPre)
-              · let j := k - (MFctx + 1)
-                have hjlt : j < NTail := by omega
-                have hkdecomp : k = MFctx + 1 + j := by omega
-                subst j
-                rw [hkdecomp]
-                have hroot : eval pTC 1 (nfApp1 fuel aAst (someT fPre)) =
-                    nfApp2 fuel fPre (nfT fuel aAst) :=
-                  nfApp1_ok_tc fuel aAst fPre
-                have hafterRoot := eval_trans_tc MFctx 1 _ _ _ hMFctx hroot
-                have htotal : eval pTC (MFctx + 1 + (k - (MFctx + 1))) (nfApp1 fuel aAst fCall) =
-                    eval pTC (k - (MFctx + 1)) (nfApp2 fuel fPre (nfT fuel aAst)) :=
-                  eval_trans_tc (MFctx + 1) (k - (MFctx + 1)) _ _ _ hafterRoot rfl
-                rw [htotal]
-                exact hTailGuard (k - (MFctx + 1)) hjlt
+  | @intro fPre NF MF _ hFmatch hFguard hfLift hfPayload =>
+      obtain ⟨_, reached, active⟩ := nfApp1_guarded_prefix hfuel haRaw hFmatch hFguard
+      exact first_liftable_nf_prefix reached active (hTail hfLift ⟨MF, hfPayload⟩)
 
 theorem nfApp1_nfT_first_strong_payload_replay
     {fTerm resTerm : LF.Term} {fVal resVal fuel aAst fCall : AST}
@@ -10286,45 +9645,9 @@ theorem nfApp1_nfT_first_strong_payload_replay
         FirstStrongNF resTerm resVal (nfApp2 fuel fPre (nfT fuel aAst))) :
     FirstStrongNF resTerm resVal (nfApp1 fuel aAst fCall) := by
   cases hF with
-  | @intro fPre NF MF hfenc hFmatch hFguard hfLift hfReplay _ _ hfPayload =>
-      obtain ⟨MFctx, hMFctx, hMFctxGuard⟩ :=
-        cong_eval_nf_active_with_guard (fun s => nfApp1 fuel aAst s)
-          (fun s _ => NFActiveShape.app1 fuel aAst s)
-          (hcong_nfApp1_active_tc fuel aAst hfuel haRaw) NF hFmatch hFguard
-      have htail := hTail hfLift ⟨MF, hfPayload⟩ hfReplay
-      cases htail with
-      | @intro payloadTail NTail MTail hTailEnc hTailMatch hTailGuard
-          hTailLift hTailFinal hTailPayload =>
-          refine FirstStrongNF.intro (payload := payloadTail)
-            (N := MFctx + (1 + NTail)) (M := MTail)
-            hTailEnc ?_ ?_ hTailLift hTailFinal hTailPayload
-          · have hroot : eval pTC 1 (nfApp1 fuel aAst (someT fPre)) =
-                nfApp2 fuel fPre (nfT fuel aAst) :=
-              nfApp1_ok_tc fuel aAst fPre
-            have hafterRoot := eval_trans_tc MFctx 1 _ _ _ hMFctx hroot
-            have htotal := eval_trans_tc (MFctx + 1) NTail _ _ _ hafterRoot hTailMatch
-            simpa [Nat.add_assoc] using htotal
-          · intro k hk
-            by_cases hkF : k < MFctx
-            · exact hMFctxGuard k hkF
-            · by_cases hkRoot : k = MFctx
-              · subst k
-                rw [hMFctx]
-                exact NFActiveShape.app1 fuel aAst (someT fPre)
-              · let j := k - (MFctx + 1)
-                have hjlt : j < NTail := by omega
-                have hkdecomp : k = MFctx + 1 + j := by omega
-                subst j
-                rw [hkdecomp]
-                have hroot : eval pTC 1 (nfApp1 fuel aAst (someT fPre)) =
-                    nfApp2 fuel fPre (nfT fuel aAst) :=
-                  nfApp1_ok_tc fuel aAst fPre
-                have hafterRoot := eval_trans_tc MFctx 1 _ _ _ hMFctx hroot
-                have htotal : eval pTC (MFctx + 1 + (k - (MFctx + 1))) (nfApp1 fuel aAst fCall) =
-                    eval pTC (k - (MFctx + 1)) (nfApp2 fuel fPre (nfT fuel aAst)) :=
-                  eval_trans_tc (MFctx + 1) (k - (MFctx + 1)) _ _ _ hafterRoot rfl
-                rw [htotal]
-                exact hTailGuard (k - (MFctx + 1)) hjlt
+  | @intro fPre NF MF _ hFmatch hFguard hfLift hfReplay _ _ hfPayload =>
+      obtain ⟨_, reached, active⟩ := nfApp1_guarded_prefix hfuel haRaw hFmatch hFguard
+      exact first_strong_nf_prefix reached active (hTail hfLift ⟨MF, hfPayload⟩ hfReplay)
 
 theorem nfApp1_nfT_first_strong_payload_replay_nf
     {fTerm resTerm : LF.Term} {fVal resVal fuel aAst fCall : AST}
@@ -10335,45 +9658,9 @@ theorem nfApp1_nfT_first_strong_payload_replay_nf
         FirstStrongPayloadReplayNF resTerm resVal (nfApp2 fuel fPre (nfT fuel aAst))) :
     FirstStrongPayloadReplayNF resTerm resVal (nfApp1 fuel aAst fCall) := by
   cases hF with
-  | @intro fPre NF MF hfenc hFmatch hFguard hfLift hfReplay _ hfPayload =>
-      obtain ⟨MFctx, hMFctx, hMFctxGuard⟩ :=
-        cong_eval_nf_active_with_guard (fun s => nfApp1 fuel aAst s)
-          (fun s _ => NFActiveShape.app1 fuel aAst s)
-          (hcong_nfApp1_active_tc fuel aAst hfuel haRaw) NF hFmatch hFguard
-      have htail := hTail hfLift ⟨MF, hfPayload⟩ hfReplay
-      cases htail with
-      | @intro payloadTail NTail MTail hTailEnc hTailMatch hTailGuard
-          hTailLift hTailReplay hTailFinal hTailPayload =>
-          refine FirstStrongPayloadReplayNF.intro (payload := payloadTail)
-            (N := MFctx + (1 + NTail)) (M := MTail)
-            hTailEnc ?_ ?_ hTailLift hTailReplay hTailFinal hTailPayload
-          · have hroot : eval pTC 1 (nfApp1 fuel aAst (someT fPre)) =
-                nfApp2 fuel fPre (nfT fuel aAst) :=
-              nfApp1_ok_tc fuel aAst fPre
-            have hafterRoot := eval_trans_tc MFctx 1 _ _ _ hMFctx hroot
-            have htotal := eval_trans_tc (MFctx + 1) NTail _ _ _ hafterRoot hTailMatch
-            simpa [Nat.add_assoc] using htotal
-          · intro k hk
-            by_cases hkF : k < MFctx
-            · exact hMFctxGuard k hkF
-            · by_cases hkRoot : k = MFctx
-              · subst k
-                rw [hMFctx]
-                exact NFActiveShape.app1 fuel aAst (someT fPre)
-              · let j := k - (MFctx + 1)
-                have hjlt : j < NTail := by omega
-                have hkdecomp : k = MFctx + 1 + j := by omega
-                subst j
-                rw [hkdecomp]
-                have hroot : eval pTC 1 (nfApp1 fuel aAst (someT fPre)) =
-                    nfApp2 fuel fPre (nfT fuel aAst) :=
-                  nfApp1_ok_tc fuel aAst fPre
-                have hafterRoot := eval_trans_tc MFctx 1 _ _ _ hMFctx hroot
-                have htotal : eval pTC (MFctx + 1 + (k - (MFctx + 1))) (nfApp1 fuel aAst fCall) =
-                    eval pTC (k - (MFctx + 1)) (nfApp2 fuel fPre (nfT fuel aAst)) :=
-                  eval_trans_tc (MFctx + 1) (k - (MFctx + 1)) _ _ _ hafterRoot rfl
-                rw [htotal]
-                exact hTailGuard (k - (MFctx + 1)) hjlt
+  | @intro fPre NF MF _ hFmatch hFguard hfLift hfReplay _ hfPayload =>
+      obtain ⟨_, reached, active⟩ := nfApp1_guarded_prefix hfuel haRaw hFmatch hFguard
+      exact first_strong_payload_replay_nf_prefix reached active (hTail hfLift ⟨MF, hfPayload⟩ hfReplay)
 
 theorem nfApp1_nfT_first_strong_of_payload_replay_nf
     {fTerm resTerm : LF.Term} {fVal resVal fuel aAst fCall : AST}
@@ -10384,45 +9671,9 @@ theorem nfApp1_nfT_first_strong_of_payload_replay_nf
         FirstStrongNF resTerm resVal (nfApp2 fuel fPre (nfT fuel aAst))) :
     FirstStrongNF resTerm resVal (nfApp1 fuel aAst fCall) := by
   cases hF with
-  | @intro fPre NF MF hfenc hFmatch hFguard hfLift hfReplay _ hfPayload =>
-      obtain ⟨MFctx, hMFctx, hMFctxGuard⟩ :=
-        cong_eval_nf_active_with_guard (fun s => nfApp1 fuel aAst s)
-          (fun s _ => NFActiveShape.app1 fuel aAst s)
-          (hcong_nfApp1_active_tc fuel aAst hfuel haRaw) NF hFmatch hFguard
-      have htail := hTail hfLift ⟨MF, hfPayload⟩ hfReplay
-      cases htail with
-      | @intro payloadTail NTail MTail hTailEnc hTailMatch hTailGuard
-          hTailLift hTailFinal hTailPayload =>
-          refine FirstStrongNF.intro (payload := payloadTail)
-            (N := MFctx + (1 + NTail)) (M := MTail)
-            hTailEnc ?_ ?_ hTailLift hTailFinal hTailPayload
-          · have hroot : eval pTC 1 (nfApp1 fuel aAst (someT fPre)) =
-                nfApp2 fuel fPre (nfT fuel aAst) :=
-              nfApp1_ok_tc fuel aAst fPre
-            have hafterRoot := eval_trans_tc MFctx 1 _ _ _ hMFctx hroot
-            have htotal := eval_trans_tc (MFctx + 1) NTail _ _ _ hafterRoot hTailMatch
-            simpa [Nat.add_assoc] using htotal
-          · intro k hk
-            by_cases hkF : k < MFctx
-            · exact hMFctxGuard k hkF
-            · by_cases hkRoot : k = MFctx
-              · subst k
-                rw [hMFctx]
-                exact NFActiveShape.app1 fuel aAst (someT fPre)
-              · let j := k - (MFctx + 1)
-                have hjlt : j < NTail := by omega
-                have hkdecomp : k = MFctx + 1 + j := by omega
-                subst j
-                rw [hkdecomp]
-                have hroot : eval pTC 1 (nfApp1 fuel aAst (someT fPre)) =
-                    nfApp2 fuel fPre (nfT fuel aAst) :=
-                  nfApp1_ok_tc fuel aAst fPre
-                have hafterRoot := eval_trans_tc MFctx 1 _ _ _ hMFctx hroot
-                have htotal : eval pTC (MFctx + 1 + (k - (MFctx + 1))) (nfApp1 fuel aAst fCall) =
-                    eval pTC (k - (MFctx + 1)) (nfApp2 fuel fPre (nfT fuel aAst)) :=
-                  eval_trans_tc (MFctx + 1) (k - (MFctx + 1)) _ _ _ hafterRoot rfl
-                rw [htotal]
-                exact hTailGuard (k - (MFctx + 1)) hjlt
+  | @intro fPre NF MF _ hFmatch hFguard hfLift hfReplay _ hfPayload =>
+      obtain ⟨_, reached, active⟩ := nfApp1_guarded_prefix hfuel haRaw hFmatch hFguard
+      exact first_strong_nf_prefix reached active (hTail hfLift ⟨MF, hfPayload⟩ hfReplay)
 
 theorem nfApp1_nfT_first_replay
     {fTerm resTerm : LF.Term} {fVal resVal fuel aAst fCall : AST}
@@ -10433,45 +9684,9 @@ theorem nfApp1_nfT_first_replay
         FirstReplayNF resTerm resVal (nfApp2 fuel fPre (nfT fuel aAst))) :
     FirstReplayNF resTerm resVal (nfApp1 fuel aAst fCall) := by
   cases hF with
-  | @intro fPre NF MF hfenc hFmatch hFguard hfLift hfReplay _ _ hfPayload =>
-      obtain ⟨MFctx, hMFctx, hMFctxGuard⟩ :=
-        cong_eval_nf_active_with_guard (fun s => nfApp1 fuel aAst s)
-          (fun s _ => NFActiveShape.app1 fuel aAst s)
-          (hcong_nfApp1_active_tc fuel aAst hfuel haRaw) NF hFmatch hFguard
-      have htail := hTail hfLift ⟨MF, hfPayload⟩ hfReplay
-      cases htail with
-      | @intro payloadTail NTail MTail hTailEnc hTailMatch hTailGuard
-          hTailLift hTailReplay hTailFinal hTailFinalReplay hTailPayload =>
-          refine FirstReplayNF.intro (payload := payloadTail)
-            (N := MFctx + (1 + NTail)) (M := MTail) hTailEnc ?_ ?_
-            hTailLift hTailReplay hTailFinal hTailFinalReplay hTailPayload
-          · have hroot : eval pTC 1 (nfApp1 fuel aAst (someT fPre)) =
-                nfApp2 fuel fPre (nfT fuel aAst) :=
-              nfApp1_ok_tc fuel aAst fPre
-            have hafterRoot := eval_trans_tc MFctx 1 _ _ _ hMFctx hroot
-            have htotal := eval_trans_tc (MFctx + 1) NTail _ _ _ hafterRoot hTailMatch
-            simpa [Nat.add_assoc] using htotal
-          · intro k hk
-            by_cases hkF : k < MFctx
-            · exact hMFctxGuard k hkF
-            · by_cases hkRoot : k = MFctx
-              · subst k
-                rw [hMFctx]
-                exact NFActiveShape.app1 fuel aAst (someT fPre)
-              · let j := k - (MFctx + 1)
-                have hjlt : j < NTail := by omega
-                have hkdecomp : k = MFctx + 1 + j := by omega
-                subst j
-                rw [hkdecomp]
-                have hroot : eval pTC 1 (nfApp1 fuel aAst (someT fPre)) =
-                    nfApp2 fuel fPre (nfT fuel aAst) :=
-                  nfApp1_ok_tc fuel aAst fPre
-                have hafterRoot := eval_trans_tc MFctx 1 _ _ _ hMFctx hroot
-                have htotal : eval pTC (MFctx + 1 + (k - (MFctx + 1))) (nfApp1 fuel aAst fCall) =
-                    eval pTC (k - (MFctx + 1)) (nfApp2 fuel fPre (nfT fuel aAst)) :=
-                  eval_trans_tc (MFctx + 1) (k - (MFctx + 1)) _ _ _ hafterRoot rfl
-                rw [htotal]
-                exact hTailGuard (k - (MFctx + 1)) hjlt
+  | @intro fPre NF MF _ hFmatch hFguard hfLift hfReplay _ _ hfPayload =>
+      obtain ⟨_, reached, active⟩ := nfApp1_guarded_prefix hfuel haRaw hFmatch hFguard
+      exact first_replay_nf_prefix reached active (hTail hfLift ⟨MF, hfPayload⟩ hfReplay)
 
 theorem nfT_app_first_liftable
     {fTerm aTerm resTerm : LF.Term} {fVal aVal resVal fuel fAst aAst : AST}
@@ -12785,24 +12000,8 @@ theorem first_active_intern_prepend {r : Option AST} {call next : AST}
   cases hnext with
   | intro hmatch hguard =>
       rename_i N
-      refine FirstActiveIntern.intro (N := 1 + N) ?_ ?_
-      · have htotal : eval pTC (1 + N) call = eval pTC N next :=
-          eval_trans_tc 1 N call next (eval pTC N next) hstep rfl
-        rw [htotal]
-        exact hmatch
-      · intro k hk
-        cases k with
-        | zero =>
-            simpa only [eval] using hactive
-        | succ k =>
-            have hk' : Nat.succ k < Nat.succ N := by
-              simpa only [Nat.one_add] using hk
-            have hkN : k < N := Nat.succ_lt_succ_iff.mp hk'
-            have htotal : eval pTC (Nat.succ k) call = eval pTC k next := by
-              have h := eval_trans_tc 1 k call next (eval pTC k next) hstep rfl
-              simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-            rw [htotal]
-            exact hguard k hkN
+      exact FirstActiveIntern.intro (N := 1 + N) (by simpa only [eval_add, hstep] using hmatch)
+        (GuardedEvaluation.eval_guard_append pTC hstep (eval_guard_one hactive) hguard)
 
 theorem first_active_intern_bind_active {r q : Option AST} {call : AST}
     (F : AST -> AST)
@@ -18885,184 +18084,6 @@ theorem lf_parser_term_first_active_shiftable_tc_of_transport
     (tm (peano 64) Nil (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))
     ((Mettapedia.GSLT.LanguageDef.LFParserSim.parser_sim_mutual_shiftable 64).1 [] toks)
 
-theorem lfrec_raw_parser_tc_of_first_active_shiftable_tc
-    (hparser : LFParserTermFirstActiveShiftableTCInterface) :
-    LFRecRawParserTCInterface := by
-  intro toks
-  let toksAst := Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks
-  let call := tm (peano 64) Nil toksAst
-  obtain ⟨Nchild, hchild, hchildGuard⟩ := hparser toks
-  obtain ⟨Mctx, hMctx, hMguard⟩ :=
-    cong_eval_recK_active_with_guard Nchild (s := call) (v := eval pTC Nchild call)
-      rfl hchildGuard
-  have hlfstep : eval pTC 1 (lfrec toksAst) = recK call := by
-    rfl
-  have hlfGuard :
-      ∀ k, k < 1 + (Mctx + 1) ->
-        LFCheckKChildOpenShape (eval pTC k (lfrec toksAst)) := by
-    intro k hk
-    cases k with
-    | zero =>
-        simpa only [eval] using LFCheckKChildOpenShape.recCall toksAst
-    | succ k =>
-        have hkBound : k < Mctx + 1 := by
-          exact Nat.succ_lt_succ_iff.mp (by simpa only [Nat.one_add] using hk)
-        have hshift : eval pTC (Nat.succ k) (lfrec toksAst) =
-            eval pTC k (recK call) := by
-          have h := eval_trans_tc 1 k (lfrec toksAst) (recK call)
-            (eval pTC k (recK call)) hlfstep rfl
-          simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-        rw [hshift]
-        by_cases hkM : k < Mctx
-        · exact hMguard k hkM
-        · have hge : Mctx ≤ k := Nat.le_of_not_gt hkM
-          have hle : k ≤ Mctx := Nat.le_of_lt_succ hkBound
-          have hkEq : k = Mctx := Nat.le_antisymm hle hge
-          subst k
-          rw [hMctx]
-          exact LFCheckKChildOpenShape.recKCall (eval pTC Nchild call)
-  cases hterm : LF.pTerm 64 [] toks with
-  | none =>
-      simp [Mettapedia.GSLT.LanguageDef.LFParserSim.MatchesParseShiftable, hterm] at hchild
-      obtain ⟨e, hv⟩ := hchild
-      refine ⟨1 + (Mctx + 1), ?_, hlfGuard⟩
-      refine ⟨e, ?_⟩
-      have hend : eval pTC 1 (recK (eval pTC Nchild call)) = Err e := by
-        rw [hv]
-        rfl
-      have hrecK :
-          eval pTC (Mctx + 1) (recK call) = Err e :=
-        eval_trans_tc Mctx 1 _ _ _ hMctx hend
-      exact eval_trans_tc 1 (Mctx + 1) _ _ _ hlfstep hrecK
-  | some pr =>
-      rcases pr with ⟨t, rest⟩
-      cases rest with
-      | nil =>
-          simp [Mettapedia.GSLT.LanguageDef.LFParserSim.MatchesParseShiftable, hterm] at hchild
-          obtain ⟨raw, hv, hraw⟩ := hchild
-          refine ⟨1 + (Mctx + 1), ?_, hlfGuard⟩
-          refine ⟨raw, hraw, ?_⟩
-          have hend : eval pTC 1 (recK (eval pTC Nchild call)) = Ok raw := by
-            rw [hv]
-            rfl
-          have hrecK :
-              eval pTC (Mctx + 1) (recK call) = Ok raw :=
-            eval_trans_tc Mctx 1 _ _ _ hMctx hend
-          exact eval_trans_tc 1 (Mctx + 1) _ _ _ hlfstep hrecK
-      | cons tok restTail =>
-          simp [Mettapedia.GSLT.LanguageDef.LFParserSim.MatchesParseShiftable, hterm] at hchild
-          obtain ⟨raw, hv, _hraw⟩ := hchild
-          let err := extraToks
-            (Cons (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok tok)
-              (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks restTail))
-          refine ⟨1 + (Mctx + 1), ?_, hlfGuard⟩
-          refine ⟨err, ?_⟩
-          have hend : eval pTC 1 (recK (eval pTC Nchild call)) = Err err := by
-            rw [hv]
-            rfl
-          have hrecK :
-              eval pTC (Mctx + 1) (recK call) = Err err :=
-            eval_trans_tc Mctx 1 _ _ _ hMctx hend
-          exact eval_trans_tc 1 (Mctx + 1) _ _ _ hlfstep hrecK
-
-theorem lfrec_raw_parser_tc_of_parser_transport
-    (htransport : ParserFirstActiveTransportInterface) :
-    LFRecRawParserTCInterface :=
-  lfrec_raw_parser_tc_of_first_active_shiftable_tc
-    (lf_parser_term_first_active_shiftable_tc_of_transport htransport)
-
-theorem lfrec_raw_parser_raw_tc_of_first_active_raw_shiftable_tc
-    (hparser : LFParserTermFirstActiveRawShiftableTCInterface) :
-    LFRecRawParserRawTCInterface := by
-  intro toks
-  let toksAst := Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks
-  let call := tm (peano 64) Nil toksAst
-  obtain ⟨Nchild, hchild, hchildGuard⟩ := hparser toks
-  obtain ⟨Mctx, hMctx, hMguard⟩ :=
-    cong_eval_recK_active_with_guard Nchild (s := call) (v := eval pTC Nchild call)
-      rfl hchildGuard
-  have hlfstep : eval pTC 1 (lfrec toksAst) = recK call := by
-    rfl
-  have hlfGuard :
-      ∀ k, k < 1 + (Mctx + 1) ->
-        LFCheckKChildOpenShape (eval pTC k (lfrec toksAst)) := by
-    intro k hk
-    cases k with
-    | zero =>
-        simpa only [eval] using LFCheckKChildOpenShape.recCall toksAst
-    | succ k =>
-        have hkBound : k < Mctx + 1 := by
-          exact Nat.succ_lt_succ_iff.mp (by simpa only [Nat.one_add] using hk)
-        have hshift : eval pTC (Nat.succ k) (lfrec toksAst) =
-            eval pTC k (recK call) := by
-          have h := eval_trans_tc 1 k (lfrec toksAst) (recK call)
-            (eval pTC k (recK call)) hlfstep rfl
-          simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
-        rw [hshift]
-        by_cases hkM : k < Mctx
-        · exact hMguard k hkM
-        · have hge : Mctx ≤ k := Nat.le_of_not_gt hkM
-          have hle : k ≤ Mctx := Nat.le_of_lt_succ hkBound
-          have hkEq : k = Mctx := Nat.le_antisymm hle hge
-          subst k
-          rw [hMctx]
-          exact LFCheckKChildOpenShape.recKCall (eval pTC Nchild call)
-  cases hterm : LF.pTerm 64 [] toks with
-  | none =>
-      simp [MatchesParseShiftableRawTC, hterm] at hchild
-      obtain ⟨e, hv⟩ := hchild
-      refine ⟨1 + (Mctx + 1), ?_, hlfGuard⟩
-      refine ⟨e, ?_⟩
-      have hend : eval pTC 1 (recK (eval pTC Nchild call)) = Err e := by
-        rw [hv]
-        rfl
-      have hrecK :
-          eval pTC (Mctx + 1) (recK call) = Err e :=
-        eval_trans_tc Mctx 1 _ _ _ hMctx hend
-      exact eval_trans_tc 1 (Mctx + 1) _ _ _ hlfstep hrecK
-  | some pr =>
-      rcases pr with ⟨t, rest⟩
-      cases rest with
-      | nil =>
-          simp [MatchesParseShiftableRawTC, hterm] at hchild
-          obtain ⟨raw, hv, hraw⟩ := hchild
-          refine ⟨1 + (Mctx + 1), ?_, hlfGuard⟩
-          refine ⟨raw, hraw, ?_⟩
-          have hend : eval pTC 1 (recK (eval pTC Nchild call)) = Ok raw := by
-            rw [hv]
-            rfl
-          have hrecK :
-              eval pTC (Mctx + 1) (recK call) = Ok raw :=
-            eval_trans_tc Mctx 1 _ _ _ hMctx hend
-          exact eval_trans_tc 1 (Mctx + 1) _ _ _ hlfstep hrecK
-      | cons tok restTail =>
-          simp [MatchesParseShiftableRawTC, hterm] at hchild
-          obtain ⟨raw, hv, _hraw⟩ := hchild
-          let err := extraToks
-            (Cons (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok tok)
-              (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks restTail))
-          refine ⟨1 + (Mctx + 1), ?_, hlfGuard⟩
-          refine ⟨err, ?_⟩
-          have hend : eval pTC 1 (recK (eval pTC Nchild call)) = Err err := by
-            rw [hv]
-            rfl
-          have hrecK :
-              eval pTC (Mctx + 1) (recK call) = Err err :=
-            eval_trans_tc Mctx 1 _ _ _ hMctx hend
-          exact eval_trans_tc 1 (Mctx + 1) _ _ _ hlfstep hrecK
-
-def LFCheckKParserContextInterface : Prop :=
-  ∀ toks A, IsNormal pTC A -> ∃ N,
-    match LF.recognize 64 toks with
-    | none =>
-        ∃ e, eval pTC N
-          (lfcheckK A (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
-            lfcheckK A (Err e)
-    | some t =>
-        eval pTC N
-          (lfcheckK A (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
-            lfcheckK A (Ok (encTerm t))
-
 def LFCheckKRawParserContextInterface : Prop :=
   ∀ toks A, IsNormal pTC A -> ∃ N,
     match LF.pTerm 64 [] toks with
@@ -19105,6 +18126,114 @@ def LFCheckKRawParserContextRawTCInterface : Prop :=
               (lfcheckK A (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
                 lfcheckK A (Err e)
 
+private def ParsedPayload (Payload : AST → LF.Term → Prop) :
+    Option (LF.Term × List LF.Tok) → AST → Prop
+  | some (term, rest), value =>
+      ∃ raw, value = Pp raw (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest) ∧ Payload raw term
+  | none, value => ∃ err, value = PErr err
+
+/-- Full recognition keeps the parser reply and its payload certificate
+only when the remaining token list is empty. -/
+private def RecognitionReply (Payload : AST → LF.Term → Prop)
+    (parsed : Option (LF.Term × List LF.Tok)) (reached : AST → Prop) : Prop :=
+  match parsed with
+  | none => ∃ err, reached (Err err)
+  | some (term, rest) =>
+      match rest with
+      | [] => ∃ raw, Payload raw term ∧ reached (Ok raw)
+      | _ :: _ => ∃ err, reached (Err err)
+
+private def LFRecPayloadInterface (Payload : AST → LF.Term → Prop) : Prop :=
+  ∀ toks, ∃ N,
+    RecognitionReply Payload (LF.pTerm 64 [] toks)
+      (fun reply => eval pTC N (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)) = reply) ∧
+    ∀ k, k < N →
+      LFCheckKChildOpenShape (eval pTC k (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)))
+
+private theorem recognitionReply_of_recK {Payload : AST → LF.Term → Prop}
+    {parsed : Option (LF.Term × List LF.Tok)} {value : AST}
+    (matched : ParsedPayload Payload parsed value)
+    {reached : AST → Prop}
+    (readout : ∀ {reply}, eval pTC 1 (recK value) = reply → reached reply) :
+    RecognitionReply Payload parsed reached := by
+  cases parsed with
+  | none =>
+      obtain ⟨err, rfl⟩ := matched
+      exact ⟨err, readout rfl⟩
+  | some result =>
+      obtain ⟨term, rest⟩ := result
+      obtain ⟨raw, rfl, certificate⟩ := matched
+      cases rest with
+      | nil => exact ⟨raw, certificate, readout rfl⟩
+      | cons tok rest =>
+          exact ⟨extraToks (Cons (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encTok tok)
+            (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks rest)), readout rfl⟩
+
+private theorem lfrec_payload_of_first_active {Payload : AST → LF.Term → Prop}
+    (firstActive : ∀ toks, ∃ N,
+      ParsedPayload Payload (LF.pTerm 64 [] toks)
+        (eval pTC N (tm (peano 64) Nil (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) ∧
+      ∀ k, k < N →
+        Mettapedia.GSLT.LanguageDef.LFParserSim.ParserActiveShape
+          (eval pTC k (tm (peano 64) Nil (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)))) :
+    LFRecPayloadInterface Payload := by
+  intro toks
+  let encoded := Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks
+  let src := lfrec encoded
+  let parserCall := tm (peano 64) Nil encoded
+  obtain ⟨fuel, matched, active⟩ := firstActive toks
+  let value := eval pTC fuel parserCall
+  obtain ⟨used, reached, activeK⟩ :=
+    cong_eval_recK_active_with_guard fuel (s := parserCall) (v := value) rfl active
+  have entry : eval pTC 1 src = recK parserCall := rfl
+  have single {state : AST} (guard : LFCheckKChildOpenShape state) :
+      ∀ k, k < 1 → LFCheckKChildOpenShape (eval pTC k state) := by
+    intro k hk
+    obtain rfl := Nat.eq_zero_of_le_zero (Nat.le_of_lt_succ hk)
+    exact guard
+  have beforeDispatch : eval pTC (1 + used) src = recK value :=
+    eval_trans_tc 1 used _ _ _ entry reached
+  refine ⟨(1 + used) + 1, ?_, ?_⟩
+  · exact recognitionReply_of_recK matched (fun finish =>
+      eval_trans_tc (1 + used) 1 _ _ _ beforeDispatch finish)
+  · exact GuardedEvaluation.eval_guard_append pTC beforeDispatch
+      (GuardedEvaluation.eval_guard_append pTC entry (single (.recCall encoded)) activeK)
+      (single (.recKCall value))
+
+theorem lfrec_raw_parser_tc_of_first_active_shiftable_tc
+    (hparser : LFParserTermFirstActiveShiftableTCInterface) :
+    LFRecRawParserTCInterface :=
+  lfrec_payload_of_first_active (Payload := Mettapedia.GSLT.LanguageDef.LFParserSim.ShiftablePayload) hparser
+
+theorem lfrec_raw_parser_tc_of_parser_transport
+    (htransport : ParserFirstActiveTransportInterface) :
+    LFRecRawParserTCInterface :=
+  lfrec_raw_parser_tc_of_first_active_shiftable_tc
+    (lf_parser_term_first_active_shiftable_tc_of_transport htransport)
+
+theorem lfrec_raw_parser_raw_tc_of_first_active_raw_shiftable_tc
+    (hparser : LFParserTermFirstActiveRawShiftableTCInterface) :
+    LFRecRawParserRawTCInterface :=
+  lfrec_payload_of_first_active (Payload := RawShiftablePayloadTC) hparser
+
+def LFCheckKParserContextInterface : Prop :=
+  ∀ toks A, IsNormal pTC A -> ∃ N,
+    match LF.recognize 64 toks with
+    | none =>
+        ∃ e, eval pTC N
+          (lfcheckK A (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
+            lfcheckK A (Err e)
+    | some t =>
+        eval pTC N
+          (lfcheckK A (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
+            lfcheckK A (Ok (encTerm t))
+
+private def LFCheckKPayloadContext (Payload : AST → LF.Term → Prop) : Prop :=
+  ∀ toks A, IsNormal pTC A → ∃ N,
+    RecognitionReply Payload (LF.pTerm 64 [] toks) (fun reply =>
+      eval pTC N (lfcheckK A (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
+        lfcheckK A reply)
+
 theorem lfcheckK_parser_context_of_lfrec_tc
     (hrec : LFRecParserTCInterface) : LFCheckKParserContextInterface := by
   intro toks A hA
@@ -19126,104 +18255,70 @@ theorem lfcheckK_parser_context_of_lfrec_tc
       simp
       exact hM
 
-theorem lfcheckK_raw_parser_context_of_lfrec_raw_tc
-    (hrec : LFRecRawParserTCInterface) : LFCheckKRawParserContextInterface := by
-  intro toks A hA
-  obtain ⟨Nrec, hrecMatch, hrecGuard⟩ := hrec toks
-  cases hterm : LF.pTerm 64 [] toks with
+private theorem lfcheckK_payload_context_of_lfrec {Payload : AST → LF.Term → Prop}
+    (hrec : LFRecPayloadInterface Payload) : LFCheckKPayloadContext Payload := by
+  intro toks A normal
+  obtain ⟨fuel, reply, active⟩ := hrec toks
+  let src := lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)
+  change RecognitionReply Payload (LF.pTerm 64 [] toks)
+    (fun result => eval pTC fuel src = result) at reply
+  have transport {result : AST} (h : eval pTC fuel src = result) :
+      ∃ used, eval pTC used (lfcheckK A src) = lfcheckK A result :=
+    cong_eval_lfcheckK_child_open_with_guard A normal fuel h active
+  cases parsed : LF.pTerm 64 [] toks with
   | none =>
-      simp [hterm] at hrecMatch
-      obtain ⟨e, hrecEval⟩ := hrecMatch
-      obtain ⟨M, hM⟩ :=
-        cong_eval_lfcheckK_child_open_with_guard A hA Nrec hrecEval hrecGuard
-      refine ⟨M, ?_⟩
-      simp
-      exact ⟨e, hM⟩
-  | some pr =>
-      rcases pr with ⟨t, rest⟩
+      simp only [RecognitionReply, parsed] at reply ⊢
+      obtain ⟨err, reached⟩ := reply
+      obtain ⟨used, underContext⟩ := transport reached
+      exact ⟨used, err, underContext⟩
+  | some p =>
+      obtain ⟨term, rest⟩ := p
       cases rest with
       | nil =>
-          simp [hterm] at hrecMatch
-          obtain ⟨raw, hraw, hrecEval⟩ := hrecMatch
-          obtain ⟨M, hM⟩ :=
-            cong_eval_lfcheckK_child_open_with_guard A hA Nrec hrecEval hrecGuard
-          refine ⟨M, ?_⟩
-          simp
-          exact ⟨raw, hraw, hM⟩
-      | cons tok restTail =>
-          simp [hterm] at hrecMatch
-          obtain ⟨e, hrecEval⟩ := hrecMatch
-          obtain ⟨M, hM⟩ :=
-            cong_eval_lfcheckK_child_open_with_guard A hA Nrec hrecEval hrecGuard
-          refine ⟨M, ?_⟩
-          simp
-          exact ⟨e, hM⟩
+          simp only [RecognitionReply, parsed] at reply ⊢
+          obtain ⟨raw, cert, reached⟩ := reply
+          obtain ⟨used, underContext⟩ := transport reached
+          exact ⟨used, raw, cert, underContext⟩
+      | cons tok rest =>
+          simp only [RecognitionReply, parsed] at reply ⊢
+          obtain ⟨err, reached⟩ := reply
+          obtain ⟨used, underContext⟩ := transport reached
+          exact ⟨used, err, underContext⟩
+
+theorem lfcheckK_raw_parser_context_of_lfrec_raw_tc
+    (hrec : LFRecRawParserTCInterface) : LFCheckKRawParserContextInterface :=
+  lfcheckK_payload_context_of_lfrec (Payload := Mettapedia.GSLT.LanguageDef.LFParserSim.ShiftablePayload) hrec
 
 theorem lfcheckK_raw_parser_context_raw_tc_of_lfrec_raw_tc
-    (hrec : LFRecRawParserRawTCInterface) : LFCheckKRawParserContextRawTCInterface := by
-  intro toks A hA
-  obtain ⟨Nrec, hrecMatch, hrecGuard⟩ := hrec toks
-  cases hterm : LF.pTerm 64 [] toks with
-  | none =>
-      simp [hterm] at hrecMatch
-      obtain ⟨e, hrecEval⟩ := hrecMatch
-      obtain ⟨M, hM⟩ :=
-        cong_eval_lfcheckK_child_open_with_guard A hA Nrec hrecEval hrecGuard
-      refine ⟨M, ?_⟩
-      simp
-      exact ⟨e, hM⟩
-  | some pr =>
-      rcases pr with ⟨t, rest⟩
-      cases rest with
-      | nil =>
-          simp [hterm] at hrecMatch
-          obtain ⟨raw, hraw, hrecEval⟩ := hrecMatch
-          obtain ⟨M, hM⟩ :=
-            cong_eval_lfcheckK_child_open_with_guard A hA Nrec hrecEval hrecGuard
-          refine ⟨M, ?_⟩
-          simp
-          exact ⟨raw, hraw, hM⟩
-      | cons tok restTail =>
-          simp [hterm] at hrecMatch
-          obtain ⟨e, hrecEval⟩ := hrecMatch
-          obtain ⟨M, hM⟩ :=
-            cong_eval_lfcheckK_child_open_with_guard A hA Nrec hrecEval hrecGuard
-          refine ⟨M, ?_⟩
-          simp
-          exact ⟨e, hM⟩
+    (hrec : LFRecRawParserRawTCInterface) : LFCheckKRawParserContextRawTCInterface :=
+  lfcheckK_payload_context_of_lfrec (Payload := RawShiftablePayloadTC) hrec
 
 def LFCheckKSuccessInterface : Prop :=
   ∀ t A_spec, ∃ N,
     MatchesCheckVerdict (some (LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec))
       (eval pTC N (lfcheckK (encTy A_spec) (Ok (encTerm t))))
 
+private def LFPayloadChecking (build : AST → AST → AST)
+    (Payload : AST → LF.Term → Prop) : Prop :=
+  ∀ t A_spec raw, Payload raw t →
+    ∃ N, MatchesCheckVerdict (some (LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec))
+      (eval pTC N (build (encTy A_spec) raw))
+
 def LFCheckKRawSuccessInterface : Prop :=
-  ∀ t A_spec raw,
-    Mettapedia.GSLT.LanguageDef.LFParserSim.ShiftablePayload raw t ->
-      ∃ N,
-        MatchesCheckVerdict (some (LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec))
-          (eval pTC N (lfcheckK (encTy A_spec) (Ok raw)))
+  LFPayloadChecking (fun A raw => lfcheckK A (Ok raw))
+    Mettapedia.GSLT.LanguageDef.LFParserSim.ShiftablePayload
 
 def LFCheckKRawTCSuccessInterface : Prop :=
-  ∀ t A_spec raw,
-    RawShiftablePayloadTC raw t ->
-      ∃ N,
-        MatchesCheckVerdict (some (LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec))
-          (eval pTC N (lfcheckK (encTy A_spec) (Ok raw)))
+  LFPayloadChecking (fun A raw => lfcheckK A (Ok raw))
+    RawShiftablePayloadTC
 
 def LFCheckIRawSuccessInterface : Prop :=
-  ∀ t A_spec raw,
-    Mettapedia.GSLT.LanguageDef.LFParserSim.ShiftablePayload raw t ->
-      ∃ N,
-        MatchesCheckVerdict (some (LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec))
-          (eval pTC N (lfcheckI (encTy A_spec) (internTerm raw)))
+  LFPayloadChecking (fun A raw => lfcheckI A (internTerm raw))
+    Mettapedia.GSLT.LanguageDef.LFParserSim.ShiftablePayload
 
 def LFCheckIRawTCSuccessInterface : Prop :=
-  ∀ t A_spec raw,
-    RawShiftablePayloadTC raw t ->
-      ∃ N,
-        MatchesCheckVerdict (some (LFTyping.check checkerFuel LFTyping.corpusSig [] t A_spec))
-          (eval pTC N (lfcheckI (encTy A_spec) (internTerm raw)))
+  LFPayloadChecking (fun A raw => lfcheckI A (internTerm raw))
+    RawShiftablePayloadTC
 
 def RawInternSuccessInterface : Prop :=
   ∀ t raw u,
@@ -21685,188 +20780,98 @@ theorem lfcheckI_raw_tc_success_of_checkT_and_fuel_bridge_interfaces
   lfcheckI_raw_tc_success_of_checkT_and_bad_target_interfaces
     hcheckT (reference_rejects_bad_target_of_fuel_bridge hbridge)
 
+private theorem lfcheckK_ready_of_lfcheckI {Payload : AST → LF.Term → Prop}
+    (hcheck : LFPayloadChecking (fun A raw => lfcheckI A (internTerm raw)) Payload) :
+    LFPayloadChecking (fun A raw => lfcheckK A (Ok raw)) Payload := by
+  intro term A raw certificate
+  obtain ⟨fuel, checked⟩ := hcheck term A raw certificate
+  exact ⟨1 + fuel, by
+    rw [eval_trans_tc 1 fuel _ _ _ rfl rfl]
+    exact checked⟩
+
 theorem lfcheckK_raw_success_of_lfcheckI_raw_success
-    (hcheckI : LFCheckIRawSuccessInterface) : LFCheckKRawSuccessInterface := by
-  intro t A_spec raw hraw
-  obtain ⟨N, hN⟩ := hcheckI t A_spec raw hraw
-  refine ⟨1 + N, ?_⟩
-  have hstep :
-      eval pTC 1 (lfcheckK (encTy A_spec) (Ok raw)) =
-        lfcheckI (encTy A_spec) (internTerm raw) := by
-    rfl
-  have htotal :
-      eval pTC (1 + N) (lfcheckK (encTy A_spec) (Ok raw)) =
-        eval pTC N (lfcheckI (encTy A_spec) (internTerm raw)) := by
-    exact eval_trans_tc 1 N _ _ _ hstep rfl
-  rw [htotal]
-  exact hN
+    (hcheckI : LFCheckIRawSuccessInterface) : LFCheckKRawSuccessInterface :=
+  lfcheckK_ready_of_lfcheckI (Payload := Mettapedia.GSLT.LanguageDef.LFParserSim.ShiftablePayload) hcheckI
 
 theorem lfcheckK_raw_tc_success_of_lfcheckI_raw_tc_success
-    (hcheckI : LFCheckIRawTCSuccessInterface) : LFCheckKRawTCSuccessInterface := by
-  intro t A_spec raw hraw
-  obtain ⟨N, hN⟩ := hcheckI t A_spec raw hraw
-  refine ⟨1 + N, ?_⟩
-  have hstep :
-      eval pTC 1 (lfcheckK (encTy A_spec) (Ok raw)) =
-        lfcheckI (encTy A_spec) (internTerm raw) := by
-    rfl
-  have htotal :
-      eval pTC (1 + N) (lfcheckK (encTy A_spec) (Ok raw)) =
-        eval pTC N (lfcheckI (encTy A_spec) (internTerm raw)) := by
-    exact eval_trans_tc 1 N _ _ _ hstep rfl
-  rw [htotal]
-  exact hN
+    (hcheckI : LFCheckIRawTCSuccessInterface) : LFCheckKRawTCSuccessInterface :=
+  lfcheckK_ready_of_lfcheckI (Payload := RawShiftablePayloadTC) hcheckI
+
+private theorem lfcheckK_pipeline_finish {toks : List LF.Tok} {A : LF.Term}
+    {output : AST} {result : Option Bool} {parserFuel nextFuel : ℕ}
+    (verdict : referencePipeline toks A = result)
+    (reached : eval pTC parserFuel
+        (lfcheckK (encTy A) (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) = output)
+    (checked : MatchesCheckVerdict result (eval pTC nextFuel output)) :
+    ∃ N, MatchesCheckVerdict (referencePipeline toks A)
+      (eval pTC N (lfcheckK (encTy A) (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)))) := by
+  refine ⟨parserFuel + nextFuel, ?_⟩
+  rwa [verdict, eval_trans_tc parserFuel nextFuel _ _ _ reached rfl]
+
+private theorem lfcheckK_pipeline_reject {toks : List LF.Tok} {A : LF.Term}
+    {parserFuel : ℕ}
+    (missing : LF.recognize 64 toks = none)
+    (reached : ∃ err, eval pTC parserFuel
+        (lfcheckK (encTy A) (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
+          lfcheckK (encTy A) (Err err)) :
+    ∃ N, MatchesCheckVerdict (referencePipeline toks A)
+      (eval pTC N (lfcheckK (encTy A) (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks)))) := by
+  obtain ⟨err, evalErr⟩ := reached
+  exact lfcheckK_pipeline_finish (nextFuel := 1)
+    (by simp only [referencePipeline, missing, Option.bind]) evalErr
+    (MatchesCheckVerdict.rejectParse (e := err) rfl)
 
 theorem lfcheckK_pipeline_interface_of_parser_and_checker
     (hparser : LFCheckKParserContextInterface)
     (hcheck : LFCheckKSuccessInterface) : LFCheckKPipelineInterface := by
-  intro toks A_spec
-  obtain ⟨Nparser, hparserN⟩ := hparser toks (encTy A_spec) (isnormal_encTy_tc A_spec)
-  cases hrec : LF.recognize 64 toks with
+  intro toks A
+  obtain ⟨fuel, reached⟩ := hparser toks (encTy A) (isnormal_encTy_tc A)
+  cases parsed : LF.recognize 64 toks with
   | none =>
-      simp [hrec] at hparserN
-      obtain ⟨e, hparserEval⟩ := hparserN
-      refine ⟨Nparser + 1, ?_⟩
-      have herr :
-          eval pTC 1 (lfcheckK (encTy A_spec) (Err e)) = checkErr e := by
-        rfl
-      have htotal :
-          eval pTC (Nparser + 1)
-              (lfcheckK (encTy A_spec)
-                (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
-            checkErr e := by
-        exact eval_trans_tc Nparser 1 _ _ _ hparserEval herr
-      unfold referencePipeline
-      simp [hrec, htotal]
-      exact MatchesCheckVerdict.rejectParse rfl
-  | some t =>
-      simp [hrec] at hparserN
-      obtain ⟨Ncheck, hcheckN⟩ := hcheck t A_spec
-      refine ⟨Nparser + Ncheck, ?_⟩
-      have htotal :
-          eval pTC (Nparser + Ncheck)
-              (lfcheckK (encTy A_spec)
-                (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
-            eval pTC Ncheck (lfcheckK (encTy A_spec) (Ok (encTerm t))) := by
-        exact eval_trans_tc Nparser Ncheck _ _ _ hparserN rfl
-      unfold referencePipeline
-      simp [hrec]
-      rw [htotal]
-      exact hcheckN
+      simp only [parsed] at reached
+      exact lfcheckK_pipeline_reject parsed reached
+  | some term =>
+      simp only [parsed] at reached
+      obtain ⟨used, checked⟩ := hcheck term A
+      exact lfcheckK_pipeline_finish
+        (by simp only [referencePipeline, parsed, Option.bind]) reached checked
+
+private theorem lfcheckK_pipeline_of_payload {Payload : AST → LF.Term → Prop}
+    (hparser : LFCheckKPayloadContext Payload)
+    (hcheck : LFPayloadChecking (fun A raw => lfcheckK A (Ok raw)) Payload) :
+    LFCheckKPipelineInterface := by
+  intro toks A
+  obtain ⟨fuel, reached⟩ := hparser toks (encTy A) (isnormal_encTy_tc A)
+  change RecognitionReply Payload (LF.pTerm 64 [] toks) (fun reply =>
+    eval pTC fuel (lfcheckK (encTy A) (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
+      lfcheckK (encTy A) reply) at reached
+  cases parsed : LF.pTerm 64 [] toks with
+  | none =>
+      simp only [RecognitionReply, parsed] at reached
+      exact lfcheckK_pipeline_reject (by simp only [LF.recognize, parsed]) reached
+  | some p =>
+      obtain ⟨term, rest⟩ := p
+      cases rest with
+      | nil =>
+          simp only [RecognitionReply, parsed] at reached
+          obtain ⟨raw, certificate, evalOk⟩ := reached
+          obtain ⟨used, checked⟩ := hcheck term A raw certificate
+          exact lfcheckK_pipeline_finish
+            (by simp only [referencePipeline, LF.recognize, parsed, Option.bind])
+            evalOk checked
+      | cons tok rest =>
+          simp only [RecognitionReply, parsed] at reached
+          exact lfcheckK_pipeline_reject (by simp only [LF.recognize, parsed]) reached
 
 theorem lfcheckK_pipeline_interface_of_raw_parser_and_checker
     (hparser : LFCheckKRawParserContextInterface)
-    (hcheck : LFCheckKRawSuccessInterface) : LFCheckKPipelineInterface := by
-  intro toks A_spec
-  obtain ⟨Nparser, hparserN⟩ := hparser toks (encTy A_spec) (isnormal_encTy_tc A_spec)
-  cases hterm : LF.pTerm 64 [] toks with
-  | none =>
-      simp [hterm] at hparserN
-      obtain ⟨e, hparserEval⟩ := hparserN
-      refine ⟨Nparser + 1, ?_⟩
-      have herr :
-          eval pTC 1 (lfcheckK (encTy A_spec) (Err e)) = checkErr e := by
-        rfl
-      have htotal :
-          eval pTC (Nparser + 1)
-              (lfcheckK (encTy A_spec)
-                (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
-            checkErr e := by
-        exact eval_trans_tc Nparser 1 _ _ _ hparserEval herr
-      unfold referencePipeline
-      simp [LF.recognize, hterm, htotal]
-      exact MatchesCheckVerdict.rejectParse rfl
-  | some pr =>
-      rcases pr with ⟨t, rest⟩
-      cases rest with
-      | nil =>
-          simp [hterm] at hparserN
-          obtain ⟨raw, hraw, hparserEval⟩ := hparserN
-          obtain ⟨Ncheck, hcheckN⟩ := hcheck t A_spec raw hraw
-          refine ⟨Nparser + Ncheck, ?_⟩
-          have htotal :
-              eval pTC (Nparser + Ncheck)
-                  (lfcheckK (encTy A_spec)
-                    (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
-                eval pTC Ncheck (lfcheckK (encTy A_spec) (Ok raw)) := by
-            exact eval_trans_tc Nparser Ncheck _ _ _ hparserEval rfl
-          unfold referencePipeline
-          simp [LF.recognize, hterm]
-          rw [htotal]
-          exact hcheckN
-      | cons tok restTail =>
-          simp [hterm] at hparserN
-          obtain ⟨e, hparserEval⟩ := hparserN
-          refine ⟨Nparser + 1, ?_⟩
-          have herr :
-              eval pTC 1 (lfcheckK (encTy A_spec) (Err e)) = checkErr e := by
-            rfl
-          have htotal :
-              eval pTC (Nparser + 1)
-                  (lfcheckK (encTy A_spec)
-                    (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
-                checkErr e := by
-            exact eval_trans_tc Nparser 1 _ _ _ hparserEval herr
-          unfold referencePipeline
-          simp [LF.recognize, hterm, htotal]
-          exact MatchesCheckVerdict.rejectParse rfl
+    (hcheck : LFCheckKRawSuccessInterface) : LFCheckKPipelineInterface :=
+  lfcheckK_pipeline_of_payload (Payload := Mettapedia.GSLT.LanguageDef.LFParserSim.ShiftablePayload) hparser hcheck
 
 theorem lfcheckK_pipeline_interface_of_raw_tc_parser_and_checker
     (hparser : LFCheckKRawParserContextRawTCInterface)
-    (hcheck : LFCheckKRawTCSuccessInterface) : LFCheckKPipelineInterface := by
-  intro toks A_spec
-  obtain ⟨Nparser, hparserN⟩ := hparser toks (encTy A_spec) (isnormal_encTy_tc A_spec)
-  cases hterm : LF.pTerm 64 [] toks with
-  | none =>
-      simp [hterm] at hparserN
-      obtain ⟨e, hparserEval⟩ := hparserN
-      refine ⟨Nparser + 1, ?_⟩
-      have herr :
-          eval pTC 1 (lfcheckK (encTy A_spec) (Err e)) = checkErr e := by
-        rfl
-      have htotal :
-          eval pTC (Nparser + 1)
-              (lfcheckK (encTy A_spec)
-                (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
-            checkErr e := by
-        exact eval_trans_tc Nparser 1 _ _ _ hparserEval herr
-      unfold referencePipeline
-      simp [LF.recognize, hterm, htotal]
-      exact MatchesCheckVerdict.rejectParse rfl
-  | some pr =>
-      rcases pr with ⟨t, rest⟩
-      cases rest with
-      | nil =>
-          simp [hterm] at hparserN
-          obtain ⟨raw, hraw, hparserEval⟩ := hparserN
-          obtain ⟨Ncheck, hcheckN⟩ := hcheck t A_spec raw hraw
-          refine ⟨Nparser + Ncheck, ?_⟩
-          have htotal :
-              eval pTC (Nparser + Ncheck)
-                  (lfcheckK (encTy A_spec)
-                    (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
-                eval pTC Ncheck (lfcheckK (encTy A_spec) (Ok raw)) := by
-            exact eval_trans_tc Nparser Ncheck _ _ _ hparserEval rfl
-          unfold referencePipeline
-          simp [LF.recognize, hterm]
-          rw [htotal]
-          exact hcheckN
-      | cons tok restTail =>
-          simp [hterm] at hparserN
-          obtain ⟨e, hparserEval⟩ := hparserN
-          refine ⟨Nparser + 1, ?_⟩
-          have herr :
-              eval pTC 1 (lfcheckK (encTy A_spec) (Err e)) = checkErr e := by
-            rfl
-          have htotal :
-              eval pTC (Nparser + 1)
-                  (lfcheckK (encTy A_spec)
-                    (lfrec (Mettapedia.GSLT.LanguageDef.LFEngineCorr.encToks toks))) =
-                checkErr e := by
-            exact eval_trans_tc Nparser 1 _ _ _ hparserEval herr
-          unfold referencePipeline
-          simp [LF.recognize, hterm, htotal]
-          exact MatchesCheckVerdict.rejectParse rfl
+    (hcheck : LFCheckKRawTCSuccessInterface) : LFCheckKPipelineInterface :=
+  lfcheckK_pipeline_of_payload (Payload := RawShiftablePayloadTC) hparser hcheck
 
 theorem pipeline_sim_from_lfcheckK_interface
     (hK : LFCheckKPipelineInterface) : PipelineSimStatement := by

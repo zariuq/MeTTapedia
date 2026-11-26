@@ -1,3 +1,4 @@
+import Mettapedia.Languages.MeTTa.PeTTa.AppendAgreement
 import Mettapedia.Languages.MeTTa.PeTTa.Bridges.MeTTaIL.MatchAutomataProgram
 import Mettapedia.Languages.MeTTa.PeTTa.ProgramLiteral
 
@@ -69,18 +70,8 @@ theorem extension_declarations_fresh :
 
 theorem matcher_program_agreement :
     ProgramAgreementOn matcherHead MatchAutomataProgram.program program := by
-  apply appended_program_agreement
-  · intro equation member
-    have checked := List.all_eq_true.mp extension_equations_fresh equation member
-    cases result : matcherHead equation.head with
-    | false => rfl
-    | true => simp [result] at checked
-  · intro name types member
-    have checked := List.all_eq_true.mp extension_declarations_fresh
-      (.expression [.symbol ":", .symbol name, .expression (.symbol "->" :: types)]) member
-    cases result : matcherHead name with
-    | false => rfl
-    | true => simp [result] at checked
+  exact appended_program_agreement_of_checks _ _ _ extension_equations_fresh
+    extension_declarations_fresh (fun _ _ => rfl)
 
 /-- Every supported existing matcher computation keeps its store, answer and
 I/O after the actual rule-operation source is loaded. -/
